@@ -162,6 +162,11 @@ test("mobile and accessibility essentials are present", () => {
   assert.match(appSource, /setAttribute\("aria-valuetext"/);
   assert.match(appSource, /trapSidebarFocus/);
   assert.match(
+    cssSource,
+    /\.skip-link\s*\{[\s\S]+?translateY\(calc\(-100% - var\(--safe-top\) - 1rem\)\)/,
+  );
+  assert.match(cssSource, /\.skip-link:focus\s*\{/);
+  assert.match(
     appSource,
     /if \(pendingRouteFocus\)[\s\S]+?window\.scrollTo\(\{ top: 0, behavior: "instant" \}\)/,
   );
@@ -176,6 +181,11 @@ test("mobile and accessibility essentials are present", () => {
   assert.match(cssSource, /input\[type="range"\][\s\S]+?min-height: 44px/);
   assert.match(cssSource, /env\(safe-area-inset-bottom/);
   assert.match(cssSource, /@media \(max-width: 920px\)/);
+  assert.doesNotMatch(cssSource, /min-width:\s*320px/);
+  assert.match(
+    cssSource,
+    /@media \(max-width: 920px\)[\s\S]+?\.bottom-nav\s*\{[\s\S]+?bottom: 0;[\s\S]+?min-height: calc\(4\.45rem \+ var\(--safe-bottom\)\);[\s\S]+?background: var\(--paper-raised\);/,
+  );
   assert.doesNotMatch(cssSource, /width:\s*[4-9]\d{2,}px;\s*\/\* mobile/);
 });
 

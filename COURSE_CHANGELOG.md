@@ -30,7 +30,11 @@ Fixed:
 - route changes move keyboard focus meaningfully;
 - the mobile course drawer has an explicit close control and focus containment;
 - search result counts are announced, hidden file import receives a visible
-  focus state, and code-copy/range controls meet the 44-pixel target.
+  focus state, and code-copy/range controls meet the 44-pixel target;
+- the skip link stays fully outside the iOS status area until keyboard focus
+  makes it relevant;
+- the mobile tab bar is docked to the viewport edge, fills the bottom safe
+  area, and no longer lets course content show beneath its floating gap.
 
 ## 1.2.0 — 2026-07-25
 

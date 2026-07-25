@@ -96,14 +96,14 @@
 }
 
 html {
-  min-width: 320px;
+  min-width: 0;
   min-height: 100%;
   background: var(--canvas);
   scroll-behavior: smooth;
 }
 
 body {
-  min-width: 320px;
+  min-width: 0;
   min-height: 100vh;
   margin: 0;
   background:
@@ -181,7 +181,8 @@ a {
   background: var(--gold);
   color: #182b29;
   font-weight: 800;
-  transform: translateY(-180%);
+  transform: translateY(calc(-100% - var(--safe-top) - 1rem));
+  transition: transform 160ms ease;
 }
 
 .skip-link:focus {
@@ -2070,19 +2071,21 @@ a {
   .bottom-nav {
     position: fixed;
     z-index: 45;
-    right: calc(0.65rem + var(--safe-right));
-    bottom: max(0.55rem, var(--safe-bottom));
-    left: calc(0.65rem + var(--safe-left));
+    right: 0;
+    bottom: 0;
+    left: 0;
     display: grid;
-    min-height: 4.45rem;
+    min-height: calc(4.45rem + var(--safe-bottom));
     grid-template-columns: repeat(4, 1fr);
-    padding: 0.35rem;
-    border: 1px solid color-mix(in srgb, var(--line) 78%, transparent);
-    border-radius: 1.15rem;
-    background: color-mix(in srgb, var(--paper) 91%, transparent);
-    box-shadow: 0 16px 54px rgb(0 0 0 / 20%);
-    -webkit-backdrop-filter: blur(22px) saturate(140%);
-    backdrop-filter: blur(22px) saturate(140%);
+    padding:
+      0.35rem
+      calc(0.65rem + var(--safe-right))
+      calc(0.35rem + var(--safe-bottom))
+      calc(0.65rem + var(--safe-left));
+    border-top: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
+    border-radius: 0;
+    background: var(--paper-raised);
+    box-shadow: 0 -12px 42px rgb(0 0 0 / 18%);
   }
 
   .bottom-nav button {

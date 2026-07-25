@@ -93,7 +93,7 @@ twelve weekly files.
 
 Observed local results:
 
-- all 11 Node PWA tests passed;
+- all 12 Node PWA tests passed;
 - the course package validator passed all 16 checks with no warnings;
 - the manifest, 192/512/maskable icons, Apple touch icon, start URL, scope,
   service worker, and `.nojekyll` artifact were generated;
@@ -137,6 +137,29 @@ Observed results:
 
 The final local rerun completed 12 PWA tests and all 16 course-package checks
 with no failures or warnings.
+
+### 1.2.1 iOS safe-area follow-up
+
+A real installed-iPhone screenshot exposed two conditions that ordinary
+responsive emulation had not shown clearly: the hidden skip link could remain
+partly inside the top status area, and the intentionally floating translucent
+tab bar left course content visible in the bottom safe-area gap.
+
+The narrow follow-up fix:
+
+- moves the unfocused skip link above both its own height and the full top safe
+  area while retaining the keyboard/VoiceOver focus path;
+- docks the mobile tab bar to `bottom: 0`, makes it fully opaque, and includes
+  the bottom, left, and right safe-area insets inside the bar;
+- removes the exact-320-pixel minimum-width constraint that caused a classic
+  scrollbar to create a 15-pixel gap in narrow desktop emulation.
+
+The corrected shell was rendered at 320×568, 390×844, and 834×1112. At each
+size the tab bar touched all available layout edges, horizontal overflow was
+zero, every visible tab target exceeded 44 pixels, and browser diagnostics
+were empty. Both light and dark dock surfaces were inspected. Actual
+installed-iPhone appearance remains a device confirmation rather than
+something desktop emulation can prove.
 
 ### First production deployment
 
