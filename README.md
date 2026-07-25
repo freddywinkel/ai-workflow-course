@@ -1,6 +1,6 @@
 # AI Workflow & Document Systems — 12-Week Builder Course
 
-Version: 1.2.0  
+Version: 1.2.1
 Verified through: 2026-07-25  
 Language: English, with Dutch/EU legal terms where useful  
 Workload: 8–10 hours per week  

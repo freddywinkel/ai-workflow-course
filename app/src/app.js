@@ -19,8 +19,28 @@ let reloadingForUpdate = false;
 let toastTimer = null;
 let noteTimer = null;
 let lastAutomaticUpdateCheck = 0;
+let pendingRouteFocus = false;
 
 const state = loadState();
+
+const ICON_PATHS = Object.freeze({
+  arrow: '<path d="M5 12h14m-5-5 5 5-5 5"/>',
+  check: '<path d="m5 12.5 4.2 4.2L19 7"/>',
+  chevron: '<path d="m7 9 5 5 5-5"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  document:
+    '<path d="M7 3h7l4 4v14H7Z"/><path d="M14 3v5h5M10 12h5M10 16h5"/>',
+  extract:
+    '<path d="M5 4h14v5H5ZM5 15h14v5H5Z"/><path d="M9 9v6M15 9v6"/>',
+  layers: '<path d="m12 3 9 5-9 5-9-5Z"/><path d="m3 12 9 5 9-5M3 16l9 5 9-5"/>',
+  review:
+    '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 4 4M8 10.5l1.7 1.7 3.5-4"/>',
+  shield: '<path d="M12 3 5 6v5c0 4.8 2.8 8.1 7 10 4.2-1.9 7-5.2 7-10V6Z"/><path d="m9 12 2 2 4-5"/>',
+});
+
+function iconSvg(name, className = "ui-icon") {
+  return `<svg class="${className}" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${ICON_PATHS[name] || ""}</svg>`;
+}
 
 function loadState() {
   const fallback = {
@@ -31,7 +51,7 @@ function loadState() {
     theme: "system",
     fontSize: 100,
     lastUpdateCheck: null,
-    expandedGroups: ["start", "foundations", "weeks"],
+    expandedGroups: ["foundations"],
   };
   try {
     const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
@@ -257,7 +277,7 @@ function renderMarkdown(markdown) {
         let item = match[1];
         const task = item.match(/^\[([ xX])\]\s+(.+)$/);
         if (task) {
-          item = `<span class="markdown-task${task[1].toLowerCase() === "x" ? " checked" : ""}" aria-hidden="true">✓</span>${renderInline(task[2])}`;
+          item = `<span class="markdown-task${task[1].toLowerCase() === "x" ? " checked" : ""}" aria-hidden="true">${iconSvg("check")}</span>${renderInline(task[2])}`;
         } else {
           item = renderInline(item);
         }
@@ -291,6 +311,18 @@ function coreDocuments() {
   });
 }
 
+function learningPositionLabel(courseDocument) {
+  const foundationMatch = courseDocument.sourcePath.match(/^foundations\/(\d{2})_/);
+  if (foundationMatch) {
+    return `Foundation ${Number(foundationMatch[1])} of ${courseBundle.course.foundationCount}`;
+  }
+  const weekMatch = courseDocument.sourcePath.match(/^weeks\/WEEK_(\d{2})\.md$/);
+  if (weekMatch) {
+    return `Week ${Number(weekMatch[1])} of ${courseBundle.course.weekCount}`;
+  }
+  return groupTitle(courseDocument.group);
+}
+
 function completedCoreCount() {
   const completed = new Set(state.completed);
   return coreDocuments().filter((document) => completed.has(document.id)).length;
@@ -304,9 +336,9 @@ function updateProgressUi() {
   document.querySelector("#sidebar-progress-count").textContent =
     `${completed} of ${documents.length} lessons`;
   document.querySelector("#sidebar-progress-bar").style.width = `${percent}%`;
-  document
-    .querySelector("#sidebar-progress-bar")
-    .parentElement.setAttribute("aria-label", `${percent}% of core course complete`);
+  const progress = document.querySelector(".progress-track");
+  progress.setAttribute("aria-valuenow", String(percent));
+  progress.setAttribute("aria-valuetext", `${percent}% of core course complete`);
   document
     .querySelectorAll(".nav-document")
     .forEach((button) =>
@@ -322,6 +354,7 @@ function renderCourseNavigation() {
   for (const group of courseBundle.groups) {
     const wrapper = document.createElement("section");
     wrapper.className = "nav-group";
+    wrapper.dataset.groupId = group.id;
     const expanded = state.expandedGroups.includes(group.id);
     const groupDocuments = group.documents
       .map((id) => documentById.get(id))
@@ -334,7 +367,7 @@ function renderCourseNavigation() {
     toggle.type = "button";
     toggle.className = "nav-group-toggle";
     toggle.setAttribute("aria-expanded", String(expanded));
-    toggle.innerHTML = `<span class="chevron" aria-hidden="true">⌄</span><strong>${escapeHtml(group.title)}</strong><small>${completedCount}/${groupDocuments.length}</small>`;
+    toggle.innerHTML = `${iconSvg("chevron", "ui-icon chevron")}<strong>${escapeHtml(group.title)}</strong><small>${completedCount}/${groupDocuments.length}</small>`;
 
     const list = document.createElement("ul");
     list.className = "nav-group-list";
@@ -357,7 +390,7 @@ function renderCourseNavigation() {
       button.className = "nav-document";
       button.dataset.documentId = courseDocument.id;
       if (completed.has(courseDocument.id)) button.classList.add("completed");
-      button.innerHTML = `<span class="nav-check" aria-hidden="true">✓</span><span>${escapeHtml(courseDocument.title)}</span>`;
+      button.innerHTML = `<span class="nav-check" aria-hidden="true">${iconSvg("check")}</span><span>${escapeHtml(courseDocument.title)}</span>`;
       button.addEventListener("click", () => {
         navigateToDocument(courseDocument.id);
         closeSidebar();
@@ -385,9 +418,14 @@ function showOnly(viewName) {
     if (selected) button.setAttribute("aria-current", "page");
     else button.removeAttribute("aria-current");
   });
+  document.querySelectorAll(".sidebar-link[data-route]").forEach((button) => {
+    if (button.dataset.route === viewName) button.setAttribute("aria-current", "page");
+    else button.removeAttribute("aria-current");
+  });
 }
 
 function navigate(route) {
+  pendingRouteFocus = true;
   const target = route.startsWith("#") ? route : `#${route}`;
   if (window.location.hash === target) {
     renderRoute();
@@ -417,13 +455,20 @@ function renderHome() {
   const weekCompleted = weekDocs.filter((document) =>
     state.completed.includes(document.id),
   ).length;
+  const percent = core.length ? Math.round((completed / core.length) * 100) : 0;
+  const foundationPercent = foundationDocs.length
+    ? Math.round((foundationCompleted / foundationDocs.length) * 100)
+    : 0;
+  const weekPercent = weekDocs.length
+    ? Math.round((weekCompleted / weekDocs.length) * 100)
+    : 0;
   const resume =
     documentById.get(state.lastDocument) ||
     core.find((document) => !state.completed.includes(document.id)) ||
     core[0];
   const nextDocuments = core
     .filter((document) => !state.completed.includes(document.id))
-    .slice(0, 5);
+    .slice(0, 3);
   const verifiedDate = new Date(`${courseBundle.course.verifiedThrough}T12:00:00`);
   const ageDays = Number.isNaN(verifiedDate.getTime())
     ? null
@@ -437,24 +482,81 @@ function renderHome() {
 
   views.home.innerHTML = `
     <section class="hero">
-      <span class="eyebrow">Learn by building one bounded system</span>
-      <h1>From zero coding knowledge to a working document workflow.</h1>
-      <p>Begin with the foundations, then build a source-grounded supplier-document workflow in twelve careful increments. AI drafts; a human always decides.</p>
-      <div class="hero-actions">
-        <button class="button" type="button" data-home-action="resume">${resume ? `Continue: ${escapeHtml(resume.title)}` : "Start the course"}</button>
-        <button class="button button-quiet" type="button" data-home-action="foundations">See the beginner path</button>
+      <div class="hero-copy">
+        <span class="hero-kicker"><span aria-hidden="true"></span>Learn by building one bounded system</span>
+        <h1>From zero coding knowledge to a <em>working document workflow.</em></h1>
+        <p>Begin with the foundations, then build a source-grounded supplier-document workflow in twelve careful increments. AI drafts; a human always decides.</p>
+        <div class="hero-actions">
+          <button class="button" type="button" data-home-action="resume">
+            <span>${resume ? `Continue: ${escapeHtml(resume.title)}` : "Start the course"}</span>
+            ${iconSvg("arrow")}
+          </button>
+          <button class="button button-quiet" type="button" data-home-action="foundations">Explore the beginner path</button>
+        </div>
+        <div class="proof-chips" aria-label="Course safeguards">
+          <span>${iconSvg("layers")}8 foundations</span>
+          <span>${iconSvg("document")}12 build weeks</span>
+          <span>${iconSvg("shield")}Synthetic data only</span>
+        </div>
+      </div>
+      <div class="workflow-preview" aria-label="Capstone workflow preview">
+        <div class="workflow-preview-header">
+          <span>Capstone flow</span>
+          <small><span aria-hidden="true"></span>Human-controlled</small>
+        </div>
+        <ol>
+          <li>
+            <span class="workflow-stage-icon">${iconSvg("document")}</span>
+            <span><small>01 · Intake</small><strong>Source documents</strong></span>
+          </li>
+          <li>
+            <span class="workflow-stage-icon">${iconSvg("extract")}</span>
+            <span><small>02 · Structure</small><strong>Evidence-linked facts</strong></span>
+          </li>
+          <li>
+            <span class="workflow-stage-icon">${iconSvg("review")}</span>
+            <span><small>03 · Decide</small><strong>Human review</strong></span>
+          </li>
+          <li>
+            <span class="workflow-stage-icon workflow-stage-approved">${iconSvg("shield")}</span>
+            <span><small>04 · Release</small><strong>Approved memo</strong></span>
+          </li>
+        </ol>
+        <div class="workflow-assurance">${iconSvg("check")}No action without approval</div>
       </div>
     </section>
-    <section class="metric-strip" aria-label="Course progress summary">
-      <div class="metric-card"><strong>${completed}/${core.length}</strong><span>core lessons complete</span></div>
-      <div class="metric-card"><strong>${foundationCompleted}/${foundationDocs.length}</strong><span>foundations complete</span></div>
-      <div class="metric-card"><strong>${weekCompleted}/${weekDocs.length}</strong><span>build weeks complete</span></div>
-      <div class="metric-card"><strong>v${escapeHtml(courseBundle.course.version)}</strong><span>installed course version</span></div>
+    <section class="progress-overview" aria-label="Course progress summary">
+      <article class="progress-card progress-card-main">
+        <div class="progress-ring" style="--progress: ${percent}" role="img" aria-label="${percent}% of the core course complete">
+          <span><strong>${percent}%</strong><small>complete</small></span>
+        </div>
+        <div>
+          <span class="eyebrow">Overall journey</span>
+          <h2>${completed ? "Keep building your proof" : "Your learning path is ready"}</h2>
+          <p>${completed} of ${core.length} core lessons complete</p>
+        </div>
+      </article>
+      <article class="progress-card">
+        <span class="progress-card-icon">${iconSvg("layers")}</span>
+        <div>
+          <span>Foundations</span>
+          <strong>${foundationCompleted}<small> / ${foundationDocs.length}</small></strong>
+        </div>
+        <div class="mini-progress" aria-hidden="true"><span style="width:${foundationPercent}%"></span></div>
+      </article>
+      <article class="progress-card">
+        <span class="progress-card-icon progress-card-icon-gold">${iconSvg("document")}</span>
+        <div>
+          <span>Build weeks</span>
+          <strong>${weekCompleted}<small> / ${weekDocs.length}</small></strong>
+        </div>
+        <div class="mini-progress mini-progress-gold" aria-hidden="true"><span style="width:${weekPercent}%"></span></div>
+      </article>
     </section>
     <div class="dashboard-grid">
-      <section class="dashboard-card">
+      <section class="dashboard-card next-steps-card">
         <span class="eyebrow">Your next steps</span>
-        <h2>${nextDocuments.length ? "Keep moving one proof at a time" : "Core course complete"}</h2>
+        <h2>${nextDocuments.length ? "One clear step at a time" : "Core course complete"}</h2>
         <ul class="path-list">
           ${
             nextDocuments.length
@@ -462,10 +564,10 @@ function renderHome() {
                   .map(
                     (document, index) => `
                       <li>
-                        <button type="button" data-document-id="${escapeAttribute(document.id)}">
-                          <span class="path-number">${index + 1}</span>
-                          <span><strong>${escapeHtml(document.title)}</strong><small>${escapeHtml(groupTitle(document.group))} · about ${Math.max(1, Math.ceil(document.wordCount / 210))} min reading</small></span>
-                          <span aria-hidden="true">→</span>
+                        <button class="${index === 0 ? "path-featured" : ""}" type="button" data-document-id="${escapeAttribute(document.id)}">
+                          <span class="path-number">${String(index + 1).padStart(2, "0")}</span>
+                          <span><small>${escapeHtml(learningPositionLabel(document))} · about ${Math.max(1, Math.ceil(document.wordCount / 210))} min</small><strong>${escapeHtml(document.title)}</strong></span>
+                          ${iconSvg("arrow")}
                         </button>
                       </li>`,
                   )
@@ -475,11 +577,15 @@ function renderHome() {
         </ul>
       </section>
       <section class="dashboard-card freshness-card">
+        <div class="freshness-heading">
+          <span class="freshness-icon">${iconSvg("shield")}</span>
+          <span class="version-chip">v${escapeHtml(courseBundle.course.version)}</span>
+        </div>
         <span class="eyebrow">Source currency</span>
         <h2>${escapeHtml(freshness)}</h2>
         <time datetime="${escapeAttribute(courseBundle.course.verifiedThrough)}">${escapeHtml(courseBundle.course.verifiedThrough)}</time>
         <p>Run the live audit again before Week 7 and after material legal, security, or vendor changes.</p>
-        <button class="button button-quiet" type="button" data-home-action="updates">Open update centre</button>
+        <button class="button button-quiet" type="button" data-home-action="updates">${iconSvg("shield")}Open update centre</button>
       </section>
     </div>
   `;
@@ -512,7 +618,15 @@ function setDocumentPager(button, document, direction) {
     return;
   }
   button.disabled = false;
-  button.innerHTML = `<small>${direction}</small><strong>${escapeHtml(document.title)}</strong>`;
+  const isNext = direction === "Next";
+  button.innerHTML = `
+    <span class="pager-direction">
+      ${isNext ? "" : iconSvg("arrow", "ui-icon arrow-back")}
+      <small>${escapeHtml(direction)}</small>
+      ${isNext ? iconSvg("arrow") : ""}
+    </span>
+    <strong>${escapeHtml(document.title)}</strong>
+  `;
   button.onclick = () => navigateToDocument(document.id);
 }
 
@@ -601,10 +715,16 @@ function renderDocument(id) {
 
   document.querySelector("#reader-group").textContent = groupTitle(courseDocument.group);
   document.querySelector("#reader-title").textContent = courseDocument.title;
+  const core = coreDocuments();
+  const corePosition = core.findIndex((document) => document.id === courseDocument.id);
+  const lessonPosition =
+    corePosition >= 0
+      ? `Core lesson ${corePosition + 1} of ${core.length}`
+      : `${groupTitle(courseDocument.group)} page`;
   document.querySelector("#reader-meta").innerHTML = `
-    <span>${courseDocument.wordCount.toLocaleString("en")} words</span>
-    <span>about ${Math.max(1, Math.ceil(courseDocument.wordCount / 210))} min reading</span>
-    <span>${escapeHtml(courseDocument.sourcePath)}</span>
+    <span>${iconSvg("clock")}About ${Math.max(1, Math.ceil(courseDocument.wordCount / 210))} min</span>
+    <span>${iconSvg("layers")}${escapeHtml(learningPositionLabel(courseDocument))}</span>
+    <span title="Source: ${escapeAttribute(courseDocument.sourcePath)}">${iconSvg("document")}${escapeHtml(lessonPosition)}</span>
   `;
   const content = document.querySelector("#reader-content");
   content.innerHTML = renderMarkdown(courseDocument.markdown);
@@ -628,12 +748,12 @@ function renderDocument(id) {
   setDocumentPager(
     document.querySelector("#previous-document"),
     courseBundle.documents[position - 1],
-    "← Previous",
+    "Previous",
   );
   setDocumentPager(
     document.querySelector("#next-document"),
     courseBundle.documents[position + 1],
-    "Next →",
+    "Next",
   );
 
   document.querySelectorAll(".nav-document").forEach((button) => {
@@ -720,6 +840,9 @@ function renderSearch() {
 
 function applyAppearance() {
   document.documentElement.dataset.theme = state.theme;
+  const systemIsDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  const dark = state.theme === "dark" || (state.theme === "system" && systemIsDark);
+  document.querySelector("#theme-color-meta").content = dark ? "#0d1917" : "#f6f3ec";
   document.documentElement.style.setProperty("--reader-scale", state.fontSize / 100);
   document.querySelector("#font-size").value = String(state.fontSize);
   document.querySelector("#font-size-output").value = `${state.fontSize}%`;
@@ -755,19 +878,48 @@ function renderRoute() {
   } else {
     renderHome();
   }
+  if (pendingRouteFocus && route !== "search") {
+    window.setTimeout(() => {
+      document.querySelector("#main-content").focus({ preventScroll: true });
+    }, 0);
+  }
+  pendingRouteFocus = false;
 }
 
 function openSidebar() {
   document.body.classList.add("sidebar-open");
   document.querySelector("#menu-button").setAttribute("aria-expanded", "true");
-  document.querySelector(".nav-group-toggle")?.focus();
+  for (const selector of [".topbar", ".main", ".bottom-nav"]) {
+    document.querySelector(selector).inert = true;
+  }
+  document.querySelector("#sidebar-close-button")?.focus();
 }
 
 function closeSidebar({ restoreFocus = false } = {}) {
   const wasOpen = document.body.classList.contains("sidebar-open");
   document.body.classList.remove("sidebar-open");
   document.querySelector("#menu-button").setAttribute("aria-expanded", "false");
+  for (const selector of [".topbar", ".main", ".bottom-nav"]) {
+    document.querySelector(selector).inert = false;
+  }
   if (wasOpen && restoreFocus) document.querySelector("#menu-button").focus();
+}
+
+function trapSidebarFocus(event) {
+  if (event.key !== "Tab" || !document.body.classList.contains("sidebar-open")) return;
+  const sidebar = document.querySelector("#course-sidebar");
+  const focusable = [...sidebar.querySelectorAll("button:not([disabled]), a[href]")]
+    .filter((element) => !element.closest("[hidden]") && element.getClientRects().length);
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable.at(-1);
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
 }
 
 function showToast(message, duration = 2800) {
@@ -892,7 +1044,7 @@ function resetProgress() {
     theme: "system",
     fontSize: 100,
     lastUpdateCheck: null,
-    expandedGroups: ["start", "foundations", "weeks"],
+    expandedGroups: ["foundations"],
   });
   renderCourseNavigation();
   updateProgressUi();
@@ -1009,15 +1161,22 @@ function wireEvents() {
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") checkForUpdates();
   });
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+    if (state.theme === "system") applyAppearance();
+  });
 
   document.querySelector("#menu-button").addEventListener("click", () => {
     if (document.body.classList.contains("sidebar-open")) closeSidebar({ restoreFocus: true });
     else openSidebar();
   });
   document
+    .querySelector("#sidebar-close-button")
+    .addEventListener("click", () => closeSidebar({ restoreFocus: true }));
+  document
     .querySelector("#sidebar-scrim")
     .addEventListener("click", () => closeSidebar({ restoreFocus: true }));
   document.addEventListener("keydown", (event) => {
+    trapSidebarFocus(event);
     if (event.key === "Escape" && document.body.classList.contains("sidebar-open")) {
       closeSidebar({ restoreFocus: true });
     }
@@ -1030,7 +1189,7 @@ function wireEvents() {
   document.querySelectorAll("[data-route]").forEach((button) => {
     button.addEventListener("click", () => {
       if (button.dataset.route === "course") {
-        if (window.matchMedia("(max-width: 820px)").matches) openSidebar();
+        if (window.matchMedia("(max-width: 920px)").matches) openSidebar();
         else if (state.lastDocument) navigateToDocument(state.lastDocument);
       } else {
         navigate(button.dataset.route);

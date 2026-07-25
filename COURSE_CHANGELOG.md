@@ -2,6 +2,36 @@
 
 This file records issued course changes. Dated audit reports belong in `updates/`.
 
+## 1.2.1 — 2026-07-25
+
+Visual-design and accessibility release.
+
+Changed:
+
+- rebuilt the home screen around a course-specific source → extraction →
+  human-review → approved-output visual;
+- replaced equal-weight statistics with a prominent overall progress ring and
+  separate foundation/build-week progress;
+- replaced platform-dependent interface glyphs with one offline inline-SVG
+  icon system;
+- strengthened card hierarchy, spacing, motion, touch feedback, light/dark
+  surfaces, and the iPhone/iPad navigation treatment;
+- widened the mobile/tablet shell breakpoint so an 834-pixel iPad uses the
+  focused drawer and bottom navigation;
+- reduced technical noise in lesson metadata and constrained prose to a more
+  readable line length;
+- improved the next-step path, source-currency card, search results, settings,
+  notes, and previous/next lesson controls.
+
+Fixed:
+
+- dark-theme secondary buttons no longer inherit near-invisible dark text;
+- course progress now exposes real progressbar semantics;
+- route changes move keyboard focus meaningfully;
+- the mobile course drawer has an explicit close control and focus containment;
+- search result counts are announced, hidden file import receives a visible
+  focus state, and code-copy/range controls meet the 44-pixel target.
+
 ## 1.2.0 — 2026-07-25
 
 Course-reader and maintained-publication release.

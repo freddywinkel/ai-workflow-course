@@ -152,10 +152,45 @@ test("mobile and accessibility essentials are present", () => {
   assert.match(htmlSource, /aria-label="Search the course"/);
   assert.match(htmlSource, /id="update-banner"/);
   assert.match(htmlSource, /id="install-dialog"/);
+  assert.match(htmlSource, /id="sidebar-close-button"/);
+  assert.match(htmlSource, /role="progressbar"/);
+  assert.match(htmlSource, /aria-valuemin="0"/);
+  assert.match(htmlSource, /aria-valuemax="100"/);
+  assert.doesNotMatch(htmlSource, /class="progress-track"\s+aria-hidden="true"/);
+  assert.match(htmlSource, /id="search-summary" role="status" aria-live="polite"/);
+  assert.match(appSource, /setAttribute\("aria-valuenow"/);
+  assert.match(appSource, /setAttribute\("aria-valuetext"/);
+  assert.match(appSource, /trapSidebarFocus/);
+  assert.match(appSource, /focus\(\{ preventScroll: true \}\)/);
   assert.match(cssSource, /min-height: 44px/);
+  assert.match(cssSource, /\.copy-code[\s\S]+?min-height: 44px/);
+  assert.match(cssSource, /input\[type="range"\][\s\S]+?min-height: 44px/);
   assert.match(cssSource, /env\(safe-area-inset-bottom/);
-  assert.match(cssSource, /@media \(max-width: 820px\)/);
+  assert.match(cssSource, /@media \(max-width: 920px\)/);
   assert.doesNotMatch(cssSource, /width:\s*[4-9]\d{2,}px;\s*\/\* mobile/);
+});
+
+test("visual refresh stays purposeful, offline and theme-safe", () => {
+  assert.match(appSource, /class="workflow-preview"/);
+  for (const label of [
+    "Source documents",
+    "Evidence-linked facts",
+    "Human review",
+    "Approved memo",
+  ]) {
+    assert.match(appSource, new RegExp(label));
+  }
+  assert.match(appSource, /class="progress-ring"/);
+  assert.match(appSource, /Foundation \$\{Number/);
+  assert.match(appSource, /Core lesson \$\{corePosition \+ 1\}/);
+  assert.match(htmlSource, /<svg class="ui-icon"/);
+  assert.match(htmlSource, /aria-hidden="true" focusable="false"/);
+  assert.doesNotMatch(htmlSource, /fonts\.(googleapis|gstatic)\.com/);
+  assert.doesNotMatch(htmlSource, /<img[^>]+src="https?:/);
+  assert.match(cssSource, /prefers-reduced-motion: reduce/);
+  assert.match(cssSource, /-webkit-backdrop-filter/);
+  assert.match(cssSource, /:root\[data-theme="dark"\] \.button:not\(\.button-quiet\)/);
+  assert.doesNotMatch(cssSource, /:root\[data-theme="dark"\] \.button\s*\{/);
 });
 
 test("local progress survives course updates and reset is confirmed", () => {

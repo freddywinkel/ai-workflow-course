@@ -1,4 +1,4 @@
-# Release Validation — Course 1.2.0
+# Release Validation — Course 1.2.1
 
 Validation date: 2026-07-25  
 Environment: Windows, Europe/Amsterdam  
@@ -108,6 +108,35 @@ Observed local results:
 - an already controlled old build detected a new waiting worker, displayed the
   update prompt, retained learner state, accepted the learner's activation
   choice, and reloaded under the new build.
+
+### 1.2.1 visual and interaction audit
+
+The visual-design release was inspected as rendered—not only as source—at
+1280×720 desktop, 834×1112 iPad portrait, 390×844 iPhone, and the minimum
+supported 320×568 viewport. Both explicit light and dark themes were exercised.
+
+Observed results:
+
+- the redesigned home, workflow preview, progress cards, lesson reader,
+  settings, navigation drawer, and bottom navigation rendered without
+  horizontal document overflow;
+- the 834-pixel iPad entered the focused drawer/bottom-navigation layout rather
+  than retaining the compressed permanent desktop sidebar;
+- every visible interactive target in the 320-pixel audit was at least 44 by
+  44 pixels, including every rendered code-copy control;
+- dark-theme quiet buttons computed to light text on the raised dark surface,
+  correcting the prior near-invisible secondary-button combination;
+- the iPad drawer opened with focus on its labelled close control, trapped
+  reverse keyboard focus inside the drawer, and closed by Escape;
+- progress exposes `progressbar`, current-value, and value-text semantics;
+- lesson metadata uses beginner-facing position labels rather than displaying
+  a source filename, while the source remains available as metadata;
+- the course route, progress state, update prompt, local notes, and
+  service-worker activation behavior remained intact;
+- browser diagnostic logs contained no warnings or errors.
+
+The final local rerun completed 12 PWA tests and all 16 course-package checks
+with no failures or warnings.
 
 ### First production deployment
 
