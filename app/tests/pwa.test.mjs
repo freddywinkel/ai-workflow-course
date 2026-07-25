@@ -163,6 +163,7 @@ test("mobile and accessibility essentials are present", () => {
   assert.match(appSource, /trapSidebarFocus/);
   assert.match(appSource, /focus\(\{ preventScroll: true \}\)/);
   assert.match(cssSource, /min-height: 44px/);
+  assert.match(cssSource, /\.brand\s*\{[\s\S]+?min-height: 44px/);
   assert.match(cssSource, /\.copy-code[\s\S]+?min-height: 44px/);
   assert.match(cssSource, /input\[type="range"\][\s\S]+?min-height: 44px/);
   assert.match(cssSource, /env\(safe-area-inset-bottom/);
