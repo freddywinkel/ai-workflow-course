@@ -109,8 +109,29 @@ Observed local results:
   update prompt, retained learner state, accepted the learner's activation
   choice, and reloaded under the new build.
 
-The live GitHub Pages checks and public deployment identifiers are appended to
-this record only after the workflow and production URL have been observed.
+### First production deployment
+
+The first public deployment was observed on 2026-07-25:
+
+- repository: `freddywinkel/ai-workflow-course`;
+- source commit: `1443626d2b98a5391d86cd7e2081f244c5ce3649`;
+- GitHub Actions run: `30172859750`;
+- production URL:
+  `https://freddywinkel.github.io/ai-workflow-course/`;
+- installed course version: `1.2.0`;
+- deployed build ID: `a20df077def8`.
+
+The GitHub Actions validation, app-test, build, artifact, and deployment jobs
+all completed successfully. Fresh no-cache HTTP requests returned status 200
+for the app shell, web manifest, service worker, version record, and
+612,550-byte course bundle.
+
+The production app was then opened in a real browser. The zero-coding learner
+path, all eight foundations, and all twelve weeks were present; browser
+diagnostic logs were empty. A lesson completion and a clearly synthetic local
+note were saved to establish learner state for the separate old-client update
+test. The production layout was also inspected at 390 by 844 pixels and 834 by
+1112 pixels with no horizontal overflow.
 
 ## Live external-link audit
 
