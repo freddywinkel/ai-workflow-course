@@ -1,0 +1,356 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ai-workflow-course/contracts.schema.json",
+  "title": "AI Workflow and Document Systems Core Contracts",
+  "oneOf": [
+    {"$ref": "#/$defs/SourceDocument"},
+    {"$ref": "#/$defs/EvidenceLocator"},
+    {"$ref": "#/$defs/ExtractionRun"},
+    {"$ref": "#/$defs/ApprovalDecision"},
+    {"$ref": "#/$defs/ActionExecution"},
+    {"$ref": "#/$defs/AuditEvent"}
+  ],
+  "$defs": {
+    "Uuid": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "Timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "Sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "WorkflowState": {
+      "type": "string",
+      "enum": [
+        "received",
+        "validated",
+        "parsed",
+        "needs_review",
+        "pending_approval",
+        "approved",
+        "rejected",
+        "expired",
+        "completed",
+        "failed_manual"
+      ]
+    },
+    "SourceDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "record_type",
+        "source_id",
+        "tenant_id",
+        "sha256",
+        "original_filename",
+        "media_type",
+        "byte_size",
+        "received_at",
+        "storage_uri",
+        "parser_status",
+        "retention_class"
+      ],
+      "properties": {
+        "record_type": {"const": "SourceDocument"},
+        "source_id": {"$ref": "#/$defs/Uuid"},
+        "tenant_id": {"type": "string", "minLength": 1, "maxLength": 128},
+        "sha256": {"$ref": "#/$defs/Sha256"},
+        "original_filename": {"type": "string", "minLength": 1, "maxLength": 255},
+        "media_type": {
+          "type": "string",
+          "enum": [
+            "application/pdf",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          ]
+        },
+        "byte_size": {"type": "integer", "minimum": 1},
+        "received_at": {"$ref": "#/$defs/Timestamp"},
+        "storage_uri": {"type": "string", "minLength": 1},
+        "parser_status": {
+          "type": "string",
+          "enum": ["not_started", "succeeded", "partial", "failed"]
+        },
+        "retention_class": {"type": "string", "minLength": 1, "maxLength": 64}
+      }
+    },
+    "EvidenceLocator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "record_type",
+        "evidence_id",
+        "source_id",
+        "chunk_id",
+        "supporting_text_hash",
+        "quote",
+        "coordinate_system"
+      ],
+      "properties": {
+        "record_type": {"const": "EvidenceLocator"},
+        "evidence_id": {"type": "string", "minLength": 1, "maxLength": 128},
+        "source_id": {"$ref": "#/$defs/Uuid"},
+        "chunk_id": {"type": "string", "minLength": 8, "maxLength": 128},
+        "page": {"type": ["integer", "null"], "minimum": 1},
+        "bbox": {
+          "type": ["array", "null"],
+          "prefixItems": [
+            {"type": "number"},
+            {"type": "number"},
+            {"type": "number"},
+            {"type": "number"}
+          ],
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "char_start": {"type": ["integer", "null"], "minimum": 0},
+        "char_end": {"type": ["integer", "null"], "minimum": 0},
+        "logical_path": {"type": ["string", "null"], "maxLength": 512},
+        "coordinate_system": {
+          "type": "string",
+          "enum": ["pdf_points_bottom_left", "image_pixels_top_left", "canonical_text", "mixed"]
+        },
+        "supporting_text_hash": {"$ref": "#/$defs/Sha256"},
+        "quote": {"type": "string", "minLength": 1, "maxLength": 1000}
+      },
+      "anyOf": [
+        {"required": ["page", "bbox"]},
+        {"required": ["char_start", "char_end"]},
+        {"required": ["logical_path"]}
+      ]
+    },
+    "ValidationResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "passed", "severity", "message"],
+      "properties": {
+        "code": {"type": "string", "pattern": "^[A-Z0-9_]+$"},
+        "passed": {"type": "boolean"},
+        "severity": {"type": "string", "enum": ["info", "warning", "error", "critical"]},
+        "message": {"type": "string", "minLength": 1, "maxLength": 1000}
+      }
+    },
+    "ExtractionRun": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "record_type",
+        "extraction_run_id",
+        "run_id",
+        "tenant_id",
+        "source_ids",
+        "parser_version",
+        "model_provider",
+        "model_id",
+        "prompt_id",
+        "prompt_sha256",
+        "schema_id",
+        "schema_sha256",
+        "code_commit",
+        "structured_result",
+        "validation_results",
+        "evidence_ids",
+        "status",
+        "started_at",
+        "completed_at"
+      ],
+      "properties": {
+        "record_type": {"const": "ExtractionRun"},
+        "extraction_run_id": {"$ref": "#/$defs/Uuid"},
+        "run_id": {"$ref": "#/$defs/Uuid"},
+        "tenant_id": {"type": "string", "minLength": 1, "maxLength": 128},
+        "source_ids": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/Uuid"},
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "parser_version": {"type": "string", "minLength": 1},
+        "ocr_version": {"type": ["string", "null"]},
+        "model_provider": {"type": "string", "minLength": 1},
+        "model_id": {"type": "string", "minLength": 1},
+        "prompt_id": {"type": "string", "minLength": 1},
+        "prompt_sha256": {"$ref": "#/$defs/Sha256"},
+        "schema_id": {"type": "string", "minLength": 1},
+        "schema_sha256": {"$ref": "#/$defs/Sha256"},
+        "code_commit": {"type": "string", "minLength": 7},
+        "structured_result": {"type": ["object", "null"]},
+        "validation_results": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/ValidationResult"}
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "succeeded",
+            "needs_review",
+            "refused",
+            "incomplete",
+            "schema_invalid",
+            "failed"
+          ]
+        },
+        "response_id": {"type": ["string", "null"]},
+        "input_tokens": {"type": ["integer", "null"], "minimum": 0},
+        "output_tokens": {"type": ["integer", "null"], "minimum": 0},
+        "latency_ms": {"type": ["integer", "null"], "minimum": 0},
+        "estimated_cost_usd": {"type": ["string", "null"], "pattern": "^[0-9]+(\\.[0-9]+)?$"},
+        "started_at": {"$ref": "#/$defs/Timestamp"},
+        "completed_at": {"$ref": "#/$defs/Timestamp"}
+      }
+    },
+    "ApprovalDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "record_type",
+        "approval_id",
+        "run_id",
+        "tenant_id",
+        "proposed_output_sha256",
+        "reviewer_id",
+        "decision",
+        "comments",
+        "decided_at",
+        "expires_at"
+      ],
+      "properties": {
+        "record_type": {"const": "ApprovalDecision"},
+        "approval_id": {"$ref": "#/$defs/Uuid"},
+        "run_id": {"$ref": "#/$defs/Uuid"},
+        "tenant_id": {"type": "string", "minLength": 1, "maxLength": 128},
+        "proposed_output_sha256": {"$ref": "#/$defs/Sha256"},
+        "reviewer_id": {"type": "string", "minLength": 1, "maxLength": 128},
+        "decision": {"type": "string", "enum": ["approved", "edited", "rejected"]},
+        "comments": {"type": "string", "maxLength": 4000},
+        "decided_at": {"$ref": "#/$defs/Timestamp"},
+        "expires_at": {"$ref": "#/$defs/Timestamp"},
+        "replacement_output_sha256": {
+          "anyOf": [
+            {"$ref": "#/$defs/Sha256"},
+            {"type": "null"}
+          ]
+        }
+      }
+    },
+    "ActionExecution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "record_type",
+        "action_execution_id",
+        "run_id",
+        "tenant_id",
+        "approval_ids",
+        "proposed_output_sha256",
+        "idempotency_key",
+        "adapter",
+        "action_type",
+        "status",
+        "attempt_count",
+        "created_at",
+        "updated_at"
+      ],
+      "properties": {
+        "record_type": {"const": "ActionExecution"},
+        "action_execution_id": {"$ref": "#/$defs/Uuid"},
+        "run_id": {"$ref": "#/$defs/Uuid"},
+        "tenant_id": {"type": "string", "minLength": 1, "maxLength": 128},
+        "approval_ids": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/Uuid"},
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "proposed_output_sha256": {"$ref": "#/$defs/Sha256"},
+        "idempotency_key": {"type": "string", "minLength": 16, "maxLength": 255},
+        "adapter": {"type": "string", "minLength": 1},
+        "action_type": {"const": "create_draft"},
+        "status": {
+          "type": "string",
+          "enum": ["reserved", "in_progress", "completed", "failed_manual", "uncertain"]
+        },
+        "result_reference": {"type": ["string", "null"], "maxLength": 512},
+        "error_code": {"type": ["string", "null"], "maxLength": 128},
+        "attempt_count": {"type": "integer", "minimum": 0},
+        "created_at": {"$ref": "#/$defs/Timestamp"},
+        "updated_at": {"$ref": "#/$defs/Timestamp"}
+      }
+    },
+    "AuditEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "record_type",
+        "event_id",
+        "trace_id",
+        "run_id",
+        "tenant_id",
+        "event_type",
+        "actor_type",
+        "actor_id",
+        "timestamp",
+        "versions",
+        "redacted_metadata",
+        "previous_event_hash",
+        "event_hash"
+      ],
+      "properties": {
+        "record_type": {"const": "AuditEvent"},
+        "event_id": {"$ref": "#/$defs/Uuid"},
+        "trace_id": {"$ref": "#/$defs/Uuid"},
+        "parent_event_id": {
+          "anyOf": [
+            {"$ref": "#/$defs/Uuid"},
+            {"type": "null"}
+          ]
+        },
+        "run_id": {"$ref": "#/$defs/Uuid"},
+        "tenant_id": {"type": "string", "minLength": 1, "maxLength": 128},
+        "event_type": {"type": "string", "pattern": "^[A-Z0-9_]+$"},
+        "actor_type": {
+          "type": "string",
+          "enum": ["human", "service", "provider", "scheduler"]
+        },
+        "actor_id": {"type": "string", "minLength": 1, "maxLength": 128},
+        "timestamp": {"$ref": "#/$defs/Timestamp"},
+        "state_from": {
+          "anyOf": [
+            {"$ref": "#/$defs/WorkflowState"},
+            {"type": "null"}
+          ]
+        },
+        "state_to": {
+          "anyOf": [
+            {"$ref": "#/$defs/WorkflowState"},
+            {"type": "null"}
+          ]
+        },
+        "versions": {
+          "type": "object",
+          "additionalProperties": {"type": ["string", "null"]}
+        },
+        "redacted_metadata": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "previous_event_hash": {
+          "anyOf": [
+            {"$ref": "#/$defs/Sha256"},
+            {"type": "null"}
+          ]
+        },
+        "event_hash": {"$ref": "#/$defs/Sha256"}
+      }
+    }
+  }
+}
+

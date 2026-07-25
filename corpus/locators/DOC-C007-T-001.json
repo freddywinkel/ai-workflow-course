@@ -1,0 +1,224 @@
+{
+  "entries": [
+    {
+      "bbox": [
+        54,
+        763,
+        212.02,
+        783
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "7442b0250e865b7a",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "SUPPLIER TERMS",
+      "logical_path": "document.title",
+      "normalized_excerpt": "SUPPLIER TERMS",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "1d4588de1e07e1a073520c8e5df2fe9e15a309b9f46f479f3c61118177362453"
+    },
+    {
+      "bbox": [
+        54,
+        725,
+        328.18,
+        734.5
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "00701d7c9984db28",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "SYNTHETIC TRAINING DOCUMENT - NO REAL PERSON OR ORGANISATION",
+      "logical_path": "document.safety_banner",
+      "normalized_excerpt": "SYNTHETIC TRAINING DOCUMENT - NO REAL PERSON OR ORGANISATION",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "f812e01667a161f6cb6159e13afe97fd0dff0f875a80c3397119d95d9028fac6"
+    },
+    {
+      "bbox": [
+        72,
+        673,
+        237.12,
+        685.5
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "10d235aa2a2c4075",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "Supplier: Demo Supplier 007 Ltd.",
+      "logical_path": "terms.supplier.name",
+      "normalized_excerpt": "Supplier: Demo Supplier 007 Ltd.",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "d152883b6344939c6c89a88df2ee0847a87ec8ae57a796ad496413adcb855d46"
+    },
+    {
+      "bbox": [
+        72,
+        635,
+        200.37,
+        647.5
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "d824760ddda530f3",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "Terms version: T-C007-v1",
+      "logical_path": "terms.version",
+      "normalized_excerpt": "Terms version: T-C007-v1",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "40132377a8751a11efc15ac333e412e71cf00a6f4c024019c575762d77673cbf"
+    },
+    {
+      "bbox": [
+        72,
+        597,
+        230.7,
+        609.5
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "66908c050617fb1b",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "Related quotation: Q-C007-2026",
+      "logical_path": "terms.quote_reference",
+      "normalized_excerpt": "Related quotation: Q-C007-2026",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "40d7f1bbd7be40bf0c536df93a8d8a2e458ab636a1093c61936b28343376b96a"
+    },
+    {
+      "bbox": [
+        72,
+        559,
+        223.15,
+        571.5
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "6052c66cd093accd",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "Payment term: 14 calendar days",
+      "logical_path": "terms.payment_days",
+      "normalized_excerpt": "Payment term: 14 calendar days",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "4935e897abee1729e3eb7b2bc7f23bd15423555652e7645649625df3740d44e7"
+    },
+    {
+      "bbox": [
+        72,
+        521,
+        164.21,
+        533.5
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "847dcce80d097d32",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "Prepayment: 0.00%",
+      "logical_path": "terms.prepayment_pct",
+      "normalized_excerpt": "Prepayment: 0.00%",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "df685162a2353499edd2ef0f6f9cd2683df89d0af191ecb7f1b8e8062433632e"
+    },
+    {
+      "bbox": [
+        72,
+        483,
+        195.71,
+        495.5
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "7bddd804f4b5e657",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "Delivery: 20 calendar days",
+      "logical_path": "terms.delivery_days",
+      "normalized_excerpt": "Delivery: 20 calendar days",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "6f01b34d57fffd7d0d025fdcc7af511e0b2cbc65bb90a7ef982876653d8bb2ed"
+    },
+    {
+      "bbox": [
+        72,
+        445,
+        169.45,
+        457.5
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "c2b9afd8cc0bbc63",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "Warranty: 24 months",
+      "logical_path": "terms.warranty_months",
+      "normalized_excerpt": "Warranty: 24 months",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "9bad209b322bd1b8c7344ccb424ad3959e951fa4b82947fb623361c00cd23070"
+    },
+    {
+      "bbox": [
+        72,
+        407,
+        191.04,
+        419.5
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "6a72f4ea4ba7515e",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "Governing law: Dutch law",
+      "logical_path": "terms.governing_law",
+      "normalized_excerpt": "Governing law: Dutch law",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "d0e12bc5f2e465285a0abb9d739425b596725c35bd7eecefe8ffedadaa43510b"
+    },
+    {
+      "bbox": [
+        72,
+        369,
+        175.88,
+        381.5
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "9fc4724f159f6be8",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "Automatic renewal: no",
+      "logical_path": "terms.automatic_renewal",
+      "normalized_excerpt": "Automatic renewal: no",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "da0535d8cbbc0df14c788f0c6ba1a0bd3d53815833f042c2940624b3619f052f"
+    },
+    {
+      "bbox": [
+        72,
+        288,
+        250.56,
+        299
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "7157eba479db4f21",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "This file contains fictional training terms only.",
+      "logical_path": "terms.training_notice",
+      "normalized_excerpt": "This file contains fictional training terms only.",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "a3e20b09118f37e74eebcab0ce930aa3817b1bce536485678fbfb6d981f3e244"
+    }
+  ],
+  "fixture_document_id": "DOC-C007-T-001",
+  "representation": "born_digital",
+  "schema_version": "1.0",
+  "source_relative_path": "cases/C007/terms.pdf"
+}

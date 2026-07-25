@@ -1,0 +1,170 @@
+{
+  "entries": [
+    {
+      "bbox": [
+        90,
+        210,
+        411,
+        230
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "daf9085a401b8e35",
+      "coordinate_space": "image_pixels_1275x1650",
+      "expected_excerpt": "Supplier: Demo Supplier 005 Ltd.",
+      "logical_path": "terms.supplier.name",
+      "normalized_excerpt": "Supplier: Demo Supplier 005 Ltd.",
+      "page": 1,
+      "selector_type": "ocr_word_union",
+      "supporting_text_sha256": "a09370bef5a5b0bae38f9b8f390da766e826a3209935f86bd46dd1c415c5bcbf"
+    },
+    {
+      "bbox": [
+        90,
+        258,
+        336,
+        274
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "6a65130217716586",
+      "coordinate_space": "image_pixels_1275x1650",
+      "expected_excerpt": "Terms version: T-C005-v1",
+      "logical_path": "terms.version",
+      "normalized_excerpt": "Terms version: T-C005-v1",
+      "page": 1,
+      "selector_type": "ocr_word_union",
+      "supporting_text_sha256": "fcea424b192db048a8b71b53f709f98d239bd143720913e7894f0ab7e7d346a5"
+    },
+    {
+      "bbox": [
+        90,
+        306,
+        402,
+        326
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "0272ecc613a1891f",
+      "coordinate_space": "image_pixels_1275x1650",
+      "expected_excerpt": "Related quotation: Q-C005-2026",
+      "logical_path": "terms.quote_reference",
+      "normalized_excerpt": "Related quotation: Q-C005-2026",
+      "page": 1,
+      "selector_type": "ocr_word_union",
+      "supporting_text_sha256": "83d3d5084d0b875bf1f7cb0feadf308c97c7ecf5491539947f1c77408ab6eb46"
+    },
+    {
+      "bbox": [
+        90,
+        354,
+        404,
+        374
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "3db4df2111437b8c",
+      "coordinate_space": "image_pixels_1275x1650",
+      "expected_excerpt": "Payment term: 30 calendar days",
+      "logical_path": "terms.payment_days",
+      "normalized_excerpt": "Payment term: 30 calendar days",
+      "page": 1,
+      "selector_type": "ocr_word_union",
+      "supporting_text_sha256": "e82e8b445e16d4878b2397c57189e87262d034e8870bf1d8b579baa50ecc984e"
+    },
+    {
+      "bbox": [
+        90,
+        403,
+        277,
+        422
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "b9772e347f23539d",
+      "coordinate_space": "image_pixels_1275x1650",
+      "expected_excerpt": "Prepayment: 0.00%",
+      "logical_path": "terms.prepayment_pct",
+      "normalized_excerpt": "Prepayment: 0.00%",
+      "page": 1,
+      "selector_type": "ocr_word_union",
+      "supporting_text_sha256": "df685162a2353499edd2ef0f6f9cd2683df89d0af191ecb7f1b8e8062433632e"
+    },
+    {
+      "bbox": [
+        90,
+        450,
+        346,
+        470
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "ddbd232beef13a52",
+      "coordinate_space": "image_pixels_1275x1650",
+      "expected_excerpt": "Delivery: 25 calendar days",
+      "logical_path": "terms.delivery_days",
+      "normalized_excerpt": "Delivery: 25 calendar days",
+      "page": 1,
+      "selector_type": "ocr_word_union",
+      "supporting_text_sha256": "b35cbea60eb46eb2998028dce62e4e64ecbfc80bbcf4458a223050fab810e659"
+    },
+    {
+      "bbox": [
+        90,
+        498,
+        294,
+        518
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "22cb46756ab3d3b1",
+      "coordinate_space": "image_pixels_1275x1650",
+      "expected_excerpt": "Warranty: 12 months",
+      "logical_path": "terms.warranty_months",
+      "normalized_excerpt": "Warranty: 12 months",
+      "page": 1,
+      "selector_type": "ocr_word_union",
+      "supporting_text_sha256": "ce9a906da75523fa64fed27697f04bfc59ac8dca7bd4d0748533c44bbbdf4888"
+    },
+    {
+      "bbox": [
+        90,
+        546,
+        310,
+        564
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "aa54e06f550864e2",
+      "coordinate_space": "image_pixels_1275x1650",
+      "expected_excerpt": "Governing law: Dutch law",
+      "logical_path": "terms.governing_law",
+      "normalized_excerpt": "Governing law: Dutch law",
+      "page": 1,
+      "selector_type": "ocr_word_union",
+      "supporting_text_sha256": "d0e12bc5f2e465285a0abb9d739425b596725c35bd7eecefe8ffedadaa43510b"
+    },
+    {
+      "bbox": [
+        90,
+        589,
+        283,
+        603
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "993205bd330d5e70",
+      "coordinate_space": "image_pixels_1275x1650",
+      "expected_excerpt": "Automatic renewal: no",
+      "logical_path": "terms.automatic_renewal",
+      "normalized_excerpt": "Automatic renewal: no",
+      "page": 1,
+      "selector_type": "ocr_word_union",
+      "supporting_text_sha256": "da0535d8cbbc0df14c788f0c6ba1a0bd3d53815833f042c2940624b3619f052f"
+    }
+  ],
+  "fixture_document_id": "DOC-C005-T-001",
+  "representation": "scanned_image_only",
+  "schema_version": "1.0",
+  "source_relative_path": "cases/C005/terms_scan.pdf"
+}

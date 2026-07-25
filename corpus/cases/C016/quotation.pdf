@@ -1,0 +1,173 @@
+%PDF-1.4
+%“Œ‹ž ReportLab Generated PDF document (opensource)
+1 0 obj
+<<
+/F1 2 0 R /F2 3 0 R
+>>
+endobj
+2 0 obj
+<<
+/BaseFont /Helvetica /Encoding /WinAnsiEncoding /Name /F1 /Subtype /Type1 /Type /Font
+>>
+endobj
+3 0 obj
+<<
+/BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding /Name /F2 /Subtype /Type1 /Type /Font
+>>
+endobj
+4 0 obj
+<<
+/Contents 8 0 R /MediaBox [ 0 0 612 792 ] /Parent 7 0 R /Resources <<
+/Font 1 0 R /ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ]
+>> /Rotate 0 /Trans <<
+
+>> 
+  /Type /Page
+>>
+endobj
+5 0 obj
+<<
+/PageMode /UseNone /Pages 7 0 R /Type /Catalog
+>>
+endobj
+6 0 obj
+<<
+/Author (Synthetic Corpus Generator) /CreationDate (D:20000101000000+00'00') /Creator (Synthetic Corpus Generator) /Keywords () /ModDate (D:20000101000000+00'00') /Producer (ReportLab PDF Library - \(opensource\)) 
+  /Subject (unspecified) /Title (C016 synthetic quotation) /Trapped /False
+>>
+endobj
+7 0 obj
+<<
+/Count 1 /Kids [ 4 0 R ] /Type /Pages
+>>
+endobj
+8 0 obj
+<<
+/Length 3105
+>>
+stream
+1 0 0 1 0 0 cm  BT /F1 12 Tf 14.4 TL ET
+.090196 .196078 .301961 rg
+n 0 748 612 44 re f*
+BT /F2 18 Tf 21.6 TL ET
+1 1 1 rg
+BT 1 0 0 1 54 765 Tm (QUOTATION) Tj T* ET
+BT /F2 7.5 Tf 9 TL ET
+.607843 .109804 .109804 rg
+BT 1 0 0 1 54 727 Tm (SYNTHETIC TRAINING DOCUMENT - NO REAL PERSON OR ORGANISATION) Tj T* ET
+.4 .4 .4 rg
+BT /F1 8 Tf 9.6 TL ET
+BT 1 0 0 1 54 28 Tm (Training fixture C016 | Page 1 of 1) Tj T* ET
+.847059 .870588 .901961 RG
+n 54 42 m 558 42 l S
+BT /F1 9.5 Tf 11.4 TL ET
+0 0 0 rg
+BT 1 0 0 1 54 696 Tm (Supplier: Demo Supplier 016 Ltd.) Tj T* ET
+BT /F1 9.5 Tf 11.4 TL ET
+0 0 0 rg
+BT 1 0 0 1 54 678 Tm (Supplier code: SUP-C016) Tj T* ET
+BT /F1 9.5 Tf 11.4 TL ET
+0 0 0 rg
+BT 1 0 0 1 54 660 Tm (Quotation reference: Q-C016-2026) Tj T* ET
+BT /F1 9.5 Tf 11.4 TL ET
+0 0 0 rg
+BT 1 0 0 1 54 642 Tm (Quotation date: 2026-01-26) Tj T* ET
+BT /F1 9.5 Tf 11.4 TL ET
+0 0 0 rg
+BT 1 0 0 1 54 624 Tm (Valid through: 2026-02-25) Tj T* ET
+BT /F1 9.5 Tf 11.4 TL ET
+0 0 0 rg
+BT 1 0 0 1 54 606 Tm (Currency: EUR) Tj T* ET
+BT /F1 9.5 Tf 11.4 TL ET
+0 0 0 rg
+BT 1 0 0 1 54 588 Tm (Terms version: T-C016-v1) Tj T* ET
+.909804 .933333 .960784 rg
+n 54 545 504 22 re f*
+.090196 .196078 .301961 rg
+BT /F2 8 Tf 9.6 TL ET
+BT 1 0 0 1 54 552 Tm (Code) Tj T* ET
+BT 1 0 0 1 120 552 Tm (Description) Tj T* ET
+BT 1 0 0 1 330 552 Tm (Qty) Tj T* ET
+BT 1 0 0 1 386 552 Tm (Unit price) Tj T* ET
+BT 1 0 0 1 475 552 Tm (Line total) Tj T* ET
+.847059 .870588 .901961 RG
+n 54 515 m 558 515 l S
+BT /F1 8.5 Tf 10.2 TL ET
+0 0 0 rg
+BT 1 0 0 1 54 522 Tm (FIL-S) Tj T* ET
+BT 1 0 0 1 120 522 Tm (Filing system) Tj T* ET
+BT 1 0 0 1 330 522 Tm (10.00) Tj T* ET
+BT 1 0 0 1 386 522 Tm (EUR 240.00) Tj T* ET
+BT 1 0 0 1 475 522 Tm (EUR 2,400.00) Tj T* ET
+.847059 .870588 .901961 RG
+n 54 489 m 558 489 l S
+BT /F1 8.5 Tf 10.2 TL ET
+0 0 0 rg
+BT 1 0 0 1 54 496 Tm (INS-1) Tj T* ET
+BT 1 0 0 1 120 496 Tm (Installation service) Tj T* ET
+BT 1 0 0 1 330 496 Tm (1.00) Tj T* ET
+BT 1 0 0 1 386 496 Tm (EUR 350.00) Tj T* ET
+BT 1 0 0 1 475 496 Tm (EUR 350.00) Tj T* ET
+.090196 .196078 .301961 rg
+BT /F2 11 Tf 13.2 TL ET
+BT 1 0 0 1 330 454 Tm (TOTALS) Tj T* ET
+BT /F1 9.5 Tf 11.4 TL ET
+0 0 0 rg
+BT 1 0 0 1 330 438 Tm (Subtotal ex VAT: EUR 2,750.00) Tj T* ET
+BT /F1 9.5 Tf 11.4 TL ET
+0 0 0 rg
+BT 1 0 0 1 330 420 Tm (Discount: EUR 0.00) Tj T* ET
+BT /F1 9.5 Tf 11.4 TL ET
+0 0 0 rg
+BT 1 0 0 1 330 402 Tm (Shipping: EUR 0.00) Tj T* ET
+BT /F1 9.5 Tf 11.4 TL ET
+0 0 0 rg
+BT 1 0 0 1 330 384 Tm (Net ex VAT: EUR 2,750.00) Tj T* ET
+BT /F1 9.5 Tf 11.4 TL ET
+0 0 0 rg
+BT 1 0 0 1 330 366 Tm (VAT \(21.00%\): EUR 577.50) Tj T* ET
+BT /F2 9.5 Tf 11.4 TL ET
+0 0 0 rg
+BT 1 0 0 1 330 348 Tm (Total inc VAT: EUR 3,327.50) Tj T* ET
+.090196 .196078 .301961 rg
+BT /F2 11 Tf 13.2 TL ET
+BT 1 0 0 1 54 322 Tm (Commercial terms) Tj T* ET
+BT /F1 9.5 Tf 11.4 TL ET
+0 0 0 rg
+BT 1 0 0 1 54 306 Tm (Payment term: 30 calendar days) Tj T* ET
+BT /F1 9.5 Tf 11.4 TL ET
+0 0 0 rg
+BT 1 0 0 1 54 288 Tm (Prepayment: 0.00%) Tj T* ET
+BT /F1 9.5 Tf 11.4 TL ET
+0 0 0 rg
+BT 1 0 0 1 54 270 Tm (Delivery: 45 calendar days) Tj T* ET
+BT /F1 9.5 Tf 11.4 TL ET
+0 0 0 rg
+BT 1 0 0 1 54 252 Tm (Warranty: 6 months) Tj T* ET
+ 
+endstream
+endobj
+xref
+0 9
+0000000000 65535 f 
+0000000061 00000 n 
+0000000102 00000 n 
+0000000209 00000 n 
+0000000321 00000 n 
+0000000514 00000 n 
+0000000582 00000 n 
+0000000893 00000 n 
+0000000952 00000 n 
+trailer
+<<
+/ID 
+[<eae56309b321daf17ed2e8f3ba801f89><eae56309b321daf17ed2e8f3ba801f89>]
+% ReportLab generated PDF document -- digest (opensource)
+
+/Info 6 0 R
+/Root 5 0 R
+/Size 9
+>>
+startxref
+4108
+%%EOF

@@ -1,0 +1,386 @@
+{
+  "entries": [
+    {
+      "bbox": [
+        54,
+        763,
+        138.01,
+        783
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "bda0a85f23821ad1",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "OFFERTE",
+      "logical_path": "document.title",
+      "normalized_excerpt": "OFFERTE",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "440c9ce6ea6fd7c825dcf686b6c5a5b1b83ad799befeeaa0c51cc820bb7d866a"
+    },
+    {
+      "bbox": [
+        54,
+        725,
+        328.18,
+        734.5
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "7df96dd1b80f068f",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "SYNTHETIC TRAINING DOCUMENT - NO REAL PERSON OR ORGANISATION",
+      "logical_path": "document.safety_banner",
+      "normalized_excerpt": "SYNTHETIC TRAINING DOCUMENT - NO REAL PERSON OR ORGANISATION",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "f812e01667a161f6cb6159e13afe97fd0dff0f875a80c3397119d95d9028fac6"
+    },
+    {
+      "bbox": [
+        54,
+        694,
+        210.82,
+        705.5
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "e9a138ad2e47ad24",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "Leverancier: Demo Supplier 001 B.V.",
+      "logical_path": "quote.supplier.name",
+      "normalized_excerpt": "Leverancier: Demo Supplier 001 B.V.",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "f2669adc28d5730b9b244c839aa25037979d69956af456324ea441909349bb3d"
+    },
+    {
+      "bbox": [
+        54,
+        676,
+        179.66,
+        687.5
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "3531833353857cc6",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "Leverancierscode: SUP-C001",
+      "logical_path": "quote.supplier.code",
+      "normalized_excerpt": "Leverancierscode: SUP-C001",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "544ab6bb83c079720c537b017ecd0ed12d69d0fe6c42ae220c313088de9cbbaf"
+    },
+    {
+      "bbox": [
+        54,
+        658,
+        183.36,
+        669.5
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "823229572e9df87d",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "Offert.referentie: Q-C001-2026",
+      "logical_path": "quote.reference",
+      "normalized_excerpt": "Offert.referentie: Q-C001-2026",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "00b33dbb401548e11f8a5e7f0dfab2925ed666a524f19eec6db31d655574f7e0"
+    },
+    {
+      "bbox": [
+        54,
+        640,
+        163.31,
+        651.5
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "0c98c09ee962bebd",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "Offertedatum: 2026-01-12",
+      "logical_path": "quote.date",
+      "normalized_excerpt": "Offertedatum: 2026-01-12",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "f3690683bb48f917e16ca61c53f93ec371426dd126a5624f077dd9031742866e"
+    },
+    {
+      "bbox": [
+        54,
+        622,
+        148.53,
+        633.5
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "13219302b6dbbc0c",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "Geldig tot: 2026-02-11",
+      "logical_path": "quote.valid_until",
+      "normalized_excerpt": "Geldig tot: 2026-02-11",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "c946d44f32179eb9808136c785a7a7350b97eaf8797d4ece4c2ed4b5eb23d633"
+    },
+    {
+      "bbox": [
+        54,
+        604,
+        106.27,
+        615.5
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "9e6e8b4d9aad8971",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "Valuta: EUR",
+      "logical_path": "quote.currency",
+      "normalized_excerpt": "Valuta: EUR",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "f7993c6a255e2d59de9786ddbf35fe201051ca94a7d00cfac7bf1b3acf9a493a"
+    },
+    {
+      "bbox": [
+        54,
+        586,
+        185.98,
+        597.5
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "f63d76d25434ac59",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "Voorwaardenversie: T-C001-v1",
+      "logical_path": "quote.terms_version",
+      "normalized_excerpt": "Voorwaardenversie: T-C001-v1",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "8c76acdd65a40a65de77da664fd8a1d708312d438a7f90120218dffc3ee892b0"
+    },
+    {
+      "bbox": [
+        54,
+        515,
+        558,
+        531
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "164f698114cae30d",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "BOX-A | Archiefdoos | 20,00 | EUR 25,00 | EUR 500,00",
+      "logical_path": "quote.line_items[0]",
+      "normalized_excerpt": "BOX-A | Archiefdoos | 20,00 | EUR 25,00 | EUR 500,00",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "5fb7e3cd4e87bc0702309db45dc0d3037063c113f6b17836c549bba6af084d21"
+    },
+    {
+      "bbox": [
+        54,
+        489,
+        558,
+        505
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "6c93d12c89a48f35",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "LBL-A | Etiketrol | 10,00 | EUR 12,50 | EUR 125,00",
+      "logical_path": "quote.line_items[1]",
+      "normalized_excerpt": "LBL-A | Etiketrol | 10,00 | EUR 12,50 | EUR 125,00",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "b0114a95cdfba8268c175999b7bd8dc503a9c3f6234f2132191dc29a9ba16bc6"
+    },
+    {
+      "bbox": [
+        330,
+        436,
+        466.76,
+        447.5
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "f21f7faff35a2428",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "Subtotaal excl. btw: EUR 625,00",
+      "logical_path": "quote.money.subtotal_ex_vat",
+      "normalized_excerpt": "Subtotaal excl. btw: EUR 625,00",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "72c29dc275f784b58cd41f39723e4a6d4dfe8c5f296f32e173975829727a02d4"
+    },
+    {
+      "bbox": [
+        330,
+        418,
+        406.56,
+        429.5
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "1d064b597f39a20d",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "Korting: EUR 0,00",
+      "logical_path": "quote.money.discount_ex_vat",
+      "normalized_excerpt": "Korting: EUR 0,00",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "177b44349deb30a73694a295c8e62223b2125737e97d999b7fd77db4da5aef52"
+    },
+    {
+      "bbox": [
+        330,
+        400,
+        445.11,
+        411.5
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "94c66f23d2a2c4c8",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "Verzendkosten: EUR 25,00",
+      "logical_path": "quote.money.shipping_ex_vat",
+      "normalized_excerpt": "Verzendkosten: EUR 25,00",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "e55fbb9a73025cb9d7942882a05a5d3f55104340c7dee19155d53e8776f63f40"
+    },
+    {
+      "bbox": [
+        330,
+        382,
+        449.33,
+        393.5
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "1e3086023e98ab62",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "Netto excl. btw: EUR 650,00",
+      "logical_path": "quote.money.net_total_ex_vat",
+      "normalized_excerpt": "Netto excl. btw: EUR 650,00",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "8808e514fcd0c38718870309acd0e28855b60f6f4d5d19984421567f7cf58c7f"
+    },
+    {
+      "bbox": [
+        330,
+        364,
+        444.05,
+        375.5
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "5f61c18206fb9ff0",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "Btw (21,00%): EUR 136,50",
+      "logical_path": "quote.money.vat_amount",
+      "normalized_excerpt": "Btw (21,00%): EUR 136,50",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "aee8670c8b6c392fd99782fee24cc6dbc26d7271bbfcccd395663ed6fae1a884"
+    },
+    {
+      "bbox": [
+        330,
+        346,
+        456.18,
+        357.5
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "4fa3e1687319babe",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "Totaal incl. btw: EUR 786,50",
+      "logical_path": "quote.money.declared_total_inc_vat",
+      "normalized_excerpt": "Totaal incl. btw: EUR 786,50",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "64273db248476857032a07ce8838764271cd242c00f1c827abc8606970ef8c5a"
+    },
+    {
+      "bbox": [
+        54,
+        304,
+        202.9,
+        315.5
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "9eac2e6d7e005517",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "Betalingstermijn: 30 kalenderdagen",
+      "logical_path": "quote.payment_days",
+      "normalized_excerpt": "Betalingstermijn: 30 kalenderdagen",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "9377a040697e0fdd11d76f43f8ccc024ab9f865ec1e8b8e4122c73975db4509e"
+    },
+    {
+      "bbox": [
+        54,
+        286,
+        149.58,
+        297.5
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "458f52e3d8431efe",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "Vooruitbetaling: 0,00%",
+      "logical_path": "quote.prepayment_pct",
+      "normalized_excerpt": "Vooruitbetaling: 0,00%",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "4b7633976472dac5a88fb40059076a3aabbc73f7a7c1867614b6ed849126cc4d"
+    },
+    {
+      "bbox": [
+        54,
+        268,
+        171.23,
+        279.5
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "471554259cc93249",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "Levertijd: 10 kalenderdagen",
+      "logical_path": "quote.delivery_days",
+      "normalized_excerpt": "Levertijd: 10 kalenderdagen",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "8d32c366d49ceb00845403ce19118343c2a5617acdd006264953c186c4b97258"
+    },
+    {
+      "bbox": [
+        54,
+        250,
+        148.53,
+        261.5
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "878e8fef97c9cc2a",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "Garantie: 24 maanden",
+      "logical_path": "quote.warranty_months",
+      "normalized_excerpt": "Garantie: 24 maanden",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "a7212e81187c02a7a34bdd0c6cd793b0331002ae5ec5321d47d2d0f43a4f2bf5"
+    }
+  ],
+  "fixture_document_id": "DOC-C001-Q-001",
+  "representation": "born_digital",
+  "schema_version": "1.0",
+  "source_relative_path": "cases/C001/quotation.pdf"
+}

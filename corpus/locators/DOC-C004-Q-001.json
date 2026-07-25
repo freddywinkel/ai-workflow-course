@@ -1,0 +1,350 @@
+{
+  "entries": [
+    {
+      "bbox": [
+        90,
+        210,
+        442,
+        230
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "605d70449bd9e29f",
+      "coordinate_space": "image_pixels_1275x1650",
+      "expected_excerpt": "Leverancier: Demo Supplier 004 B.V.",
+      "logical_path": "quote.supplier.name",
+      "normalized_excerpt": "Leverancier: Demo Supplier 004 B.V.",
+      "page": 1,
+      "selector_type": "ocr_word_union",
+      "supporting_text_sha256": "dbb8d8efaa589e209a9f31d0aaf76f608ff6f366fcaa720b9df39ed91fe4c0a5"
+    },
+    {
+      "bbox": [
+        90,
+        258,
+        372,
+        274
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "5e1dee7a5b82c4d3",
+      "coordinate_space": "image_pixels_1275x1650",
+      "expected_excerpt": "Leverancierscode: SUP-C004",
+      "logical_path": "quote.supplier.code",
+      "normalized_excerpt": "Leverancierscode: SUP-C004",
+      "page": 1,
+      "selector_type": "ocr_word_union",
+      "supporting_text_sha256": "3a0d5d7520316e8058094617edd70287bf4b33dfac1fb3b5684545aba8685d00"
+    },
+    {
+      "bbox": [
+        90,
+        305,
+        384,
+        323
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "63ccc60aae5f363f",
+      "coordinate_space": "image_pixels_1275x1650",
+      "expected_excerpt": "Offert.referentie: Q-C004-2026",
+      "logical_path": "quote.reference",
+      "normalized_excerpt": "Offert.referentie: Q-C004-2026",
+      "page": 1,
+      "selector_type": "ocr_word_union",
+      "supporting_text_sha256": "3c7044da4122aa2af91252c93ea9a5fead33de8ba334ffd7128555cbef608427"
+    },
+    {
+      "bbox": [
+        90,
+        353,
+        340,
+        370
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "fe57688532f06c15",
+      "coordinate_space": "image_pixels_1275x1650",
+      "expected_excerpt": "Offertedatum: 2026-01-15",
+      "logical_path": "quote.date",
+      "normalized_excerpt": "Offertedatum: 2026-01-15",
+      "page": 1,
+      "selector_type": "ocr_word_union",
+      "supporting_text_sha256": "e514cb25e77c3ec7600480744c86a71bc8a1d474b2adca05135e6c856c78eb4c"
+    },
+    {
+      "bbox": [
+        90,
+        402,
+        304,
+        422
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "5de1c397b6efab30",
+      "coordinate_space": "image_pixels_1275x1650",
+      "expected_excerpt": "Geldig tot: 2026-02-14",
+      "logical_path": "quote.valid_until",
+      "normalized_excerpt": "Geldig tot: 2026-02-14",
+      "page": 1,
+      "selector_type": "ocr_word_union",
+      "supporting_text_sha256": "147a4ba5412cd0f373e444f1a670a8e7ff19b1ff6a20831d0c6b1c8885e52492"
+    },
+    {
+      "bbox": [
+        90,
+        450,
+        200,
+        466
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "088f2c837b3be639",
+      "coordinate_space": "image_pixels_1275x1650",
+      "expected_excerpt": "Valuta: EUR",
+      "logical_path": "quote.currency",
+      "normalized_excerpt": "Valuta: EUR",
+      "page": 1,
+      "selector_type": "ocr_word_union",
+      "supporting_text_sha256": "f7993c6a255e2d59de9786ddbf35fe201051ca94a7d00cfac7bf1b3acf9a493a"
+    },
+    {
+      "bbox": [
+        90,
+        498,
+        390,
+        514
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "dab5e4846ed16f32",
+      "coordinate_space": "image_pixels_1275x1650",
+      "expected_excerpt": "Voorwaardenversie: T-C004-v1",
+      "logical_path": "quote.terms_version",
+      "normalized_excerpt": "Voorwaardenversie: T-C004-v1",
+      "page": 1,
+      "selector_type": "ocr_word_union",
+      "supporting_text_sha256": "dcdae3f54ed1911d3aaa0eae7d713010716a890a331fb2758b0119a6c62fa9a6"
+    },
+    {
+      "bbox": [
+        90,
+        545,
+        580,
+        564
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "1a2715f863c91f95",
+      "coordinate_space": "image_pixels_1275x1650",
+      "expected_excerpt": "SCN-M | Mobiele scanner | 3,00 | EUR 299,00 | EUR 897,00",
+      "logical_path": "quote.line_items[0]",
+      "normalized_excerpt": "SCN-M | Mobiele scanner | 3,00 | EUR 299,00 | EUR 897,00",
+      "page": 1,
+      "selector_type": "ocr_word_union",
+      "supporting_text_sha256": "77c67a0a598f4fc852bb5ec35c8826d74a7ead4cf53e6ce53c828193851678ec"
+    },
+    {
+      "bbox": [
+        90,
+        588,
+        554,
+        607
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "b7cf631020142f48",
+      "coordinate_space": "image_pixels_1275x1650",
+      "expected_excerpt": "CAS-M | Beschermhoes | 3,00 | EUR 45,00 | EUR 135,00",
+      "logical_path": "quote.line_items[1]",
+      "normalized_excerpt": "CAS-M | Beschermhoes | 3,00 | EUR 45,00 | EUR 135,00",
+      "page": 1,
+      "selector_type": "ocr_word_union",
+      "supporting_text_sha256": "46a9b4acb304cddfce161ba46e2e3168cf2dd8bd8daab29845d2316400efc4a5"
+    },
+    {
+      "bbox": [
+        90,
+        633,
+        377,
+        648
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "c1bd99a57799923a",
+      "coordinate_space": "image_pixels_1275x1650",
+      "expected_excerpt": "Subtotaal excl. btw: EUR 1.032,00",
+      "logical_path": "quote.money.subtotal_ex_vat",
+      "normalized_excerpt": "Subtotaal excl. btw: EUR 1.032,00",
+      "page": 1,
+      "selector_type": "ocr_word_union",
+      "supporting_text_sha256": "939aef98be10e9799a3b4565c53f2ea4a4f4a510dfd29171fe79eee0d11426b1"
+    },
+    {
+      "bbox": [
+        90,
+        675,
+        239,
+        693
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "ea5a73c41780a31c",
+      "coordinate_space": "image_pixels_1275x1650",
+      "expected_excerpt": "Korting: EUR 0,00",
+      "logical_path": "quote.money.discount_ex_vat",
+      "normalized_excerpt": "Korting: EUR 0,00",
+      "page": 1,
+      "selector_type": "ocr_word_union",
+      "supporting_text_sha256": "177b44349deb30a73694a295c8e62223b2125737e97d999b7fd77db4da5aef52"
+    },
+    {
+      "bbox": [
+        90,
+        719,
+        319,
+        734
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "226fcc80a871737c",
+      "coordinate_space": "image_pixels_1275x1650",
+      "expected_excerpt": "Verzendkosten: EUR 18,00",
+      "logical_path": "quote.money.shipping_ex_vat",
+      "normalized_excerpt": "Verzendkosten: EUR 18,00",
+      "page": 1,
+      "selector_type": "ocr_word_union",
+      "supporting_text_sha256": "dd6b3446fbbd7c5a4908b568aae1e8e785d6db5fa7c173bb7072bfb9467a9e48"
+    },
+    {
+      "bbox": [
+        90,
+        762,
+        343,
+        777
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "facb4510f08bb45b",
+      "coordinate_space": "image_pixels_1275x1650",
+      "expected_excerpt": "Netto excl. btw: EUR 1.050,00",
+      "logical_path": "quote.money.net_total_ex_vat",
+      "normalized_excerpt": "Netto excl. btw: EUR 1.050,00",
+      "page": 1,
+      "selector_type": "ocr_word_union",
+      "supporting_text_sha256": "7c0687e4d3cdb2cc6ce486a82582c30e3c4a54ca123e1f2d8c09a3fd6845d8a5"
+    },
+    {
+      "bbox": [
+        90,
+        803,
+        310,
+        820
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "e3834b4ecdf478ae",
+      "coordinate_space": "image_pixels_1275x1650",
+      "expected_excerpt": "Btw (21,00%): EUR 220,50",
+      "logical_path": "quote.money.vat_amount",
+      "normalized_excerpt": "Btw (21,00%): EUR 220,50",
+      "page": 1,
+      "selector_type": "ocr_word_union",
+      "supporting_text_sha256": "c8cfe552afd13b28c897407e0972b3bb86aff21131ece274c9de56307de3bca7"
+    },
+    {
+      "bbox": [
+        90,
+        847,
+        343,
+        863
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "cad71253c605ca37",
+      "coordinate_space": "image_pixels_1275x1650",
+      "expected_excerpt": "Totaal incl. btw: EUR 1.270,50",
+      "logical_path": "quote.money.declared_total_inc_vat",
+      "normalized_excerpt": "Totaal incl. btw: EUR 1.270,50",
+      "page": 1,
+      "selector_type": "ocr_word_union",
+      "supporting_text_sha256": "a708f2f97ec43a7063136cbc14d3ac7fae5eb8ba282462e17b86fe3110ad5d5c"
+    },
+    {
+      "bbox": [
+        90,
+        890,
+        396,
+        908
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "ef3e1bcb94b5c125",
+      "coordinate_space": "image_pixels_1275x1650",
+      "expected_excerpt": "Betalingstermijn: 30 kalenderdagen",
+      "logical_path": "quote.payment_days",
+      "normalized_excerpt": "Betalingstermijn: 30 kalenderdagen",
+      "page": 1,
+      "selector_type": "ocr_word_union",
+      "supporting_text_sha256": "9377a040697e0fdd11d76f43f8ccc024ab9f865ec1e8b8e4122c73975db4509e"
+    },
+    {
+      "bbox": [
+        90,
+        933,
+        285,
+        951
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "95b19117c45c769b",
+      "coordinate_space": "image_pixels_1275x1650",
+      "expected_excerpt": "Vooruitbetaling: 0,00%",
+      "logical_path": "quote.prepayment_pct",
+      "normalized_excerpt": "Vooruitbetaling: 0,00%",
+      "page": 1,
+      "selector_type": "ocr_word_union",
+      "supporting_text_sha256": "4b7633976472dac5a88fb40059076a3aabbc73f7a7c1867614b6ed849126cc4d"
+    },
+    {
+      "bbox": [
+        90,
+        976,
+        332,
+        994
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "0134ab61ee1671fc",
+      "coordinate_space": "image_pixels_1275x1650",
+      "expected_excerpt": "Levertijd: 12 kalenderdagen",
+      "logical_path": "quote.delivery_days",
+      "normalized_excerpt": "Levertijd: 12 kalenderdagen",
+      "page": 1,
+      "selector_type": "ocr_word_union",
+      "supporting_text_sha256": "27b21a7dfa40f6f8d0bdb2370679ec18e3fbfec4ebcc544d13be372ed5cae603"
+    },
+    {
+      "bbox": [
+        90,
+        1019,
+        278,
+        1033
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "026a17e9589e2588",
+      "coordinate_space": "image_pixels_1275x1650",
+      "expected_excerpt": "Garantie: 12 maanden",
+      "logical_path": "quote.warranty_months",
+      "normalized_excerpt": "Garantie: 12 maanden",
+      "page": 1,
+      "selector_type": "ocr_word_union",
+      "supporting_text_sha256": "a1f6d9e5b3c8302383817b2a1e72f707325c259bd6ceb49e4edd3d4ec669fbc9"
+    }
+  ],
+  "fixture_document_id": "DOC-C004-Q-001",
+  "representation": "scanned_image_only",
+  "schema_version": "1.0",
+  "source_relative_path": "cases/C004/quotation_scan.pdf"
+}

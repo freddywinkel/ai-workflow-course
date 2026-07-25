@@ -1,0 +1,224 @@
+{
+  "entries": [
+    {
+      "bbox": [
+        54,
+        763,
+        305.01,
+        783
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "5adfae91e9ea8760",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "LEVERINGSVOORWAARDEN",
+      "logical_path": "document.title",
+      "normalized_excerpt": "LEVERINGSVOORWAARDEN",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "99f5a0ff4df4148bab114694e850967fda9e46844448dc08cb1fab2e70fc1143"
+    },
+    {
+      "bbox": [
+        54,
+        725,
+        328.18,
+        734.5
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "b42592014ff9342a",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "SYNTHETIC TRAINING DOCUMENT - NO REAL PERSON OR ORGANISATION",
+      "logical_path": "document.safety_banner",
+      "normalized_excerpt": "SYNTHETIC TRAINING DOCUMENT - NO REAL PERSON OR ORGANISATION",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "f812e01667a161f6cb6159e13afe97fd0dff0f875a80c3397119d95d9028fac6"
+    },
+    {
+      "bbox": [
+        72,
+        673,
+        255.24,
+        685.5
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "bed57fe99f13326c",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "Leverancier: Demo Supplier 019 B.V.",
+      "logical_path": "terms.supplier.name",
+      "normalized_excerpt": "Leverancier: Demo Supplier 019 B.V.",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "01c82387fb65cdaae7879ab67f6ee1f7af00fdeea5e65754392954fcab736fbf"
+    },
+    {
+      "bbox": [
+        72,
+        635,
+        225.47,
+        647.5
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "dd79af559d04654b",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "Voorwaardenversie: T-C019-v1",
+      "logical_path": "terms.version",
+      "normalized_excerpt": "Voorwaardenversie: T-C019-v1",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "abbd76927eacaad55cb4d36856e208d5ea0161d59b856df96a63dcf33cbe4db6"
+    },
+    {
+      "bbox": [
+        72,
+        597,
+        244.7,
+        609.5
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "47435b896d9b560d",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "Bijbehorende offerte: Q-C019-2026",
+      "logical_path": "terms.quote_reference",
+      "normalized_excerpt": "Bijbehorende offerte: Q-C019-2026",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "5cbc198bffd71cac76e49a486367aeca2cfa587868284c7c9824f4dd33ec66a4"
+    },
+    {
+      "bbox": [
+        72,
+        559,
+        236.58,
+        571.5
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "a255025394857329",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "Betalingstermijn: 30 kalenderdagen",
+      "logical_path": "terms.payment_days",
+      "normalized_excerpt": "Betalingstermijn: 30 kalenderdagen",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "9377a040697e0fdd11d76f43f8ccc024ab9f865ec1e8b8e4122c73975db4509e"
+    },
+    {
+      "bbox": [
+        72,
+        521,
+        177.64,
+        533.5
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "617f67a4b5778f88",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "Vooruitbetaling: 0,00%",
+      "logical_path": "terms.prepayment_pct",
+      "normalized_excerpt": "Vooruitbetaling: 0,00%",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "4b7633976472dac5a88fb40059076a3aabbc73f7a7c1867614b6ed849126cc4d"
+    },
+    {
+      "bbox": [
+        72,
+        483,
+        201.57,
+        495.5
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "ff178a558b0f7970",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "Levertijd: 15 kalenderdagen",
+      "logical_path": "terms.delivery_days",
+      "normalized_excerpt": "Levertijd: 15 kalenderdagen",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "d93de6f4b35c36f4a515f390b5ca0d310faf11efc960b2e2e07f0b12736f80f7"
+    },
+    {
+      "bbox": [
+        72,
+        445,
+        176.48,
+        457.5
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "e1d87df8adf0920c",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "Garantie: 12 maanden",
+      "logical_path": "terms.warranty_months",
+      "normalized_excerpt": "Garantie: 12 maanden",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "a1f6d9e5b3c8302383817b2a1e72f707325c259bd6ceb49e4edd3d4ec669fbc9"
+    },
+    {
+      "bbox": [
+        72,
+        407,
+        242.39,
+        419.5
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "a55f36afa35a57e5",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "Toepasselijk recht: Nederlands recht",
+      "logical_path": "terms.governing_law",
+      "normalized_excerpt": "Toepasselijk recht: Nederlands recht",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "d4768a865204491c5513b9250e0f226928f45f09db0b61a7f517f7e7db3643e4"
+    },
+    {
+      "bbox": [
+        72,
+        369,
+        210.32,
+        381.5
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "5b8d60a2c919a3dd",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "Automatische verlenging: nee",
+      "logical_path": "terms.automatic_renewal",
+      "normalized_excerpt": "Automatische verlenging: nee",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "3a6240ecfd8a6139f1420b40df992ef1cd6d914e6ebcebceb598f0f2bb2565fc"
+    },
+    {
+      "bbox": [
+        72,
+        288,
+        290.1,
+        299
+      ],
+      "char_end": null,
+      "char_start": null,
+      "chunk_id": "c42fde10a8a1d96b",
+      "coordinate_space": "pdf_points",
+      "expected_excerpt": "Dit bestand bevat alleen fictieve trainingsvoorwaarden.",
+      "logical_path": "terms.training_notice",
+      "normalized_excerpt": "Dit bestand bevat alleen fictieve trainingsvoorwaarden.",
+      "page": 1,
+      "selector_type": "pdf_bbox",
+      "supporting_text_sha256": "c66c185947cf38a51fd95df9e6c24527911055fa7d4548faf40a5f718d3d93ff"
+    }
+  ],
+  "fixture_document_id": "DOC-C019-T-001",
+  "representation": "born_digital",
+  "schema_version": "1.0",
+  "source_relative_path": "cases/C019/terms.pdf"
+}

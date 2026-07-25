@@ -1,0 +1,32 @@
+{
+  "checks": [
+    "manifest_has_20_cases",
+    "golden_has_20_cases",
+    "case_ids_are_C001_through_C020",
+    "golden_case_ids_match",
+    "four_or_fewer_docx_inputs",
+    "two_image_only_scans",
+    "C009_quote_and_terms_byte_identical",
+    "C013_hidden_text_is_extractable",
+    "golden_decimal_calculations_verified",
+    "locator_sidecars_present"
+  ],
+  "counts": {
+    "cases": 20,
+    "docx_files": 4,
+    "golden_records": 20,
+    "image_only_scans": 2,
+    "locator_entries": 707,
+    "unique_source_files": 41,
+    "valid_pdf_files": 36
+  },
+  "errors": [],
+  "limitations": [
+    "DOCX page numbers are intentionally omitted from locators; logical paths and canonical character spans are normative.",
+    "OCR bounding boxes are fixture-image coordinates and require OCR word-box union comparison.",
+    "Generated SHA-256 values are stable for the pinned dependency/runtime versions used to build this frozen release; regenerate manifest hashes after an intentional dependency upgrade."
+  ],
+  "schema_version": "1.0",
+  "status": "PASS",
+  "validated_at": "2026-01-01T00:00:00Z"
+}

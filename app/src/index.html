@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en" data-theme="system">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#173a38">
+    <meta name="color-scheme" content="light dark">
+    <meta name="description" content="A zero-to-builder course for safe, source-grounded AI document workflows.">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="AI Workflow">
+    <title>AI Workflow &amp; Document Systems</title>
+    <link rel="manifest" href="__BASE_PATH__manifest.webmanifest">
+    <link rel="icon" href="__BASE_PATH__favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="__BASE_PATH__icons/apple-touch-icon.png">
+    <link rel="stylesheet" href="__BASE_PATH__styles.css">
+    <script>
+      window.__COURSE_APP__ = Object.freeze({
+        basePath: "__BASE_PATH__",
+        buildId: "__BUILD_ID__",
+        courseVersion: "__COURSE_VERSION__",
+        verifiedThrough: "__VERIFIED_THROUGH__",
+        repositoryUrl: "https://github.com/freddywinkel/ai-workflow-course"
+      });
+    </script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to course content</a>
+
+    <div class="app-shell" id="app-shell">
+      <header class="topbar">
+        <button class="icon-button menu-button" id="menu-button" type="button" aria-label="Open course menu" aria-controls="course-sidebar" aria-expanded="false">
+          <span aria-hidden="true">☰</span>
+        </button>
+        <a class="brand" href="#home" aria-label="AI Workflow course home">
+          <img src="__BASE_PATH__favicon.svg" width="38" height="38" alt="">
+          <span>
+            <strong>Workflow Builder</strong>
+            <small>Zero coding knowledge assumed</small>
+          </span>
+        </a>
+        <div class="topbar-actions">
+          <span class="connection-pill" id="connection-pill" role="status">
+            <span class="status-dot" aria-hidden="true"></span>
+            <span id="connection-text">Online</span>
+          </span>
+          <button class="button button-quiet update-button" id="update-button" type="button" aria-label="Check for course updates">
+            <span aria-hidden="true">↻</span>
+            <span class="button-label">Check updates</span>
+          </button>
+        </div>
+      </header>
+
+      <div class="workspace">
+        <aside class="sidebar" id="course-sidebar" aria-label="Course navigation">
+          <div class="sidebar-summary">
+            <span class="eyebrow">Your course</span>
+            <div class="progress-row">
+              <strong id="sidebar-progress-label">0% complete</strong>
+              <span id="sidebar-progress-count">0 of 20 lessons</span>
+            </div>
+            <div class="progress-track" aria-hidden="true">
+              <span id="sidebar-progress-bar"></span>
+            </div>
+          </div>
+          <nav id="course-nav"></nav>
+          <div class="sidebar-footer">
+            <button class="sidebar-link" type="button" data-route="search">
+              <span aria-hidden="true">⌕</span> Search the course
+            </button>
+            <button class="sidebar-link" type="button" data-route="settings">
+              <span aria-hidden="true">⚙</span> App &amp; reading settings
+            </button>
+          </div>
+        </aside>
+        <button class="scrim" id="sidebar-scrim" type="button" aria-label="Close course menu"></button>
+
+        <main class="main" id="main-content" tabindex="-1">
+          <div class="loading-card" id="loading-card" role="status">
+            <span class="loading-mark" aria-hidden="true"></span>
+            <div>
+              <strong>Opening your course…</strong>
+              <p>Loading the offline reading bundle.</p>
+            </div>
+          </div>
+
+          <section class="view" id="home-view" hidden></section>
+
+          <section class="view reader-view" id="reader-view" hidden>
+            <div class="reader-toolbar">
+              <div>
+                <span class="eyebrow" id="reader-group"></span>
+                <h1 id="reader-title"></h1>
+                <div class="reader-meta" id="reader-meta"></div>
+              </div>
+              <button class="button complete-button" id="complete-button" type="button" aria-pressed="false">
+                <span aria-hidden="true">✓</span>
+                <span>Mark complete</span>
+              </button>
+            </div>
+            <div class="checkpoint-alert" id="checkpoint-alert" hidden>
+              <strong>Live-update checkpoint</strong>
+              <p>Run the evergreen audit before starting Week 7, even if the scheduled review recently ran.</p>
+              <button class="button button-quiet" type="button" id="checkpoint-update-button">Check app updates</button>
+            </div>
+            <article class="markdown-body" id="reader-content"></article>
+            <section class="learner-notes" aria-labelledby="notes-title">
+              <div>
+                <span class="eyebrow">Private device note</span>
+                <h2 id="notes-title">What do you want to remember?</h2>
+              </div>
+              <textarea id="learner-note" rows="5" placeholder="Stored only in this browser or installed app. Never paste secrets or real client data."></textarea>
+              <span class="save-status" id="note-save-status" role="status">Saved locally</span>
+            </section>
+            <nav class="document-pager" aria-label="Previous and next course pages">
+              <button class="pager-button" id="previous-document" type="button"></button>
+              <button class="pager-button pager-next" id="next-document" type="button"></button>
+            </nav>
+          </section>
+
+          <section class="view" id="search-view" hidden>
+            <div class="page-heading">
+              <span class="eyebrow">Find an explanation</span>
+              <h1>Search the whole course</h1>
+              <p>Search foundations, weekly builds, the glossary, worksheets, and reference material.</p>
+            </div>
+            <label class="search-box">
+              <span aria-hidden="true">⌕</span>
+              <span class="sr-only">Search query</span>
+              <input id="search-input" type="search" autocomplete="off" aria-label="Search the course" placeholder="Try “API”, “hash”, “human approval”…">
+              <kbd>Esc</kbd>
+            </label>
+            <div class="search-summary" id="search-summary"></div>
+            <div class="search-results" id="search-results"></div>
+          </section>
+
+          <section class="view" id="settings-view" hidden>
+            <div class="page-heading">
+              <span class="eyebrow">Your device</span>
+              <h1>App &amp; reading settings</h1>
+              <p>Your progress and notes stay on this device. They are not sent to GitHub or an AI provider.</p>
+            </div>
+            <div class="settings-grid">
+              <section class="settings-card">
+                <h2>Install this course</h2>
+                <p>Put the course on your iPhone or iPad home screen and keep the core lessons available offline.</p>
+                <button class="button" id="install-button" type="button">Show installation steps</button>
+              </section>
+              <section class="settings-card">
+                <h2>Reading appearance</h2>
+                <fieldset>
+                  <legend>Theme</legend>
+                  <div class="segmented-control" id="theme-control">
+                    <button type="button" data-theme-value="system">System</button>
+                    <button type="button" data-theme-value="light">Light</button>
+                    <button type="button" data-theme-value="dark">Dark</button>
+                  </div>
+                </fieldset>
+                <label for="font-size">Text size <output id="font-size-output">100%</output></label>
+                <input id="font-size" type="range" min="90" max="125" step="5" value="100">
+              </section>
+              <section class="settings-card update-centre">
+                <h2>Course updates</h2>
+                <dl>
+                  <div><dt>Course version</dt><dd id="settings-course-version">—</dd></div>
+                  <div><dt>Verified through</dt><dd id="settings-verified-date">—</dd></div>
+                  <div><dt>Installed build</dt><dd><code id="settings-build-id">—</code></dd></div>
+                  <div><dt>Last checked</dt><dd id="last-update-check">Not yet</dd></div>
+                </dl>
+                <button class="button" id="settings-update-button" type="button">Check for course updates</button>
+              </section>
+              <section class="settings-card">
+                <h2>Progress backup</h2>
+                <p>Export a small JSON backup before clearing Safari data or moving to another device.</p>
+                <div class="button-row">
+                  <button class="button button-quiet" id="export-progress" type="button">Export</button>
+                  <label class="button button-quiet file-button">
+                    Import
+                    <input id="import-progress" type="file" accept="application/json,.json">
+                  </label>
+                </div>
+                <button class="danger-link" id="reset-progress" type="button">Reset all local progress and notes</button>
+              </section>
+            </div>
+          </section>
+        </main>
+      </div>
+
+      <nav class="bottom-nav" aria-label="App navigation">
+        <button type="button" data-route="home"><span aria-hidden="true">⌂</span><span>Home</span></button>
+        <button type="button" data-route="course"><span aria-hidden="true">☷</span><span>Course</span></button>
+        <button type="button" data-route="search"><span aria-hidden="true">⌕</span><span>Search</span></button>
+        <button type="button" data-route="settings"><span aria-hidden="true">⚙</span><span>Settings</span></button>
+      </nav>
+    </div>
+
+    <div class="update-banner" id="update-banner" role="status" aria-live="polite" hidden>
+      <div>
+        <strong>A revised course is ready</strong>
+        <p>Your progress will stay on this device.</p>
+      </div>
+      <div class="button-row">
+        <button class="button button-quiet" id="update-later" type="button">Later</button>
+        <button class="button" id="apply-update" type="button">Update now</button>
+      </div>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+    <dialog class="install-dialog" id="install-dialog" aria-labelledby="install-dialog-title">
+      <form method="dialog">
+        <button class="dialog-close" value="cancel" aria-label="Close installation instructions">×</button>
+        <img src="__BASE_PATH__favicon.svg" width="64" height="64" alt="">
+        <span class="eyebrow">iPhone &amp; iPad</span>
+        <h2 id="install-dialog-title">Add the course to your Home Screen</h2>
+        <ol>
+          <li>Open this page in <strong>Safari</strong>.</li>
+          <li>Tap Safari’s <strong>Share</strong> button.</li>
+          <li>Choose <strong>Add to Home Screen</strong>.</li>
+          <li>Turn on <strong>Open as Web App</strong> when that option appears.</li>
+          <li>Tap <strong>Add</strong>, then open the new icon once while online.</li>
+        </ol>
+        <p class="dialog-note">The core reading material is then available offline. Progress remains local to this device.</p>
+        <button class="button dialog-action" id="native-install-button" value="cancel" type="button" hidden>Install app</button>
+        <button class="button button-quiet dialog-action" value="cancel">Done</button>
+      </form>
+    </dialog>
+
+    <noscript>
+      <div class="noscript">This course reader needs JavaScript. The Markdown course remains available in the GitHub repository.</div>
+    </noscript>
+
+    <script type="module" src="__BASE_PATH__app.js"></script>
+  </body>
+</html>
