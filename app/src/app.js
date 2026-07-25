@@ -878,10 +878,13 @@ function renderRoute() {
   } else {
     renderHome();
   }
-  if (pendingRouteFocus && route !== "search") {
-    window.setTimeout(() => {
-      document.querySelector("#main-content").focus({ preventScroll: true });
-    }, 0);
+  if (pendingRouteFocus) {
+    window.scrollTo({ top: 0, behavior: "instant" });
+    if (route !== "search") {
+      window.setTimeout(() => {
+        document.querySelector("#main-content").focus({ preventScroll: true });
+      }, 0);
+    }
   }
   pendingRouteFocus = false;
 }
@@ -1184,6 +1187,11 @@ function wireEvents() {
       document.querySelector("#search-input").value = "";
       renderSearchResults();
     }
+  });
+
+  document.querySelector(".brand").addEventListener("click", (event) => {
+    event.preventDefault();
+    navigate("home");
   });
 
   document.querySelectorAll("[data-route]").forEach((button) => {

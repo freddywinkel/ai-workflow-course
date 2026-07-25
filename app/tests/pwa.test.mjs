@@ -161,6 +161,14 @@ test("mobile and accessibility essentials are present", () => {
   assert.match(appSource, /setAttribute\("aria-valuenow"/);
   assert.match(appSource, /setAttribute\("aria-valuetext"/);
   assert.match(appSource, /trapSidebarFocus/);
+  assert.match(
+    appSource,
+    /if \(pendingRouteFocus\)[\s\S]+?window\.scrollTo\(\{ top: 0, behavior: "instant" \}\)/,
+  );
+  assert.match(
+    appSource,
+    /querySelector\("\.brand"\)[\s\S]+?preventDefault\(\)[\s\S]+?navigate\("home"\)/,
+  );
   assert.match(appSource, /focus\(\{ preventScroll: true \}\)/);
   assert.match(cssSource, /min-height: 44px/);
   assert.match(cssSource, /\.brand\s*\{[\s\S]+?min-height: 44px/);
