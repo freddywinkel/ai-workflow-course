@@ -1,480 +1,339 @@
 # Module 3 — Understand the Data and Rules
 
-Lesson ID: `course-1-module-03`
-Revision: 2026-07-26
-
 ## Outcome
 
-You will turn a spreadsheet-like business process into an explicit data
-contract and an approved rule register before building a workflow.
-
-Using the supplied synthetic files, you will learn what each column means, how
-blank and invalid values must be handled, which checks are deterministic, which
-checks depend on earlier checks, and what evidence every reported issue must
-contain.
-
-At the end of the module, another beginner should be able to implement the
-checks without asking you to “use common sense.” No AI is required to detect
-the capstone issues.
+You will create a data dictionary, deterministic rule register, issue-output
+contract, rule order, and frozen expected-result comparison before writing a
+workflow.
 
 ## Beginner checkpoint
 
-Complete the Module 2 test gate. Your intended purpose must still be limited to
-a synthetic, internal, reviewed exception report with no source-system
-write-back or external action.
+Start when Module 2 passes. You need Foundations 3 and 6 and the supplied
+`practice_data` folder. All data must remain synthetic.
 
-Revisit the foundations on files and text, code and Python, web APIs and JSON,
-and AI and document workflows. Be able to explain:
-
-- a row, column, value, header, and CSV file;
-- text, date, decimal number, and blank value;
-- required, unique, and allowed-list constraints;
-- why a deterministic rule should give the same result for the same input and
-  configuration;
-- why a language model should not be asked to calculate or guess a rule that
-  can be written exactly.
-
-CSV is plain text organised into rows and separated values. It is not the same
-file format as an Excel workbook: it has no sheets, formulas, cell colours, or
-formatting. A spreadsheet application can open CSV, but may silently reinterpret
-dates, decimals, or identifiers. Preserve the source and work on a copy or
-derived output.
+Python is the programming language whose official documentation is linked
+below.
 
 ## Concepts
 
-- **Schema:** the expected fields, types, and structural constraints of data.
-- **Data dictionary:** a human-readable description of every field and its
-  meaning.
-- **Raw value:** the exact value received from the source.
-- **Normalised value:** a controlled representation used after validation,
-  such as a parsed date. Keep the raw value for evidence.
-- **Blank versus zero:** an empty amount means “not supplied”; `0` is a supplied
-  numeric value. They are not interchangeable.
-- **Missing versus unknown:** missing means no value is present. Unknown means
-  the value is not known. Do not convert one into the other without an approved
-  rule.
-- **Allowed list:** the complete set of accepted values, such as `low`,
-  `medium`, and `high`.
-- **Cross-field rule:** a rule using more than one field, such as requiring a
-  completion date when status is `completed`.
-- **Rule dependency:** an order requirement between checks. A malformed date
-  must fail its format check before date comparisons are attempted.
-- **Reference date:** a configured date used for repeatable time-based rules.
-  The capstone uses `2026-07-26`; it must not silently use the computer's
-  current date.
-- **Gold or expected result:** a frozen answer set used to evaluate an
-  implementation.
-- **True positive:** an expected issue that the workflow found.
-- **False positive:** an issue the workflow reported but the expected set does
-  not contain.
-- **False negative:** an expected issue the workflow missed.
-- **Provenance:** information showing which source record, field, rule, and
-  value support an output.
+- A **schema** describes expected fields and structural constraints.
+- A **data dictionary** explains what every field means.
+- A **raw value** is exactly what arrived; a **normalised value** is a
+  controlled representation created after validation.
+- A **deterministic rule** returns the same result for the same input and
+  configuration.
+- A **cross-field rule** uses more than one field.
+- A **rule dependency** prevents a later check from using invalid input.
+- A **gold set** is a frozen expected answer used for testing.
+- A **true positive** is an expected issue found; a **false positive** is an
+  extra issue; a **false negative** is a missed issue.
+- **Provenance** links an output to its source row, field, value, and rule.
+- **Secure Hash Algorithm 256-bit (SHA-256)** creates a repeatable digital
+  fingerprint of exact file bytes; the later command spells the option
+  `SHA256`.
 
 ## Official readings
 
-1. [Python documentation: the `csv` module](https://docs.python.org/3/library/csv.html)
-   explains CSV reading and writing, dialect differences, and why CSV is not as
-   universal as it first appears.
-2. [European Commission: GDPR processing principles](https://commission.europa.eu/law/law-topic/data-protection/rules-business-and-organisations/principles-gdpr/overview-principles/what-data-can-we-process-and-under-which-conditions_en)
-   covers purpose limitation, data minimisation, accuracy, storage limitation,
-   and accountability.
-3. [European Commission: data protection by design and by default](https://commission.europa.eu/law/law-topic/data-protection/information-business-and-organisations/obligations/what-does-data-protection-design-and-default-mean_en)
-   explains why safeguards should be requirements from the start.
-4. [NIST AI Risk Management Framework Core](https://airc.nist.gov/airmf-resources/airmf/5-sec-core/)
-   treats data, context, limitations, human roles, and test measures as part of
-   mapping and measuring risk.
+Comma-separated values (CSV) is a plain-text table format, not an Excel
+workbook. Microsoft Excel is a spreadsheet application that can silently
+reinterpret dates or identifiers when opening CSV. The General Data Protection
+Regulation (GDPR), called the Algemene verordening gegevensbescherming (AVG) in
+Dutch, governs personal-data processing.
 
-The practice data contains no personal data. The privacy readings matter
-because a consultant must ask whether each future client field is necessary
-and permitted before moving it into an automation or AI service.
+1. [Python documentation: CSV file reading and writing](https://docs.python.org/3/library/csv.html)
+2. [European Commission: GDPR processing principles](https://commission.europa.eu/law/law-topic/data-protection/rules-business-and-organisations/principles-gdpr/overview-principles/what-data-can-we-process-and-under-which-conditions_en)
+3. [European Commission: data protection by design and by default](https://commission.europa.eu/law/law-topic/data-protection/information-business-and-organisations/obligations/what-does-data-protection-design-and-default-mean_en)
 
 ## Guided build
 
-### 1. Preserve and inventory the source files
+First solve a four-row contract completely. Then recreate the method for the
+different 15-row Course 1 fixture.
 
-The authoritative practice-data description is
-`practice_data/README.md`. Read it before inspecting the answer key.
+Artificial intelligence (AI) is excluded from rule decisions in this module.
+Windows PowerShell is the Windows command application used below. Notepad is
+the Windows plain-text editor used to create practice files. EUR is the
+three-letter currency code for the euro.
 
-The two supplied files are:
+Markdown is a plain-text format for headings, lists, and tables; `.md` is its
+file name ending.
 
-- `practice_data/work_items.csv`: 15 fictional input rows;
-- `practice_data/expected_issues.csv`: 13 frozen expected issues.
+## Follow along — I show you exactly how
 
-Do not edit either file. In PowerShell, from the course root, you can inspect
-their identities:
+### Stage 1 — Create the practice folder and mini-dataset
 
-```powershell
-Get-FileHash .\practice_data\work_items.csv -Algorithm SHA256
-Get-FileHash .\practice_data\expected_issues.csv -Algorithm SHA256
-```
-
-Record both hashes in your artifact. Re-run the commands at the test gate. A
-changed hash means the source or answer key changed and the comparison is no
-longer controlled.
-
-Confirm counts without changing the files:
+Open Windows PowerShell and run:
 
 ```powershell
-$workItems = Import-Csv .\practice_data\work_items.csv
-$expectedIssues = Import-Csv .\practice_data\expected_issues.csv
-$workItems.Count
-$expectedIssues.Count
-$workItems[0].PSObject.Properties.Name
+$practiceBase = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'controlled-ai-course-practice'
+$moduleFolder = Join-Path $practiceBase 'module-03'
+New-Item -ItemType Directory -Force -Path $moduleFolder
+Set-Location -LiteralPath $moduleFolder
+notepad .\worked_jobs.csv
 ```
 
-The expected results are a test oracle, not the business requirements. The
-requirements live in the practice-data README and the approved rule register.
-Never edit the answer key to make an implementation pass.
+International Organization for Standardization (ISO) date format uses
+`YYYY-MM-DD`: year, month, then day. Click **Yes**, paste, save, and close
+Notepad:
 
-### 2. Profile the input without “cleaning” it
+```csv
+job_id,status,due_date,amount,currency
+J-201,new,2026-08-01,120.00,EUR
+J-202,done,2026-07-20,40.00,EUR
+J-203,waiting,20-07-2026,-5.00,EUR
+J-204,in_progress,2026-07-24,90.00,
+```
 
-Inspect the distinct values in important fields:
+Inspect the raw table:
 
 ```powershell
-$workItems | Group-Object status | Select-Object Name, Count
-$workItems | Group-Object priority | Select-Object Name, Count
-$workItems | Select-Object work_item_id, source_reference, owner_role, received_date, due_date, completed_date, amount, currency
+$workedRows = Import-Csv .\worked_jobs.csv
+$workedRows.Count
+$workedRows[0].PSObject.Properties.Name
+$workedRows | Format-Table
 ```
 
-In a spreadsheet, you may use filters or a pivot table instead. Do not overwrite
-the CSV.
+`Import-Csv` reads each row without editing the file.
 
-Record:
+**Expected result:** `4`, then the five headers, then four rows.
 
-- row count and column count;
-- exact headers;
-- blank-value counts per field;
-- distinct statuses, priorities, currencies, and categories;
-- apparent duplicates;
-- suspicious date and amount formats.
+**Troubleshooting:**
 
-Describe what is present. Do not silently correct `urgent`, `on_hold`, a
-day-month-year date, a negative amount, or a blank field. An invalid input is
-evidence for an exception, not permission to manufacture a replacement.
+- If the count is 0, confirm the header and rows were saved.
+- If everything appears under one header, confirm commas separate values.
+- Never correct the source row merely because it looks wrong.
 
-### 3. Create the field dictionary
+### Stage 2 — Follow the complete contract
 
-Document all 12 source fields:
+Run `notepad .\worked_data_and_rules.md`, click **Yes**, paste, and save:
 
-| Field | Meaning | Type or format | Required or conditional | Allowed values or constraint | Blank meaning | Example |
-|---|---|---|---|---|---|---|
-| `work_item_id` | stable fictional item identifier | text | required | unique | invalid | `WI-0001` |
-| `source_reference` | reference from the fictional source system | text | required | unique | invalid | `REF-1001` |
-| `title` | non-sensitive work description | text | required | non-blank | invalid | `Confirm delivery window` |
-| `owner_role` | responsible role, never a person's name | text | conditional | required for `in_progress`, `waiting`, and `completed` | no owner recorded | `operations` |
-| `status` | workflow state | text | required | `new`, `in_progress`, `waiting`, `completed`, `cancelled` | invalid | `in_progress` |
-| `priority` | declared attention level | text | required | `low`, `medium`, `high` | invalid | `medium` |
-| `received_date` | intake date | ISO date | required | real calendar date in `YYYY-MM-DD` | invalid | `2026-07-20` |
-| `due_date` | target date | ISO date | optional | blank or valid date not before received date | no target recorded | `2026-07-30` |
-| `completed_date` | completion date | ISO date | conditional | required only for `completed`; otherwise blank | depends on status | `2026-07-18` |
-| `amount` | fictional operational amount | decimal text | optional | blank or non-negative decimal using a dot | no amount supplied | `125.00` |
-| `currency` | currency of amount | text | conditional | `EUR` when amount is present; otherwise blank | no currency supplied | `EUR` |
-| `category` | operational work type | text | required | non-blank in this course | invalid | `order_admin` |
+```markdown
+# Worked data and rules
 
-If a real client cannot agree on a field's meaning, owner, or allowed values,
-that is a discovery finding. Do not solve disagreement by hiding it in a
-prompt.
+## Data dictionary
 
-### 4. Translate requirements into deterministic rules
+| Field | Meaning | Type/format | Requirement | Blank meaning |
+|---|---|---|---|---|
+| job_id | stable fictional job identifier | text | required and unique | invalid |
+| status | current workflow state | text | new, in_progress, waiting, completed | invalid |
+| due_date | target date | ISO date YYYY-MM-DD | required | invalid |
+| amount | fictional amount | decimal text | zero or greater | invalid |
+| currency | currency of amount | text | EUR when amount is populated | invalid here |
 
-Create one row per rule:
+ISO means International Organization for Standardization. ISO date format puts
+year, month, and day in the order YYYY-MM-DD.
 
-| Code | Exact condition | Fields | Severity | Dependency | Evidence on failure | Requirement owner or source |
-|---|---|---|---|---|---|---|
-| R001 | | | | | | |
+## Rules
 
-Use these approved capstone meanings:
+| Code | Exact condition | Severity | Dependency | Failure evidence |
+|---|---|---|---|---|
+| E001 | status is one of new, in_progress, waiting, completed | high | none | job_id, raw status |
+| E002 | due_date is a real date written YYYY-MM-DD | high | none | job_id, raw due_date |
+| E003 | amount parses as a decimal and is at least zero | high | none | job_id, raw amount |
+| E004 | a populated amount has currency EUR | medium | amount is populated | job_id, raw currency |
 
-- **R001 — required values:** `work_item_id`, `source_reference`, `title`,
-  `received_date`, and `category` are non-blank. The supplied deliberate R001
-  case is a missing title. Severity: medium.
-- **R002 — status list:** status must be exactly `new`, `in_progress`,
-  `waiting`, `completed`, or `cancelled`. Severity: high.
-- **R003 — priority list:** priority must be exactly `low`, `medium`, or
-  `high`. Severity: medium.
-- **R004 — ISO dates:** each populated date must be a real calendar date written
-  `YYYY-MM-DD`. Checking only the shape of the text is insufficient; for
-  example, `2026-02-31` is not a real date. Severity: high.
-- **R005 — date order:** when received and due dates are valid, the due date
-  must be on or after the received date. Severity: high.
-- **R006 — completion consistency:** `completed` requires a valid completion
-  date. Every other allowed status requires a blank completion date. A missing
-  date on completed work is high severity; an unexpected date on active work
-  is medium severity.
-- **R007 — owner requirement:** `in_progress`, `waiting`, and `completed`
-  require a non-blank `owner_role`. Severity: medium.
-- **R008 — amount:** a populated amount must parse as a decimal and be zero or
-  greater. Severity: high.
-- **R009 — currency:** a populated amount requires currency `EUR`. The data
-  dictionary also says currency is blank when no amount is supplied; record a
-  test for both directions rather than assuming spreadsheet formatting will
-  enforce it. Severity: medium.
-- **R010 — unique reference:** each non-blank `source_reference` must be unique
-  across the complete file. Report every row participating in a duplicate, not
-  only the second row encountered. Severity: high.
-- **R011 — overdue open item:** when status is `new`, `in_progress`, or
-  `waiting`, and `due_date` is valid and earlier than `2026-07-26`, report the
-  item as overdue. A due date equal to the reference date is not overdue.
-  Severity: high.
+## Rule order and failure behaviour
 
-Severity is an internal attention level in this fictional exercise. It is not a
-legal, clinical, safety, or employee-performance judgement.
+1. Preserve the raw row.
+2. Check required structure.
+3. Validate allowed values and formats.
+4. Run dependent comparisons only on valid prerequisites.
+5. Emit an evidence-linked issue; never repair the source silently.
+6. Stop the run when the header changes.
 
-### 5. Define rule order and failure behaviour
+## Issue output contract
 
-Write the planned order:
+Every issue contains job_id, field, raw_value, rule_code, severity, and a
+factual message. It contains no invented cause or action.
 
-1. preserve the raw row;
-2. check required values;
-3. check allowed lists;
-4. validate dates and amount;
-5. run cross-field checks only on valid prerequisite values;
-6. check duplicate references across the complete file;
-7. check overdue status using the configured reference date;
-8. create evidence-linked issue records;
-9. route processing or configuration failures to human review.
+## Frozen expected issues
 
-Important examples:
+| job_id | field | rule | severity | reason |
+|---|---|---|---|---|
+| J-202 | status | E001 | high | done is not allowed |
+| J-203 | due_date | E002 | high | date is not YYYY-MM-DD |
+| J-203 | amount | E003 | high | amount is negative |
+| J-204 | currency | E004 | medium | amount is present but EUR is missing |
 
-- If `received_date` fails R004, do not invent a parsed date for R005.
-- If `due_date` fails R004, do not run R005 or R011 on that value.
-- If status fails R002, do not guess that it means `waiting`.
-- If an amount is blank, do not turn it into zero.
-- If the file header is missing or changed, stop the run. Do not ask AI to
-  guess which column was intended.
+Expected total: 4. Valid row: J-201.
 
-These choices prevent one malformed value from generating misleading secondary
-issues.
+## Data minimisation
 
-### 6. Define the issue output contract
+No name, email, address, customer, employee, or other personal field is needed.
+Only the issue record, not every raw row, may enter a later AI summary step.
+```
 
-Every later workflow issue must contain:
+Verify that the rules predict the data:
 
-| Output field | Purpose |
-|---|---|
-| `work_item_id` | links the issue to one input row |
-| `source_reference` | provides a second traceable source reference |
-| `field` | names the affected field |
-| `raw_value` | preserves the relevant received value, including blank |
-| `rule_code` | links to R001–R011 |
-| `severity` | uses the approved rule/scenario severity |
-| `message` | states the observed problem without inventing a cause or remedy |
-| `assessment_date` | records the configured `2026-07-26` reference date |
+```powershell
+'waiting','new','waiting','completed' | Sort-Object -Unique
+$workedRows | Group-Object status | Select-Object Name,Count
+$workedRows | Select-Object job_id,status,due_date,amount,currency
+Select-String -Path .\worked_data_and_rules.md -Pattern 'Expected total: 4','J-202','J-203','J-204'
+```
 
-For comparison with the answer key, the stable match key is
-`(work_item_id, rule_code)`. Preserve the field and evidence as well; a passing
-pair with the wrong explanation is not a useful consulting result.
+`Sort-Object` sorts the incoming values. Its `-Unique` option keeps only one
+copy of each value, so the repeated `waiting` appears once. The same pattern can
+later show which rule codes are present in a longer file.
 
-A good message says:
+**Expected output:** `completed`, `new`, and `waiting` in sorted order; four
+status groups; and matches for the total and three affected identifiers.
 
-> WI-0010 is open and has due date 2026-07-10, which is before the configured
-> assessment date 2026-07-26.
+The important lesson is allocation: these exact checks belong in normal code,
+not a language model.
 
-A poor message says:
+### Stage 3 — Make and check one boundary case
 
-> The operations team forgot this important customer and should contact them
-> immediately.
+Create `worked_boundary.csv` in Notepad:
 
-The poor message invents a cause, a customer relationship, and an action.
+```csv
+job_id,status,due_date,amount,currency
+J-205,completed,2026-07-26,0,EUR
+```
 
-### 7. Make boundary tests before implementation
+This row should pass all four worked rules: the allowed status is valid, the
+date is valid, zero is not negative, and the amount has EUR.
 
-For every rule, specify:
+Verify the raw value:
 
-- one valid example;
-- one failing example;
-- one blank or not-applicable example where relevant;
-- one boundary example;
-- a dependency or malformed-input example where relevant.
+```powershell
+Import-Csv .\worked_boundary.csv | Format-List
+```
 
-Include at least:
+If you think zero means blank, return to Foundation 6. Zero is a supplied
+number; blank is no supplied value.
 
-- due date equal to received date;
-- due date equal to the assessment date;
-- zero amount;
-- blank amount and blank currency;
-- completed item with and without a completion date;
-- cancelled item without an owner;
-- two and three rows sharing a source reference;
-- a correctly shaped but impossible date;
-- a changed or missing CSV header.
+## Now recreate it yourself
 
-The supplied 15 rows are a small frozen acceptance set, not proof that the
-rules work for every possible future row. Boundary tests expose gaps before
-code makes them harder to notice.
+Use the different Course 1 fixture and rule set:
 
-### 8. Compare your manual interpretation with the frozen answer
+1. Run:
 
-Now open `practice_data/expected_issues.csv`. It contains 13 issue instances
-covering R001–R011.
+```powershell
+$courseRoot = Read-Host 'Paste the full path to AI_WORKFLOW_DOCUMENT_SYSTEMS_COURSE'
+$sourceData = Join-Path $courseRoot 'practice_data\work_items.csv'
+$sourceGold = Join-Path $courseRoot 'practice_data\expected_issues.csv'
+$sourceReadme = Join-Path $courseRoot 'practice_data\README.md'
+Copy-Item -LiteralPath $sourceData -Destination .\recreated_work_items.csv
+Copy-Item -LiteralPath $sourceGold -Destination .\recreated_expected_issues.csv
+Copy-Item -LiteralPath $sourceReadme -Destination .\recreated_requirements.md
+Get-FileHash -LiteralPath $sourceData -Algorithm SHA256
+Get-FileHash -LiteralPath .\recreated_work_items.csv -Algorithm SHA256
+```
 
-Create a comparison table:
+The two hashes must match.
 
-| Work item | Rule | In your manual list? | In expected list? | Result | Explanation or correction |
-|---|---|:---:|:---:|---|---|
-| | | | | true positive / false positive / false negative | |
+2. Read `recreated_requirements.md`.
+3. Create `recreated_data_and_rules.md` yourself. Include:
 
-Do not erase a difference. Explain it, correct your rule interpretation if
-needed, and keep the original observation in your learning record.
+- all 12 fields and their blank meanings;
+- R001 through R011 with exact condition, field, severity, dependency, evidence,
+  and requirement source;
+- fixed assessment date `2026-07-26`;
+- rule order and explicit skip behaviour for invalid dates;
+- an issue contract containing `work_item_id`, `source_reference`, field, raw
+  value, rule, severity, message, and assessment date;
+- one valid, failing, blank/not-applicable, and boundary example per applicable
+  rule;
+- a manual map of all 13 expected `(work_item_id, rule_code)` pairs;
+- a data-minimisation decision.
 
-The final rule register must account for all 13 expected instances. The purpose
-of this manual comparison is understanding, not a claim that the future
-workflow already works.
+4. Reuse the demonstrated `Sort-Object -Unique` pattern and verify counts and
+   coverage:
 
-### 9. Perform a data-minimisation screen
+```powershell
+$recreatedRows = Import-Csv .\recreated_work_items.csv
+$recreatedGold = Import-Csv .\recreated_expected_issues.csv
+$recreatedRows.Count
+$recreatedGold.Count
+$recreatedGold.rule_code | Sort-Object -Unique
+Select-String -Path .\recreated_data_and_rules.md -Pattern 'R001','R011','2026-07-26','invalid date'
+```
 
-For every field, ask:
+**Expected output:** 15 rows, 13 issues, R001 through R011, and four text
+matches.
 
-- Is it necessary for an approved rule, evidence, or reviewer context?
-- Is a role sufficient instead of a person's name?
-- Does it need to be passed to the later AI step?
-- How long would a client need to keep the raw and derived data?
-- Who should be able to see it?
+5. Re-run the source and copy hashes. They must still match.
 
-For the capstone, later AI should receive only the already-detected synthetic
-issue records needed to draft a summary. It does not need to discover issues in
-the complete raw register.
+If your rules use “today,” “unusual,” or “use judgement,” replace that language
+with a configured value or an explicit human escalation.
 
-In real consulting, synthetic data is not automatically representative.
-Replacing it with real data requires a new scope, privacy, security, access,
-retention, and testing decision.
+## Ask Codex to check your work
+
+Run `(Resolve-Path $moduleFolder).Path` to obtain the full path, replace
+`[PASTE FULL PATH HERE]`, and copy:
+
+```text
+READ-ONLY COURSE REVIEW.
+
+I authorize inspection of only this full path:
+[PASTE FULL PATH HERE]
+
+Do not create, edit, delete, rename, move, or format anything. Do not inspect
+the parent folder or another location. This folder must contain no secrets and
+no real client or workplace data. Stop if you find credentials, personal data,
+or health data.
+
+Inspect the worked and recreated CSV/Markdown files. Return:
+1. PASS or NOT YET;
+2. checks for: 12-field dictionary; exact R001-R011 coverage; fixed date
+2026-07-26; raw values preserved; blanks distinguished from zero; invalid dates
+blocking dependent checks; duplicate rule reporting both rows; evidence-linked
+issue contract; 15 input rows; 13 unique expected keys; boundary cases; no AI
+used for deterministic checks; synthetic-only data; unchanged source-copy
+content where observable;
+3. the smallest corrections for me to make if NOT YET.
+
+Remain read-only and do not provide replacement files.
+```
+
+## Pass criteria
+
+- [ ] The worked four-issue answer is understood and reproduced.
+- [ ] Source copies remain byte-identical to supplied files.
+- [ ] The recreated data dictionary covers all 12 fields.
+- [ ] The rule register covers R001–R011 exactly.
+- [ ] Fixed date `2026-07-26` is configuration, not “today.”
+- [ ] Invalid dates do not trigger dependent date checks.
+- [ ] Blank and zero are distinct.
+- [ ] Every issue carries source evidence.
+- [ ] All 13 expected keys are mapped without changing the answer key.
+- [ ] AI is excluded from deterministic issue detection and severity.
+- [ ] Codex returns `PASS` read-only.
 
 ## Consultant lens
 
-Data and rules are business contracts, not merely technical details.
-
-For a client engagement:
-
-- ask which system and field are authoritative;
-- identify the owner authorised to approve each rule;
-- capture the rule source, version, effective date, exceptions, and examples;
-- distinguish written policy from a person's habitual workaround;
-- ask how blanks, conflicts, late updates, duplicates, and corrections are
-  handled today;
-- show the rule table back to users in plain language;
-- require approval before implementation;
-- version rule changes and rerun tests.
-
-“Everyone knows what overdue means” is not a usable requirement. It could mean
-before today, on or before today, after a grace period, or only for certain
-statuses. The fixed date and exact `<` comparison in R011 demonstrate the
-precision you need.
-
-The most durable consultant skill here is not memorising CSV syntax. It is
-making hidden meanings, ownership, dependencies, and failure behaviour visible
-enough to test and hand over.
+Data definitions and business rules require an authorised owner, source,
+version, effective date, exceptions, and examples. “Everyone knows what
+overdue means” is not an implementable requirement.
 
 ## Capstone increment
 
-The capstone now has:
-
-- preserved synthetic input and expected-output identities;
-- an inventory of 15 input rows and 12 columns;
-- a field dictionary;
-- an approved R001–R011 rule register;
-- a fixed assessment date;
-- explicit rule dependencies and stop behaviour;
-- an evidence-linked issue-output contract;
-- boundary-test cases;
-- a manual comparison with 13 expected issues;
-- a data-minimisation decision.
-
-The assistant still contains no AI. In Module 4, the deterministic workflow can
-be implemented against this contract.
+The capstone now has a frozen source, data dictionary, R001–R011 register,
+issue contract, boundary cases, rule dependencies, and expected result.
 
 ## Required artifact
 
-Create `artifacts/data_and_rules_register.md` in your learner project.
-
-It must contain:
-
-1. source and expected-file SHA-256 hashes;
-2. row count, column count, and exact header list;
-3. the 12-field data dictionary;
-4. R001–R011 with exact condition, fields, severity, dependency, evidence, and
-   authoritative source;
-5. the rule execution order and skip/stop behaviour;
-6. the issue-output contract;
-7. at least one valid and one failing test per rule plus the listed boundary
-   cases;
-8. the 13-row expected-issue comparison and explanations for initial
-   differences;
-9. the data-minimisation screen;
-10. unresolved ambiguities, owner, version, approval status, and date.
-
-You may save a separate manual `found_issues.csv`, but do not replace the
-Markdown explanation with an unexplained spreadsheet.
+The teaching contract produces the worked CSV/Markdown files and
+`recreated_data_and_rules.md` under `module-03`.
 
 ## Test gate
 
-Pass only when:
-
-- [ ] `work_items.csv` still has 15 data rows and 12 expected headers.
-- [ ] `expected_issues.csv` still has 13 data rows.
-- [ ] Before-and-after hashes match for both supplied files.
-- [ ] Every field has a meaning, type, requirement, allowed values or
-      constraint, and blank-value interpretation.
-- [ ] Every R001–R011 result can be decided without AI.
-- [ ] All 13 expected `(work_item_id, rule_code)` pairs map to your rule
-      register.
-- [ ] Invalid dates cannot trigger R005 or R011.
-- [ ] R010 reports both WI-0006 and WI-0007.
-- [ ] R011 uses configured date `2026-07-26`, not “today.”
-- [ ] Blank amount is not converted to zero.
-- [ ] Raw values are preserved in issue evidence.
-- [ ] A missing or changed header stops processing.
-- [ ] The later AI boundary excludes discovering, adding, removing, or
-      reprioritising issues.
-
-Ask another person or an AI tutor to read one rule row and predict the result
-for its valid, invalid, blank, and boundary examples. Give no spoken hints. If
-the predictions differ from yours, the rule is not precise enough.
+The **Pass criteria** are the complete gate.
 
 ## Stop or rework
 
-Stop or rework when:
-
-- a supplied file was edited or its hash changed;
-- a rule was inferred only from the errors in the sample rather than the
-  authoritative requirement;
-- a field's meaning, owner, or blank behaviour remains unstated;
-- current date, locale, spreadsheet formatting, or model judgement can change
-  a deterministic result;
-- invalid input is silently corrected;
-- dependent rules run on invalid prerequisite values;
-- false positives or false negatives are hidden or removed from the record;
-- the expected file is altered to match an implementation;
-- severity is invented by AI;
-- real workplace or client data is introduced.
-
-If an authorised rule owner cannot resolve a material ambiguity in a real
-engagement, the affected rule remains disabled or the project stops. Code is
-not a substitute for authority.
+Stop when source or gold hashes change, field meaning remains ambiguous, an
+invalid prerequisite still feeds another rule, AI is asked to guess a rule, or
+real data enters the folder.
 
 ## Common failures
 
-- Letting a spreadsheet convert identifiers, dates, or decimals on save.
-- Treating CSV appearance as proof of data type.
-- Confusing blank, zero, false, and unknown.
-- Using the computer's current date in a frozen test.
-- Running comparisons after date parsing failed.
-- Reporting only the second member of a duplicate pair.
-- Writing broad rules such as “flag anything unusual.”
-- Asking a language model to infer allowed values from the dataset.
-- Omitting source field and raw value from an issue.
-- Treating the answer key as requirements instead of a test oracle.
-- Adding personal names because they feel more realistic.
-- Making severity sound like a judgement about an employee.
-- Correcting the source instead of detecting and reporting the exception.
+- Letting a spreadsheet alter dates or identifiers.
+- Treating appearance as proof of data type.
+- Silently correcting invalid input.
+- Reporting only the second row in a duplicate pair.
+- Editing the answer key to make a result pass.
 
 ## Estimated time
 
-8–10 hours:
-
-- 1 hour for readings and source inventory;
-- 2 hours for profiling and the field dictionary;
-- 2.5 hours for exact rules, dependencies, and output contract;
-- 1.5 hours for boundary cases;
-- 1 hour for the manual comparison and data-minimisation screen;
-- 1–2 hours for corrections and the test gate.
+8–10 hours.

@@ -1,5 +1,11 @@
 # Assessment and Rubric
 
+## How to use this reference
+
+This rubric is not a new exercise. The module lessons show exactly how to
+create, recreate, and check each required artifact. Use this page only after
+those guided tasks to assess the combined capstone.
+
 ## Assessment principle
 
 Course 1 assesses controlled implementation judgment, not how much technology
@@ -7,7 +13,7 @@ you used.
 
 The following can all be excellent outcomes:
 
-- a rule-only workflow because AI added no value;
+- a rule-only workflow because artificial intelligence (AI) added no value;
 - a bounded AI summary with strong verification;
 - a `REWORK` decision because data quality is poor;
 - a `DO NOT PILOT` decision because existing software is better.
@@ -38,7 +44,7 @@ Any failure is a stop/rework condition.
 | Data quality and deterministic controls | 20% |
 | Bounded AI and evidence | 15% |
 | Human control and failure behaviour | 15% |
-| Dutch SME risk and tool-fit screen | 15% |
+| Dutch small and medium-sized enterprise (SME) risk and tool-fit screen | 15% |
 | Evaluation, adoption, and handover | 15% |
 
 Minimum passing score: 75%, with every area at least “competent”.

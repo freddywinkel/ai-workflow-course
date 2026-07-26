@@ -1,314 +1,518 @@
-# Module 4 — Build the Non-AI Workflow First
+# Module 4 — Build the Rule-Based Workflow Before Adding Artificial Intelligence (AI)
 
 ## Outcome
 
-Build a reliable local workflow that:
+Python is a programming language. You will run a complete local Python workflow
+that preserves the synthetic source, applies R001–R011 without AI, writes stable
+issue records, records named states, and reproduces the 13 frozen expected
+issues. You will then recreate the run with a different synthetic dataset and
+expected result.
 
-- reads the synthetic work-item CSV;
-- validates each row;
-- applies rules R001–R011;
-- creates stable issue records;
-- produces a useful exception report;
-- records a visible state and run ID;
-- handles bad input and duplicate retries;
-- works without an AI provider.
+Artificial Intelligence (AI) means software that can generate or infer an
+answer rather than follow only fixed rules. This module deliberately starts
+with fixed, inspectable business rules.
+
+Windows PowerShell is the Windows command application used for the exact
+commands below.
 
 ## Beginner checkpoint
 
-Before starting, you can:
-
-- open `practice_data/work_items.csv` without changing it;
-- explain a CSV header and row;
-- write and run a small Python function;
-- distinguish source data from derived output;
-- explain each rule in `practice_data/README.md`;
-- use Git status and diff.
-
-If not, return to Foundations 3, 5, and 6.
+Start when Module 3 passes and `python --version` prints a Python version.
+If Windows says Python is not found, return to Foundation 3 rather than
+changing the instructions.
 
 ## Concepts
 
-### Rule-first workflow
-
-A deterministic rule produces the same answer for the same validated input,
-configuration, and assessment date. Missing fields, allowed values, duplicate
-references, and date order belong here.
-
-### Normalize, then compare
-
-CSV values arrive as text. Preserve the raw value, then create a normalized
-value for validation. Do not replace the raw source.
-
-### Stable issue identity
-
-An issue should be recognizable across identical reruns. Derive its ID from
-the work-item ID, field, and rule code, or use another documented stable
-method.
-
-### Named state
-
-Every run must visibly be in one state. A thrown error is not a state until the
-workflow records it as `failed_manual`.
-
-### Idempotency
-
-Rerunning the same input must not create duplicate logical effects. Course 1
-has only local output, but the habit is essential before future connectors.
+- **Validation** checks that input meets an explicit contract.
+- **Normalisation** creates a controlled value while preserving the raw value.
+- **Idempotency** means repeating the same input does not create duplicate
+  logical effects.
+- A **run identifier (ID)** identifies one processing run.
+- A **named state** makes success, waiting, or failure visible.
+- **JavaScript Object Notation (JSON)** is a plain-text structured-data format.
+- **Comma-separated values (CSV)** is a plain-text table format.
+- **Secure Hash Algorithm 256-bit (SHA-256)** creates the file fingerprints
+  used below; PowerShell spells its command option `SHA256`.
+- **International Organization for Standardization (ISO) date format** uses
+  `YYYY-MM-DD`: year, month, then day.
+- **EUR** is the three-letter currency code for the euro.
+- Python's standard-library **`hashlib` module** calculates hashes such as
+  SHA-256.
+- A **manual failure** stops safely and sends the case to a person.
 
 ## Official readings
 
-- [Python `csv` module](https://docs.python.org/3/library/csv.html)
-- [Python exceptions](https://docs.python.org/3/tutorial/errors.html)
-- [pytest documentation](https://docs.pytest.org/)
-- [n8n workflows](https://docs.n8n.io/workflows/)
-- [n8n error handling](https://docs.n8n.io/flow-logic/error-handling/)
-
-Use the evergreen audit if a current n8n interface differs from a screenshot.
-Assess the observed behavior, not whether buttons remain in the same place.
+1. [Python `csv` module](https://docs.python.org/3/library/csv.html)
+2. [Python errors and exceptions](https://docs.python.org/3/tutorial/errors.html)
+3. [Python `hashlib` module](https://docs.python.org/3/library/hashlib.html)
 
 ## Guided build
 
-### 1. Copy, do not edit, the source data
+The worked script is complete and runnable. Read each labelled function before
+running it. The independent recreation changes the data and output names and
+requires a new prediction.
 
-Copy the supplied file into your project:
+Notepad is the Windows plain-text editor used to create practice files.
+
+## Follow along — I show you exactly how
+
+### Stage 1 — Prepare controlled inputs
+
+Open Windows PowerShell and run:
+
+```powershell
+$practiceBase = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'controlled-ai-course-practice'
+$moduleFolder = Join-Path $practiceBase 'module-04'
+New-Item -ItemType Directory -Force -Path $moduleFolder
+Set-Location -LiteralPath $moduleFolder
+$courseRoot = Read-Host 'Paste the full path to AI_WORKFLOW_DOCUMENT_SYSTEMS_COURSE'
+Copy-Item -LiteralPath (Join-Path $courseRoot 'practice_data\work_items.csv') -Destination .\worked_work_items.csv
+Copy-Item -LiteralPath (Join-Path $courseRoot 'practice_data\expected_issues.csv') -Destination .\worked_expected_issues.csv
+Get-FileHash .\worked_work_items.csv -Algorithm SHA256
+```
+
+Record the printed Secure Hash Algorithm 256-bit (SHA-256) value in
+`input_hash_before.txt`. Do this in Notepad.
+
+**Expected result:** two CSV files and one 64-character hexadecimal hash.
+
+### Stage 2 — Create the complete deterministic checker
+
+Run `notepad .\worked_checker.py`, click **Yes**, paste the complete program,
+save, and close:
+
+```python
+from __future__ import annotations
+
+import csv
+import hashlib
+import json
+from collections import Counter
+from datetime import date
+from decimal import Decimal, InvalidOperation
+from pathlib import Path
+
+BASE = Path(__file__).resolve().parent
+INPUT_FILE = BASE / "worked_work_items.csv"
+OUTPUT_FILE = BASE / "found_issues.csv"
+SUMMARY_FILE = BASE / "run_summary.json"
+FAILURE_FILE = BASE / "failed_manual.json"
+ASSESSMENT_DATE = date.fromisoformat("2026-07-26")
+
+HEADERS = [
+    "work_item_id", "source_reference", "title", "owner_role", "status",
+    "priority", "received_date", "due_date", "completed_date", "amount",
+    "currency", "category",
+]
+STATUSES = {"new", "in_progress", "waiting", "completed", "cancelled"}
+OPEN_STATUSES = {"new", "in_progress", "waiting"}
+OWNER_STATUSES = {"in_progress", "waiting", "completed"}
+PRIORITIES = {"low", "medium", "high"}
+DATE_FIELDS = ("received_date", "due_date", "completed_date")
+
+
+def blank(value: str) -> bool:
+    return value.strip() == ""
+
+
+def parse_date(value: str) -> date | None:
+    if len(value) != 10 or value[4] != "-" or value[7] != "-":
+        return None
+    try:
+        parsed = date.fromisoformat(value)
+    except ValueError:
+        return None
+    return parsed if parsed.isoformat() == value else None
+
+
+def parse_amount(value: str) -> Decimal | None:
+    try:
+        parsed = Decimal(value)
+    except (InvalidOperation, ValueError):
+        return None
+    return parsed if parsed.is_finite() else None
+
+
+def add_issue(
+    issues: list[dict[str, str]],
+    row: dict[str, str],
+    field: str,
+    rule: str,
+    severity: str,
+    message: str,
+) -> None:
+    work_id = row["work_item_id"]
+    issues.append(
+        {
+            "issue_id": f"{work_id}|{rule}|{field}",
+            "work_item_id": work_id,
+            "source_reference": row["source_reference"],
+            "field": field,
+            "raw_value": row[field],
+            "rule_code": rule,
+            "severity": severity,
+            "message": message,
+            "assessment_date": ASSESSMENT_DATE.isoformat(),
+        }
+    )
+
+
+def main() -> None:
+    input_bytes = INPUT_FILE.read_bytes()
+    input_hash = hashlib.sha256(input_bytes).hexdigest()
+    states = ["received"]
+
+    with INPUT_FILE.open("r", encoding="utf-8-sig", newline="") as stream:
+        reader = csv.DictReader(stream)
+        if reader.fieldnames != HEADERS:
+            raise ValueError(
+                f"Header mismatch. Expected {HEADERS}; got {reader.fieldnames}"
+            )
+        rows = list(reader)
+    states.append("validated")
+
+    issues: list[dict[str, str]] = []
+    parsed_dates: dict[str, dict[str, date | None]] = {}
+
+    for row in rows:
+        for field in (
+            "work_item_id", "source_reference", "title",
+            "received_date", "category",
+        ):
+            if blank(row[field]):
+                add_issue(
+                    issues, row, field, "R001", "medium",
+                    f"Required {field} is missing.",
+                )
+
+        status = row["status"].strip()
+        priority = row["priority"].strip()
+        if status not in STATUSES:
+            add_issue(
+                issues, row, "status", "R002", "high",
+                "Status is not in the allowed list.",
+            )
+        if priority not in PRIORITIES:
+            add_issue(
+                issues, row, "priority", "R003", "medium",
+                "Priority is not in the allowed list.",
+            )
+
+        row_dates: dict[str, date | None] = {}
+        for field in DATE_FIELDS:
+            raw = row[field].strip()
+            parsed = parse_date(raw) if raw else None
+            row_dates[field] = parsed
+            if raw and parsed is None:
+                add_issue(
+                    issues, row, field, "R004", "high",
+                    "Date must use ISO format YYYY-MM-DD.",
+                )
+        parsed_dates[row["work_item_id"]] = row_dates
+
+        received = row_dates["received_date"]
+        due = row_dates["due_date"]
+        if received is not None and due is not None and due < received:
+            add_issue(
+                issues, row, "due_date", "R005", "high",
+                "Due date is before received date.",
+            )
+
+        completed_raw = row["completed_date"].strip()
+        if status == "completed" and not completed_raw:
+            add_issue(
+                issues, row, "completed_date", "R006", "high",
+                "Completed work requires a completion date.",
+            )
+        elif status in (STATUSES - {"completed"}) and completed_raw:
+            add_issue(
+                issues, row, "completed_date", "R006", "medium",
+                "Non-completed work must not have a completion date.",
+            )
+
+        if status in OWNER_STATUSES and blank(row["owner_role"]):
+            add_issue(
+                issues, row, "owner_role", "R007", "medium",
+                "Active work requires an owner role.",
+            )
+
+        amount_raw = row["amount"].strip()
+        currency = row["currency"].strip()
+        if amount_raw:
+            amount = parse_amount(amount_raw)
+            if amount is None or amount < 0:
+                add_issue(
+                    issues, row, "amount", "R008", "high",
+                    "Amount must be a non-negative decimal.",
+                )
+            if currency != "EUR":
+                add_issue(
+                    issues, row, "currency", "R009", "medium",
+                    "A populated amount requires currency EUR.",
+                )
+        elif currency:
+            add_issue(
+                issues, row, "currency", "R009", "medium",
+                "Currency must be blank when amount is blank.",
+            )
+
+    reference_counts = Counter(
+        row["source_reference"].strip()
+        for row in rows
+        if row["source_reference"].strip()
+    )
+    for row in rows:
+        reference = row["source_reference"].strip()
+        if reference and reference_counts[reference] > 1:
+            add_issue(
+                issues, row, "source_reference", "R010", "high",
+                f"Source reference {reference} is duplicated.",
+            )
+
+    for row in rows:
+        due = parsed_dates[row["work_item_id"]]["due_date"]
+        if (
+            row["status"].strip() in OPEN_STATUSES
+            and due is not None
+            and due < ASSESSMENT_DATE
+        ):
+            add_issue(
+                issues, row, "due_date", "R011", "high",
+                "Open work is overdue on the fixed assessment date.",
+            )
+
+    issues.sort(
+        key=lambda item: (
+            item["work_item_id"], item["rule_code"], item["field"]
+        )
+    )
+    output_fields = [
+        "issue_id", "work_item_id", "source_reference", "field", "raw_value",
+        "rule_code", "severity", "message", "assessment_date",
+    ]
+    with OUTPUT_FILE.open("w", encoding="utf-8", newline="") as stream:
+        writer = csv.DictWriter(stream, fieldnames=output_fields)
+        writer.writeheader()
+        writer.writerows(issues)
+
+    states.append("issues_ready" if issues else "no_action_needed")
+    summary = {
+        "run_id": "RUN-" + hashlib.sha256(
+            (input_hash + ASSESSMENT_DATE.isoformat()).encode("utf-8")
+        ).hexdigest()[:12],
+        "input_sha256": input_hash,
+        "assessment_date": ASSESSMENT_DATE.isoformat(),
+        "states": states,
+        "issue_count": len(issues),
+        "output_file": OUTPUT_FILE.name,
+        "external_actions": 0,
+    }
+    SUMMARY_FILE.write_text(
+        json.dumps(summary, indent=2) + "\n", encoding="utf-8"
+    )
+    if FAILURE_FILE.exists():
+        FAILURE_FILE.unlink()
+    print(f"{summary['run_id']}: {len(issues)} issues; state={states[-1]}")
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as error:
+        FAILURE_FILE.write_text(
+            json.dumps(
+                {"state": "failed_manual", "error": str(error)}, indent=2
+            ) + "\n",
+            encoding="utf-8",
+        )
+        print(f"SAFE STOP: {error}")
+        raise SystemExit(1)
+```
+
+What each part does:
+
+- constants make file names and the assessment date explicit;
+- parsing functions refuse invalid dates and amounts;
+- `add_issue` keeps source evidence with each result;
+- `main` checks the header before rules;
+- deterministic checks create issues;
+- duplicate and overdue checks run after valid prerequisites exist;
+- output is overwritten on an identical rerun, so no duplicate effect occurs;
+- exceptions create `failed_manual.json` and stop.
+
+### Stage 3 — Run and verify the worked example
+
+Run:
+
+```powershell
+python .\worked_checker.py
+$found = Import-Csv .\found_issues.csv
+$gold = Import-Csv .\worked_expected_issues.csv
+$found.Count
+$foundKeys = $found | ForEach-Object { "$($_.work_item_id)|$($_.rule_code)" }
+$goldKeys = $gold | ForEach-Object { "$($_.work_item_id)|$($_.rule_code)" }
+Compare-Object $goldKeys $foundKeys
+Get-Content .\run_summary.json
+Get-FileHash .\worked_work_items.csv -Algorithm SHA256
+```
+
+**Expected output:**
+
+- `RUN-...: 13 issues; state=issues_ready`;
+- count `13`;
+- `Compare-Object` prints nothing, meaning the key sets match;
+- JSON shows `external_actions` equal to 0;
+- the input hash matches `input_hash_before.txt`.
+
+Run the checker again. The run ID and issue count must remain identical, and
+`found_issues.csv` must still contain 13 rows.
+
+**Troubleshooting:**
+
+- `SyntaxError` usually means a line was missed while pasting. Compare the line
+  shown in red with the worked program.
+- A header mismatch means the CSV changed or the wrong file was copied. Do not
+  relax the header check.
+- Extra `Compare-Object` lines identify missed (`<=`) or extra (`=>`) keys.
+- Never edit `worked_expected_issues.csv` to remove a difference.
+
+## Now recreate it yourself
+
+1. Create `recreated_items.csv` in Notepad:
+
+```csv
+work_item_id,source_reference,title,owner_role,status,priority,received_date,due_date,completed_date,amount,currency,category
+WI-9001,REF-9001,,ops,new,low,2026-07-20,2026-08-01,,,,general
+WI-9002,REF-9002,Valid completed item,ops,completed,medium,2026-07-10,2026-07-20,2026-07-19,0,EUR,general
+WI-9003,REF-9003,Due before received,ops,completed,high,2026-07-12,2026-07-10,2026-07-15,,,general
+WI-9004,REF-9004,Unexpected completion,ops,in_progress,medium,2026-07-20,2026-08-01,2026-07-25,,,general
+WI-9005,REF-9005,Negative amount,ops,completed,high,2026-07-01,2026-07-20,2026-07-19,-1,EUR,general
+WI-9006,REF-9006,Overdue waiting item,ops,waiting,high,2026-07-01,2026-07-10,,,,general
+```
+
+2. Write `recreated_expected.csv` yourself with this exact content:
+
+```csv
+work_item_id,rule_code
+WI-9001,R001
+WI-9003,R005
+WI-9004,R006
+WI-9005,R008
+WI-9006,R011
+```
+
+This is the result you predict before running the checker. It is different
+from the worked example because the six recreated rows are new.
+3. Copy the program and open it:
+
+```powershell
+Copy-Item .\worked_checker.py .\recreated_checker.py
+notepad .\recreated_checker.py
+```
+
+Change only:
+
+- `worked_work_items.csv` to `recreated_items.csv`;
+- `found_issues.csv` to `recreated_found_issues.csv`;
+- `run_summary.json` to `recreated_run_summary.json`;
+- `failed_manual.json` to `recreated_failed_manual.json`.
+
+Save, close, and run:
+
+```powershell
+python .\recreated_checker.py
+$recreatedFound = Import-Csv .\recreated_found_issues.csv
+$recreatedExpected = Import-Csv .\recreated_expected.csv
+$recreatedFound.Count
+$recreatedFound | Select-Object work_item_id,rule_code,field,severity
+$recreatedKeys = $recreatedFound | ForEach-Object { "$($_.work_item_id)|$($_.rule_code)" }
+$recreatedExpectedKeys = $recreatedExpected | ForEach-Object { "$($_.work_item_id)|$($_.rule_code)" }
+Compare-Object $recreatedExpectedKeys $recreatedKeys
+```
+
+**Expected output:** five issues with the five predicted pairs and no
+`Compare-Object` output.
+
+This recreation uses different rows, identifiers, amounts, statuses, and rule
+combinations. If it fails, fix your data or the four configured file names;
+do not weaken a rule.
+
+## Ask Codex to check your work
+
+Run `(Resolve-Path $moduleFolder).Path` to obtain the full path, replace
+`[PASTE FULL PATH HERE]`, and copy:
 
 ```text
-data/input/work_items.csv
-tests/expected_issues.csv
+READ-ONLY COURSE REVIEW.
+
+I authorize inspection of only this full path:
+[PASTE FULL PATH HERE]
+
+Do not edit, create, delete, rename, move, format, or execute files. Do not
+inspect the parent or another folder. This folder must contain no secrets and
+no real client or workplace data. Stop if you find credentials, personal data,
+or health data.
+
+Inspect the Python, CSV, and JSON files. Return:
+1. PASS or NOT YET;
+2. checks for: exact header stop; preserved raw values; configured date
+2026-07-26; R001-R011 implemented deterministically; invalid-date dependency;
+both duplicate rows reported; stable issue IDs; evidence fields; 13 worked
+issues matching gold keys; five recreated issues matching its expected keys;
+stable rerun design; named states; failed_manual path; zero external actions;
+synthetic data only;
+3. the smallest corrections I should make if NOT YET.
+
+Remain read-only. Do not run the scripts or supply replacement code.
 ```
 
-Calculate and record the input SHA-256 hash. The hash is evidence that a later
-comparison used the same bytes; it does not prove the data is true.
+## Pass criteria
 
-### 2. Define the run configuration
-
-Record:
-
-```json
-{
-  "rule_set_version": "1.0.0",
-  "assessment_date": "2026-07-26",
-  "ai_mode": "offline",
-  "kill_switch": false
-}
-```
-
-Do not use today's date for the supplied overdue rule. A moving date would make
-the expected result change over time.
-
-### 3. Load rows with explicit encoding
-
-Create a loader that:
-
-- opens UTF-8 text;
-- checks that all 12 expected headers exist exactly once;
-- returns raw row dictionaries;
-- records the source line number;
-- rejects a missing or empty file clearly.
-
-Do not continue with a partially understood header.
-
-### 4. Implement small validators
-
-Write one function for each concern:
-
-- required value;
-- allowed status;
-- allowed priority;
-- ISO date format;
-- date order;
-- status/completion-date relationship;
-- owner requirement;
-- non-negative amount;
-- amount/currency relationship;
-- duplicate source reference;
-- overdue open work.
-
-Use rule codes R001–R011 from `practice_data/README.md`.
-
-Apply format validation before date comparisons. An invalid date must not be
-silently interpreted.
-
-### 5. Create issue records
-
-Each issue contains:
-
-- issue ID;
-- work-item ID;
-- field;
-- rule code;
-- severity;
-- plain-language message;
-- observed value when safe and useful.
-
-Validate the record with `schemas/issue.schema.json`.
-
-### 6. Compare with the expected register
-
-Compare on `(work_item_id, rule_code)`.
-
-Report:
-
-- true positives;
-- false positives;
-- false negatives;
-- exact differences.
-
-The supplied baseline contains 15 rows and 13 expected issues. Do not hard-code
-those issue records in the checker.
-
-### 7. Produce the rule-based report
-
-Create:
-
-```text
-output/<run_id>/
-  issues.json
-  issues.csv
-  rule_report.md
-  run_record.json
-```
-
-The Markdown report should show counts, high-priority issues, all issue IDs,
-and a limitation that a human must decide what to do.
-
-### 8. Add named states
-
-At minimum:
-
-```text
-received → validated → issues_ready
-received → failed_manual
-validated → no_action_needed
-```
-
-Write the current state to the run record and an audit event. Do not use a
-filename as the only state.
-
-### 9. Make duplicate runs safe
-
-Derive a run key from:
-
-- input hash;
-- rule-set version;
-- assessment date.
-
-Rerunning the same key should either reuse the existing output or replace it
-atomically according to a written rule. It must not append duplicate issues.
-
-### 10. Orchestrate visibly
-
-In n8n, create a small workflow that:
-
-1. starts manually;
-2. receives the input path and configuration;
-3. calls the Python checker;
-4. branches on success, no issues, or failure;
-5. records the final state;
-6. stops before any external action.
-
-Export the n8n workflow JSON into Git after removing credentials and local
-secrets.
-
-### 11. Test failure cases
-
-Create test copies for:
-
-- missing file;
-- wrong header;
-- empty file;
-- malformed date;
-- repeated retry;
-- zero-issue input;
-- unexpected exception.
-
-Each failure must be understandable without reading a Python stack trace alone.
+- [ ] Worked run produces exactly 13 matching issue keys.
+- [ ] Independent run produces exactly five predicted issue keys.
+- [ ] Input hashes remain unchanged.
+- [ ] Header mismatch causes a safe stop.
+- [ ] Invalid dates cannot feed dependent comparisons.
+- [ ] Every issue includes row, field, raw value, rule, severity, and date.
+- [ ] Identical reruns have the same run ID and no duplicate rows.
+- [ ] States and `failed_manual` are visible.
+- [ ] External actions remain zero.
+- [ ] Codex returns `PASS` read-only.
 
 ## Consultant lens
 
-Ask a client:
-
-- Which system owns each field?
-- Who defines and approves each business rule?
-- Are blank values truly errors or legitimate exceptions?
-- What date and timezone govern “overdue”?
-- What happens today when a row cannot be processed?
-- Which existing report already detects some of these issues?
-
-Request evidence:
-
-- a data dictionary;
-- report examples with lawful, minimized test data;
-- rule owner;
-- exception volume;
-- false-alarm cost;
-- manual fallback.
-
-Stop when:
-
-- field meaning is disputed;
-- no process owner will approve rules;
-- expected results are unavailable;
-- the source export changes without notice;
-- failure would affect a person or binding decision.
-
-Client-style deliverable:
-
-- rule register, exception sample, failure matrix, and rule-only prototype.
+The first implementation should make deterministic business rules visible,
+testable, and replaceable. A workflow canvas may orchestrate the same steps
+later, but it must not hide contracts or failure behaviour.
 
 ## Capstone increment
 
-The capstone now creates the complete deterministic issue register and
-rule-based exception report.
-
-AI is still absent. The workflow must already be useful.
+The capstone has a functioning non-AI issue detector, stable outputs, named
+states, deterministic evaluation, and manual failure route.
 
 ## Required artifact
 
-Save:
-
-- `evidence/module_04_rule_register.md`;
-- deterministic checker source;
-- unit tests;
-- comparison report against expected issues;
-- exported n8n workflow;
-- one normal and one failure run record;
-- screenshot or recording of the visible failure path.
+The teaching contract creates worked and recreated code, inputs, outputs,
+expected results, hashes, and run summaries under `module-04`.
 
 ## Test gate
 
-- [ ] All 13 supplied expected issues are detected.
-- [ ] There are zero unexplained false positives or false negatives.
-- [ ] Raw source data remains unchanged.
-- [ ] Issue records validate against the schema.
-- [ ] The report works with no API key.
-- [ ] Every run ends in a named state.
-- [ ] Identical reruns create no duplicate logical output.
-- [ ] Missing and malformed input fail visibly.
-- [ ] I can explain every rule and major code path.
+The **Pass criteria** are the complete gate.
 
 ## Stop or rework
 
-Stop if passing requires:
-
-- changing expected issues without evidence;
-- letting AI determine objective rules;
-- ignoring malformed rows;
-- using moving dates;
-- connecting a real system;
-- hiding an error behind “completed”.
+Stop when input was modified, gold was edited, a rule was weakened to pass,
+exceptions disappear without a named failure state, or any external action was
+added.
 
 ## Common failures
 
-- comparing date strings before validating format;
-- treating blank and zero as the same;
-- losing leading zeros during spreadsheet import;
-- using row number as a permanent business ID;
-- appending results on every retry;
-- testing only the happy path;
-- letting n8n success mean the domain result was successful.
+- Pasting partial Python code.
+- Comparing unvalidated dates.
+- Using the current day instead of configuration.
+- Appending duplicate output on rerun.
+- Treating a traceback as an adequate business failure route.
 
 ## Estimated time
 
-12–18 hours for a literal beginner. Split the module if the deterministic rules
-or tests are not yet understandable.
+12–16 hours.

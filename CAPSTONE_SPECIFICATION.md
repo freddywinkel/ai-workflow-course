@@ -1,4 +1,12 @@
-# Capstone Specification — Synthetic SME Operations Exception Assistant
+# Capstone Specification — Synthetic Small and Medium-sized Enterprise (SME) Operations Exception Assistant
+
+## How to use this reference
+
+This is the final acceptance reference, not an unguided practice task. Complete
+Modules 1–9 in order. Each module first demonstrates its part of the capstone,
+then asks you to recreate it, gives you a read-only Codex inspection prompt,
+and states the pass criteria. Return here only to confirm that the combined
+result is complete.
 
 ## Purpose
 
@@ -8,9 +16,11 @@ solution.
 
 ## Fictional organization
 
-`Northstar Services BV` is a fictional Dutch B2B service SME. Its operations
-team reviews a weekly export of work items. The manual process is slow and
-inconsistent, but the organization has not yet proved that AI is needed.
+`Northstar Services BV` is a fictional Dutch business-to-business (B2B)
+service SME. **BV** is the Dutch abbreviation for *besloten vennootschap*, a
+private limited company. Its operations team reviews a weekly export of work
+items. The manual process is slow and inconsistent, but the organization has
+not yet proved that artificial intelligence (AI) is needed.
 
 All supplied records are synthetic.
 

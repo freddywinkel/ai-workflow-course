@@ -2,25 +2,26 @@
   "schemaVersion": 2,
   "program": {
     "id": "controlled-ai-workflow-consultant-path",
-    "title": "Controlled AI Workflow Implementation Consultant",
-    "targetMarket": "Dutch SMEs",
-    "positioning": "Help an SME find one worthwhile operational problem, improve the process, implement a controlled AI-assisted workflow in the systems it already uses, train the people involved, and prove the result.",
-    "durableValue": "The durable skill is controlled implementation: process discovery, data quality, deterministic rules, evidence, human approval, testing, adoption, measurement, and handover. A particular AI model or workflow canvas is only a replaceable tool."
+    "title": "Controlled Artificial Intelligence (AI) Workflow Implementation Consultant",
+    "targetMarket": "Dutch small and medium-sized enterprises (SMEs)",
+    "positioning": "Help a small and medium-sized enterprise (SME) find one worthwhile operational problem, improve the process, implement a controlled artificial intelligence (AI)-assisted workflow in the systems it already uses, train the people involved, and prove the result.",
+    "durableValue": "The durable skill is controlled implementation: understand the process, check data quality, apply fixed rules that give the same result for the same input, link evidence, keep human approval, test failures, help people adopt the change, measure results, and hand over clear instructions. A particular AI model or workflow screen is only a replaceable tool."
   },
   "course": {
     "id": "course-1-controlled-ai-workflow-foundations",
     "sequence": 1,
-    "title": "Controlled AI Workflow Foundations",
+    "title": "Controlled Artificial Intelligence (AI) Workflow Foundations",
     "shortTitle": "Course 1",
-    "subtitle": "From zero technical knowledge to one safe, evidence-backed SME workflow",
-    "version": "2.0.0",
+    "subtitle": "From zero technical knowledge to one safe, evidence-backed small and medium-sized enterprise (SME) workflow",
+    "version": "2.1.0",
+    "practiceRevision": 2,
     "verifiedThrough": "2026-07-26",
     "learnerStartingPoint": "No coding, automation, consulting, or AI implementation knowledge is assumed.",
-    "outcome": "You can investigate a small operational workflow, decide what should and should not be automated, and build a bounded prototype with deterministic checks, evidence, human approval, testing, and a manual fallback.",
+    "outcome": "You can investigate a small operational workflow, decide what should and should not be automated, and build a small prototype with clear limits, fixed checks, evidence, human approval, testing, and a documented manual way of working.",
     "estimatedHours": {
-      "minimum": 110,
-      "typical": 130,
-      "maximum": 150
+      "minimum": 140,
+      "typical": 160,
+      "maximum": 180
     },
     "coreGroupIds": [
       "foundations",
@@ -88,7 +89,7 @@
           "id": "course-1-foundation-01",
           "revision": "2026-07-26",
           "sourcePath": "foundations/01_FILES_AND_TEXT.md",
-          "title": "Foundation 1 — Files and Text",
+          "title": "Foundation 1 — Files, Folders, Paths, and Plain Text",
           "legacyIds": [
             "foundations-01-files-and-text"
           ]
@@ -97,7 +98,7 @@
           "id": "course-1-foundation-02",
           "revision": "2026-07-26",
           "sourcePath": "foundations/02_COMMAND_LINE_SURVIVAL.md",
-          "title": "Foundation 2 — Command-Line Survival",
+          "title": "Foundation 2 — PowerShell and Command-Line Interface (CLI) Survival",
           "legacyIds": [
             "foundations-02-command-line-survival"
           ]
@@ -106,7 +107,7 @@
           "id": "course-1-foundation-03",
           "revision": "2026-07-26",
           "sourcePath": "foundations/03_CODE_AND_PYTHON.md",
-          "title": "Foundation 3 — Code and Python",
+          "title": "Foundation 3 — Reading Code and the Python Programming Language",
           "legacyIds": [
             "foundations-03-code-and-python"
           ]
@@ -115,7 +116,7 @@
           "id": "course-1-foundation-04",
           "revision": "2026-07-26",
           "sourcePath": "foundations/04_WEB_APIS_AND_JSON.md",
-          "title": "Foundation 4 — Web, APIs, and JSON",
+          "title": "Foundation 4 — Application Programming Interfaces (APIs), Hypertext Transfer Protocol (HTTP), and JavaScript Object Notation (JSON)",
           "legacyIds": [
             "foundations-04-web-apis-and-json"
           ]
@@ -124,7 +125,7 @@
           "id": "course-1-foundation-05",
           "revision": "2026-07-26",
           "sourcePath": "foundations/05_GIT_AND_SAFE_CHANGES.md",
-          "title": "Foundation 5 — Git and Safe Changes",
+          "title": "Foundation 5 — Git, a Tool for Recording File Changes Safely",
           "legacyIds": [
             "foundations-05-git-and-safe-changes"
           ]
@@ -133,21 +134,21 @@
           "id": "course-1-foundation-06",
           "revision": "2026-07-26",
           "sourcePath": "foundations/06_SPREADSHEETS_CSV_AND_DATA_QUALITY.md",
-          "title": "Foundation 6 — Spreadsheets, CSV, and Data Quality",
+          "title": "Foundation 6 — Spreadsheets, Comma-Separated Values (CSV), and Data Quality",
           "legacyIds": []
         },
         {
           "id": "course-1-foundation-07",
           "revision": "2026-07-26",
           "sourcePath": "foundations/07_AI_AND_CONTROLLED_WORKFLOWS.md",
-          "title": "Foundation 7 — AI and Controlled Workflows",
+          "title": "Foundation 7 — Artificial Intelligence (AI) and Controlled Workflows",
           "legacyIds": []
         },
         {
           "id": "course-1-foundation-08",
           "revision": "2026-07-26",
           "sourcePath": "foundations/08_SAFE_AI_ASSISTED_BUILDING.md",
-          "title": "Foundation 8 — Safe AI-Assisted Building",
+          "title": "Foundation 8 — Safe Artificial Intelligence (AI)-Assisted Building",
           "legacyIds": []
         },
         {
@@ -190,14 +191,14 @@
           "id": "course-1-module-04",
           "revision": "2026-07-26",
           "sourcePath": "modules/MODULE_04.md",
-          "title": "Module 4 — Build the Non-AI Workflow First",
+          "title": "Module 4 — Build the Rule-Based Workflow Before Adding Artificial Intelligence (AI)",
           "legacyIds": []
         },
         {
           "id": "course-1-module-05",
           "revision": "2026-07-26",
           "sourcePath": "modules/MODULE_05.md",
-          "title": "Module 5 — Add One Bounded AI Step",
+          "title": "Module 5 — Add One Bounded Artificial Intelligence (AI) Step",
           "legacyIds": []
         },
         {
@@ -211,7 +212,7 @@
           "id": "course-1-module-07",
           "revision": "2026-07-26",
           "sourcePath": "modules/MODULE_07.md",
-          "title": "Module 7 — Dutch SME Guardrails and Tool Choice",
+          "title": "Module 7 — Apply Dutch Small and Medium-sized Enterprise (SME) Guardrails and Choose the Right Tool",
           "legacyIds": []
         },
         {
@@ -225,7 +226,7 @@
           "id": "course-1-module-09",
           "revision": "2026-07-26",
           "sourcePath": "modules/MODULE_09.md",
-          "title": "Module 9 — Run UAT, Plan Adoption, and Hand Over",
+          "title": "Module 9 — Run User Acceptance Testing (UAT), Plan Adoption, and Hand Over",
           "legacyIds": []
         }
       ]
@@ -535,56 +536,56 @@
   ],
   "career": {
     "title": "Career sequence",
-    "summary": "This PWA teaches Course 1 in full. The remaining courses are separate future builds so technical foundations, consulting practice, governance, and commercial development are not confused with one another.",
-    "targetRole": "Controlled AI Workflow Implementation Consultant for Dutch SMEs",
+    "summary": "This progressive web app (PWA), an installable website that can keep working without an internet connection, teaches Course 1 in full. The remaining courses are separate future builds so technical foundations, consulting practice, rules and oversight, and commercial development are not confused with one another.",
+    "targetRole": "Controlled Artificial Intelligence (AI) Workflow Implementation Consultant for Dutch Small and Medium-sized Enterprises (SMEs)",
     "courses": [
       {
         "id": "course-1-controlled-ai-workflow-foundations",
         "sequence": 1,
-        "title": "Controlled AI Workflow Foundations",
+        "title": "Controlled Artificial Intelligence (AI) Workflow Foundations",
         "status": "current",
-        "purpose": "Build technical and control literacy from zero, then complete one synthetic end-to-end implementation.",
-        "exitEvidence": "A tested Synthetic SME Operations Exception Assistant, evaluation evidence, a runbook, and a plain-language case study."
+        "purpose": "Start with no technical background, learn the basic tools and safety controls, then build one complete workflow using made-up (synthetic) data.",
+        "exitEvidence": "A tested Synthetic SME Operations Exception Assistant (a practice system that flags records which break stated rules), test evidence, a step-by-step operating guide (runbook), and a plain-language case study."
       },
       {
         "id": "course-2-workflow-discovery-paid-diagnostics",
         "sequence": 2,
-        "title": "SME Workflow Discovery and Paid Diagnostics",
+        "title": "Workflow Discovery and Paid Problem Assessments",
         "status": "proposed",
-        "purpose": "Learn ethical outreach, process interviews, observation, baseline economics, data readiness, native-tool checks, opportunity scoring, diagnostic reporting, and pilot charters.",
-        "exitEvidence": "A complete fictional diagnostic, interview script, fixed-scope report, and pilot recommendation with success and stop criteria."
+        "purpose": "Learn to contact firms responsibly, interview and observe how work is done, measure current time and cost, check whether existing tools already solve the problem, rank opportunities, write a fixed-scope problem assessment (diagnostic), and propose a small trial plan (pilot charter).",
+        "exitEvidence": "A complete fictional problem assessment, interview script, fixed-scope report, and small-trial recommendation with success and stop criteria."
       },
       {
         "id": "course-3-sme-integrations-low-code-delivery",
         "sequence": 3,
-        "title": "SME Integrations and Low-Code Pilot Delivery",
+        "title": "Connect Small-Business Systems and Deliver a Small Trial",
         "status": "proposed",
-        "purpose": "Learn APIs, webhooks, OAuth, connectors, least privilege, environments, retries, rollback, client-owned tenants, UAT, and one bounded low-risk pilot.",
-        "exitEvidence": "A reproducible integration lab plus a supervised low-risk pilot or realistic sandbox equivalent."
+        "purpose": "Learn application programming interfaces (APIs), automatic event notices (webhooks), limited-access sign-in using Open Authorization (OAuth), prebuilt system links (connectors), minimum necessary access, separate test and live environments, trying a failed step again (retry), returning to a known safe state (rollback), client-owned software environments, user acceptance testing (UAT), and one small low-risk trial (pilot).",
+        "exitEvidence": "A reproducible system-connection practice lab plus a supervised low-risk trial or realistic isolated test environment (sandbox)."
       },
       {
         "id": "course-4-controlled-document-ai-systems",
         "sequence": 4,
         "title": "Controlled Document AI Systems",
         "status": "proposed",
-        "purpose": "Build source-preserving document workflows with PDF/DOCX parsing, OCR, evidence locators, extraction, policy retrieval, grounded drafting, exact-output approval, and evaluation.",
-        "exitEvidence": "A controlled synthetic supplier-document review system with parser, extraction, evidence, and reviewer tests."
+        "purpose": "Build document workflows that keep original source files unchanged, read Portable Document Format (PDF) and Microsoft Word (.docx) files, use optical character recognition (OCR) for scans, cite exact source locations, extract fixed fields, retrieve approved policy text, draft from cited evidence, require exact-output approval, and evaluate results.",
+        "exitEvidence": "A controlled made-up supplier-document review system with tests proving that document reading, field extraction, evidence links, and human review still work."
       },
       {
         "id": "course-5-production-governance-security-reliability",
         "sequence": 5,
-        "title": "Production Governance, Security, and Reliability",
+        "title": "Controls for Secure and Reliable Live Systems",
         "status": "proposed",
-        "purpose": "Learn AVG and AI Act implementation records, vendor review, threat modelling, identity, tenancy, observability, incident response, backup, restore, deletion, and production acceptance.",
-        "exitEvidence": "A governed production-readiness dossier plus incident and recovery exercises for a low-risk fictional workflow."
+        "purpose": "Learn General Data Protection Regulation (GDPR), called the Algemene verordening gegevensbescherming (AVG) in Dutch, and European Union Artificial Intelligence Act (AI Act) implementation records, vendor review, attack analysis, identity and permission controls, separate client environments, monitoring, incident response, backup, restore, deletion, and live-system acceptance.",
+        "exitEvidence": "A documented readiness pack for a low-risk fictional live system, plus failure and recovery exercises."
       },
       {
         "id": "course-6-adoption-consulting-managed-assurance",
         "sequence": 6,
-        "title": "Adoption, Consulting Delivery, and Managed Assurance",
+        "title": "Adoption, Consulting Delivery, and Ongoing Checks",
         "status": "proposed",
-        "purpose": "Learn engagement qualification, proposals and boundaries, change control, role-specific AI literacy, adoption, benefits, support, recurring assurance, and solo-practice delivery.",
-        "exitEvidence": "An end-to-end fictional engagement pack, adoption plan, benefit review, and managed-assurance operating procedure."
+        "purpose": "Learn to decide whether to accept a client request, write proposals and boundaries, control changes, teach people about AI for their role, help them adopt the change, measure benefits, design support, run recurring checks, and operate a solo consulting practice.",
+        "exitEvidence": "A complete fictional client pack, adoption plan, benefit review, and step-by-step procedure for recurring checks."
       }
     ],
     "optionalSpecializations": [
@@ -592,20 +593,20 @@
         "id": "specialization-quality-document-operations",
         "title": "Quality and Controlled-Document Operations",
         "status": "optional-after-course-5",
-        "purpose": "Specialise later in evidence-heavy quality operations, metadata, document control, training records, change control, and cross-system reconciliation without presenting yourself as a Veeva or regulated-systems expert before you have the required experience."
+        "purpose": "Specialise later in evidence-heavy quality operations, information that describes documents (metadata), document control, training records, change control, and checking that records match across systems (reconciliation), without presenting yourself as a Veeva quality-document platform or regulated-systems expert before you have the required experience."
       }
     ],
     "readinessGates": [
-      "Do not sell autonomous decision-making or high-consequence clinical, employment, credit, legal, or safety workflows as a beginner.",
-      "Use synthetic or expressly authorised data until privacy, security, confidentiality, and client controls are understood.",
+      "Do not sell systems that make decisions without human approval, or high-consequence clinical, employment, credit, legal, or safety workflows, as a beginner.",
+      "Use made-up (synthetic) or expressly authorised data until privacy, security, confidentiality, and client controls are understood.",
       "Complete Course 1 before presenting implementation as a paid capability.",
       "Complete Course 2 discovery practice before selling a build.",
-      "Validate demand with interviews and paid diagnostics before building a reusable product."
+      "Validate demand with interviews and paid problem assessments before building a reusable product."
     ],
     "suggestedPace": {
-      "currentCapacity": "Use 15 planned hours plus up to 5 optional hours per week; health and reintegration commitments take priority.",
+      "currentCapacity": "Use 15 planned hours plus up to 5 optional hours per week; health and return-to-work commitments take priority.",
       "laterCapacity": "At 8–10 hours per week, keep one major learning or client objective active at a time.",
-      "sequenceRule": "Courses are sequential foundations, not badges. Advance when the exit evidence is credible, not merely when every page is marked complete."
+      "sequenceRule": "Courses build on one another; they are not badges. Advance when the required proof is credible, not merely when every page is marked complete."
     }
   }
 }

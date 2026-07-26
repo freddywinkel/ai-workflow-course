@@ -1,139 +1,345 @@
-# Foundation 5 — Git and Safe Change Tracking
+# Foundation 5 — Git, a Tool for Recording File Changes Safely
+
+**Git** is a version-control tool: it records deliberate file checkpoints and
+shows how they changed. Git is its name, not an acronym.
 
 ## Outcome
 
-You can inspect a repository, see what changed, make a small local commit, and
-avoid commands that discard work or publish secrets.
+You will create a local Git repository, inspect changes, make small commits, and
+return to a working state with no uncommitted changes, without deleting or
+publishing anything.
 
-## Git is not GitHub
+## Words you need first
 
-**Git** is a local version-control tool. It records deliberate snapshots of
-files and helps compare changes.
+- A **repository** is a project folder tracked by Git.
+- The **working tree** is the current set of files in that repository.
+- An **untracked** file exists but is not yet recorded by Git.
+- A **diff** is a line-by-line view of changes.
+- **Staging** selects exact changes for the next snapshot.
+- A **commit** is a local recorded snapshot with a message.
+- A **branch** is a named line of development.
+- A **remote** is another linked repository, often online.
+- A **push** sends commits to a remote.
+- An **identifier (ID)** is a stable value that identifies one record, such as
+  `DEC-204`.
+- **PowerShell** is the Windows command shell used for the Git commands.
+- **Notepad** is the Windows plain-text editor used to create the practice
+  files.
+- **Markdown** is a plain-text documentation format that normally uses the
+  `.md` extension.
+- A **synthetic** record is deliberately fictional practice data.
+- `README.md` is a conventional “read me” Markdown filename for a project's
+  introductory information.
+- **Git metadata** is the hidden tracking information Git stores for a
+  repository.
+- **Git configuration** is the set of Git settings that control behaviour or
+  identity.
+- A **credential** is a secret value, such as a password, key, or token, that
+  can grant access.
+- **GitHub** is an online service that can host Git repositories. Git and
+  GitHub are different; this lesson uses no GitHub account and performs no push.
+- **Codex** is the artificial intelligence (AI) assistant used for the final
+  read-only check. The check prompt limits it to one practice folder.
 
-**GitHub** is an online hosting and collaboration service for Git repositories.
-A local repository can exist without GitHub. A commit is local until you push
-it.
+Git status or a commit does not prove that code works, data is safe, or a
+release is correct. It proves only what Git recorded.
 
-Key terms:
+## Safety boundary
 
-- repository: the tracked project folder;
-- working tree: the files as they currently exist;
-- untracked: a new file Git is not yet tracking;
-- modified: a tracked file changed since the last commit;
-- staged: selected for the next commit;
-- commit: a named local snapshot;
-- branch: a line of development;
-- diff: line-by-line change view;
-- remote: an online or other linked repository;
-- push: send commits to a remote.
+Do not use `git reset --hard`, `git clean -fd`, forced checkout, forced restore,
+or forced push. Those commands can discard work. This lesson creates a new
+local repository containing only synthetic Markdown files.
 
-## The safe inspection loop
+## Follow along — I show you exactly how
 
-From the project folder:
+### Prerequisites and start state
+
+- Foundations 1–4 are complete.
+- Git is installed using the course setup instructions.
+- `Documents\controlled-ai-course-practice` exists.
+- PowerShell is closed or showing a ready prompt.
+
+### Part A — create a local repository
+
+Open PowerShell and run:
 
 ```powershell
-git status --short
+Set-Location ([Environment]::GetFolderPath("MyDocuments"))
 ```
-
-This reads status. Typical prefixes:
-
-- `??`: untracked file;
-- ` M`: modified but not staged;
-- `M `: staged modification;
-- `A `: staged new file.
-
-Inspect changes:
 
 ```powershell
-git diff
-git diff --staged
+Set-Location "controlled-ai-course-practice"
 ```
 
-The first shows unstaged changes; the second shows what the next commit would
-contain. Lines beginning with `-` were removed and lines beginning with `+`
-were added. These display markers are not literal file content.
+```powershell
+New-Item -ItemType Directory -Path "foundation-05"
+```
 
-## Your first practice repository
+```powershell
+Set-Location "foundation-05"
+```
 
-In the safe practice folder:
+What the four setup commands do: they enter Documents, enter the existing
+practice root, create only `foundation-05`, and enter it.
+
+```powershell
+git --version
+```
+
+What this does: it confirms that Git is available. Expected output begins with
+`git version`.
+
+Run:
 
 ```powershell
 git init
-git status --short
 ```
 
-Create `README.md` in your editor, then:
+What this does: it creates hidden Git tracking information inside this one
+folder. It does not upload anything.
+
+Expected result: output includes `Initialized empty Git repository`.
+
+### Part B — set a fictional identity for this practice repository
+
+Run:
 
 ```powershell
-git status --short
-git diff
-git add README.md
-git diff --staged
-git commit -m "Add practice README"
-git status --short
+git config user.name "Course Learner"
 ```
 
-Before `git add`, inspect the file for secrets or personal paths. Before
-`git commit`, inspect the staged diff. A commit message should say what the
-change does.
-
-If Git asks for a user name/email, configure the identity you deliberately
-choose for commits. Do not copy a stranger's identity from an example.
-
-## `.gitignore`
-
-`.gitignore` lists paths Git should normally leave untracked:
-
-```gitignore
-.env
-.venv/
-__pycache__/
-artifacts/local/
+```powershell
+git config user.email "course-learner@example.invalid"
 ```
 
-Add ignore rules before creating secrets. Ignoring a file does not remove it
-from old commits. If a real API key ever enters Git history:
+What this does: it records a deliberately fictional commit identity only in
+this repository. The reserved `.invalid` address cannot receive email.
 
-1. stop;
-2. revoke/rotate the key;
-3. preserve evidence without redisplaying the value;
-4. get explicit help cleaning the history.
+Run:
 
-Deleting the visible file is not enough.
+```powershell
+git config --local --list
+```
 
-## Commands that require special care
+Expected result: the output includes the two fictional values.
 
-Do not run these merely because an AI assistant suggests them:
+### Part C — create, inspect, stage, and commit one file
 
-- `git reset --hard`;
-- `git clean -fd`;
-- `git checkout -- <file>`;
-- `git restore <file>`;
-- `git push --force`.
+1. Run:
 
-They can discard or overwrite work. Ask for a read-only diagnosis, exact
-affected files, recovery route, and safer option. In this course, preserve
-unexpected changes until you understand who created them.
+   ```powershell
+   notepad "README.md"
+   ```
 
-## Git does not prove quality
+2. Enter:
 
-A clean `git status` means no uncommitted tracked changes. It does not mean:
+   ```markdown
+   # Synthetic queue
 
-- tests passed;
-- no secrets exist in history;
-- the workflow is correct;
-- the deployed version matches the commit;
-- the code is understandable.
+   Status: new
+   Contains real data: no
+   ```
 
-Save test evidence separately and bind releases to an exact commit ID.
+3. Save and close Notepad.
+4. Run:
 
-## Chapter check
+   ```powershell
+   git status --short
+   ```
 
-You pass when you can:
+   Expected output:
 
-- explain Git versus GitHub;
-- use status and both diff views;
-- describe untracked, modified, staged, and committed;
-- explain why `.env` must be ignored before use;
-- name at least three destructive Git commands you will not run blindly.
+   ```text
+   ?? README.md
+   ```
 
+   `??` means the file is untracked.
+
+5. Run:
+
+   ```powershell
+   git add -- "README.md"
+   ```
+
+   What this does: it stages this one file. It does not upload or commit it.
+   The `--` separates options from the file name.
+
+6. Run:
+
+   ```powershell
+   git status --short
+   ```
+
+   Expected output:
+
+   ```text
+   A  README.md
+   ```
+
+7. Run:
+
+   ```powershell
+   git diff --staged -- "README.md"
+   ```
+
+   What this does: it shows the exact content selected for the next commit.
+   Lines beginning with `+` are display markers for additions.
+
+8. Run:
+
+   ```powershell
+   git commit -m "Add synthetic queue note"
+   ```
+
+   What this does: it creates one local snapshot.
+
+### Part D — inspect and commit a modification
+
+1. Run:
+
+   ```powershell
+   notepad "README.md"
+   ```
+
+2. Change only:
+
+   ```text
+   Status: new
+   ```
+
+   to:
+
+   ```text
+   Status: waiting
+   ```
+
+3. Save and close Notepad.
+4. Run:
+
+   ```powershell
+   git diff -- "README.md"
+   ```
+
+   Expected result: the diff shows one line removed with `Status: new` and one
+   line added with `Status: waiting`.
+
+5. Run:
+
+   ```powershell
+   git add -- "README.md"
+   ```
+
+6. Run:
+
+   ```powershell
+   git diff --staged -- "README.md"
+   ```
+
+7. Run:
+
+   ```powershell
+   git commit -m "Update synthetic queue status"
+   ```
+
+8. Run:
+
+   ```powershell
+   git status --short
+   ```
+
+9. Run:
+
+   ```powershell
+   git log --oneline -2
+   ```
+
+10. Run:
+
+    ```powershell
+    (Get-Location).Path
+    ```
+
+    What this does: it prints the exact full repository path for the read-only
+    Codex check.
+
+### Expected result — exact
+
+- `git status --short` prints nothing after the second commit. No output here
+  means the working tree is clean.
+- `git log --oneline -2` shows two commits. The newest message is
+  `Update synthetic queue status`; the older message is
+  `Add synthetic queue note`.
+- `README.md` contains `Status: waiting`.
+- Nothing was pushed or published.
+
+### Troubleshooting
+
+- If `git` is not recognised, stop and return to the course setup. Do not
+  download Git from an advertisement or unverified package site.
+- If `foundation-05` already exists, do not delete it. Enter it and run
+  `git status --short` before doing anything else.
+- If a commit says there is nothing to commit, inspect `git status --short` and
+  the file content rather than adding random changes.
+- Git may print a hint about the default branch name after `git init`. That is
+  information, not a failure.
+
+## Now recreate it yourself
+
+In the same repository:
+
+1. create `DECISIONS.md`;
+2. give it the heading `Synthetic decision`;
+3. add `Decision ID: DEC-204`;
+4. add `Outcome: test again`;
+5. inspect status;
+6. stage only `DECISIONS.md`;
+7. inspect the staged diff;
+8. commit it with message `Add synthetic decision record`;
+9. confirm `git status --short` prints nothing;
+10. confirm `git log --oneline -3` shows three commits.
+
+This uses a different file, record type, and commit message from the guided
+example.
+
+## Ask Codex to check your work
+
+Replace `[PASTE THE EXACT PATH]` with the full path output from
+`(Get-Location).Path`.
+
+```text
+You may inspect READ-ONLY this one practice folder and its local Git metadata,
+and no other location:
+[PASTE THE EXACT PATH]
+
+Do not create, edit, move, rename, stage, commit, restore, reset, clean, delete,
+push, or change Git configuration. Run only read-only inspection commands such
+as git status, git diff, and git log.
+
+Report PASS or NOT YET for each criterion:
+1. The folder is a local Git repository.
+2. README.md contains Status: waiting and Contains real data: no.
+3. DECISIONS.md contains DEC-204 and Outcome: test again.
+4. The three expected commit messages exist in the correct order.
+5. git status --short is empty.
+6. No remote push or credential is required for this exercise.
+
+Explain NOT YET in beginner language and make no changes.
+This folder must contain synthetic course data only. I must not include
+secrets, personal data, client data, employer data, or other work data. If you
+notice such content, stop, do not repeat it, and tell me to remove it locally.
+Confirm that the folder contains no secrets and no real employer, client, or
+work data.
+```
+
+## Pass criteria
+
+- [ ] I can explain Git as a version-control tool and know its name is not an
+      acronym.
+- [ ] I can distinguish untracked, staged, committed, and modified.
+- [ ] I inspected status and the staged diff before every commit.
+- [ ] The repository contains exactly the three intended local commits.
+- [ ] `git status --short` prints nothing at the end.
+- [ ] I did not use a destructive Git command, remote, credential, or real
+      business data.
+- [ ] Codex reported PASS for every read-only criterion, or I corrected each
+      NOT YET item myself.

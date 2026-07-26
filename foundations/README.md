@@ -1,108 +1,124 @@
-# Beginner Foundations — Start Here
+# Certified-Beginner Foundations — Start Here
 
-This sequence is for a learner who has never programmed or implemented a
-business workflow. It teaches enough technical literacy to build and supervise
-small, controlled workflow demonstrations for Dutch SMEs. It does not make you
-a production consultant by itself.
+This sequence assumes you have never programmed, used a command line, built an
+automation, or implemented artificial intelligence (AI). It teaches the minimum
+technical literacy needed to begin the controlled workflow course.
 
-The foundations come before the project modules. A complete beginner should
-budget roughly 14–20 focused hours and repeat any exercise that is not yet
-explainable in their own words. Use only the supplied fictional data.
+It does not make you a production consultant. It gives you a safe practice
+method and objective evidence that you can recreate the basics.
 
 ## What you need
 
-- A Windows computer on which you may install software.
-- A text editor. Visual Studio Code is recommended.
-- A spreadsheet program that can import CSV files.
-- The supplied synthetic course files.
-- Permission to stop whenever a command or result is unclear.
+- A Windows computer on which you may install the course software.
+- File Explorer, the Windows file-and-folder browser, and Notepad, the Windows
+  plain-text editor.
+- PowerShell, the Windows command shell for typing and running text commands.
+- Python, a programming language, and Git installed using the course setup
+  instructions. Git is a version-control tool; Git is its name, not an
+  acronym.
+- Permission to create this deliberately fictional, or **synthetic**, practice
+  root:
 
-You do **not** need previous experience with coding, Git, PowerShell, APIs,
-spreadsheets, databases, workflow tools, or AI development.
+  ```text
+  Documents\controlled-ai-course-practice
+  ```
 
-## Foundation path
+Do not use employer, client, supplier, employee, patient, or other real records.
+Do not connect these exercises to a workplace system.
 
-Complete the chapters in order:
+## Complete the lessons in order
 
-1. [`01_FILES_AND_TEXT.md`](01_FILES_AND_TEXT.md) — files, folders, extensions,
-   paths, and plain-text configuration.
-2. [`02_COMMAND_LINE_SURVIVAL.md`](02_COMMAND_LINE_SURVIVAL.md) — PowerShell,
-   commands, output, errors, folders, and stopping a running program.
-3. [`03_CODE_AND_PYTHON.md`](03_CODE_AND_PYTHON.md) — code, Python, small
-   functions, tests, and unexplained generated code.
-4. [`04_WEB_APIS_AND_JSON.md`](04_WEB_APIS_AND_JSON.md) — clients, servers,
-   HTTP, APIs, requests, responses, and JSON.
-5. [`05_GIT_AND_SAFE_CHANGES.md`](05_GIT_AND_SAFE_CHANGES.md) — status, diffs,
-   commits, recovery, and protecting secrets.
+After Foundation 2, follow
+[`SETUP_WINDOWS.md`](../SETUP_WINDOWS.md) to install Python and Git before
+continuing with Foundation 3.
+
+1. [`01_FILES_AND_TEXT.md`](01_FILES_AND_TEXT.md) — Windows folders, extensions,
+   Notepad, Markdown (plain-text formatting), and JavaScript Object Notation
+   (JSON), a strict structured-text format.
+2. [`02_COMMAND_LINE_SURVIVAL.md`](02_COMMAND_LINE_SURVIVAL.md) — PowerShell and
+   the command-line interface (CLI), a text interface for exact commands.
+3. [`03_CODE_AND_PYTHON.md`](03_CODE_AND_PYTHON.md) — small Python functions
+   (named reusable blocks of code), conditions, Boolean true-or-false results,
+   and assertions (executable expectations that fail visibly when false).
+4. [`04_WEB_APIS_AND_JSON.md`](04_WEB_APIS_AND_JSON.md) — application
+   programming interfaces (APIs), which are software communication contracts;
+   Hypertext Transfer Protocol (HTTP), the rules for web requests and
+   responses; and JSON validation.
+5. [`05_GIT_AND_SAFE_CHANGES.md`](05_GIT_AND_SAFE_CHANGES.md) — Git status (the
+   current change summary), diffs (line-by-line changes), staging (selecting a
+   change for the next saved checkpoint), and local commits (recorded
+   checkpoints).
 6. [`06_SPREADSHEETS_CSV_AND_DATA_QUALITY.md`](06_SPREADSHEETS_CSV_AND_DATA_QUALITY.md)
-   — tabular data, CSV import, data types, deterministic checks, and issue
-   measurement.
+   — spreadsheets; comma-separated values (CSV), a plain-text table format;
+   deterministic checks that give the same result for the same input and rule;
+   and issue records that preserve what a check found.
 7. [`07_AI_AND_CONTROLLED_WORKFLOWS.md`](07_AI_AND_CONTROLLED_WORKFLOWS.md) —
-   appropriate AI tasks, evidence, uncertainty, human decisions, and safe
-   workflow boundaries.
-8. [`08_SAFE_AI_ASSISTED_BUILDING.md`](08_SAFE_AI_ASSISTED_BUILDING.md) — using
-   an AI assistant while keeping changes understandable, reviewable, and
-   tested.
+   exact rules, AI drafting, evidence, human authority, and a manual fallback,
+   which is the documented safe way to continue or stop without automation.
+8. [`08_SAFE_AI_ASSISTED_BUILDING.md`](08_SAFE_AI_ASSISTED_BUILDING.md) — one
+   bounded AI-assisted change with acceptance evidence: observed proof that
+   the stated conditions were met.
 9. [`09_WORKFLOW_TOOLS_AND_DATA_STORES.md`](09_WORKFLOW_TOOLS_AND_DATA_STORES.md)
-   — choosing an orchestrator and storage approach without confusing a tool
-   with the business process.
+   — workflow tools; workflow state, meaning the current status and ownership
+   of a work item; audit events, which record significant actions and results;
+   source/state/audit separation; ownership; and minimal architecture, the
+   documented arrangement of components and responsibilities.
 
-Keep [`GLOSSARY.md`](GLOSSARY.md) open while studying.
+Keep [`GLOSSARY.md`](GLOSSARY.md) open as a lookup page, but do not use it as a
+substitute for explaining a lesson in your own words.
 
-## How to study each chapter
+## The fixed lesson contract
 
-For every chapter:
+**Codex** is the artificial intelligence (AI) assistant used for the read-only
+checks in this course.
 
-1. Read the outcome.
-2. Perform the exercise yourself.
-3. Compare the observed result with the stated result.
-4. Explain what happened in ordinary language.
-5. Complete the chapter check.
-6. Save only synthetic practice artifacts.
+Every foundation uses the same four-stage practice loop:
 
-A command, formula, or AI answer is not evidence merely because it looks
-professional. Know:
+1. **Follow along — I show you exactly how.** Start from a declared state,
+   perform exact clicks or commands, read what each action does, compare the
+   exact expected result, and use the narrow troubleshooting note if needed.
+2. **Now recreate it yourself.** Build a meaningfully different example with
+   new names or values. This tests transfer rather than copying.
+3. **Ask Codex to check your work.** Codex is the AI assistant used in this
+   course. Give it one explicit full practice-folder path and authorise
+   read-only inspection. Codex must not change the work.
+4. **Pass criteria.** Mark only objective checkboxes supported by observed
+   files, output, and the read-only review.
 
-- what should enter;
-- what should happen;
-- what should leave;
-- what may change;
-- what can fail;
-- how you checked the result;
-- how work continues safely if the tool fails.
+If the guided example does not match its expected result, stop before the
+recreation exercise. Do not rush forward to preserve a calendar.
 
-## Foundation gate
+## How to use commands safely
 
-You are ready for the project modules when all of these are true:
+A **code block** is a visually separated example. **Backticks** are the `` ` ``
+marks around or above and below that example; they are not command text.
 
-- [ ] I can distinguish a folder, file, extension, full path, and relative path.
-- [ ] I can identify a PowerShell prompt, command, output, and error.
-- [ ] I can use `Get-Location`, `Get-ChildItem`, and `Set-Location`.
-- [ ] I know code fences, prompts, and example output are not command text.
-- [ ] I can recognise Markdown, JSON, YAML, CSV, and `.env` files.
-- [ ] I can describe a Python variable, function, condition, list, dictionary,
-      and test.
-- [ ] I can explain request, response, endpoint, status code, and JSON.
-- [ ] I can run `git status` and inspect `git diff` without changing files.
-- [ ] I know why `.env` and business data must not enter Git or AI chat.
-- [ ] I can explain row, column, header, data type, unique ID, blank value, and
-      data-quality rule.
-- [ ] I can import CSV deliberately and protect the untouched source export.
-- [ ] I can distinguish a deterministic rule from an AI interpretation.
-- [ ] I can explain why schema-valid or fluent output can still be wrong.
-- [ ] I can identify where a human must review, reject, correct, or escalate.
-- [ ] I can request one small AI-assisted change, review its diff, and test it.
-- [ ] I can describe a manual fallback for a failed workflow.
+- Copy only command text inside a code block, not the backticks or language
+  label.
+- Run one command at a time.
+- Confirm the current folder before a changing command.
+- Read all output before continuing.
+- Do not improvise deletion, reset, or administrator commands, which run with
+  elevated system rights.
+- Do not improvise an **execution-policy change**, which alters PowerShell's
+  rules for allowing scripts, or run a **downloaded script**, which is a file of
+  commands obtained from another source.
+- Treat an error as evidence to diagnose.
 
-If one item is not true, repeat only the relevant chapter. This is a learning
-checkpoint, not a speed test.
+## Foundation completion gate
 
-## Safe learning boundary
+- [ ] Every lesson's guided example matches its exact expected result.
+- [ ] Every recreation uses meaningfully different names or data.
+- [ ] Every Codex review was limited to one explicit folder and read-only.
+- [ ] Every pass criterion is supported by observed evidence.
+- [ ] I can explain the difference between exact rules, AI candidates, and
+      human authority.
+- [ ] I can explain source input, workflow state, issue evidence, and audit
+      events.
+- [ ] I used only synthetic course data and no **secrets**, meaning passwords,
+      keys, tokens, or other values that grant access.
+- [ ] I know that foundation completion is preparation for Course 1, not
+      production readiness.
 
-Do not use employer, customer, patient, employee, supplier, or other real
-records in these exercises. Do not connect the demonstrations to workplace
-systems. Do not automate external sending, payment, deletion, approval, or
-other consequential actions.
-
-The foundation goal is a controlled synthetic demonstration that you can
-explain and test—not unsupervised production automation.
+Repeat only the lesson whose evidence is incomplete. This is a learning gate,
+not an intelligence or speed test.

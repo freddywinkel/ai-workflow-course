@@ -1,14 +1,14 @@
 # Course 1 Package Validation Report
 
-Course: **Controlled AI Workflow Foundations**
+Course: **Controlled Artificial Intelligence (AI) Workflow Foundations**
 
-Course version: `2.0.0`
+Course version: `2.1.0`
 
 Curriculum verified through: `2026-07-26`
 
 Result: **PASS**
 
-Checks: 23; failures: 0; warnings: 0
+Checks: 27; failures: 0; warnings: 0
 
 ## Scope
 
@@ -31,6 +31,10 @@ external websites are outside this deterministic validation.
 | PASS | progress-modules | exactly 9 ordered module progress lessons |
 | PASS | progress-total | 18 progress lessons: 9 foundations plus 9 modules |
 | PASS | module-structure | all 9 modules use the 12 required headings in order |
+| PASS | beginner-practice-structure | all 18 progress lessons use the ordered follow, recreate, inspect, and pass loop |
+| PASS | beginner-practice-codex-check | all 18 progress lessons include bounded read-only Codex inspection prompts |
+| PASS | beginner-practice-pass-criteria | all 18 progress lessons include objective pass checklists |
+| PASS | beginner-first-use-terms | 18 required first-use expansions and product explanations are present in onboarding |
 | PASS | current-json-syntax | 8 in-scope JSON files parsed |
 | PASS | schema-set | 5 current schema files include all required Course 1 contracts |
 | PASS | schema-structure | 5 schemas have unique IDs and closed object contracts |
@@ -42,7 +46,7 @@ external websites are outside this deterministic validation.
 | PASS | practice-rule-register | R001-R011 are documented and covered using fixed date 2026-07-26 |
 | PASS | practice-synthetic-safety | fixed fictional identifiers, role-only ownership, no personal-data columns, and explicit no-real-data guarantees |
 | PASS | practice-rule-oracle | standard-library evaluator reproduces all 13 frozen issues, including both R010 duplicates and fixed-date R011 |
-| PASS | internal-links | 53 current local targets exist; 0 archived/generated targets ignored |
+| PASS | internal-links | 50 current local targets exist; 0 archived/generated targets ignored |
 
 ## Limits
 

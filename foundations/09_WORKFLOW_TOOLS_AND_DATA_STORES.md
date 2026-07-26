@@ -1,228 +1,375 @@
 # Foundation 9 — Workflow Tools and Data Stores
 
+A **workflow** is connected human and system activity that moves one unit of
+work from a trigger to a declared completion or exception. **Architecture** is
+the documented arrangement of components, data, and responsibilities. **Source
+input** is the received record or unchanged snapshot. **Workflow state**, also
+called work state, is the current status, owner, timestamps, and reason code. An
+**audit event** is a structured record of a significant business or control
+event.
+
 ## Outcome
 
-You can explain the role of an orchestrator, code component, connector, and data
-store; compare tool choices using business ownership and risk; and sketch the
-smallest maintainable architecture for a controlled SME workflow.
+You will document a minimal fictional workflow architecture, separate source
+input from work state and audit events, assign ownership, and explain why the
+simplest maintainable tool is the correct starting point.
 
-## A workflow is not its drawing tool
+## Words you need first
 
-A workflow is the connected work that moves one unit from a trigger to a
-declared completion or exception state. A product such as n8n, Power Automate,
-or another orchestrator may implement parts of it, but the business process also
-includes people, rules, evidence, queues, decisions, and fallback.
+- A **trigger** is the event, schedule, or manual action that starts a workflow.
+- An **orchestrator** is software that triggers, connects, routes, waits for,
+  and monitors workflow steps.
+- A **node** is one configured step in a visual orchestrator.
+- A **credential** is a secret value, such as a password, key, or token, that
+  can grant access.
+- An **integration** is a deliberate connection through which systems exchange
+  data or actions.
+- A **connector** is an integration that communicates with another system using
+  declared permissions and credentials.
+- **Artificial intelligence (AI)** is a broad name for computer systems that
+  perform prediction, recognition, language, or decision-support tasks.
+- An **application programming interface (API)** is an agreed interface through
+  which software sends requests and receives responses.
+- **Configuration** is the settings that determine how software behaves.
+- **Low-code** describes development that uses visual configuration while still
+  requiring logic, permissions, tests, and maintenance.
+- A **data store** holds information beyond one program step.
+- **Comma-separated values (CSV)** is a plain-text table format.
+- An **identifier (ID)** is a stable value that identifies one record.
+- A **database** is structured durable storage that can be queried and updated.
+- A **relational database** stores rows in related tables and can enforce
+  constraints.
+- A **binary object** stores non-plain-text content as computer bytes, such as a
+  document or image file.
+- **Object storage** holds files or other large binary objects.
+- A **log** is time-ordered operational information used mainly to understand
+  what software did.
+- A technical log is not automatically an authoritative audit record.
+- A **reason code** is a stable machine-readable label for a result, such as
+  `R001`.
+- **Write-back** means changing data in a source or connected business system.
+- A **system of record** is the authorised source in which the official value
+  is maintained.
+- **Discovery** is the early work of understanding a process and its problem.
+  A **pilot** is a limited trial used to test assumptions before a wider
+  implementation.
+- **Concurrency** means multiple work items or actions can be active at the same
+  time. **Access control** determines who or what may view or change something.
+  **Durable state** remains available after a program step or restart.
+- **Monitoring** observes whether a workflow is operating as expected.
+  **Recovery** is the documented method for restoring safe operation after a
+  failure.
+- **Markdown** is a plain-text documentation format.
+- **PowerShell** is the Windows command shell used to create and inspect the
+  practice files. **Notepad** is the Windows plain-text editor used to enter
+  them.
+- A **manual fallback** is the documented safe way to continue or stop without
+  automation.
+- A **synthetic** record is deliberately fictional practice data. A **dataset**
+  is a collection of related records used together.
+- A **server** is software that stays running to listen for requests.
+- A **network call** communicates with another computer or online service. A
+  **public deployment** makes software available beyond the local practice
+  computer.
+- A **deterministic rule** produces the same result for the same input and rule
+  version.
+- `Import-Csv` reads CSV rows into PowerShell objects. `Format-Table` displays
+  those objects as a table, `-AutoSize` adjusts displayed column widths, and
+  `Get-ChildItem` lists files and folders.
+- **Codex** is the AI assistant used for the final read-only check. The check
+  prompt limits it to one practice folder.
 
-Tool names will change. Keep these assets portable:
+**n8n** is a product name for a workflow automation tool. **Microsoft Power
+Automate** is a workflow product in the Microsoft business-software ecosystem.
+Both are examples of visual orchestrators.
+Knowing either product is less durable than knowing the process, rules, data,
+exceptions, evidence, ownership, and fallback.
 
-- as-is and proposed process maps;
-- intended purpose and exclusions;
-- data dictionary;
-- rule register;
-- input/output schemas;
-- acceptance and UAT cases;
-- decision and audit requirements;
-- runbook, fallback, and ownership;
-- exportable configuration and version records.
+## Four data categories
 
-## Tool categories
-
-### Spreadsheet and manual checklist
-
-Useful for early discovery, a manual baseline, small volumes, and transparent
-rule experiments.
-
-Limits include concurrent editing, access control, hidden formulas, weak state
-management, and difficult audit at scale. A spreadsheet can be an appropriate
-pilot tool without being the final system.
-
-### Built-in platform automation
-
-Many business suites provide forms, lists, approvals, rules, and connectors.
-Using an organisation’s existing platform may reduce new accounts and handover
-work.
-
-Check licence, environment administration, data region, identity, connector
-permissions, exportability, monitoring, and who can maintain it after handover.
-
-### Visual workflow orchestrator
-
-An orchestrator such as n8n or a comparable low-code tool runs connected steps:
-
-- a **trigger** starts a run;
-- a **node** or step performs work;
-- a **connector** communicates with another system;
-- a branch routes work based on a declared result;
-- a queue or wait state holds unresolved work.
-
-Visual does not mean code-free. Expressions, credentials, permissions, retry
-settings, and branches are software behaviour. Export and test configuration
-instead of relying on remembered dashboard clicks.
-
-### Code or API service
-
-Small code components are useful for exact validation, calculations, schemas,
-and rules that are awkward or unsafe inside visual expressions.
-
-FastAPI is one Python framework that can expose tested functions through a local
-API. It is an option, not a requirement. Code adds maintenance responsibility,
-so use it when its testability or control is worth that cost.
-
-### Data store
-
-Files, lists, spreadsheets, databases, and object storage serve different
-purposes:
-
-- a file may preserve one immutable input snapshot;
-- a list may hold simple shared work state;
-- a relational database stores structured rows, relationships, and constraints;
-- object storage holds larger files;
-- an audit ledger records important events.
-
-Do not select a database because it sounds professional. Select the smallest
-store that preserves required integrity, access, history, scale, and recovery.
-
-## Separate four kinds of data
-
-1. **Source input** — the received snapshot or reference.
+1. **Source input** — the received record or unchanged snapshot.
 2. **Workflow state** — current status, owner, timestamps, and reason code.
-3. **Derived artifact** — issue record, draft, calculation, or summary.
-4. **Audit event** — who or what did what, when, to which version, and with what
-   result.
+3. **Derived artifact** — an issue, calculation, draft, or summary created from
+   the source.
+4. **Audit event** — what happened, to which item, by which role or component,
+   and with what result.
 
-Operational logs help diagnose software. They are not automatically an
-authoritative audit record and should not contain full sensitive inputs.
+Do not silently overwrite source evidence. A correction should become a new
+version or an authorised change in the system of record.
 
-Keep source data immutable where evidence matters. Corrections become a new
-version or a recorded source-system change, not a silent overwrite.
+## Add tools only for named requirements
 
-## The minimum viable architecture
+A spreadsheet and manual review may be enough for discovery or a small
+synthetic pilot. Add an orchestrator, code service, or database only when a
+requirement such as concurrency, access control, durable state, integration,
+volume, monitoring, or recovery justifies the extra ownership.
 
-For the fictional work-item exercise, a sufficient architecture can be:
+**Docker** is a product family for packaging and running software in isolated
+containers. An **image** is the package definition, a **container** is a running
+instance, and a **volume** preserves selected data. Docker does not by itself
+provide correct rules, access control, a backup, or an owner.
 
-```text
-untouched CSV snapshot
-    ↓ deliberate import
-deterministic rule checker
-    ↓
-structured issue records
-    ↓ optional bounded AI draft
-human review: accept / edit / reject / escalate
-    ↓
-summary and append-only audit event
+## Safety boundary
+
+This lesson uses local fictional CSV and Markdown files. It makes no connector,
+network call, external write, public deployment, or workplace-system change.
+
+## Follow along — I show you exactly how
+
+Expected result: four local synthetic files separate source input, workflow
+state, audit events, and the documented minimal architecture that owns them.
+
+### Prerequisites and start state
+
+- Foundations 1–8 are complete.
+- PowerShell and Notepad are available.
+- `Documents\controlled-ai-course-practice` exists.
+- No work account, connector, credential, or real dataset is open.
+
+### Part A — create source input, state, and audit event files
+
+Open PowerShell and run:
+
+```powershell
+Set-Location ([Environment]::GetFolderPath("MyDocuments"))
 ```
 
-This may begin as a spreadsheet plus a small script. Add an orchestrator,
-database, container, or external model only when a named requirement justifies
-it.
+```powershell
+Set-Location "controlled-ai-course-practice"
+```
 
-## When Docker is useful
+```powershell
+New-Item -ItemType Directory -Path "foundation-09"
+```
 
-A Docker **image** packages a filesystem and startup definition. A
-**container** is a running instance. A **volume** preserves selected data when
-a container is replaced. Docker Compose describes related services in YAML.
+```powershell
+Set-Location "foundation-09"
+```
 
-Docker can improve repeatability for a local lab, but it does not create:
+What the setup commands do: they enter Documents, enter the existing practice
+root, create only `foundation-09`, and enter it.
 
-- a backup;
-- secure configuration;
-- user access control;
-- correct workflow rules;
-- operational ownership.
+Run:
 
-Never expose a local course service to the public internet merely to make a
-demo accessible. Recreating a container is not a restoration test.
+```powershell
+notepad "queue_input.csv"
+```
 
-## Tool-fit questions
+Enter:
 
-Before selecting a tool, answer:
+```csv
+work_item_id,title,owner_role
+WI-901,Synthetic queue request,
+```
 
-| Area | Question |
+Save and close Notepad.
+
+What this is: the unchanged fictional source input. The blank owner is
+deliberate.
+
+Run:
+
+```powershell
+notepad "work_state.csv"
+```
+
+Enter:
+
+```csv
+work_item_id,state,review_owner_role,last_reason_code
+WI-901,needs_review,operations,R001
+```
+
+Save and close Notepad.
+
+What this is: the workflow's current state and review ownership. It does not
+alter `queue_input.csv`.
+
+Run:
+
+```powershell
+notepad "audit_events.csv"
+```
+
+Enter:
+
+```csv
+event_id,work_item_id,event_type,occurred_on,actor_role,result
+EV-901,WI-901,issue_detected,2026-08-01,rule_checker,R001
+EV-902,WI-901,review_queued,2026-08-01,workflow,needs_review
+```
+
+Save and close Notepad.
+
+What this is: two business-relevant events. The dates are fictional.
+
+### Part B — document the minimal architecture and ownership
+
+Run:
+
+```powershell
+notepad "architecture.md"
+```
+
+Enter:
+
+```markdown
+# Synthetic queue architecture
+
+## Flow
+
+Manual trigger
+→ read queue_input.csv without changing it
+→ apply deterministic required-owner rule
+→ record work_state.csv and audit_events.csv
+→ operations reviewer handles the exception manually
+
+## Tool decision
+
+Selected: local CSV files plus PowerShell inspection.
+
+Reason: one synthetic item does not justify an orchestrator, connector,
+database, Docker container, or external AI model.
+
+## Ownership
+
+| Responsibility | Owner role |
 |---|---|
-| Process fit | Does it support the required states, exceptions, and approval? |
-| Existing environment | Can the SME use a platform it already owns and administers? |
-| Data control | Where do input, logs, backups, support data, and AI inference go? |
-| Identity and access | Can least-privileged roles be implemented and reviewed? |
-| Evidence | Can decisions, versions, errors, and manual actions be traced? |
-| Reliability | How are timeouts, duplicates, partial writes, and outages handled? |
-| Ownership | Who operates it, pays for it, changes it, and receives alerts? |
-| Portability | Can configuration, schemas, and data be exported in usable formats? |
-| Cost | What are licence, usage, implementation, support, and exit costs? |
-| Capability | Can the future owner understand and maintain it? |
+| Process rule | operations process owner |
+| Source input | fictional data owner |
+| Exception review | operations reviewer |
+| File maintenance | course learner |
+| Stop and manual fallback | operations process owner |
 
-A tool is a poor fit if only the consultant can operate it.
+## Boundaries
 
-## Connectors and permissions
+No connector, write-back, external action, real data, or public deployment.
+Manual fallback: read the source row and issue reason directly.
+```
 
-A connector uses credentials to reach another system. Treat it as a trust
-boundary.
+Save and close Notepad.
 
-For every connector, record:
+What this does: it records why the smallest architecture fits the current
+requirement and who would own each responsibility.
 
-- system and purpose;
-- permitted read/write operations;
-- identity and least-privileged role;
-- data transferred;
-- region and vendor involvement;
-- timeout, retry, duplicate, and rate-limit behaviour;
-- revocation and credential rotation;
-- test environment and owner.
+### Part C — verify the separation
 
-Start with read-only imports. Do not connect this course to employer or customer
-systems. External write-back belongs to a later approved pilot with exact
-authority and reconciliation.
+Run:
 
-## Reproducible changes and handover
+```powershell
+Import-Csv ".\queue_input.csv" | Format-Table -AutoSize
+```
 
-Dashboard changes disappear into memory unless exported or documented.
+Run:
 
-Preserve:
+```powershell
+Import-Csv ".\work_state.csv" | Format-Table -AutoSize
+```
 
-- workflow export with credentials removed;
-- code, schemas, and tests in Git;
-- migrations or list definitions;
-- configuration names, never secret values;
-- tool and model versions;
-- setup and rollback steps;
-- alert and exception owners;
-- backup and restoration evidence;
-- licence and recurring-cost owner.
+Run:
 
-Another competent person should be able to reproduce the synthetic
-demonstration and safely stop it without the original builder.
+```powershell
+Import-Csv ".\audit_events.csv" | Format-Table -AutoSize
+```
 
-## Practice
+Run:
 
-Draw two architectures for the fictional work-item workflow:
+```powershell
+Get-ChildItem
+```
 
-1. spreadsheet plus manual review;
-2. orchestrator plus a tested rule component and structured store.
+Run:
 
-For each, identify:
+```powershell
+(Get-Location).Path
+```
 
-- trigger and completion condition;
-- source input and system of record;
-- exact-rule location;
-- optional AI boundary;
-- human decision;
-- exception queue;
-- audit record;
-- manual fallback;
-- owner and recurring cost.
+What the verification commands do: the first three read and display source,
+state, and audit rows; `Get-ChildItem` lists the files; the last command prints
+the exact full folder path. None changes the stored data.
 
-Then choose the simpler option unless the second architecture satisfies a
-requirement the first cannot. Record that requirement, not a preference for a
-brand.
+### Expected result — exact
 
-## Chapter check
+- `queue_input.csv` has one source row with a blank owner;
+- `work_state.csv` has one state row for the same ID and reason `R001`;
+- `audit_events.csv` has exactly two events, `EV-901` and `EV-902`;
+- `architecture.md` chooses a local minimal toolset and assigns five owner
+  roles;
+- `Get-ChildItem` lists exactly those four files before the recreation exercise.
 
-You pass when you can explain:
+### Troubleshooting
 
-- workflow versus orchestrator;
-- trigger, node, connector, API, and data store;
-- source input, workflow state, derived artifact, log, and audit event;
-- when a spreadsheet is enough and when it is not;
-- why a visual workflow still needs tests and ownership;
-- why Docker is packaging rather than a backup or security control;
-- least privilege and read-only-first integration;
-- why maintainability and handover are part of tool selection.
+- If a CSV displays as one column, verify the commas and final `.csv`
+  extension.
+- If IDs do not match across files, correct the synthetic recreation files
+  before claiming traceability.
+- If a tool suggestion requires credentials or a public connection, stop. It
+  is outside this foundation.
+- If `foundation-09` already exists, do not delete it. Inspect it before
+  continuing.
+
+## Now recreate it yourself
+
+Create a separate fictional service-notice architecture using these four new
+files:
+
+1. `service_input.csv` — one source row with notice ID `SN-81`, category
+   `maintenance`, and blank `assigned_role`;
+2. `service_state.csv` — state `manual_review`, reviewer role
+   `service_coordinator`, and a new reason code for missing assignment;
+3. `service_audit.csv` — exactly two events: issue detection and manual-review
+   routing, both linked to `SN-81`;
+4. `service_architecture.md` — document trigger, rule, human review, manual
+   fallback, no-write-back boundary, tool choice, and owner roles.
+
+Choose a different reason code and event IDs from the guided example. Explain
+why a local file design is sufficient for this one-item synthetic exercise and
+name one future requirement that could justify a database or orchestrator.
+
+## Ask Codex to check your work
+
+Replace `[PASTE THE EXACT PATH]` with the full path output from
+`(Get-Location).Path`.
+
+```text
+You may inspect READ-ONLY this one practice folder and no other location:
+[PASTE THE EXACT PATH]
+
+Do not create, edit, move, rename, or delete anything. Do not start a
+container, server, workflow, connector, model, or external service. Run only
+read-only file and CSV inspection.
+
+Report PASS or NOT YET for each criterion:
+1. The guided queue_input, work_state, and audit files link WI-901 to R001 and
+   exactly two audit events without changing the source row.
+2. architecture.md selects the local minimal toolset, assigns the five owner
+   roles, and states no connector or write-back.
+3. The recreated service files all link to SN-81 and use a new reason code.
+4. service_audit.csv has exactly two traceable events.
+5. service_architecture.md includes trigger, exact rule, human review, manual
+   fallback, boundaries, owners, and one future requirement that could justify
+   a larger tool.
+6. All files contain synthetic practice data only.
+
+Explain NOT YET in beginner language and make no changes.
+This folder must contain synthetic course data only. I must not include
+secrets, personal data, client data, employer data, or other work data. If you
+notice such content, stop, do not repeat it, and tell me to remove it locally.
+Confirm that the folder contains no secrets and no real employer, client, or
+work data.
+```
+
+## Pass criteria
+
+- [ ] I can distinguish source input, workflow state, derived artifact, log,
+      and audit event.
+- [ ] IDs connect source, state, and audit evidence in both examples.
+- [ ] I can explain trigger, orchestrator, node, connector, API, database, and
+      write-back.
+- [ ] I selected the smallest sufficient tool and named what might justify a
+      larger one.
+- [ ] Ownership, manual fallback, and no-write-back boundaries are documented.
+- [ ] No account, connector, container, network service, secret, or real data
+      was used.
+- [ ] Codex reported PASS for every read-only criterion, or I corrected each
+      NOT YET item myself.

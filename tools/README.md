@@ -11,6 +11,11 @@ It checks:
   paths, and ISO revision dates;
 - exactly 9 ordered foundation and 9 ordered module progress lessons;
 - the shared heading contract in all 9 modules;
+- the four-part beginner practice contract in all 18 progress lessons:
+  follow-along demonstration, changed recreation, bounded read-only Codex
+  inspection prompt, and objective pass criteria;
+- required first-use abbreviation and product explanations in the onboarding
+  documents;
 - syntax of current JSON files;
 - all current Course 1 JSON Schema contracts in
   [`schemas/`](../schemas/);

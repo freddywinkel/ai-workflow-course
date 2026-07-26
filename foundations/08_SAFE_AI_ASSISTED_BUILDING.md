@@ -1,233 +1,311 @@
-# Foundation 8 — Safe AI-Assisted Building
+# Foundation 8 — Safe Artificial Intelligence (AI)-Assisted Building
+
+A **function** is a named, reusable block of code. A **claim** is a statement
+presented as true, **evidence** is material that supports it, and a
+**limitation** states what the evidence does not establish. **Codex** is the AI
+assistant used for the final read-only check.
 
 ## Outcome
 
-You can use an AI coding assistant as a tutor and implementation partner while
-keeping each change bounded, understandable, reviewable, and supported by
-observed tests.
+You will create and test one small data-quality function, record the evidence
+for its claim, and then transfer the method to a different rule. Codex will
+inspect the final practice folder without changing it.
 
-AI can accelerate implementation. It does not transfer responsibility for the
-result away from the person delivering the workflow.
+## Words you need first
 
-## Prepare before asking for code
+- **Context** is the information available to an assistant for one request.
+- An **AI coding assistant** proposes explanations, code, tests, or changes from
+  instructions and available context.
+- An **acceptance criterion** is an observable condition that must be true
+  before work is accepted.
+- A **database** is structured durable storage that can be queried and updated.
+- A **side effect** is a change outside a function's returned value, such as
+  writing a file, sending a request, or changing a database.
+- A **boundary case** is an input near a rule's limit, such as blank text.
+- A **regression** is damage to behaviour that worked before.
+- A **package** is an installable collection of code.
+- A **dependency** is another package or service the project relies on.
+- A **diff** is a line-by-line view of a change.
+- **Read-only inspection** means observing files and output without changing
+  them.
+- **Python** is the programming language used for the examples.
+- `None` is Python's explicit value for “no value.”
+- A **dictionary** is a Python value that maps named keys to values.
+- A **list** is an ordered collection of values. A **membership check** asks
+  whether a value appears in a collection.
+- An **assertion** is an executable expectation that stops with an error when
+  its condition is false.
+- A **reason code** is a stable machine-readable label for a result, such as
+  `R001`.
+- **Syntax** is the grammar of code.
+- A **repository** is a project folder tracked by a version-control tool.
+- **PowerShell** is the Windows command shell used to run the examples.
+  **Notepad** is the Windows plain-text editor used to create their files.
+- A **dataset** is a collection of related records used together. A
+  **production repository** contains code used for a live service or real work.
+- A **security credential** is a value that can grant access. Examples include
+  a password (a secret phrase), an access key or token (a service-issued access
+  value), a cookie (saved session data), a certificate (digital identity
+  evidence), and a private key (secret cryptographic key material).
+- **Environment configuration** is settings supplied outside the main program.
+  A **secret** is an access-granting value that must be protected. **Source
+  code** is the human-readable program text. A **log** is time-ordered
+  operational information about what software did.
+- A **network call** communicates with another computer or online service.
 
-For one requested change, write:
+**Git**, the version-control tool whose name is not an acronym, can show and
+record diffs. This lesson does not require a new Git repository, but the same
+review discipline applies.
 
-- the observable outcome;
-- the allowed files and data;
-- what must not change;
-- acceptance tests;
-- possible side effects;
-- how to recover;
-- what requires a pause or approval.
+## The safe change loop
 
-Classify the input first. Use fictional examples in this course. Never include
-credentials, workplace records, personal data, confidential configurations, or
-unredacted logs merely because an assistant asks for “more context.”
+1. Inspect current files and behaviour.
+2. State one observable outcome.
+3. Name what must not change.
+4. Plan the smallest reversible change.
+5. Explain input, output, side effects, and failures.
+6. Inspect the diff or exact saved file.
+7. Test success, failure, and boundary cases.
+8. Observe the real output.
+9. Record evidence and limitations.
+10. Keep only a change you can explain.
 
-## The inspection-to-evidence loop
+Generated code and commands are proposals. An assistant may use outdated
+syntax, invent a package, weaken a safety check, or claim success without
+observing the relevant result.
 
-Use this loop for every material change:
+## Safety boundary
 
-1. **Inspect.** Read the relevant files and current behaviour.
-2. **Define.** State one observable outcome and its exclusions.
-3. **Plan.** Name the smallest files, risks, and tests.
-4. **Patch.** Make one reversible unit of change.
-5. **Explain.** Identify inputs, outputs, side effects, and failure paths.
-6. **Review.** Inspect the exact diff and unexpected files.
-7. **Test.** Run success, failure, boundary, and safety cases.
-8. **Observe.** Check the real spreadsheet, workflow, API, or interface.
-9. **Record.** Save the command/procedure, result, version, and limitation.
-10. **Commit.** Record only the understood unit.
+Never give an unapproved AI service:
 
-Passing tests are evidence for the behaviour they actually exercise. They are
-not proof that every requirement, connector, permission, or user experience is
-correct.
+- passwords, access keys, tokens, cookies, certificates, or private keys;
+- environment configuration containing secrets;
+- employer, client, supplier, employee, or patient records;
+- database exports, private source code, or unredacted logs;
+- confidential prompts, contracts, or screenshots.
 
-If a change is too large to explain, split it before running it.
+This lesson uses only built-in Python and fictional dictionaries. It installs
+nothing and makes no network call.
 
-## A copy-paste implementation prompt
+## Follow along — I show you exactly how
 
-```text
-Help me implement one bounded outcome:
-[one observable outcome]
+### Prerequisites and start state
 
-Allowed synthetic input:
-[file or example]
+- Foundations 1–7 are complete.
+- Python 3, PowerShell, and Notepad are available.
+- `Documents\controlled-ai-course-practice` exists.
+- No secret, real dataset, or production repository is open.
+
+### Part A — define the bounded requirement
+
+The guided requirement is:
+
+> Given one fictional record, return reason code `R001` when its `title` is
+> missing, empty, or spaces only. Otherwise return `None`. Do not read or write
+> a file and do not call a service.
 
 Acceptance criteria:
-- [observable result]
-- [failure result]
-- [unchanged behaviour]
 
-Before editing:
-1. Inspect the relevant files and explain current behaviour.
-2. Name the smallest files that need to change.
-3. Identify data exposure, external calls, side effects, and recovery.
-4. Stop if the request needs a secret, real business data, deletion, public
-   deployment, paid use, or a consequential external action.
+1. `"Synthetic request"` returns `None`.
+2. `""` returns `"R001"`.
+3. `"   "` returns `"R001"`.
+4. a missing `title` key returns `"R001"`.
+5. the function has no side effect.
 
-While editing:
-- preserve unrelated work;
-- make one small change;
-- do not weaken validation, access control, logging, review, or fallback;
-- use no real data or credentials;
-- add tests for success, failure, boundary, malformed input, and duplicates
-  where relevant.
+### Part B — create and run the smallest program
 
-After editing:
-1. List every changed file.
-2. Explain inputs, outputs, side effects, and failure routes.
-3. Show the diff.
-4. Run narrow tests and then relevant broader tests.
-5. Report observed results separately from unverified claims.
-6. Give me one manual check I can perform.
+Open PowerShell and run:
+
+```powershell
+Set-Location ([Environment]::GetFolderPath("MyDocuments"))
 ```
 
-## A copy-paste explanation prompt
+```powershell
+Set-Location "controlled-ai-course-practice"
+```
+
+```powershell
+New-Item -ItemType Directory -Path "foundation-08"
+```
+
+```powershell
+Set-Location "foundation-08"
+```
+
+What the setup commands do: they enter Documents, enter the existing practice
+root, create only `foundation-08`, and enter it.
+
+Run:
+
+```powershell
+notepad "title_check.py"
+```
+
+Enter:
+
+```python
+def title_reason_code(record):
+    title = record.get("title")
+    if title is None or not str(title).strip():
+        return "R001"
+    return None
+
+
+assert title_reason_code({"title": "Synthetic request"}) is None
+assert title_reason_code({"title": ""}) == "R001"
+assert title_reason_code({"title": "   "}) == "R001"
+assert title_reason_code({}) == "R001"
+
+print("4 title checks passed")
+```
+
+Save and close Notepad.
+
+What the function does:
+
+- `record.get("title")` reads the value safely and returns `None` if the key is
+  absent;
+- `str(title).strip()` turns a value into text and removes outer spaces;
+- `not` is true when no text remains;
+- the function returns only a reason code or `None`;
+- it has no file, database, or network instruction.
+
+Run:
+
+```powershell
+python ".\title_check.py"
+```
+
+Expected output:
 
 ```text
-Explain this non-secret code or configuration to a beginner. Do not edit it.
-
-For each block, state:
-- what enters;
-- what happens;
-- what leaves;
-- what can change outside the block;
-- what can fail;
-- which business or safety rule it implements;
-- which test proves that behaviour.
-
-Define each new term once. Identify anything you cannot establish from the
-provided evidence. If the unit is too large, select a smaller unit first.
+4 title checks passed
 ```
 
-## A copy-paste diagnosis prompt
+### Part C — record claim, evidence, and limitation
+
+Run:
+
+```powershell
+notepad "title_check_evidence.md"
+```
+
+Enter:
+
+```markdown
+# Title-check evidence
+
+Claim: the function reports R001 for a missing, empty, or spaces-only title.
+
+Evidence: four assertions passed and the observed output was
+`4 title checks passed`.
+
+Side effects: none identified in the function.
+
+Limitation: these four cases do not prove behaviour for every possible Python
+value.
+```
+
+Save and close Notepad.
+
+Run:
+
+```powershell
+Get-Content -LiteralPath ".\title_check.py"
+```
+
+What this does: it shows the exact saved program for your own review.
+
+Run:
+
+```powershell
+(Get-Location).Path
+```
+
+What this does: it prints the exact full lesson-folder path for the Codex
+check.
+
+### Expected result — exact
+
+- `title_check.py` contains one function and four assertions;
+- running it prints exactly `4 title checks passed`;
+- no package is installed and no file or network side effect occurs;
+- `title_check_evidence.md` separates the claim, evidence, side effects, and
+  limitation.
+
+### Troubleshooting
+
+- If an assertion fails, do not delete it. Compare the function and input with
+  the stated acceptance criteria.
+- If Python reports a syntax or indentation error, compare punctuation and
+  leading spaces with the sample.
+- If an assistant proposes installing a package for this function, reject that
+  expansion; built-in Python is sufficient.
+- If `foundation-08` already exists, do not delete it. Inspect its contents
+  before continuing.
+
+## Now recreate it yourself
+
+Create `priority_check.py` for a meaningfully different requirement:
+
+> Return reason code `R003` unless `priority` is exactly `low`, `medium`, or
+> `high`. Return `None` for those three allowed values. Have no side effects.
+
+Include five assertions:
+
+- `low`, `medium`, and `high` each return `None`;
+- `urgent` returns `R003`;
+- a missing `priority` key returns `R003`.
+
+Print exactly `5 priority checks passed`. Create
+`priority_check_evidence.md` with the claim, exact observed output, side-effect
+assessment, and one honest limitation.
+
+Do not copy the title function and merely rename the file. Explain why a list
+membership check is appropriate for this new rule.
+
+## Ask Codex to check your work
+
+Replace `[PASTE THE EXACT PATH]` with the full path output from
+`(Get-Location).Path`.
 
 ```text
-Diagnose this without changing files yet.
+You may inspect READ-ONLY this one practice folder and no other location:
+[PASTE THE EXACT PATH]
 
-Goal:
-Last successful step:
-Current folder from Get-Location:
-Exact command or user action:
-Complete redacted output/error:
-Expected result:
-Recent change:
+Do not create, edit, move, rename, or delete anything. Do not install a
+package, change Git state, or contact any external service.
 
-Please:
-1. Separate observed facts from hypotheses.
-2. Propose one read-only check for the most likely cause.
-3. Explain the check before I run it.
-4. Do not begin with deletion, reset, reinstall, security disablement, or
-   credential exposure.
-5. After the evidence, propose the smallest reversible fix and verification.
+Report PASS or NOT YET for each criterion:
+1. title_check.py returns None for a normal title and R001 for empty,
+   spaces-only, and missing title, with four assertions.
+2. Running title_check.py is expected to print exactly:
+   4 title checks passed
+3. priority_check.py returns None for low/medium/high and R003 for urgent and a
+   missing priority, with five assertions.
+4. Running priority_check.py is expected to print exactly:
+   5 priority checks passed
+5. Both functions have no file, database, package-installation, or network side
+   effect.
+6. Both evidence files state claim, observed evidence, side effects, and a
+   limitation.
+
+You may run only the two local Python files to observe their output. Make no
+changes. Explain NOT YET in beginner language.
+This folder must contain synthetic course data only. I must not include
+secrets, personal data, client data, employer data, or other work data. If you
+notice such content, stop, do not repeat it, and tell me to remove it locally.
+Confirm that the folder contains no secrets and no real employer, client, or
+work data.
 ```
 
-## A copy-paste test review
+## Pass criteria
 
-```text
-Review these tests against one requirement. Do not edit yet.
-
-Requirement:
-[one falsifiable requirement]
-
-Tests and relevant code:
-[non-secret excerpt]
-
-List:
-- behaviour actually proved;
-- behaviour assumed but not proved;
-- missing failure, boundary, duplicate, timeout, and unsafe-input cases;
-- tests that could pass for the wrong reason;
-- the smallest additional tests required.
-```
-
-## Treat generated dependencies and commands as proposals
-
-An assistant may invent a package name, use outdated syntax, select an
-inappropriate licence, or suggest a destructive command. Before adding a
-dependency:
-
-- confirm it exists in its official source;
-- confirm maintenance and licence;
-- check whether the existing stack already solves the problem;
-- pin or record the selected version;
-- review what data or network access it receives;
-- test removal or replacement where practical.
-
-Before running an unfamiliar command, identify its current folder, exact target,
-side effects, and recovery. Do not run downloaded text directly or weaken
-security settings just to make a demo pass.
-
-## Never supply these to an unapproved AI service
-
-- API keys, passwords, tokens, cookies, certificates, or private keys;
-- `.env` contents;
-- employer, client, supplier, employee, or patient records;
-- database dumps or production exports;
-- confidential prompts, configurations, contracts, or source code;
-- unredacted logs, screenshots, or workflow exports;
-- personal or special-category data.
-
-Replacing a name with initials does not necessarily make data anonymous. Use
-the supplied synthetic practice data.
-
-## Warning signs
-
-Pause when an assistant:
-
-- claims success without a relevant observed test;
-- changes multiple unrelated files;
-- silently changes the requirement;
-- invents citations, package details, or current product behaviour;
-- hard-codes credentials, model names, prices, or machine-specific paths;
-- disables validation, authentication, access control, TLS, audit, or a kill
-  switch;
-- catches every error and continues;
-- logs full inputs or secrets;
-- retries all failures;
-- adds automatic external sending, payment, deletion, or approval;
-- treats a schema as proof of truth;
-- cannot explain reproduction, rollback, or manual fallback.
-
-## Evidence before consulting claims
-
-Keep a small claim/evidence table:
-
-| Claim | Required evidence | Observed result | Limitation |
-|---|---|---|---|
-| detects overdue items | fixed test rows plus expected issue IDs | | |
-| does not modify the source | file comparison or read-only design check | | |
-| handles missing columns | failure test and reason code | | |
-| reviewer can reject | observed review-path test | | |
-
-Say “not verified” when evidence is missing. A consultant’s credibility depends
-more on accurate boundaries than on a flawless demonstration.
-
-## Practice
-
-Ask an assistant to create one small function that checks whether `title` is
-blank in a fictional work-item dictionary and returns reason code `R001`.
-Require:
-
-- one valid case;
-- one missing-title case;
-- one whitespace-only case;
-- no file, network, or external-service side effect;
-- a plain-language explanation.
-
-Review the diff and tests. Then explain the function yourself without the
-assistant. If you cannot, request a smaller implementation or more explanation.
-
-## Chapter check
-
-You pass when you can:
-
-- define one bounded outcome and acceptance criteria;
-- distinguish inspection, implementation, test, and observed evidence;
-- review a diff for unexpected scope;
-- identify secrets and business data that must not enter AI chat;
-- explain why generated commands and dependencies are proposals;
-- name warning signs that require a pause;
-- report limitations without converting them into success claims.
+- [ ] Both programs print their exact expected pass messages.
+- [ ] I can explain each function's input, output, and absence of side effects.
+- [ ] I can connect every assertion to one acceptance criterion.
+- [ ] Both evidence files distinguish claim, evidence, and limitation.
+- [ ] I can explain why generated code and commands remain proposals.
+- [ ] No dependency, network call, secret, or real data was introduced.
+- [ ] Codex reported PASS for every read-only criterion, or I corrected each
+      NOT YET item myself.

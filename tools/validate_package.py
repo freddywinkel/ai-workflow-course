@@ -54,6 +54,40 @@ REQUIRED_MODULE_HEADINGS = (
     "## Estimated time",
 )
 
+REQUIRED_PRACTICE_HEADINGS = (
+    "## Follow along — I show you exactly how",
+    "## Now recreate it yourself",
+    "## Ask Codex to check your work",
+    "## Pass criteria",
+)
+
+REQUIRED_ONBOARDING_PHRASES = {
+    "README.md": (
+        "Artificial Intelligence (AI)",
+        "Small and Medium-sized Enterprises (SMEs)",
+        "progressive web app (PWA)",
+        "comma-separated values (CSV)",
+        "application programming interfaces (APIs)",
+        "user acceptance testing (UAT)",
+        "Git is the name of a version-control tool",
+    ),
+    "BEGINNER_READINESS_CHECK.md": (
+        "application programming interface (API)",
+        "JavaScript Object Notation (JSON)",
+        "artificial intelligence (AI)",
+        "progressive web app (PWA)",
+        "comma-separated values (CSV)",
+        "identifier (ID)",
+    ),
+    "SETUP_WINDOWS.md": (
+        "artificial intelligence (AI)",
+        "Small and Medium-sized Enterprise (SME)",
+        "comma-separated values (CSV)",
+        "application programming interface (API)",
+        "Long-Term Support (LTS)",
+    ),
+}
+
 EXPECTED_SCHEMA_FILES = {
     "approval.schema.json",
     "audit_event.schema.json",
@@ -229,8 +263,11 @@ def validate_curriculum(root: Path, report: Report) -> dict[str, Any] | None:
         metadata_failures.append(f"program.id must be {EXPECTED_PROGRAM_ID}")
     if not is_nonempty_string(program.get("title")):
         metadata_failures.append("program.title is missing")
-    if program.get("targetMarket") != "Dutch SMEs":
-        metadata_failures.append("program.targetMarket must be Dutch SMEs")
+    expected_target_market = "Dutch small and medium-sized enterprises (SMEs)"
+    if program.get("targetMarket") != expected_target_market:
+        metadata_failures.append(
+            f"program.targetMarket must be {expected_target_market}"
+        )
     if not is_nonempty_string(program.get("positioning")):
         metadata_failures.append("program.positioning is missing")
     if not is_nonempty_string(program.get("durableValue")):
@@ -246,6 +283,11 @@ def validate_curriculum(root: Path, report: Report) -> dict[str, Any] | None:
         course.get("version", "")
     ):
         metadata_failures.append("course.version must use x.y.z")
+    if (
+        not isinstance(course.get("practiceRevision"), int)
+        or course.get("practiceRevision") < 1
+    ):
+        metadata_failures.append("course.practiceRevision must be a positive integer")
     verified_through = course.get("verifiedThrough")
     if not valid_revision(verified_through):
         metadata_failures.append("course.verifiedThrough must be a valid ISO date")
@@ -487,7 +529,8 @@ def validate_curriculum(root: Path, report: Report) -> dict[str, Any] | None:
 def validate_career_metadata(career: dict[str, Any], report: Report) -> None:
     failures: list[str] = []
     if career.get("targetRole") != (
-        "Controlled AI Workflow Implementation Consultant for Dutch SMEs"
+        "Controlled Artificial Intelligence (AI) Workflow Implementation "
+        "Consultant for Dutch Small and Medium-sized Enterprises (SMEs)"
     ):
         failures.append("career.targetRole is missing or unexpected")
     courses = career.get("courses")
@@ -710,6 +753,208 @@ def validate_module_structure(
         report.passed(
             "module-structure",
             f"all {len(modules)} modules use the {len(REQUIRED_MODULE_HEADINGS)} required headings in order",
+        )
+
+
+def section_text(lines: list[str], heading: str) -> str:
+    """Return one level-two Markdown section without later level-two sections."""
+
+    try:
+        start = lines.index(heading) + 1
+    except ValueError:
+        return ""
+    end = len(lines)
+    for index in range(start, len(lines)):
+        if lines[index].startswith("## "):
+            end = index
+            break
+    return "\n".join(lines[start:end])
+
+
+def validate_beginner_practice_contract(
+    root: Path, curriculum: dict[str, Any] | None, report: Report
+) -> None:
+    if curriculum is None:
+        report.failed(
+            "beginner-practice-structure",
+            "cannot validate the practice contract without curriculum.json",
+        )
+        return
+
+    documents = group_documents(curriculum, "foundations") + group_documents(
+        curriculum, "modules"
+    )
+    structure_failures: list[str] = []
+    inspection_failures: list[str] = []
+    pass_failures: list[str] = []
+
+    for document in documents:
+        source_path = document.get("sourcePath")
+        if not isinstance(source_path, str):
+            structure_failures.append(
+                f"{document.get('id', '<unknown>')} lacks sourcePath"
+            )
+            continue
+        path = root / Path(*PurePosixPath(source_path).parts)
+        if not path.is_file():
+            structure_failures.append(f"{source_path} is missing")
+            continue
+        try:
+            lines = path.read_text(encoding="utf-8").splitlines()
+        except Exception as exc:
+            structure_failures.append(f"{source_path} cannot be read: {exc}")
+            continue
+        expected_title = document.get("title")
+        if (
+            not isinstance(expected_title, str)
+            or not lines
+            or lines[0] != f"# {expected_title}"
+        ):
+            structure_failures.append(
+                f"{source_path} H1 must exactly match its curriculum title"
+            )
+
+        positions: list[int] = []
+        for heading in REQUIRED_PRACTICE_HEADINGS:
+            indexes = [index for index, line in enumerate(lines) if line == heading]
+            if len(indexes) != 1:
+                structure_failures.append(
+                    f"{source_path} requires exactly one {heading!r}; found {len(indexes)}"
+                )
+            else:
+                positions.append(indexes[0])
+        if len(positions) == len(REQUIRED_PRACTICE_HEADINGS):
+            if positions != sorted(positions):
+                structure_failures.append(
+                    f"{source_path} practice headings are out of order"
+                )
+
+            follow_text = section_text(
+                lines, "## Follow along — I show you exactly how"
+            ).lower()
+            recreate_text = section_text(
+                lines, "## Now recreate it yourself"
+            ).lower()
+            if "expected result" not in follow_text:
+                structure_failures.append(
+                    f"{source_path} follow-along lacks an explicit expected result"
+                )
+            if not any(word in recreate_text for word in ("different", "new")):
+                structure_failures.append(
+                    f"{source_path} recreation does not require changed material"
+                )
+
+            inspection_text = section_text(
+                lines, "## Ask Codex to check your work"
+            )
+            normalized_inspection = " ".join(inspection_text.lower().split())
+            required_inspection_terms = (
+                "read-only",
+                "full path",
+                "pass",
+                "not yet",
+            )
+            missing_terms = [
+                term
+                for term in required_inspection_terms
+                if term not in normalized_inspection
+            ]
+            if "[paste" not in normalized_inspection:
+                missing_terms.append("[PASTE ...] path placeholder")
+            if not any(
+                phrase in normalized_inspection
+                for phrase in (
+                    "do not create",
+                    "do not change",
+                    "do not edit",
+                )
+            ):
+                missing_terms.append("explicit no-change instruction")
+            if not any(
+                phrase in normalized_inspection
+                for phrase in (
+                    "real employer",
+                    "real work",
+                    "real client",
+                    "no secrets",
+                    "contains no secrets",
+                )
+            ):
+                missing_terms.append("real-data or secret safety check")
+            if missing_terms:
+                inspection_failures.append(
+                    f"{source_path} Codex prompt lacks: {', '.join(missing_terms)}"
+                )
+
+            pass_text = section_text(lines, "## Pass criteria")
+            checklist_count = len(
+                re.findall(r"^\s*-\s+\[\s\]\s+", pass_text, re.MULTILINE)
+            )
+            if checklist_count < 3:
+                pass_failures.append(
+                    f"{source_path} has {checklist_count} pass checkboxes; expected at least 3"
+                )
+
+    if structure_failures:
+        report.failed(
+            "beginner-practice-structure",
+            compact(structure_failures, limit=24),
+        )
+    else:
+        report.passed(
+            "beginner-practice-structure",
+            f"all {len(documents)} progress lessons use the ordered follow, recreate, inspect, and pass loop",
+        )
+
+    if inspection_failures:
+        report.failed(
+            "beginner-practice-codex-check",
+            compact(inspection_failures, limit=24),
+        )
+    else:
+        report.passed(
+            "beginner-practice-codex-check",
+            f"all {len(documents)} progress lessons include bounded read-only Codex inspection prompts",
+        )
+
+    if pass_failures:
+        report.failed(
+            "beginner-practice-pass-criteria",
+            compact(pass_failures, limit=24),
+        )
+    else:
+        report.passed(
+            "beginner-practice-pass-criteria",
+            f"all {len(documents)} progress lessons include objective pass checklists",
+        )
+
+
+def validate_beginner_terminology(root: Path, report: Report) -> None:
+    failures: list[str] = []
+    checked = 0
+    for source_path, required_phrases in REQUIRED_ONBOARDING_PHRASES.items():
+        path = root / source_path
+        if not path.is_file():
+            failures.append(f"{source_path} is missing")
+            continue
+        try:
+            text = " ".join(
+                path.read_text(encoding="utf-8").replace("*", "").split()
+            ).lower()
+        except Exception as exc:
+            failures.append(f"{source_path} cannot be read: {exc}")
+            continue
+        for phrase in required_phrases:
+            checked += 1
+            if " ".join(phrase.split()).lower() not in text:
+                failures.append(f"{source_path} lacks first-use explanation {phrase!r}")
+
+    if failures:
+        report.failed("beginner-first-use-terms", compact(failures, limit=24))
+    else:
+        report.passed(
+            "beginner-first-use-terms",
+            f"{checked} required first-use expansions and product explanations are present in onboarding",
         )
 
 
@@ -1497,6 +1742,8 @@ def main() -> int:
     curriculum = validate_curriculum(root, report)
     validate_progress_lessons(root, curriculum, report)
     validate_module_structure(root, curriculum, report)
+    validate_beginner_practice_contract(root, curriculum, report)
+    validate_beginner_terminology(root, report)
     validate_current_json(root, report)
     validate_json_schemas(root, report)
     validate_optional_yaml(root, report)

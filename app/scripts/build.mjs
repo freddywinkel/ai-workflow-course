@@ -401,10 +401,10 @@ async function build() {
 
   const manifest = {
     id: basePath,
-    name: "Controlled AI Workflow Foundations",
-    short_name: "AI Workflow",
+    name: "Controlled Artificial Intelligence (AI) Workflow Foundations",
+    short_name: "Controlled Workflow",
     description:
-      "Course 1 of the path to controlled AI workflow implementation consulting for Dutch SMEs.",
+      "Course 1 of the path to controlled artificial intelligence (AI) workflow implementation consulting for Dutch small and medium-sized enterprises (SMEs).",
     lang: "en",
     start_url: basePath,
     scope: basePath,

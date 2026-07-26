@@ -1,4 +1,4 @@
-# Release Validation — Course 2.0 and PWA
+# Release Validation — Course 2.1 and Progressive Web App (PWA)
 
 ## Release rule
 
@@ -15,6 +15,12 @@ installed-update behavior have been checked.
 - [ ] All revision dates are valid.
 - [ ] Every configured source exists exactly once.
 - [ ] Every module contains the required headings in order.
+- [ ] Every foundation and module contains one ordered follow-along,
+      recreation, read-only Codex check, and pass-criteria sequence.
+- [ ] Every Codex check is limited to one pasted full folder path, explicitly
+      forbids changes, and checks for secrets or real data.
+- [ ] Required onboarding abbreviations and unfamiliar product names are
+      explained before use.
 - [ ] Internal links resolve outside ignored future-course archives.
 - [ ] JSON schemas pass meta-validation.
 - [ ] `stack-manifest.yaml` parses.
@@ -46,6 +52,9 @@ Expected: `PASS`.
 - [ ] Model IDs are configuration, not durable dependencies.
 - [ ] Live AI is optional.
 - [ ] Future courses are visibly planned, not secretly counted as current.
+- [ ] Vague practice instructions were not reintroduced.
+- [ ] Foundation 1 includes literal File Explorer and Notepad actions, expected
+      files, a different recreation, and a read-only inspection prompt.
 - [ ] Source register was opened and checked on the release date.
 
 ## 4. PWA build and tests
@@ -83,12 +92,13 @@ Verify:
 
 ## 6. Learner-state migration
 
-Create a schema-v1 test state before loading Course 2.0.
+Create both a schema-v1 state and a Course 2.0 state before loading Course 2.1.
 
 - [ ] Theme and font size survive.
 - [ ] Notes survive or are retained for export.
 - [ ] Equivalent retained foundations preserve completion.
-- [ ] materially rewritten lessons require completion again.
+- [ ] the Course 2.1 practice revision reopens materially rewritten lessons
+      for review without changing stable lesson IDs.
 - [ ] unknown old IDs are not misapplied.
 - [ ] old JSON backup import works.
 - [ ] reset requires confirmation.
@@ -129,24 +139,24 @@ For each relevant size:
 
 ## 9. Installed-client update
 
-Use an installed or controlled old v1 client:
+Use an installed or controlled old Course 2.0 client:
 
 1. load and record old build/version;
 2. save representative progress and notes;
-3. publish or serve v2 at the same scope;
+3. publish or serve Course 2.1 at the same scope;
 4. foreground or focus the old client;
 5. verify the update prompt appears;
 6. choose **Later** and confirm the old version remains usable;
 7. choose **Update now**;
 8. confirm the new service worker activates;
-9. verify v2 Overview and Career tab;
+9. verify the Course 2.1 Overview, practice loop, and Career tab;
 10. verify state migration;
 11. cold reload and reopen the installed PWA.
 
 - [ ] new precache resources were fetched with `cache: "reload"`;
 - [ ] no broad cache deletion occurred;
 - [ ] local state was not erased;
-- [ ] v2 is still present after cold reopen.
+- [ ] Course 2.1 is still present after cold reopen.
 
 ## 10. Final release record
 

@@ -50,6 +50,40 @@ function iconSvg(name, className = "ui-icon") {
   return `<svg class="${className}" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${ICON_PATHS[name] || ""}</svg>`;
 }
 
+function practiceContractMarkup({ compact = false } = {}) {
+  const introduction = compact
+    ? "Use the same four steps for every practical lesson."
+    : "Every practical lesson uses the same four steps. This helps you learn the skill instead of only copying an example.";
+  return `
+    <div class="practice-contract-heading">
+      <span class="practice-contract-icon">${iconSvg("layers")}</span>
+      <div>
+        <span class="eyebrow">Beginner practice method</span>
+        <h2>How practical lessons work</h2>
+        <p>${introduction}</p>
+      </div>
+    </div>
+    <ol class="practice-contract-steps">
+      <li>
+        <span>1</span>
+        <div><strong>Follow along</strong><p>Complete the guided example and notice what each step does.</p></div>
+      </li>
+      <li>
+        <span>2</span>
+        <div><strong>Now recreate it with different data</strong><p>Close the worked example and create a new result with different fictional names or data.</p></div>
+      </li>
+      <li>
+        <span>3</span>
+        <div><strong>Ask Codex, the artificial intelligence (AI) course assistant, to check</strong><p>Tell Codex the exact practice folder to inspect. The check is read-only: Codex may report what it sees inside that folder, but it must not edit, move, or delete your files.</p></div>
+      </li>
+      <li>
+        <span>4</span>
+        <div><strong>Pass criteria</strong><p>Compare your result with the lesson’s exact checklist. Continue only when every item passes.</p></div>
+      </li>
+    </ol>
+  `;
+}
+
 function defaultState() {
   return {
     schemaVersion: STATE_SCHEMA_VERSION,
@@ -126,6 +160,18 @@ function documentForStoredId(storedId) {
   );
 }
 
+function completionRevisionFor(courseDocument) {
+  const practiceRevision = Number(courseBundle?.course?.practiceRevision);
+  if (
+    !courseDocument.core ||
+    !Number.isInteger(practiceRevision) ||
+    practiceRevision < 1
+  ) {
+    return courseDocument.revision;
+  }
+  return `${courseDocument.revision}|practice:${practiceRevision}`;
+}
+
 function migrateSchemaV1(legacy) {
   const migrated = defaultState();
   const unmappedCompleted = [];
@@ -190,7 +236,8 @@ function migrateSchemaV1(legacy) {
 function isDocumentComplete(courseDocument) {
   return (
     state.completed.includes(courseDocument.id) &&
-    state.completionRevisions[courseDocument.id] === courseDocument.revision
+    state.completionRevisions[courseDocument.id] ===
+      completionRevisionFor(courseDocument)
   );
 }
 
@@ -198,7 +245,8 @@ function needsRevisionReview(courseDocument) {
   return (
     state.completed.includes(courseDocument.id) &&
     Boolean(state.completionRevisions[courseDocument.id]) &&
-    state.completionRevisions[courseDocument.id] !== courseDocument.revision
+    state.completionRevisions[courseDocument.id] !==
+      completionRevisionFor(courseDocument)
   );
 }
 
@@ -387,8 +435,8 @@ function renderHome() {
     <section class="hero">
       <div class="hero-copy">
         <span class="hero-kicker"><span aria-hidden="true"></span>Course 1 of the consultant path</span>
-        <h1>Learn to build one <em>controlled SME workflow.</em></h1>
-        <p>Start from zero technical knowledge. Learn to inspect the work, choose a bounded problem, build deterministic checks, add AI only where it helps, and keep a human responsible for every consequential decision.</p>
+        <h1>Learn to build one <em>controlled business workflow.</em></h1>
+        <p>Start from zero technical knowledge. Learn to inspect the work, choose a small problem with clear limits, build fixed, rule-based checks, add artificial intelligence (AI) only where it helps, and keep a human responsible for every consequential decision.</p>
         <div class="hero-actions">
           <button class="button" type="button" data-home-action="resume">
             <span>${resume ? `Continue: ${escapeHtml(resume.title)}` : "Start the course"}</span>
@@ -399,12 +447,12 @@ function renderHome() {
         <div class="proof-chips" aria-label="Course safeguards">
           <span>${iconSvg("layers")}${courseBundle.course.foundationCount} foundations</span>
           <span>${iconSvg("document")}${courseBundle.course.moduleCount} implementation modules</span>
-          <span>${iconSvg("shield")}Synthetic data only</span>
+          <span>${iconSvg("shield")}Made-up practice data only</span>
         </div>
       </div>
-      <div class="workflow-preview" aria-label="Capstone workflow preview">
+      <div class="workflow-preview" aria-label="Final practice project workflow preview">
         <div class="workflow-preview-header">
-          <span>Synthetic capstone</span>
+          <span>Made-up final practice project</span>
           <small><span aria-hidden="true"></span>Human-controlled</small>
         </div>
         <ol>
@@ -414,7 +462,7 @@ function renderHome() {
           </li>
           <li>
             <span class="workflow-stage-icon">${iconSvg("extract")}</span>
-            <span><small>02 · Check</small><strong>Deterministic exceptions</strong></span>
+            <span><small>02 · Check</small><strong>Problems found by fixed rules</strong></span>
           </li>
           <li>
             <span class="workflow-stage-icon">${iconSvg("review")}</span>
@@ -425,8 +473,11 @@ function renderHome() {
             <span><small>04 · Decide</small><strong>Human review and action</strong></span>
           </li>
         </ol>
-        <div class="workflow-assurance">${iconSvg("check")}No autonomous external action</div>
+        <div class="workflow-assurance">${iconSvg("check")}Cannot send or change anything outside the practice files</div>
       </div>
+    </section>
+    <section class="practice-contract practice-contract-home" aria-label="Beginner practice method">
+      ${practiceContractMarkup()}
     </section>
     <section class="progress-overview" aria-label="Course progress summary">
       <article class="progress-card progress-card-main">
@@ -450,7 +501,7 @@ function renderHome() {
       <article class="progress-card">
         <span class="progress-card-icon progress-card-icon-gold">${iconSvg("document")}</span>
         <div>
-          <span>Implementation modules</span>
+          <span>Modules</span>
           <strong>${moduleCompleted}<small> / ${moduleDocs.length}</small></strong>
         </div>
         <div class="mini-progress mini-progress-gold" aria-hidden="true"><span style="width:${modulePercent}%"></span></div>
@@ -469,25 +520,25 @@ function renderHome() {
                       <li>
                         <button class="${index === 0 ? "path-featured" : ""}" type="button" data-document-id="${escapeAttribute(document.id)}">
                           <span class="path-number">${String(index + 1).padStart(2, "0")}</span>
-                          <span><small>${escapeHtml(learningPositionLabel(document))} · about ${Math.max(1, Math.ceil(document.wordCount / 210))} min</small><strong>${escapeHtml(document.title)}</strong></span>
+                          <span><small>${escapeHtml(learningPositionLabel(document))} · about ${Math.max(1, Math.ceil(document.wordCount / 210))} minutes</small><strong>${escapeHtml(document.title)}</strong></span>
                           ${iconSvg("arrow")}
                         </button>
                       </li>`,
                   )
                   .join("")
-              : '<li><p>Use Module 9’s acceptance gate, retain the manual fallback, and keep the update review active.</p></li>'
+              : '<li><p>Use Module 9’s final pass checklist, keep the documented manual way of working available, and continue reviewing course updates.</p></li>'
           }
         </ul>
       </section>
       <section class="dashboard-card freshness-card">
         <div class="freshness-heading">
           <span class="freshness-icon">${iconSvg("shield")}</span>
-          <span class="version-chip">v${escapeHtml(courseBundle.course.version)}</span>
+          <span class="version-chip">Version ${escapeHtml(courseBundle.course.version)}</span>
         </div>
-        <span class="eyebrow">Source currency</span>
+        <span class="eyebrow">Research review date</span>
         <h2>${escapeHtml(freshness)}</h2>
         <time datetime="${escapeAttribute(courseBundle.course.verifiedThrough)}">${escapeHtml(courseBundle.course.verifiedThrough)}</time>
-        <p>Review the source register after material legal, security, model, or vendor changes.</p>
+        <p>Review the research sources after important legal, security, artificial intelligence model, or supplier changes.</p>
         <button class="button button-quiet" type="button" data-home-action="updates">${iconSvg("shield")}Open update centre</button>
       </section>
     </div>
@@ -512,7 +563,7 @@ function renderHome() {
                   <span class="module-status">${escapeHtml(status)}</span>
                 </span>
                 <strong>${escapeHtml(courseDocument.title.replace(/^Module \d+\s*[—-]\s*/, ""))}</strong>
-                <small>About ${Math.max(1, Math.ceil(courseDocument.wordCount / 210))} min · revision ${escapeHtml(courseDocument.revision)}</small>
+                <small>About ${Math.max(1, Math.ceil(courseDocument.wordCount / 210))} minutes · revision ${escapeHtml(courseDocument.revision)}</small>
                 ${iconSvg("arrow")}
               </button>
             `;
@@ -524,7 +575,7 @@ function renderHome() {
       <div>
         <span class="eyebrow">Keep the boundary clear</span>
         <h2>This course is the technical foundation—not your entire consulting career.</h2>
-        <p>Later courses separately cover discovery and value, client implementation and adoption, governance, commercial practice, and supervised market entry.</p>
+        <p>Later courses separately cover finding valuable problems, client implementation and adoption, rules and oversight, commercial practice, and supervised market entry.</p>
       </div>
       <button class="button" type="button" data-home-action="career">Open career sequence ${iconSvg("arrow")}</button>
     </section>
@@ -553,15 +604,19 @@ function renderCareer() {
   });
 
   const career = courseBundle.career;
+  const rawCareerSummary = String(career.summary);
+  const careerSummary = /progressive web app \(PWA\)/i.test(rawCareerSummary)
+    ? rawCareerSummary
+    : rawCareerSummary.replace(/\bPWA\b/, "progressive web app (PWA)");
   const nextLesson =
     coreDocuments().find((courseDocument) => !isDocumentComplete(courseDocument)) ||
     coreDocuments()[0];
 
   views.career.innerHTML = `
     <section class="career-hero">
-      <span class="hero-kicker"><span aria-hidden="true"></span>Proposed learning sequence</span>
+      <span class="hero-kicker"><span aria-hidden="true"></span>Artificial intelligence (AI) for small and medium-sized enterprises (SMEs)</span>
       <h1>${escapeHtml(career.targetRole)}</h1>
-      <p>${escapeHtml(career.summary)}</p>
+      <p>${escapeHtml(careerSummary)}</p>
       <div class="career-role-card">
         <span>${iconSvg("shield")}</span>
         <div>
@@ -576,7 +631,7 @@ function renderCareer() {
           <span class="eyebrow">Courses 1–6</span>
           <h2 id="career-roadmap-title">Build proof in a deliberate order</h2>
         </div>
-        <p>Only Course 1 is taught in this PWA. The later cards are a curriculum plan, not completed qualifications or promises of work.</p>
+        <p>Only Course 1 is taught in this learning app. The later cards are a curriculum plan, not completed qualifications or promises of work.</p>
       </div>
       <ol class="career-course-list">
         ${career.courses
@@ -618,7 +673,7 @@ function renderCareer() {
           .join("")}
       </article>
       <article class="career-detail-card">
-        <span class="eyebrow">Readiness gates</span>
+        <span class="eyebrow">Checks before you advance</span>
         <h2>Do not skip the controls</h2>
         <ul class="career-gate-list">
           ${career.readinessGates
@@ -760,7 +815,7 @@ function renderDocument(id) {
       ? `Core lesson ${corePosition + 1} of ${core.length}`
       : `${groupTitle(courseDocument.group)} page`;
   document.querySelector("#reader-meta").innerHTML = `
-    <span>${iconSvg("clock")}About ${Math.max(1, Math.ceil(courseDocument.wordCount / 210))} min</span>
+    <span>${iconSvg("clock")}About ${Math.max(1, Math.ceil(courseDocument.wordCount / 210))} minutes</span>
     <span>${iconSvg("layers")}${escapeHtml(learningPositionLabel(courseDocument))}</span>
     <span title="${escapeAttribute(lessonPosition)}">${iconSvg("document")}Revision ${escapeHtml(courseDocument.revision)}</span>
   `;
@@ -778,6 +833,12 @@ function renderDocument(id) {
     : revised
       ? "Mark reviewed"
       : "Mark complete";
+
+  const practiceContract = document.querySelector("#practice-contract-reader");
+  practiceContract.hidden = !courseDocument.core;
+  if (courseDocument.core) {
+    practiceContract.innerHTML = practiceContractMarkup({ compact: true });
+  }
 
   const checkpoint =
     courseDocument.checkpoint ||
@@ -918,7 +979,7 @@ function renderSettings() {
   showOnly("settings");
   currentDocument = null;
   document.querySelector("#settings-course-version").textContent =
-    `v${courseBundle.course.version}`;
+    `Version ${courseBundle.course.version}`;
   document.querySelector("#settings-verified-date").textContent =
     courseBundle.course.verifiedThrough;
   document.querySelector("#settings-build-id").textContent = config.buildId;
@@ -1016,7 +1077,8 @@ function toggleCompleted() {
     delete state.completionRevisions[currentDocument.id];
   } else {
     if (index < 0) state.completed.push(currentDocument.id);
-    state.completionRevisions[currentDocument.id] = currentDocument.revision;
+    state.completionRevisions[currentDocument.id] =
+      completionRevisionFor(currentDocument);
   }
   saveState();
   renderCourseNavigation();
@@ -1069,7 +1131,7 @@ function sanitiseV2StateForCurrentCourse(rawState) {
         ([id, revision]) =>
           documentById.has(id) &&
           typeof revision === "string" &&
-          /^\d{4}-\d{2}-\d{2}$/.test(revision),
+          /^\d{4}-\d{2}-\d{2}(?:\|practice:[1-9]\d*)?$/.test(revision),
       ),
   );
   imported.notes = Object.fromEntries(
@@ -1156,7 +1218,7 @@ function showUpdateReady(worker = serviceWorkerRegistration?.waiting) {
 
 async function checkForUpdates({ manual = false } = {}) {
   if (!serviceWorkerRegistration) {
-    if (manual) showToast("Update checks need Safari or a browser with service workers.");
+    if (manual) showToast("This browser cannot check for offline course updates.");
     return;
   }
   if (!navigator.onLine) {
@@ -1191,10 +1253,10 @@ async function checkForUpdates({ manual = false } = {}) {
       });
       const latest = response.ok ? await response.json() : null;
       if (latest?.buildId && latest.buildId !== config.buildId) {
-        showToast("A deployment is available; checking its service worker…");
+        showToast("A published course update is available; preparing it…");
         await serviceWorkerRegistration.update();
       } else {
-        showToast(`You have the latest published course (v${config.courseVersion}).`);
+        showToast(`You have the latest published course (Version ${config.courseVersion}).`);
       }
     }
     if (!views.settings.hidden) renderSettings();

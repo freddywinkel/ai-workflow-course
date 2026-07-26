@@ -1,5 +1,26 @@
 # Course Changelog
 
+## 2.1.0 — 2026-07-26
+
+### Certified-beginner practice
+
+- Rebuilt every foundation and module exercise around a four-part
+  **follow → recreate → ask Codex to check → pass** method.
+- Added exact Windows clicks, commands, expected results, and bounded
+  troubleshooting before independent work.
+- Added a meaningfully different recreation task so copying the demonstration
+  is not treated as understanding.
+- Added copy-and-paste prompts for read-only Codex inspection of one explicitly
+  named practice folder.
+- Added objective pass criteria and kept corrections in the learner's hands.
+- Rewrote the Windows setup and readiness rehearsal for a learner with no
+  assumed computer or coding knowledge.
+- Added a first-use terminology rule: abbreviations are written in full before
+  their short form, and unfamiliar product names such as Git are defined before
+  use.
+- Increased the beginner planning range to 140–180 hours to include the worked
+  example, independent recreation, and correction loop.
+
 ## 2.0.0 — 2026-07-26
 
 ### Career outcome

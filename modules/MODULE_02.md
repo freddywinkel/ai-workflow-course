@@ -1,353 +1,320 @@
 # Module 2 — Select and Bound a Worthwhile Opportunity
 
-Lesson ID: `course-1-module-02`
-Revision: 2026-07-26
-
 ## Outcome
 
-You will decide whether a workflow opportunity is suitable for a small,
-controlled first implementation. You will define its intended purpose,
-negative scope, expected value, success measures, owner, and stop conditions.
-
-You are not trying to find the most impressive use of AI. You are selecting a
-repeatable business problem that can be tested safely and reversed easily.
-
-For the capstone, you will justify why an internal exception report based on
-synthetic operational data is a better first project than an autonomous agent
-that changes records, contacts customers, selects suppliers, or makes decisions
-about people.
+You will select a small, measurable, reversible workflow opportunity and write
+an intended purpose, negative scope, value hypothesis, success measures, and
+stop conditions. You will learn that “do not automate this yet” can be the
+correct consulting result.
 
 ## Beginner checkpoint
 
-Complete the Module 1 test gate. You should have an as-is process map and an
-honest manual baseline.
-
-Before continuing, explain:
-
-- the difference between a problem and a proposed solution;
-- the difference between an internal draft and an external action;
-- why frequent, rule-based, reversible work is usually easier to pilot than a
-  rare, high-consequence decision;
-- why “we could use AI” is not evidence of business value.
-
-The selection exercise is synthetic. It is not permission to test a workplace
-process or process real data.
+Start when Module 1 passes and you have a measured manual baseline. The start
+state contains synthetic evidence only. You do not need a customer, application
+programming interface (API), paid subscription, or artificial intelligence
+(AI) model.
 
 ## Concepts
 
-- **Opportunity:** a defined process improvement that may produce a measurable
-  benefit.
-- **Intended purpose:** who uses the system, in which context, with which input,
-  for which bounded function and output.
-- **Negative scope:** uses, data, users, and actions explicitly excluded.
-- **Consequence:** what could happen if an output is late, wrong, misleading,
-  disclosed, or acted on.
-- **Reversibility:** how easily a person can stop the workflow and restore the
-  previous way of working.
-- **Data readiness:** whether permitted, sufficiently consistent input is
-  available for testing and operation.
-- **Rule clarity:** whether an authorised owner can state and approve the rules.
-- **Value hypothesis:** a measurable benefit to test, not a promised return.
-- **Sponsor:** the person who can provide resources and accept the project.
-- **Process owner:** the person accountable for how the work should operate.
-- **User:** the person doing or reviewing the work. One person may fill several
-  roles in a small business, but the responsibilities still need names.
-- **Scope change:** a requested change to purpose, data, user, output, or action
-  that requires reassessment.
+- An **opportunity** is a bounded process improvement, not a product idea.
+- **Intended purpose** states the user, context, input, function, output, and
+  limitation.
+- **Negative scope** states what the system must not do.
+- **Consequence** is what can happen when an output is wrong or misused.
+- **Reversibility** is how easily a person can stop the workflow and return to
+  the manual method.
+- A **value hypothesis** is a benefit to test, not promised savings.
+- A **hard stop** overrides a numerical score.
+- A **scope-change trigger** is a proposed change that requires a new review.
+- **Markdown** is a plain-text format for headings, lists, and tables; `.md` is
+  its file name ending.
 
 ## Official readings
 
-1. [CBS: use of AI technology by Dutch microbusinesses](https://www.cbs.nl/nl-nl/longread/rapportages/2026/gebruik-van-ai-technologie-door-nederlandse-microbedrijven?onepage=true)
-   gives current Dutch evidence about adoption, common purposes, and barriers.
-   Notice that lack of experience and privacy concerns matter; do not infer that
-   AI itself causes higher productivity.
-2. [NIST AI Risk Management Framework Core](https://airc.nist.gov/airmf-resources/airmf/5-sec-core/)
-   describes intended purpose, context, users, impacts, limitations, and
-   go/no-go decisions as part of mapping risk.
-3. [European Commission: AI Act risk-based approach](https://digital-strategy.ec.europa.eu/en/policies/regulatory-framework-ai)
-   gives an official overview of prohibited, high-risk, transparency, and
-   minimal-risk uses.
-4. [European Commission: GDPR processing principles](https://commission.europa.eu/law/law-topic/data-protection/rules-business-and-organisations/principles-gdpr/overview-principles/what-data-can-we-process-and-under-which-conditions_en)
-   explains purpose limitation, minimisation, accuracy, storage limitation, and
-   accountability.
+The Centraal Bureau voor de Statistiek (CBS) is Statistics Netherlands. The
+United States National Institute of Standards and Technology (NIST) publishes
+voluntary risk guidance. The General Data Protection Regulation (GDPR), called
+the Algemene verordening gegevensbescherming (AVG) in Dutch, governs personal
+data processing. These definitions are orientation, not legal advice.
 
-The capstone exclusions below are deliberately conservative learning
-boundaries. They are not a legal opinion or a declaration that every other use
-is prohibited. A real client may require legal, privacy, security, sector, and
-works-council review.
+1. [CBS: AI use by Dutch microbusinesses](https://www.cbs.nl/nl-nl/longread/rapportages/2026/gebruik-van-ai-technologie-door-nederlandse-microbedrijven?onepage=true)
+2. [NIST AI Risk Management Framework Core](https://airc.nist.gov/airmf-resources/airmf/5-sec-core/)
+3. [European Commission: AI Act risk-based approach](https://digital-strategy.ec.europa.eu/en/policies/regulatory-framework-ai)
+4. [European Commission: GDPR processing principles](https://commission.europa.eu/law/law-topic/data-protection/rules-business-and-organisations/principles-gdpr/overview-principles/what-data-can-we-process-and-under-which-conditions_en)
+
+The course boundary is deliberately more conservative than a legal
+classification.
 
 ## Guided build
 
-### 1. Apply the hard-stop screen
+The worked decision shows the full reasoning. Your recreation then applies the
+same method to different synthetic candidates.
 
-For this first course, reject an opportunity if it requires any of the
-following:
+Windows PowerShell is the Windows command application used below. Notepad is
+the Windows plain-text editor used to create practice files.
 
-- real or pseudonymised production data;
-- personal, health, biometric, criminal-conviction, or other sensitive data;
-- decisions about employment, education, credit, insurance, benefits,
-  healthcare, policing, migration, or access to an essential service;
-- diagnosis, treatment, dosing, safety-critical control, or legal advice;
-- profiling, ranking, or scoring a person;
-- supplier selection, contract acceptance, payment, or purchase approval;
-- automatic external messages or source-system changes;
-- a hidden AI interaction;
-- a result for which no person has review authority;
-- operation without a safe manual fallback.
+## Follow along — I show you exactly how
 
-This does not mean such work can never be done. It means it is unsuitable for
-an absolute beginner's first independent implementation.
+### Stage 1 — Prepare the module folder
 
-The Synthetic SME Operations Exception Assistant passes this screen because it
-uses fictional non-personal data, prepares an internal draft, preserves source
-records, and leaves judgement and correction to a human.
+**Prerequisite:** `module-01` passes.
 
-### 2. Compare three candidate opportunities
+Open Windows PowerShell and run:
 
-Score each candidate from 0 to 2 on the criteria below:
-
-- **0:** poor or unknown;
-- **1:** partly suitable or dependent on an assumption;
-- **2:** clearly suitable with evidence.
-
-| Criterion | Candidate A: general AI email responder | Candidate B: synthetic operations exception report | Candidate C: automatic approval and payment |
-|---|---:|---:|---:|
-| Repeated often enough to measure | | | |
-| Clear business outcome | | | |
-| Permitted and available data | | | |
-| Rules can be approved | | | |
-| Low consequence if wrong | | | |
-| Easy human review | | | |
-| Easy to stop and reverse | | | |
-| Manual fallback exists | | | |
-| Can test with representative synthetic cases | | | |
-| Named owner and user | | | |
-| **Total out of 20** | | | |
-
-For every score, add one short evidence note and a confidence level. Do not use
-the total to hide a hard stop. A candidate with a legal, privacy, safety, or
-authority blocker remains stopped even if its numerical score is high.
-
-Candidate B should be selected for the course. If your scoring selects another
-candidate, explain which assumption caused the difference and recheck the
-hard-stop screen.
-
-### 3. Write the problem without naming a tool
-
-Use this format:
-
-> When [trigger], [user role] currently [manual work] in order to [business
-> outcome]. The present process causes [observed delay, effort, error, or lack
-> of visibility], evidenced by [baseline]. We will test whether a controlled
-> assistant can improve [metric] without [unacceptable outcome].
-
-For this capstone, the problem is the repeatable manual effort needed to find
-and present possible issues in an operational register. The problem is not
-“the company does not have an AI agent.”
-
-### 4. Define intended purpose and negative scope
-
-Use this course purpose statement:
-
-> The system assists an operations coordinator at a fictional Dutch SME by
-> reading the supplied synthetic work-item register, applying approved
-> deterministic checks, and preparing an evidence-linked internal exception
-> report. A later bounded AI step may rewrite only the already-established
-> issues into plain language. A human reviews the report. The system does not
-> change source records, decide how to resolve an issue, rank people or
-> suppliers, send messages, approve work, enter a contract, or make a payment.
-
-Write the following scope elements separately:
-
-| Scope element | In scope | Out of scope |
-|---|---|---|
-| User | fictional operations coordinator and reviewer | customers, suppliers, public users |
-| Input | supplied synthetic CSV-style work-item data | emails, free-form documents, real exports |
-| Function | validation, deterministic issue detection, internal draft | prediction, recommendation, autonomous decision |
-| Output | evidence-linked internal exception report | external communication, approval, write-back |
-| Environment | local learner project | production or employer systems |
-| Data | fictional non-personal operational records | personal, confidential, regulated, or client data |
-
-Add foreseeable misuse: for example, a manager might treat severity as a
-performance rating or send the draft without checking it. State how the design
-will discourage that misuse.
-
-### 5. Define a value hypothesis
-
-Use your measured Module 1 baseline. Keep value calculations simple and label
-them as scenarios:
-
-```text
-monthly hours on the check
-  = runs per month × manual active minutes per run ÷ 60
-
-possible monthly labour capacity released
-  = monthly hours × tested percentage reduction in active time
+```powershell
+$practiceBase = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'controlled-ai-course-practice'
+$moduleFolder = Join-Path $practiceBase 'module-02'
+New-Item -ItemType Directory -Force -Path $moduleFolder
+Set-Location -LiteralPath $moduleFolder
+(Get-Location).Path
 ```
 
-Do not yet enter an invented percentage reduction. Record it as “to be tested.”
-Also record costs and burdens that could cancel the benefit:
+**Expected result:** one path ending in `\module-02`.
 
-- implementation and configuration time;
-- subscriptions or usage charges;
-- human review time;
-- exception correction;
-- training and support;
-- monitoring and maintenance;
-- vendor or policy changes;
-- incident handling and fallback operation.
+If it does not, run `Get-Location`, then repeat `Set-Location -LiteralPath
+$moduleFolder`.
 
-Time released is not automatically cash saved. A useful project may instead
-increase capacity, consistency, visibility, or response speed. Say which claim
-you intend to test.
+### Stage 2 — Follow a complete go/no-go decision
 
-### 6. Set provisional success and failure measures
+Run `notepad .\worked_opportunity_brief.md`, click **Yes**, paste the completed
+example below, and save with **Ctrl+S**:
 
-Write measures before implementation. Use provisional thresholds and state
-that Module 8 will confirm or revise them.
+```markdown
+# Worked opportunity brief — fictional stock administration
 
-| Claim to test | Measure | Provisional threshold | Evidence |
-|---|---|---:|---|
-| Rules are implemented faithfully | expected issues found by correct rule code | 100% on frozen synthetic test data | comparison report |
-| The report is traceable | reported issues with work item, field, and rule code | 100% | report inspection |
-| The assistant does not invent issues | unsupported report issues | 0 | reviewer check |
-| Control is preserved | automatic messages, approvals, payments, or write-backs | 0 | workflow and run log |
-| The process is more usable | matched manual versus assisted active time and user feedback | improvement to be tested | timed UAT |
-| The fallback works | stopped run can be completed manually | 100% of fallback drill | runbook record |
+## Evidence available
 
-Do not choose “AI accuracy” as a single vague metric. Measure the specific
-claim and the consequence of failure.
+- Four weekly checks per month.
+- Demonstration baseline: 35 active minutes per check.
+- Input can be represented with fictional stock rows.
+- An inventory coordinator and operations lead can review the result.
 
-### 7. Name change triggers
+## Hard-stop screen
 
-The following requests reopen scope and require a new risk, privacy, authority,
-value, and test review:
+| Candidate | Hard stop? | Reason |
+|---|---|---|
+| A. Automatically approve customer refunds | yes | external financial decision and source write-back |
+| B. Prepare an internal low-stock exception list | no | internal draft, deterministic thresholds, human review |
+| C. Generate marketing slogans | no | low consequence, but no measured operational pain |
 
-- replacing synthetic data with real data;
-- adding a new field or source;
-- changing rules or severity;
-- adding another user group;
-- producing customer-facing text;
-- writing to another system;
-- sending, approving, ordering, paying, ranking, or deciding automatically;
-- changing the configured AI provider or important generation settings.
+## Suitability score
 
-“The technology can do it” is not approval for a scope change.
+Scale: 0 = poor or unknown; 1 = partly suitable; 2 = supported.
+
+| Criterion | A | B | C |
+|---|---:|---:|---:|
+| repeated and measurable | 2 | 2 | 1 |
+| clear outcome | 2 | 2 | 1 |
+| permitted synthetic data | 1 | 2 | 2 |
+| approved rules possible | 1 | 2 | 0 |
+| low consequence if wrong | 0 | 2 | 2 |
+| easy human review | 0 | 2 | 2 |
+| easy to stop | 0 | 2 | 2 |
+| manual fallback | 1 | 2 | 2 |
+| testable with synthetic cases | 1 | 2 | 2 |
+| named owner and user | 1 | 2 | 0 |
+| total | 9 | 20 | 14 |
+
+Candidate A remains stopped regardless of score. Candidate B is selected.
+
+## Problem statement
+
+When the weekly stock export becomes available, the inventory coordinator
+manually identifies items below an approved reorder threshold so that an
+operations lead can decide what to investigate. The demonstration takes 35
+active minutes. We will test whether a controlled internal report reduces
+active checking time without inventing stock facts or placing an order.
+
+## Intended purpose
+
+The system assists a fictional inventory coordinator by reading a synthetic
+stock export, applying approved numerical thresholds, and preparing an internal
+exception report. A human reviews the report. It does not change stock, select
+a supplier, place an order, send a message, or make a payment.
+
+## Negative scope and misuse
+
+- No real or personal data.
+- No prediction of future demand.
+- No supplier ranking.
+- No automatic order or source-system update.
+- Risk of misuse: a user may treat the report as an order instruction.
+- Protection: every page says "internal review draft — no action taken."
+
+## Value hypothesis
+
+Current monthly active time = 4 × 35 / 60 = 2.33 hours.
+Time reduction remains "to be tested." Released time is capacity, not guaranteed
+cash savings. Costs include configuration, review, testing, support, software,
+and fallback work.
+
+## Provisional measures
+
+- Expected threshold exceptions found: 100% on frozen tests.
+- Unsupported exceptions: 0.
+- Issues linked to source row and rule: 100%.
+- External actions and write-backs: 0.
+- Manual fallback drill: passes once.
+- Active-time change: measured later, with no promised percentage.
+
+## Scope-change triggers
+
+Real data, new data fields, a new user group, changed thresholds, external
+messages, ordering, payments, recommendations, or source write-back all require
+new assessment and approval.
+
+## Decision
+
+GO for a synthetic, internal, read-only proof. Owner: operations lead. User:
+inventory coordinator. Reviewer: operations lead. Fallback owner: inventory
+coordinator.
+```
+
+Read it from top to bottom, then run:
+
+```powershell
+Get-Item -LiteralPath .\worked_opportunity_brief.md
+Select-String -Path .\worked_opportunity_brief.md -Pattern 'GO','does not','to be tested','Scope-change'
+```
+
+**Explanation:** `Get-Item` returns information about one named file without
+opening or changing it. `-LiteralPath` treats the path exactly as written. The
+second command finds the decision, negative scope, honest value language, and
+change control.
+
+**Expected output:** one file-information row containing
+`worked_opportunity_brief.md`, followed by at least one matching line for each
+search term.
+
+**Troubleshooting:**
+
+- If `Get-Item` says the file does not exist, save the Notepad file in
+  `module-02` and rerun the command.
+- If “GO” is missing, confirm that the file was saved.
+- A total score never cancels a hard stop. If Candidate A looks attractive,
+  read its consequence and action again.
+- Do not replace “to be tested” with an invented saving.
+
+## Now recreate it yourself
+
+Small and medium-sized enterprise (SME) describes the fictional client type
+below. Comma-separated values (CSV) is the plain-text table format used for its
+supplied practice data.
+
+Create `recreated_opportunity_brief.md` for these different candidates:
+
+1. the Synthetic SME Operations Exception Assistant using
+   `practice_data/work_items.csv`;
+2. automatic ranking of employees by performance;
+3. an internal meeting-summary generator with no measured baseline.
+
+Use the same ten scoring criteria, but write your own evidence note beside
+every score. Candidate 2 must hit the course hard stop because it ranks people
+for employment-related use. Select Candidate 1 and include:
+
+- the Module 1 baseline;
+- the exact user, reviewer, owner, trigger, input, function, and output;
+- an internal report only;
+- explicit exclusions for real data, decisions about people, supplier
+  selection, messages, approvals, payments, contracts, and write-back;
+- at least one foreseeable misuse and protection;
+- a value formula with no invented improvement;
+- measurable provisional thresholds;
+- a manual fallback;
+- scope-change triggers;
+- a dated `GO`, `REDESIGN FIRST`, or `STOP` decision.
+
+Use Notepad, save the file under `module-02`, reuse the demonstrated
+`Get-Item` check, and verify:
+
+```powershell
+Get-Item .\recreated_opportunity_brief.md
+Select-String -Path .\recreated_opportunity_brief.md -Pattern 'Synthetic SME Operations Exception Assistant','human','fallback','write-back'
+```
+
+**Expected output:** the file exists and all four concepts are found.
+
+If the brief names a particular AI model or automation product in the problem
+statement, remove it; the problem must remain tool-neutral.
+
+## Ask Codex to check your work
+
+Run `(Resolve-Path $moduleFolder).Path` to obtain the full path, replace
+`[PASTE FULL PATH HERE]`, and copy:
+
+```text
+READ-ONLY COURSE REVIEW.
+
+I authorize you to inspect only this full path:
+[PASTE FULL PATH HERE]
+
+Do not edit, create, delete, rename, move, or format files. Do not inspect the
+parent folder or any other folder. This folder must contain no secrets and no
+real client or workplace data. Stop if it contains credentials, personal data,
+or health data.
+
+Review worked_opportunity_brief.md and recreated_opportunity_brief.md. Return:
+1. PASS or NOT YET;
+2. a checklist for: evidence-backed problem; hard-stop screen; scores with
+evidence; hard stops overriding totals; tool-neutral statement; complete
+intended purpose; explicit negative scope; human reviewer; manual fallback;
+misuse protection; value labelled as a hypothesis; costs included; measurable
+thresholds; scope-change triggers; dated decision and owners;
+3. the smallest corrections for me to make if NOT YET.
+
+Remain read-only. Do not rewrite the brief. Do not request or use any real
+business information.
+```
+
+## Pass criteria
+
+- [ ] Only synthetic scenarios are used.
+- [ ] Three candidates are screened and scored with evidence.
+- [ ] The employment-ranking candidate is stopped regardless of score.
+- [ ] The selected opportunity is small, internal, measurable, and reversible.
+- [ ] Intended purpose names user, context, input, function, output, review,
+      and limitations.
+- [ ] Negative scope excludes every consequential action listed above.
+- [ ] Value is a hypothesis with costs, not guaranteed savings.
+- [ ] Measures state what will be counted and the provisional threshold.
+- [ ] Manual fallback, owners, misuse, and scope-change triggers are present.
+- [ ] Codex returns `PASS` after read-only inspection.
 
 ## Consultant lens
 
-The first consulting deliverable is often a diagnostic, not an automation.
-Useful diagnostic work includes:
-
-- observing a real process with permission;
-- measuring volume, active time, delay, rework, and error;
-- locating authoritative data and rules;
-- identifying control and privacy constraints;
-- comparing improvement without AI, bought software, configured workflow, and
-  custom build;
-- recommending go, small pilot, redesign first, or stop.
-
-A responsible “do not automate yet” conclusion can save a Dutch SME more money
-than an attractive demo. The opportunity score is a conversation aid, not a
-scientific formula. Keep the evidence notes so a client can challenge your
-judgement.
-
-Do not market a value hypothesis as guaranteed savings. For a paid engagement,
-agree who owns the baseline, assumptions, costs, and acceptance decision.
+The first useful deliverable may be a diagnostic rather than an automation.
+Compare process correction, existing software, configured workflow, and custom
+build later; this module only decides whether an opportunity deserves further
+discovery.
 
 ## Capstone increment
 
-The capstone now has:
-
-- a documented go decision;
-- a selected low-consequence internal workflow;
-- an intended-purpose statement;
-- explicit negative scope and misuse cases;
-- named user, reviewer, owner, input, output, and environment;
-- a value hypothesis;
-- provisional success measures;
-- change triggers and stop conditions.
-
-The exception checks remain deterministic. AI is not being used to discover
-facts, decide severity, or take action.
+The capstone has a justified go decision, intended purpose, negative scope,
+value hypothesis, owners, measures, and change triggers.
 
 ## Required artifact
 
-Create `artifacts/opportunity_brief.md` in your learner project.
-
-It must contain:
-
-1. the completed hard-stop screen;
-2. the three-candidate scorecard with evidence and confidence notes;
-3. the tool-neutral problem statement;
-4. the intended-purpose statement;
-5. the in-scope/out-of-scope table;
-6. foreseeable misuse and protections;
-7. the value hypothesis, including costs and uncertainties;
-8. provisional success and failure measures;
-9. the process owner, user, reviewer, sponsor, and fallback owner;
-10. scope-change triggers;
-11. a dated decision: `GO`, `REDESIGN FIRST`, or `STOP`, with reasoning.
+The teaching contract produces `worked_opportunity_brief.md` and
+`recreated_opportunity_brief.md` in `module-02`.
 
 ## Test gate
 
-Pass only when:
-
-- [ ] The opportunity passes every course hard stop.
-- [ ] The problem statement contains no product or model name.
-- [ ] Intended purpose names the user, context, input, function, output, review,
-      and limitations.
-- [ ] Negative scope explicitly excludes external action and source write-back.
-- [ ] Each score has evidence or is marked unknown.
-- [ ] Value is labelled as a hypothesis, not a forecast or guarantee.
-- [ ] Costs, review effort, maintenance, and fallback are included.
-- [ ] Success measures have a numerator, denominator, threshold, and evidence
-      source, or clearly say what still needs defining.
-- [ ] A scope change cannot silently expand the workflow.
-- [ ] The selected course opportunity is the synthetic internal exception
-      report.
-
-Give the brief to another person or an AI tutor with no additional context.
-Ask them to list what the system is and is not allowed to do. If their answer
-differs from yours, the boundary is not clear enough.
+The **Pass criteria** are the complete module gate.
 
 ## Stop or rework
 
-Stop or return to Module 1 when:
-
-- the pain point is only an opinion and has no observation or baseline;
-- there is no process owner or reviewer;
-- real or sensitive data is required to demonstrate the idea;
-- the proposal affects rights, safety, employment, health, credit, or access to
-  essential services;
-- the first version must send, pay, approve, or write to a source system;
-- a safe manual fallback does not exist;
-- the proposed value depends entirely on eliminating human review;
-- the work is too rare or inconsistent to test;
-- existing software or a simple process correction has not been considered;
-- a stakeholder cannot agree on the authoritative rules.
+Stop if real data is required, no reviewer or process owner exists, a first
+version must decide about people or take external action, rules cannot be
+approved, or value depends on removing human review.
 
 ## Common failures
 
-- Choosing a flashy demo rather than a measured operational problem.
-- Treating all spreadsheet work as suitable for AI.
-- Giving numerical scores without evidence notes.
-- Allowing a high total score to override a hard stop.
-- Writing “employees will save 80%” before a matched test exists.
-- Forgetting implementation, review, subscription, training, and maintenance
-  costs.
-- Using AI to interpret a rule that can be written exactly.
-- Calling a draft “safe” while allowing it to be sent automatically.
-- Describing human review without naming the reviewer's authority.
-- Expanding from one register to every company process.
+- Selecting a fashionable AI idea instead of measured work.
+- Hiding uncertainty behind a numerical score.
+- Confusing time capacity with cash savings.
+- Letting a pilot send, approve, rank, order, pay, or write back.
+- Asking Codex to improve the file instead of checking it read-only.
 
 ## Estimated time
 
-6–8 hours:
-
-- 1.5 hours for readings and the hard-stop screen;
-- 1.5 hours for the candidate comparison;
-- 2 hours for purpose, boundaries, misuse, and change triggers;
-- 1 hour for value and measurement design;
-- 1 hour for the test gate;
-- up to 1 additional hour for rework after an independent clarity check.
+6–8 hours.

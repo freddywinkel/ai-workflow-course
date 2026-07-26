@@ -1,15 +1,38 @@
-# Career Sequence — Controlled AI Workflow Implementation Consultant
+# Career Sequence — Controlled Artificial Intelligence (AI) Workflow Implementation Consultant
 
 ## Target role
 
 The proposed destination is:
 
-> I help Dutch SMEs identify one recurring administrative bottleneck and
-> implement a controlled workflow in their existing systems, with human
-> review, measurable results, a manual fallback, and clear ownership.
+> I help Dutch small and medium-sized enterprises (SMEs) identify one
+> recurring administrative bottleneck and implement a workflow with clear
+> limits in their existing systems. A person reviews important results, the
+> outcome is measured, a documented manual way of working remains available,
+> and every responsibility has an owner.
 
-The role combines process discovery, implementation, evaluation, adoption, and
-ongoing assurance. It is not defined by one model or automation platform.
+The role combines understanding how work happens, building the change, testing
+whether it works, helping people use it, and checking it regularly. It is not
+defined by one model or automation platform.
+
+## Plain-language terms used below
+
+- **Production** means real daily business use rather than a practice
+  demonstration.
+- A **capability gate** is proof you must show before taking on the next level
+  of responsibility.
+- **Paid validation** means testing whether real firms will pay for a small
+  service before you invest heavily in building it.
+- A **problem assessment**, also called a **diagnostic**, is a fixed-scope
+  investigation of the current work, pain, evidence, and possible next step.
+- A **pilot** is a small controlled trial, not a full rollout.
+- A **capstone** is the final practice project that combines earlier lessons.
+- **Rule-first** means using ordinary fixed rules before considering AI.
+- A **bounded AI step** is one narrow artificial intelligence task with stated
+  inputs, outputs, limits, and human review.
+- An **exception** is a record or situation that a stated rule says needs
+  attention.
+- An **integration** is a controlled connection through which systems exchange
+  data or actions.
 
 ## Why the path is split into courses
 
@@ -26,7 +49,9 @@ Splitting the path:
 - prevents one large capstone from being mistaken for complete professional
   readiness.
 
-Only Course 1 is built in this PWA. The other courses are proposed next builds.
+Only Course 1 is built in this progressive web app (PWA), an installable
+website that can keep working without an internet connection. The other
+courses are proposed next builds.
 
 ## Course 1 — Controlled AI Workflow Foundations
 
@@ -35,23 +60,26 @@ Status: **Current course**
 Outcome:
 
 - observe and bound one low-risk process;
-- build a rule-first synthetic workflow;
+- build a rule-first workflow using made-up (synthetic) data;
 - add one optional bounded AI step;
 - test failures and human control;
 - evaluate and hand over a portfolio demonstration.
 
 Proof:
 
-- Synthetic SME Operations Exception Assistant;
-- capstone handover pack;
-- evidence-backed `PILOT`, `REWORK`, or `DO NOT PILOT`.
+- the Synthetic SME Operations Exception Assistant, a made-up-data practice
+  workflow;
+- final practice project (capstone) handover pack;
+- an evidence-backed recommendation label: `PILOT` means run a small trial,
+  `REWORK` means change the plan and assess it again, and `DO NOT PILOT` means
+  stop.
 
 Boundary after completion:
 
 - portfolio learner / workflow analyst in training;
 - not ready for independent production deployment or real sensitive data.
 
-## Course 2 — SME Workflow Discovery and Paid Diagnostics
+## Course 2 — Workflow Discovery and Paid Problem Assessments
 
 Status: **Build next**
 
@@ -62,12 +90,14 @@ Proposed modules:
 1. ethical outreach and confidentiality;
 2. process interviews and observation;
 3. stakeholder, system, and data mapping;
-4. volume, delay, rework, and baseline economics;
-5. native-capability and build-versus-buy assessment;
-6. opportunity scoring and risk exclusion;
-7. diagnostic report and pilot charter;
+4. measure current volume, delay, repeated work, and current costs;
+5. check what the existing software can already do and compare building with
+   buying;
+6. rank opportunities and exclude unsafe or unsuitable work;
+7. write a problem-assessment report and a small-trial plan;
 8. scope, assumptions, stop criteria, and presentation;
-9. paid-validation practice using synthetic or permissioned low-risk cases.
+9. paid-validation practice using made-up or explicitly authorised low-risk
+   cases.
 
 Proof:
 
@@ -88,58 +118,76 @@ Market gate:
 - identify at least five reporting materially similar pain;
 - seek three genuinely paid diagnostics before building reusable software.
 
-## Course 3 — SME Integrations and Low-Code Pilot Delivery
+## Course 3 — Connect Small-Business Systems and Deliver a Small Trial
 
 Status: **Planned**
 
 Purpose: turn a diagnostic into one controlled low-risk pilot inside a
 client-owned environment.
 
+**Low-code** means building mainly with visual workflow blocks and settings,
+while still using small amounts of code when necessary.
+
 Proposed modules:
 
-- APIs, webhooks, and OAuth;
-- connectors and least privilege;
-- n8n plus Microsoft/Google platform crosswalks;
-- development, test, and production separation;
-- configuration and secrets;
-- idempotency, retry, error queues, and rollback;
-- client-owned tenants and credentials;
-- UAT, release, and support boundary;
+- application programming interfaces (APIs), which let systems exchange
+  requests and responses;
+- webhooks, which send an automatic notice when an event occurs, and Open
+  Authorization (OAuth), a standard for granting limited access without
+  sharing a password;
+- connectors (prebuilt links between systems) and least privilege (grant only
+  the access a task needs);
+- n8n, a workflow-automation platform, plus maps of equivalent Microsoft and
+  Google features;
+- separate development, test, and live production environments;
+- settings and secrets, meaning sensitive credentials such as passwords and
+  access keys;
+- safe repeat handling (idempotency), trying a failed step again (retry),
+  queues for failed items, and returning to a known safe state (rollback);
+- client-owned software environments (tenants) and sign-in credentials;
+- user acceptance testing (UAT), release, and support boundaries;
 - one low-risk internal pilot.
 
 Proof:
 
 - one reproducible integration lab;
-- one supervised low-risk pilot or realistic sandbox equivalent;
-- acceptance and rollback evidence.
+- one supervised low-risk pilot or realistic isolated test environment
+  (sandbox);
+- proof that the result was accepted and that a known safe state can be
+  restored.
 
 Boundary after completion:
 
-- bounded pilot implementer under client IT/privacy/security review;
+- bounded pilot implementer under client information technology (IT), privacy,
+  and security review;
 - not yet an advanced document-AI or high-risk systems specialist.
 
 ## Course 4 — Controlled Document AI Systems
 
 Status: **Planned; source material preserved**
 
-Purpose: build evidence-grounded workflows for recurring business documents.
+Purpose: build workflows whose statements remain tied to source evidence for
+recurring business documents.
 
 The previous supplier course becomes the foundation for this course:
 
-- source preservation and hashes;
-- PDF/DOCX parsing and OCR;
-- evidence locators;
-- schema-constrained extraction;
-- deterministic checks;
-- policy retrieval;
-- grounded drafting;
-- exact-output approval;
+- source-file preservation and digital fingerprints (hashes);
+- reading Portable Document Format (PDF) and Microsoft Word (`.docx`) files,
+  including optical character recognition (OCR) for scanned text;
+- references to exact source locations (evidence locators);
+- extracting fields into a fixed structure (schema-constrained extraction);
+- fixed checks that always give the same result for the same input
+  (deterministic checks);
+- finding the correct approved policy text (policy retrieval);
+- drafting only claims tied to cited evidence (grounded drafting);
+- human approval of the exact final output;
 - document evaluation.
 
 Proof:
 
 - controlled synthetic supplier-document review system;
-- parser and extraction regression evidence;
+- evidence that document reading and extraction still work after changes
+  (regression evidence);
 - reviewer demonstration.
 
 Boundary after completion:
@@ -147,7 +195,7 @@ Boundary after completion:
 - advanced synthetic document-workflow capability;
 - production deployment still requires Course 5 controls and client review.
 
-## Course 5 — Production Governance, Security, and Reliability
+## Course 5 — Controls for Secure and Reliable Live Systems
 
 Status: **Planned**
 
@@ -155,29 +203,38 @@ Purpose: learn the controls needed to keep a workflow trustworthy after a demo.
 
 Proposed modules:
 
-- AVG accountability records and DPIA escalation;
-- AI Act role/use-case triage and current-law updates;
-- processor, subprocessor, retention, and transfer review;
-- threat modelling and prompt-injection defence;
-- identity, authorization, tenancy, and secrets;
+- General Data Protection Regulation (GDPR), called the Algemene verordening
+  gegevensbescherming (AVG) in Dutch, accountability records and Data
+  Protection Impact Assessment (DPIA) escalation;
+- checking the organisation's legal role and use case under the European Union
+  Artificial Intelligence Act (AI Act), with current-law updates;
+- reviewing vendors that process data (processors and subprocessors), how long
+  data is kept (retention), and data transfers;
+- identifying plausible attacks (threat modelling) and defending against
+  instructions hidden in untrusted content (prompt injection);
+- user identity, permission to act (authorization), separate client
+  environments (tenancy), and sensitive credentials (secrets);
 - logging, monitoring, cost limits, and incident response;
-- backup, restore, deletion, and recovery objectives;
-- model/prompt/schema change control;
+- backup, restore, deletion, target restore times, and acceptable data loss
+  (recovery objectives);
+- change control for the artificial intelligence model, its instruction
+  (prompt), and the fixed data structure (schema);
 - production acceptance evidence.
 
 Proof:
 
-- governed production-readiness dossier for a low-risk fictional workflow;
+- a documented readiness pack for a low-risk fictional live workflow;
 - incident and recovery exercise;
 - specialist escalation record.
 
 Boundary after completion:
 
-- can support governed low-risk workflows;
-- high-risk, regulated, or special-category-data work still requires qualified
-  specialists and appropriate client controls.
+- can support low-risk workflows with documented rules and oversight;
+- high-risk, regulated, or especially sensitive personal data such as health
+  information (special-category data) still requires qualified specialists and
+  appropriate client controls.
 
-## Course 6 — Adoption, Consulting Delivery, and Managed Assurance
+## Course 6 — Adoption, Consulting Delivery, and Ongoing Checks
 
 Status: **Planned**
 
@@ -186,22 +243,24 @@ technology.
 
 Proposed modules:
 
-- engagement qualification and ethical boundaries;
+- deciding whether to accept a client request and setting ethical boundaries;
 - proposals, assumptions, exclusions, and change control;
 - facilitation and stakeholder communication;
 - role-specific AI literacy;
 - UAT, training, and adoption measurement;
-- benefit realization;
+- measuring whether the promised benefits appear;
 - handover and support design;
-- monthly regression, vendor, permission, and cost review;
+- monthly checks that earlier behaviour still works after changes (regression),
+  plus supplier, permission, and cost review;
 - incident, escalation, and termination boundaries;
-- productized diagnostic, proof sprint, and assurance service.
+- a repeatable fixed-scope problem assessment, a short proof-building project,
+  and a recurring check service.
 
 Proof:
 
-- end-to-end fictional engagement pack;
+- complete fictional client-project pack;
 - adoption plan and benefit review;
-- managed-assurance operating procedure.
+- step-by-step operating procedure for recurring checks.
 
 Boundary after completion:
 
@@ -219,12 +278,15 @@ but it should not be the first commercial promise.
 Topics:
 
 - controlled-document and training relationships;
-- change control, CAPA, deviations, and audit expectations;
-- data and metadata readiness;
+- change control, corrective and preventive action (CAPA), deviations, and
+  audit expectations;
+- data readiness and information that describes each document (metadata);
 - validation expectations and evidence;
 - vendor/platform boundaries;
-- Veeva/eQMS configuration versus surrounding process problems;
-- cross-system exception and reconciliation patterns;
+- Veeva, a quality-document platform, and electronic quality management system
+  (eQMS) configuration versus surrounding process problems;
+- patterns for finding records that need attention across systems and checking
+  that those systems agree (reconciliation);
 - regulated-domain escalation.
 
 Do not use employer documents, configurations, incidents, patient/sample data,

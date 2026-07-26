@@ -124,7 +124,10 @@ test("content hashes and build ids are stable for identical inputs", async () =>
 });
 
 test("career metadata separates the current course from the later consultant path", () => {
-  assert.equal(bundle.career.targetRole.includes("Dutch SMEs"), true);
+  assert.match(
+    bundle.career.targetRole,
+    /Small and Medium-sized Enterprises \(SMEs\)/,
+  );
   assert.deepEqual(
     bundle.career.courses.map((course) => course.sequence),
     [1, 2, 3, 4, 5, 6],
@@ -397,7 +400,7 @@ test("visual refresh stays purposeful, offline and theme-safe", () => {
   assert.match(appSource, /class="workflow-preview"/);
   for (const label of [
     "Fictional operations data",
-    "Deterministic exceptions",
+    "Problems found by fixed rules",
     "Evidence-linked AI summary",
     "Human review and action",
   ]) {
@@ -419,6 +422,39 @@ test("visual refresh stays purposeful, offline and theme-safe", () => {
   assert.doesNotMatch(cssSource, /:root\[data-theme="dark"\] \.button\s*\{/);
 });
 
+test("beginner practice contract is visible on home and core lesson readers", () => {
+  for (const phase of [
+    "Follow along",
+    "Now recreate it",
+    "Ask Codex",
+    "Pass criteria",
+  ]) {
+    assert.match(appSource, new RegExp(phase));
+  }
+  assert.match(
+    appSource,
+    /Every practical lesson uses the same four steps/,
+  );
+  assert.match(appSource, /exact practice folder to inspect/);
+  assert.match(
+    appSource,
+    /The check is read-only: Codex may report what it sees inside that folder/,
+  );
+  assert.match(appSource, /must not edit, move, or delete your files/);
+  assert.match(
+    appSource,
+    /class="practice-contract practice-contract-home"[\s\S]+?practiceContractMarkup\(\)/,
+  );
+  assert.match(htmlSource, /id="practice-contract-reader"/);
+  assert.match(appSource, /practiceContract\.hidden = !courseDocument\.core/);
+  assert.match(appSource, /practiceContractMarkup\(\{ compact: true \}\)/);
+  assert.match(cssSource, /\.practice-contract-steps/);
+  assert.match(
+    cssSource,
+    /\.practice-contract-reader \.practice-contract-steps\s*\{[\s\S]+?repeat\(2, minmax\(0, 1fr\)\)/,
+  );
+});
+
 test("career view clearly separates Course 1 from the proposed sequence", () => {
   assert.match(htmlSource, /id="career-view"/);
   assert.match(
@@ -428,10 +464,54 @@ test("career view clearly separates Course 1 from the proposed sequence", () => 
   assert.match(appSource, /function renderCareer\(\)/);
   assert.match(appSource, /career\.courses/);
   assert.match(appSource, /career\.optionalSpecializations/);
-  assert.match(appSource, /Only Course 1 is taught in this PWA/);
+  assert.match(appSource, /Only Course 1 is taught in this learning app/);
+  assert.match(appSource, /progressive web app \(PWA\)/);
+  assert.match(
+    appSource,
+    /progressive web app \\\(PWA\\\)\/i\.test\(rawCareerSummary\)/,
+  );
   assert.match(appSource, /data-career-action="course"/);
   assert.match(cssSource, /\.career-course-card\.current/);
   assert.match(cssSource, /\.career-detail-grid/);
+});
+
+test("first visible abbreviations are expanded in beginner language", () => {
+  assert.match(
+    htmlSource,
+    /<strong>Controlled artificial intelligence<\/strong>/,
+  );
+  assert.match(appSource, /add artificial intelligence \(AI\) only where it helps/);
+  assert.match(
+    appSource,
+    /Artificial intelligence \(AI\) for small and medium-sized enterprises \(SMEs\)/,
+  );
+  assert.match(appSource, /progressive web app \(PWA\)/);
+  assert.doesNotMatch(htmlSource, /<strong>Controlled AI Workflow<\/strong>/);
+  assert.doesNotMatch(htmlSource, /Dutch SME consulting path/);
+  assert.match(appSource, /build fixed, rule-based checks/);
+  assert.match(appSource, /Made-up practice data only/);
+  assert.match(appSource, /Made-up final practice project/);
+  assert.match(appSource, /Problems found by fixed rules/);
+  assert.match(
+    appSource,
+    /Cannot send or change anything outside the practice files/,
+  );
+  assert.match(appSource, /Research review date/);
+  assert.match(htmlSource, /Application and reading settings/);
+  assert.match(appSource, /different fictional names or data/);
+  assert.match(
+    appSource,
+    /Codex, the artificial intelligence \(AI\) course assistant/,
+  );
+  assert.match(appSource, /About \$\{Math\.max[\s\S]+?\} minutes/);
+  assert.match(htmlSource, />Escape<\/kbd>/);
+  assert.match(htmlSource, /Safari<\/strong>, Apple’s web browser/);
+  assert.match(htmlSource, /GitHub, the online service that hosts this course/);
+  assert.doesNotMatch(appSource, /build deterministic checks/);
+  assert.doesNotMatch(appSource, /Synthetic capstone/);
+  assert.doesNotMatch(appSource, /Source currency/);
+  assert.doesNotMatch(appSource, /browser with service workers/);
+  assert.doesNotMatch(appSource, /A deployment is available/);
 });
 
 test("core sequencing and checkpoints use bundle metadata rather than old paths", () => {
@@ -463,11 +543,42 @@ test("schema-v1 progress migrates to stable revisioned lesson ids", () => {
   assert.match(appSource, /lastDocument:/);
   assert.match(
     appSource,
-    /state\.completionRevisions\[courseDocument\.id\] === courseDocument\.revision/,
+    /state\.completionRevisions\[courseDocument\.id\] ===[\s\S]+?completionRevisionFor\(courseDocument\)/,
   );
   assert.match(appSource, /\[1, STATE_SCHEMA_VERSION\]\.includes/);
   assert.match(appSource, /window\.confirm\(/);
   assert.doesNotMatch(serviceWorkerSource, /localStorage/);
+});
+
+test("course practice revision reopens old completions without changing lesson dates", () => {
+  assert.equal(bundle.course.practiceRevision, 2);
+  const coreDocument = bundle.documents.find((document) => document.core);
+  assert.ok(coreDocument);
+  const helperSource = appSource.match(
+    /function completionRevisionFor\(courseDocument\) \{[\s\S]+?^\}/m,
+  )?.[0];
+  assert.ok(helperSource);
+  const completionRevisionFor = Function(
+    "courseBundle",
+    `${helperSource}; return completionRevisionFor;`,
+  )(bundle);
+  const effectiveRevision = completionRevisionFor(coreDocument);
+  assert.equal(
+    effectiveRevision,
+    `${coreDocument.revision}|practice:${bundle.course.practiceRevision}`,
+  );
+  assert.notEqual(effectiveRevision, coreDocument.revision);
+  assert.match(coreDocument.revision, /^\d{4}-\d{2}-\d{2}$/);
+  assert.match(
+    appSource,
+    /state\.completionRevisions\[courseDocument\.id\] !==[\s\S]+?completionRevisionFor\(courseDocument\)/,
+  );
+  assert.match(
+    appSource,
+    /\^\\d\{4\}-\\d\{2\}-\\d\{2\}\(\?:\\\|practice:\[1-9\]\\d\*\)\?\$/,
+  );
+  assert.match(appSource, /notes: parsed\.notes/);
+  assert.match(appSource, /theme: \["system", "light", "dark"\]/);
 });
 
 test("built JavaScript is syntactically valid and required artifacts exist", async () => {

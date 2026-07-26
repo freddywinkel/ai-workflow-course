@@ -1,196 +1,258 @@
-# Foundation 3 — Reading Code and First Python
+# Foundation 3 — Reading Code and the Python Programming Language
 
 ## Outcome
 
-You can read a small Python function, identify its inputs and output, run a
-small test, and recognise when AI-generated code is still unexplained.
+You will create and run a small Python program, use three exact checks, and
+explain its input, decision, output, and failure risk.
 
-## What code is
+## Words you need first
 
-Code is a precise set of instructions written for a computer. It is stored as
-text. A Python file normally ends in `.py`. Python reads the syntax, executes
-the instructions, and either produces a result or raises an error.
+- **Code** is a precise set of instructions written for a computer.
+- **Python** is the programming language used for small, testable components in
+  this course.
+- **PowerShell** is the Windows command shell used to run the Python examples.
+- **Notepad** is the Windows plain-text editor used to create the example files.
+- A **Python source file** contains Python code and normally ends in `.py`.
+- A **program** is code arranged to perform a task.
+- A **variable** gives a name to a value.
+- A **string** is text, such as `"waiting"`.
+- A **Boolean** is either `True` or `False`.
+- A **list** is an ordered collection of values in Python.
+- A **membership check** asks whether a value appears in a collection.
+- A **function** is a named, reusable block of code.
+- An **input** is a value supplied to a function.
+- An **output** is a value returned by a function.
+- A **condition** chooses a path based on a true-or-false expression.
+- A **test** compares observed behaviour with an expected result.
+- An **assertion** is a test instruction that stops with an error if its
+  condition is false.
+- **Syntax** is the grammar of code. A syntax error means Python cannot
+  understand the written structure.
+- A **package** is an installable collection of code.
+- A **network call** communicates with another computer or online service.
+- A **credential** is a secret value, such as a password, key, or token, that
+  can grant access.
+- A **dataset** is a collection of related records used together.
+- **Codex** is the artificial intelligence (AI) assistant used for the final
+  read-only check. The check prompt limits it to one practice folder.
 
-Programming errors are normal:
+A program that runs is not automatically correct. Tests establish only the
+specific examples and rules they exercise.
 
-- a **syntax error** means the text is not valid Python;
-- a **runtime error** occurs while valid code is running;
-- a **logic error** produces the wrong result without necessarily crashing.
+## Safety boundary
 
-A program that runs is not automatically correct or safe.
+This lesson uses no package installation, network call, deletion, or real data.
+Do not paste private code, credentials, or business records into an assistant.
 
-## Small Python building blocks
+## Follow along — I show you exactly how
 
-```python
-state = "received"
-retry_count = 0
-is_approved = False
-```
+### Prerequisites and start state
 
-These variables give names to values. Python types include:
+- Foundations 1 and 2 are complete.
+- `Documents\controlled-ai-course-practice` exists.
+- Python is installed using the course setup instructions.
+- PowerShell is closed or showing a ready prompt.
 
-- `str`: text;
-- `int`: whole number;
-- `float`: approximate decimal number;
-- `bool`: `True` or `False`;
-- `None`: deliberately no value.
+### Part A — create the lesson folder
 
-Lists preserve a sequence:
+1. Open PowerShell: press the Windows key, type `PowerShell`, and click the
+   result.
+2. Run:
 
-```python
-states = ["received", "validated", "parsed"]
-```
+   ```powershell
+   Set-Location ([Environment]::GetFolderPath("MyDocuments"))
+   ```
 
-Dictionaries map keys to values:
+3. Run:
 
-```python
-run = {
-    "trace_id": "demo-001",
-    "state": "received",
-    "retry_count": 0,
-}
-```
+   ```powershell
+   Set-Location "controlled-ai-course-practice"
+   ```
 
-Conditions choose a branch:
+4. Run:
 
-```python
-if run["state"] == "received":
-    print("validation may begin")
-else:
-    print("stop and inspect the current state")
-```
+   ```powershell
+   New-Item -ItemType Directory -Path "foundation-03"
+   ```
 
-Indentation is part of Python syntax. The indented line belongs to the branch.
+5. Run:
 
-## Functions
+   ```powershell
+   Set-Location "foundation-03"
+   ```
 
-A function is a named, reusable piece of behaviour:
+   What steps 2–5 do: they enter your Windows Documents folder, enter the
+   existing practice root, create only the `foundation-03` folder, and then
+   enter it.
 
-```python
-def may_execute(approved: bool, output_changed: bool) -> bool:
-    if not approved:
-        return False
-    if output_changed:
-        return False
-    return True
-```
+6. Run:
 
-Read it in this order:
+   ```powershell
+   python --version
+   ```
 
-1. Name: `may_execute`.
-2. Inputs: `approved` and `output_changed`, both expected to be Boolean.
-3. Output: a Boolean.
-4. Branches: no approval means false; changed output means false.
-5. Remaining path: true.
+   What this does: it asks the installed Python program for its version without
+   running your code.
 
-Type hints such as `: bool` help readers and tools but do not prove the caller
-provided a correct value. Tests and runtime validation are still required.
+   Expected result: output begins with `Python 3.` and then returns to the
+   prompt.
 
-## Imports, modules, and packages
+### Part B — write a function and its tests
 
-```python
-from hashlib import sha256
-```
+1. Run:
 
-A module is a Python file or library component. A package is an installable
-collection of modules. An import makes another module's functionality available.
-Installing a package and importing it are separate steps.
+   ```powershell
+   notepad "status_check.py"
+   ```
 
-Use:
+   What this does: it opens or creates a plain-text Python file in the current
+   practice folder.
 
-```powershell
-python -m pip install package-name
-```
+2. If Notepad asks whether to create the file, click **Yes**.
+3. Type or paste this exact code:
 
-only when the course requirements or audited setup names the package. Do not
-install a package suggested solely because its name resembles a trusted one.
+   ```python
+   def needs_review(status):
+       if status == "completed":
+           return False
+       return True
 
-## Virtual environments
 
-A virtual environment is a project-specific Python tool cupboard. It keeps this
-course's packages separate from unrelated projects.
+   assert needs_review("waiting") is True
+   assert needs_review("completed") is False
+   assert needs_review("") is True
 
-```powershell
-py -V:3.13 -m venv .venv
-```
+   print("3 checks passed")
+   ```
 
-This creates `.venv` in the current project. Activating it changes which
-`python` and `pip` commands the terminal uses. It does not make code safe.
+4. Click **File**, then **Save**. Close Notepad.
 
-If activation fails, the setup guide shows how to call the environment's Python
-directly.
+What the code does:
 
-## Tests
+- `def` defines the function named `needs_review`.
+- `status` is the input variable.
+- `if` checks whether the input equals the string `"completed"`.
+- `return False` is the output for completed work.
+- every other input reaches `return True`;
+- the three `assert` lines test waiting, completed, and blank input;
+- `print` displays a message only after every assertion passes.
 
-A test makes an expected behaviour executable:
+Python uses indentation to show which lines belong inside a function or
+condition. The four spaces before the indented lines matter.
 
-```python
-def test_changed_output_cannot_execute():
-    assert may_execute(approved=True, output_changed=True) is False
-```
+### Part C — run and inspect the program
 
-This test documents one safety rule and fails if the code violates it. A useful
-test includes failure and boundary cases, not only a happy path.
+1. In PowerShell, run:
 
-`pytest -q` finds and runs tests. Typical output:
+   ```powershell
+   python ".\status_check.py"
+   ```
+
+   What this does: Python reads and executes the local file. `.\` means “in the
+   current folder.”
+
+2. Run:
+
+   ```powershell
+   Get-ChildItem
+   ```
+
+3. Run:
+
+   ```powershell
+   Get-Content -LiteralPath "status_check.py"
+   ```
+
+   What the last two actions do: they confirm which file exists and show the
+   exact saved code.
+
+4. Run:
+
+   ```powershell
+   (Get-Location).Path
+   ```
+
+   What this does: it prints the exact full path. Save it for the Codex check.
+
+### Expected result — exact
+
+Running the program prints exactly:
 
 ```text
-3 passed in 0.12s
+3 checks passed
 ```
 
-This means three discovered tests passed in that environment. It does **not**
-mean every possible behaviour is correct.
+No Python error appears. `Get-ChildItem` includes `status_check.py`, and the
+saved file contains three assertions.
 
-## A safe way to read generated code
+### Troubleshooting
 
-For each new function, require answers to:
+- If `python` is not recognised, stop. Return to the course Windows setup; do
+  not download a similarly named package from an unverified site.
+- If Python reports `IndentationError`, compare the leading spaces with the
+  sample. Do not use random tabs and spaces.
+- If an assertion fails, Python prints `AssertionError`. Compare the function
+  and that assertion with the exact sample instead of deleting the test.
+- If Notepad saved `status_check.py.txt`, turn on extensions as taught in
+  Foundation 1 and correct only the final `.txt`.
 
-1. What enters this function?
-2. What leaves it?
-3. What can it change outside itself?
-4. Which failures can occur?
-5. Which safety rule does it enforce?
-6. Which tests prove happy, failure, and boundary paths?
-7. What happens with missing, empty, or malicious input?
+## Now recreate it yourself
 
-If you cannot answer those questions, keep the change small and ask for a
-line-by-line explanation before running it.
+Create `priority_check.py` in `foundation-03`. It must:
 
-## Practice
+1. define a function named `is_allowed_priority` with one input named
+   `priority`;
+2. return `True` for `"low"`, `"medium"`, and `"high"`;
+3. return `False` for `"urgent"` and for a blank string;
+4. contain five assertions covering those five inputs;
+5. print exactly `5 priority checks passed` only after the assertions pass.
 
-Create `hello_course.py` in your practice folder:
+Use a list such as `["low", "medium", "high"]` and the Python word `in` to
+test membership. This is a different rule and dataset from the guided example.
+Run the program yourself.
 
-```python
-def state_message(state: str) -> str:
-    if state == "completed":
-        return "The run ended safely."
-    return "The run still needs attention."
+## Ask Codex to check your work
 
-
-print(state_message("needs_review"))
-```
-
-From that folder, run:
-
-```powershell
-python hello_course.py
-```
-
-Expected output:
+Replace `[PASTE THE EXACT PATH]` with the full path output from
+`(Get-Location).Path`.
 
 ```text
-The run still needs attention.
+You may inspect READ-ONLY this one practice folder and no other location:
+[PASTE THE EXACT PATH]
+
+Do not create, edit, move, rename, or delete anything. Do not run any command
+that changes files, installs packages, or contacts an external system.
+
+Report PASS or NOT YET for each criterion:
+1. status_check.py defines needs_review and contains the three required
+   assertions.
+2. The expected output from status_check.py is exactly: 3 checks passed
+3. priority_check.py defines is_allowed_priority.
+4. It accepts low, medium, and high; rejects urgent and blank; and contains five
+   assertions for those inputs.
+5. The expected output from priority_check.py is exactly:
+   5 priority checks passed
+6. Neither file reads, writes, deletes, installs, or calls a network service.
+
+You may reason about the code and, if your environment permits, run only these
+two local Python files to observe their output. Make no changes. Explain any
+NOT YET result in beginner language.
+
+This folder must contain synthetic course data only. I must not include
+secrets, personal data, client data, employer data, or other work data. If you
+notice such content, stop, do not repeat it, and tell me to remove it locally.
+Confirm that the folder contains no secrets and no real employer, client, or
+work data.
 ```
 
-Change only `"needs_review"` to `"completed"` and rerun. Then deliberately
-remove the colon after `if`, observe the syntax error, restore it, and rerun.
-The exercise is to see how code, output, error, and correction relate.
+## Pass criteria
 
-## Chapter check
-
-Explain in your own words:
-
-- variable, list, dictionary, condition, function, input, output, and test;
-- why “the code ran” is weaker than “the required tests passed”;
-- why an AI-generated function must remain small enough for you to explain.
-
+- [ ] `python --version` reports Python 3.
+- [ ] `status_check.py` prints exactly `3 checks passed`.
+- [ ] `priority_check.py` prints exactly `5 priority checks passed`.
+- [ ] I can explain each function's input, condition, and Boolean output.
+- [ ] I can explain why an assertion is stronger evidence than seeing no error.
+- [ ] I know that these five examples do not prove every possible input.
+- [ ] No package, service, secret, or real business data was used.
+- [ ] Codex reported PASS for every read-only criterion, or I corrected each
+      NOT YET item myself.

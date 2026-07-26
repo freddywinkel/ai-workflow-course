@@ -1,5 +1,15 @@
 # Architecture and Contracts — Course 1 Capstone
 
+This is an implementation reference, not an unguided exercise. Follow the
+worked examples and recreation tasks in Modules 3–6 before using it.
+
+Terms used below:
+
+- **artificial intelligence (AI):** the optional generative step;
+- **identifier (ID):** a value that uniquely names a fictional issue;
+- **comma-separated values (CSV):** the plain-text table format used for the
+  synthetic input.
+
 ## Design objective
 
 Build the smallest system that proves controlled workflow reasoning:

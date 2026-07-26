@@ -1,4 +1,4 @@
-# Controlled AI Workflow Foundations PWA
+# Controlled Artificial Intelligence (AI) Workflow Foundations Progressive Web App (PWA)
 
 This dependency-free static reader is generated from the course Markdown one
 directory above it. The Markdown remains the source of truth.

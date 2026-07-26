@@ -6,6 +6,15 @@ not describe a real person, employer, customer, or transaction.
 
 Do not replace these files with workplace or customer exports.
 
+Terms used below:
+
+- **comma-separated values (CSV):** a plain-text table format;
+- **identifier (ID):** a value used to distinguish one fictional record from
+  another;
+- **International Organization for Standardization (ISO) date:** the
+  year-month-day format `YYYY-MM-DD`;
+- **EUR:** the three-letter currency code for the euro.
+
 ## Files
 
 - `work_items.csv` — 15 fictional operational work items, including deliberate
@@ -54,6 +63,10 @@ Apply format checks before comparisons. If a date is invalid under R004, do not
 invent a date to run R005 or R011.
 
 ## Suggested exercise evidence
+
+This is a reference list, not a standalone exercise. First follow the complete
+worked example in Foundation 6 or the matching module. That lesson then asks
+you to recreate the check and gives you a read-only Codex inspection prompt.
 
 Save these separately from the source files:
 

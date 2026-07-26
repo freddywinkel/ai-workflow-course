@@ -4,6 +4,14 @@ Copy a template into your learner or engagement folder before completing it.
 Keep the blank original. Course 1 uses only the supplied synthetic data and
 does not connect to employer or customer systems.
 
+These templates are not standalone practice tasks. The matching module first
+shows a completed fictional example, then tells you which blank template to
+copy for your independent recreation and supplies the read-only Codex check.
+Do not fill a template by guessing before reaching that lesson.
+
+Terms used below: **artificial intelligence (AI)** and **user acceptance
+testing (UAT)**.
+
 ## Course 1 — required consulting records
 
 These nine records form a small, coherent engagement trail.

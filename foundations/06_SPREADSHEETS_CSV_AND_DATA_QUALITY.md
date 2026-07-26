@@ -1,216 +1,321 @@
-# Foundation 6 — Spreadsheets, CSV, and Data Quality
+# Foundation 6 — Spreadsheets, Comma-Separated Values (CSV), and Data Quality
+
+**PowerShell** is the Windows command shell used to import and inspect the
+practice tables in this lesson.
 
 ## Outcome
 
-You can inspect a table, import a CSV file without silently changing it,
-identify common data-quality problems, and separate fixed validation rules from
-AI interpretation.
+You will create a small CSV table, import it safely with PowerShell, detect two
+data-quality issues using exact rules, and create a traceable issue file.
 
-This matters because many SME workflows begin with an Excel export, not an AI
-model. If the rows are incomplete, inconsistent, duplicated, or misread, a
-more capable model only produces a more convincing wrong answer.
+## Words you need first
 
-## Tables represent units of work
+- A **spreadsheet** is a grid used to organise and calculate tabular data.
+- A **workbook** is a spreadsheet file. It can contain multiple
+  **worksheets**, also called sheets or tabs.
+- A **row** represents one declared record or unit of work.
+- A **column** represents one named attribute of those records.
+- A **header row** contains the column names.
+- A **cell** is the intersection of one row and one column.
+- **Comma-separated values (CSV)** is a plain-text table format. It does not
+  preserve spreadsheet colours, formulas, multiple worksheets, filters, or
+  comments.
+- A **delimiter** is the character separating fields. This course file uses a
+  comma. Some Dutch spreadsheet exports use a semicolon.
+- **Unicode Transformation Format 8-bit (UTF-8)** is the text encoding used in
+  this lesson.
+- An **identifier (ID)** is a stable value that identifies one record, such as
+  `WI-201`. Treat it as text, not a number to calculate with.
+- A **data type** says what kind of value a field holds, such as text, date,
+  number, or Boolean.
+- A **Boolean** is a true-or-false value.
+- A **blank** means no value is recorded. It is not automatically zero, false,
+  or not applicable.
+- A **deterministic rule** should produce the same result for the same input and
+  rule version.
+- A **regular expression** is a text pattern. This lesson uses one to check the
+  visible shape of a date.
+- `YYYY-MM-DD` means four-digit year, two-digit month, and two-digit day,
+  separated by dashes.
+- A **PowerShell object** is a structured value whose fields can be addressed by
+  name.
+- **Notepad** is the Windows plain-text editor used to create the CSV files.
+- An **export** is a copied snapshot taken out of another system.
+- A **variable** is a named value held in the current PowerShell session, such
+  as `$workItems`.
+- `Import-Csv` is a PowerShell command that reads CSV rows into PowerShell
+  objects.
+- `Format-Table` displays objects as a table; `-AutoSize` adjusts the displayed
+  column widths to their contents.
+- `Where-Object` keeps only objects that meet a stated condition.
+- `Select-Object` chooses which named fields to display.
+- In a PowerShell pipeline, the vertical bar `|` passes output to the next
+  command, and `$_` means the current object being checked.
+- `IsNullOrWhiteSpace` checks whether text is missing, empty, or contains only
+  spaces. `-notmatch` checks that text does not match a stated pattern.
+- A **reason code** is a stable machine-readable label for a rule result, such
+  as `R001`.
+- An **issue record** stores what a check found and links it to the affected
+  record, field, and reason code.
+- **Codex** is the artificial intelligence (AI) assistant used for the final
+  read-only check. The check prompt limits it to one practice folder.
 
-A useful operational table normally has:
+Five useful data-quality dimensions are:
 
-- one **row** for one work item, such as an order, ticket, invoice, or review;
-- one **column** for one named attribute;
-- one **header row** containing stable column names;
-- one stable **ID** that identifies each work item;
-- declared rules for values, dates, states, and blanks.
+| Dimension | Beginner question |
+|---|---|
+| Completeness | Is every required value present? |
+| Validity | Does each value follow its allowed format or list? |
+| Consistency | Do related values agree? |
+| Uniqueness | Is an identifier or record repeated only when allowed? |
+| Timeliness | Is the value current enough for its purpose? |
 
-Example:
+A **true positive** is an expected issue that a check finds. A **false
+positive** is a reported issue that is not actually an issue under the rule. A
+**false negative** is an expected issue the check misses.
 
-| work_item_id | status | received_date | due_date | owner_role |
-|---|---|---|---|---|
-| WI-0001 | in_progress | 2026-07-20 | 2026-07-30 | operations |
+## Safety boundary
 
-`WI-0001` is an identifier, not a number to calculate with. Leading zeros are
-part of it.
+Use only the three fictional rows below. An export from a workplace system can
+contain confidential or personal data even when names are removed. Do not use
+one in this lesson and do not upload a real spreadsheet to Codex.
 
-Avoid using colour, cell position, hidden rows, merged cells, or a comment as
-the only place where meaning is recorded. Those signals are easy to lose when
-data is exported.
+## Follow along — I show you exactly how
 
-## Data types and explicit blanks
+### Prerequisites and start state
 
-Common types include:
+- Foundations 1–5 are complete.
+- PowerShell and Notepad are available.
+- `Documents\controlled-ai-course-practice` exists.
+- No real spreadsheet or business export is open.
 
-- text: `operations`;
-- identifier: `WI-0001`;
-- whole number: `4`;
-- decimal amount: `1210.50`;
-- Boolean: `true` or `false`;
-- date: `2026-07-26`;
-- blank: no recorded value.
+### Part A — create the lesson folder and source CSV
 
-A blank is not automatically zero, “no,” or “not applicable.” Decide what it
-means for each column.
+Open PowerShell and run:
 
-Use ISO dates in exchanged data:
-
-```text
-2026-07-26
+```powershell
+Set-Location ([Environment]::GetFolderPath("MyDocuments"))
 ```
 
-This avoids ambiguity between day-month-year and month-day-year. Display dates
-may be localised for a person, but stored and exchanged values need one declared
-format.
+```powershell
+Set-Location "controlled-ai-course-practice"
+```
 
-For machine exchange, this course uses a dot as the decimal separator:
-`1210.50`. A Dutch spreadsheet may display `1.210,50`; do not assume the
-underlying export uses the same punctuation.
+```powershell
+New-Item -ItemType Directory -Path "foundation-06"
+```
 
-## CSV is plain text, not a workbook
+```powershell
+Set-Location "foundation-06"
+```
 
-CSV means comma-separated values. It contains rows and columns, but it does not
-preserve formulas, formatting, colours, multiple sheets, filters, data
-validation, or comments.
+What the setup commands do: they enter Documents, enter the existing practice
+root, create only `foundation-06`, and enter it.
+
+Run:
+
+```powershell
+notepad "work_items.csv"
+```
+
+Enter these exact four lines:
 
 ```csv
-work_item_id,title,status
-WI-0001,Check service request,in_progress
-WI-0002,"Confirm price, tax, and reference",new
+work_item_id,title,status,due_date,owner_role
+WI-201,Confirm address,in_progress,2026-08-04,operations
+WI-202,Close duplicate,completed,2026-07-25,
+WI-203,Review reference,waiting,not-a-date,quality
 ```
 
-The second title contains commas, so it is wrapped in double quotes.
+Save and close Notepad.
 
-CSV files can differ in:
+What this creates: one header row and three fictional work-item rows. There are
+five columns. `WI-202` has a deliberately blank `owner_role`; `WI-203` has a
+deliberately invalid date shape.
 
-- delimiter: comma, semicolon, or tab;
-- character encoding, usually UTF-8 for this course;
-- decimal and date conventions;
-- line endings;
-- quoting of commas, quotes, and line breaks.
+### Part B — import and count the rows
 
-Do not “fix” a strange import by repeatedly saving the file. Import it
-deliberately and select the actual delimiter and encoding. Keep the untouched
-source export separately.
+Run:
 
-## Spreadsheet import protocol
+```powershell
+$workItems = Import-Csv -LiteralPath ".\work_items.csv"
+```
 
-For a supplied CSV:
+What this does: `Import-Csv` reads the table into PowerShell objects. The
+variable `$workItems` holds the imported rows in the current PowerShell window.
+It does not modify the source file.
 
-1. Make a working copy; keep the original read-only.
-2. Use the spreadsheet program's **Import from Text/CSV** function.
-3. Select UTF-8.
-4. Confirm the delimiter from the preview.
-5. Import identifiers as text so `WI-0001` and leading zeros survive.
-6. Confirm dates and decimals were not silently converted.
-7. Count imported rows and compare with the source.
-8. Save spreadsheet work as a new file, not over the original CSV.
-9. Record the source filename, retrieval date, and any transformation.
+Run:
 
-Hidden or filtered rows still exist. Clear filters before counting or exporting.
-Formula results can also change when a workbook recalculates. When evidence
-matters, record whether a value came from the source, a formula, a manual edit,
-or a workflow.
+```powershell
+$workItems.Count
+```
 
-## Data quality in ordinary language
+Expected output:
 
-Use five basic questions:
+```text
+3
+```
 
-| Dimension | Question | Example failure |
-|---|---|---|
-| Completeness | Is a required value present? | an active item has no owner |
-| Validity | Does the value follow its declared rule? | priority is `urgent` when only low/medium/high are allowed |
-| Consistency | Do related values agree? | due date is before received date |
-| Uniqueness | Is the record represented once? | two rows share one source reference |
-| Timeliness | Is it current enough for the purpose? | an open item is past its due date |
+Run:
 
-“The spreadsheet looks clean” is not a test. Convert each important expectation
-into a rule with:
+```powershell
+$workItems | Format-Table -AutoSize
+```
 
-- a stable rule code;
-- the exact fields it checks;
-- a result: pass, issue, or cannot assess;
-- severity and an owner;
-- a plain-language message;
-- a test case showing the rule works.
+Expected result: a table with three rows and the five named columns.
 
-## Deterministic checks before AI
+### Part C — run two exact checks
 
-Use ordinary formulas or code for rules such as:
+Run:
 
-- required value present;
-- value is in an allowed list;
-- date uses the required format;
-- due date is not before received date;
-- identifier or reference is unique;
-- amount is a non-negative number;
-- completed status has a completion date;
-- open item is overdue relative to a declared assessment date.
+```powershell
+$workItems | Where-Object { [string]::IsNullOrWhiteSpace($_.owner_role) } | Select-Object work_item_id, status
+```
 
-These rules are deterministic: the same input and rule version should produce
-the same result.
+What this does:
 
-AI can be useful later for bounded work such as:
+- `Where-Object` keeps rows that meet the condition in braces;
+- `$_` means the current row;
+- `IsNullOrWhiteSpace` checks for a missing, empty, or spaces-only value;
+- `Select-Object` shows only the two named fields.
 
-- classifying an unclear free-text description;
-- drafting a short explanation of already detected issues;
-- grouping similar issue messages for human review.
+Expected result: one row for `WI-202` with status `completed`.
 
-AI should not silently repair source values, decide that missing data is
-unimportant, invent an owner, or replace a rule that can be written exactly.
+Run:
 
-## Source, working copy, issue record, and summary
+```powershell
+$workItems | Where-Object { $_.due_date -notmatch '^\d{4}-\d{2}-\d{2}$' } | Select-Object work_item_id, due_date
+```
 
-Keep four things distinct:
+What this does: the regular expression checks for four digits, a dash, two
+digits, a dash, and two digits. It is a format check, not proof that a calendar
+date exists.
 
-1. **Source export** — the untouched input snapshot.
-2. **Working copy** — formulas or transformations used during analysis.
-3. **Issue records** — one structured record for every failed rule.
-4. **Summary** — counts and explanations derived from the issue records.
+Expected result: one row for `WI-203` with due date `not-a-date`.
 
-An issue should point back to its work item and rule. A summary should be
-recalculable from issue records. Do not keep only a colourful dashboard.
+### Part D — record the issues separately
 
-An export is a snapshot, not necessarily the live system of record. Record its
-retrieval time and do not write corrections back to a source system during this
-course.
+Run:
 
-## Practice with the synthetic dataset
+```powershell
+notepad "found_issues.csv"
+```
 
-Use only:
+Enter:
 
-- [`../practice_data/work_items.csv`](../practice_data/work_items.csv);
-- [`../practice_data/expected_issues.csv`](../practice_data/expected_issues.csv);
-- [`../practice_data/README.md`](../practice_data/README.md).
+```csv
+issue_id,work_item_id,field,rule_code,message
+ISS-A,WI-202,owner_role,R001,Required owner role is missing
+ISS-B,WI-203,due_date,R004,Date does not use YYYY-MM-DD
+```
 
-First inspect the files in a text editor. Then make a working copy and import
-`work_items.csv` into your spreadsheet.
+Save and close Notepad.
 
-Complete these tasks:
+`R001` and `R004` are the stable reason codes for these two rule results. The
+issue rows point back to the work item and field. The source file remains
+unchanged.
 
-1. Confirm there are 15 data rows and 12 columns.
-2. Keep `work_item_id` and `source_reference` as text.
-3. Create a separate `found_issues` sheet.
-4. Apply rules R001–R011 from the practice README using filters, formulas, or
-   careful manual checks.
-5. Record one row per detected issue.
-6. Compare your `(work_item_id, rule_code)` pairs with
-   `expected_issues.csv`.
-7. Count:
-   - true positives: expected issues you found;
-   - false positives: issues you reported that were not expected;
-   - false negatives: expected issues you missed.
-8. Explain one mistake without changing the expected answer file.
+Run:
 
-The answer file is learning evidence, not production truth. In client work,
-expected results require agreement with a process owner and representative test
-cases.
+```powershell
+Import-Csv -LiteralPath ".\found_issues.csv" | Format-Table -AutoSize
+```
 
-## Chapter check
+Run:
 
-You pass when you can explain:
+```powershell
+(Get-Location).Path
+```
 
-- why one row should represent one declared unit of work;
-- why an ID should often be imported as text;
-- why CSV import settings matter;
-- blank versus zero versus not applicable;
-- completeness, validity, consistency, uniqueness, and timeliness;
-- why fixed checks should run before AI summarisation;
-- source export versus working copy versus issue records;
-- true positive, false positive, and false negative;
-- why a dashboard without traceable issue records is weak evidence.
+What the final two commands do: the import command reads and displays the issue
+file; the path command prints the exact full folder path. Neither changes the
+CSV files.
+
+### Expected result — exact
+
+- `work_items.csv` has one header plus three data rows and five columns.
+- `$workItems.Count` prints `3`.
+- the missing-owner check returns only `WI-202`;
+- the date-shape check returns only `WI-203`;
+- `found_issues.csv` contains exactly two issue rows, `ISS-A` and `ISS-B`;
+- `work_items.csv` still contains its original four lines.
+
+### Troubleshooting
+
+- If the table appears as one column, confirm the file uses commas and is named
+  `.csv`, not `.csv.txt`.
+- If `$workItems.Count` is not `3`, reopen the file and compare line breaks and
+  commas with the sample.
+- If PowerShell forgets `$workItems`, you opened a new terminal. Run the
+  `Import-Csv` assignment again.
+- If a spreadsheet program changes dates or leading zeros, close it without
+  saving and return to the untouched CSV. Import settings must be deliberate.
+
+## Now recreate it yourself
+
+Create `service_queue.csv` with these six headers:
+
+```text
+ticket_id,category,state,opened_date,target_date,assigned_role
+```
+
+Create four fictional rows using IDs `T-91` through `T-94`. Include exactly:
+
+- one valid active row with an assigned role;
+- one active row with a blank `assigned_role`;
+- one row with invalid state `paused`, where the allowed states are `new`,
+  `active`, and `done`;
+- one row whose `opened_date` uses `2026/08/02` instead of `2026-08-02`.
+
+Then create `recreated_issues.csv` with one traceable issue row for each of those
+three deliberate problems. Choose three new issue IDs and three stable rule
+codes. Use PowerShell to confirm four input rows and three issue rows.
+
+This uses a different unit of work, fields, identifiers, states, and issue codes
+from the guided example.
+
+## Ask Codex to check your work
+
+Replace `[PASTE THE EXACT PATH]` with the full path output from
+`(Get-Location).Path`.
+
+```text
+You may inspect READ-ONLY this one practice folder and no other location:
+[PASTE THE EXACT PATH]
+
+Do not create, edit, move, rename, or delete anything. Do not correct source
+values. Run only read-only CSV inspection commands.
+
+Report PASS or NOT YET for each criterion:
+1. work_items.csv has exactly 3 data rows and 5 columns.
+2. WI-202 alone has a blank owner_role.
+3. WI-203 alone fails the YYYY-MM-DD shape check.
+4. found_issues.csv contains exactly the traceable ISS-A/R001 and ISS-B/R004
+   issue rows described in the lesson.
+5. service_queue.csv has exactly 4 data rows and the 6 required headers.
+6. Its three deliberate problems are one blank assigned role, state paused,
+   and opened date 2026/08/02.
+7. recreated_issues.csv contains exactly one traceable issue for each of those
+   three problems.
+
+Explain NOT YET in beginner language and make no changes.
+This folder must contain synthetic course data only. I must not include
+secrets, personal data, client data, employer data, or other work data. If you
+notice such content, stop, do not repeat it, and tell me to remove it locally.
+Confirm that the folder contains no secrets and no real employer, client, or
+work data.
+```
+
+## Pass criteria
+
+- [ ] I can explain row, column, header, cell, CSV, delimiter, ID, and blank.
+- [ ] I imported CSV without changing the source.
+- [ ] My exact row counts are 3 for `work_items.csv` and 4 for
+      `service_queue.csv`.
+- [ ] My issue files point to the relevant input ID, field, and rule code.
+- [ ] I can explain the five data-quality dimensions.
+- [ ] I can distinguish a date-shape check from proof of a valid calendar date.
+- [ ] The exercise contains only synthetic data.
+- [ ] Codex reported PASS for every read-only criterion, or I corrected each
+      NOT YET item myself.

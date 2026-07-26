@@ -1,290 +1,323 @@
-# Module 7 — Apply Dutch SME Guardrails and Choose the Right Tool
+# Module 7 — Apply Dutch Small and Medium-sized Enterprise (SME) Guardrails and Choose the Right Tool
 
 ## Outcome
 
-Produce a practical pre-screen that helps a Dutch SME decide whether to
-configure an existing tool, build a small controlled workflow, rework the
-process first, or stop and seek specialist review.
+You will perform a conservative Dutch SME risk screen, map data movement,
+compare manual improvement, configuration, purchase, and custom build, review
+vendor and ownership questions, and record a proportionate decision.
 
-This module teaches implementation literacy, not legal advice.
+A small and medium-sized enterprise (SME) is a smaller organisation rather
+than a large enterprise. In this course, the term describes the practical
+client context; it does not replace the official legal or funding definitions.
 
 ## Beginner checkpoint
 
-- you can draw the capstone data flow;
-- you know where configuration, data, output, logs, and secrets live;
-- the workflow uses synthetic data only;
-- no external action exists;
-- you can distinguish a course decision from a legal conclusion.
+Start when Modules 1–6 pass. The workflow is still synthetic, internal,
+reviewed, reversible, and local-draft-only.
 
 ## Concepts
 
-### Build versus buy
-
-The first question is not “Which automation tool?” It is whether existing
-processes or software already solve the problem.
-
-### Accountability
-
-The client remains responsible for its purpose, data, users, decisions, and
-suppliers. A consultant provides implementation evidence and escalates
-questions outside the agreed competence.
-
-### Data minimisation
-
-Use only fields necessary for the intended purpose. Convenience is not a
-reason to copy an entire database into a model prompt.
-
-### AI role and use-case triage
-
-Identify who provides and who deploys the AI system, what the system does, who
-is affected, and whether the use may fall into a prohibited, high-risk, or
-otherwise regulated category. Do not classify a real use case legally without
-qualified review.
-
-### Ownership
-
-A workflow without a process owner, technical owner, reviewer, budget, and
-fallback is not ready for a pilot.
+- **Build versus buy** compares custom implementation with existing software,
+  configuration, and process improvement.
+- **Accountability** means the organisation can explain its purpose, data,
+  controls, owners, and evidence.
+- **Data minimisation** means processing only what the purpose needs.
+- A **data flow** shows where information enters, moves, is stored, and leaves.
+- A **Data Protection Impact Assessment (DPIA)** is a formal privacy-risk
+  assessment required in some higher-risk personal-data situations.
+- **Comma-separated values (CSV)** is a plain-text table format.
+- An **application programming interface (API)** lets software systems exchange
+  requests and responses.
+- **Markdown** is a plain-text format for headings, lists, and tables; `.md` is
+  its file name ending.
+- An **identifier (ID)** distinguishes one item, rule, or record.
+- **Python** is the programming language used for the current local proof.
+- **Information technology (IT)** is the function that manages organisational
+  systems and support; a handover must still name an accountable role.
+- **Total cost of ownership** includes implementation, licences, review,
+  support, training, monitoring, exit, and failure—not only purchase price.
+- **Vendor lock-in** is difficulty moving data or operation away from a vendor.
 
 ## Official readings
 
-- [Autoriteit Persoonsgegevens — Verantwoordingsplicht](https://autoriteitpersoonsgegevens.nl/nl/onderwerpen/algemene-informatie-avg/verantwoordingsplicht)
-- [AP — AVG-randvoorwaarden voor generatieve AI](https://autoriteitpersoonsgegevens.nl/system/files?file=2025-05%2FAVG-Randvoorwaarden+voor+generatieve+AI.pdf)
-- [European Commission — Navigating the AI Act](https://digital-strategy.ec.europa.eu/en/faqs/navigating-ai-act)
-- [European Commission — AI literacy Q&A](https://digital-strategy.ec.europa.eu/en/faqs/ai-literacy-questions-answers)
-- [NCSC and DTC digital resilience principles](https://www.ncsc.nl/nieuws/ncsc-en-dtc-lanceren-gezamenlijke-basisprincipes-voor-digitale-weerbaarheid)
-- [Microsoft Copilot Studio agent flows](https://learn.microsoft.com/en-us/microsoft-copilot-studio/flows-overview)
-- [Google Workspace Studio](https://workspace.google.com/blog/product-announcements/introducing-google-workspace-studio-agents-for-everyday-work)
+Artificial intelligence (AI) means software that can generate or infer an
+answer. The General Data Protection Regulation (GDPR), called the Algemene
+verordening gegevensbescherming (AVG) in Dutch, governs personal-data
+processing. Autoriteit Persoonsgegevens is the Dutch Data Protection Authority.
+The National Cyber Security Centre (NCSC) publishes Dutch cyber-resilience
+guidance.
 
-Run the evergreen audit for current legal guidance and product capability.
+1. [Autoriteit Persoonsgegevens: AI and algorithms](https://autoriteitpersoonsgegevens.nl/themas/algoritmes-ai)
+2. [European Commission: GDPR principles](https://commission.europa.eu/law/law-topic/data-protection/rules-business-and-organisations/principles-gdpr/overview-principles/what-data-can-we-process-and-under-which-conditions_en)
+3. [European Commission: AI Act](https://digital-strategy.ec.europa.eu/en/policies/regulatory-framework-ai)
+4. [NCSC Netherlands: basic cyber-resilience measures](https://www.ncsc.nl/onderwerpen/basismaatregelen)
+
+These sources support screening; they do not replace legal, security, labour,
+procurement, or sector advice.
 
 ## Guided build
 
-### 1. Write the intended purpose
+The worked example deliberately concludes that AI is unnecessary. The
+independent recreation assesses the different Course 1 capstone.
 
-Use one sentence:
+Windows PowerShell is the Windows command application used below. Notepad is
+the Windows plain-text editor used to create practice files.
 
-> Help an internal operations reviewer find deterministic data-quality
-> exceptions in a fictional weekly work-item export and read a draft summary.
+## Follow along — I show you exactly how
 
-Then list exclusions:
+**Expected result:** a complete worked guardrail and tool-fit decision that
+rejects unnecessary AI and makes ownership, fallback, and reassessment visible.
 
-- no compliance decision;
-- no employee or customer judgment;
-- no external action;
-- no real data;
-- no source-system update;
-- no autonomous prioritization.
+### Stage 1 — Prepare and read the complete worked decision
 
-### 2. Map the data flow
+Open Windows PowerShell and run:
 
-For each step, record:
+```powershell
+$practiceBase = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'controlled-ai-course-practice'
+$moduleFolder = Join-Path $practiceBase 'module-07'
+New-Item -ItemType Directory -Force -Path $moduleFolder
+Set-Location -LiteralPath $moduleFolder
+notepad .\worked_guardrail_and_tool_decision.md
+```
 
-- data category;
-- source;
-- destination;
-- purpose;
-- owner;
-- access;
-- storage;
-- retention;
-- deletion;
-- provider/subprocessor;
-- location or transfer question;
-- log content.
+Click **Yes**, paste the completed example, save, and close:
 
-For Course 1, all data remains fictional and local except the optional live AI
-call containing verified synthetic issues.
+```markdown
+# Worked guardrail and tool decision
 
-### 3. Run the personal-data screen
+## Fictional use case
 
-Ask:
+An office-supply SME wants a weekly internal low-stock list from a synthetic
+CSV. A coordinator reviews it. The workflow does not order, contact suppliers,
+rank products, pay, or write to inventory.
 
-- Is any person identifiable directly or indirectly?
-- Are employee, customer, patient, financial, location, or behavioral fields
-  present?
-- Is special-category or criminal-offence data present?
-- Can free text unexpectedly contain personal data?
-- Is each field necessary for the stated purpose?
+## Intended purpose
 
-For the supplied course data the answer is synthetic/no real personal data.
-Document the evidence; do not merely tick a box.
+User: inventory coordinator.
+Input: synthetic item ID, quantity, and approved reorder threshold.
+Function: deterministic quantity-below-threshold check.
+Output: internal review list.
+Reviewer/owner: operations lead.
+Fallback: filter the CSV manually.
 
-### 4. Run the consequence screen
+## Data flow
 
-Stop and escalate if a proposed real workflow affects:
+1. Fictional stock CSV enters a local approved folder.
+2. Deterministic rules read item ID, quantity, and threshold.
+3. An internal exception CSV is written locally.
+4. The operations lead reviews it.
+5. No data is sent externally and no source record changes.
 
-- employment or worker management;
-- credit, insurance, housing, or essential services;
-- education admission;
-- healthcare or clinical care;
-- policing, migration, or justice;
-- biometric identification;
-- safety-critical operations;
-- another consequential decision about a person.
+## Personal-data and consequence screen
 
-Course 1 excludes all of these.
+- Personal data: none needed.
+- Special-category or health data: none.
+- Employee/customer scoring: none.
+- Employment, credit, insurance, benefits, education, policing, migration,
+  justice, healthcare, or safety decision: none.
+- External message, order, payment, approval, contract, or write-back: none.
+- AI interaction: none.
+- Escalation: reassess before any real data, person-related field, external
+  connection, action, or AI step.
 
-### 5. Inspect existing capabilities
+## Options
 
-Create a tool-fit table:
+| Option | Fit | Evidence | Main burden | Decision |
+|---|---|---|---|---|
+| Improve manual spreadsheet filter | good for tiny volume | existing fallback | repeated manual time | retain as fallback |
+| Configure spreadsheet formula/filter | best first fit | exact numeric rule | ownership and testing | select |
+| Buy workflow platform | excessive | no integration need | licence/admin cost | reject now |
+| Custom Python service | excessive | technically possible | maintenance/support | reject now |
+| Add generative AI | no useful role | rule is exact | variability and governance | reject |
 
-| Candidate | Already owned? | Meets rule checks? | Human review? | Logging? | Data location? | Recurring cost? | Owner? |
-|---|---:|---:|---:|---:|---|---:|---|
-| Current line-of-business system | | | | | | | |
-| Spreadsheet/report | | | | | | | |
-| Microsoft option | | | | | | | |
-| Google option | | | | | | | |
-| n8n + Python | | | | | | | |
-| No automation / process fix | | | | | | | |
+## Minimum security and ownership
 
-The correct answer may be a saved report, better required fields, staff
-training, or configuration.
+- Approved local folder and named users.
+- Least access needed for role.
+- Original file preserved.
+- Backup and restore owner: operations lead.
+- Updates tested before use.
+- Incident route: stop, use manual filter, tell owner.
+- Data export: CSV remains portable.
+- Deletion: local input/output removed according to an approved schedule.
+- No secret, API key, or vendor account.
 
-### 6. Review vendor and access questions
+## Cost and exit
 
-Ask:
+Cost categories: coordinator setup, formula test, reviewer time, instructions,
+maintenance, fallback drill. Exit is simple: retain CSV and manual filter.
 
-- Who contracts with the vendor?
-- Who is controller, processor, or subprocessor?
-- Is customer content used for provider improvement?
-- What retention and deletion controls exist?
-- Where is data processed?
-- Is MFA available?
-- Who can create credentials?
-- What scopes are required?
-- What audit information exists?
-- How are incidents and model changes communicated?
-- What happens when the service is unavailable or cancelled?
+## Decision
 
-Record unknown answers as blockers, not assumptions.
+CONFIGURE EXISTING SPREADSHEET. Do not build or buy AI. Reassess only if measured
+volume or complexity changes. This is an operational recommendation, not legal
+approval.
+```
 
-### 7. Set the minimum security baseline
+Read the decision, then run:
 
-For a future low-risk pilot require:
+```powershell
+Select-String -Path .\worked_guardrail_and_tool_decision.md -Pattern 'none needed','select','reject','fallback','Reassess'
+```
 
-- client-owned accounts and tenant;
-- least-privilege access;
-- MFA;
-- secrets outside workflow exports and source control;
-- restricted logs;
-- dependency and change records;
-- manual fallback;
-- backup and recovery ownership;
-- incident contact and kill switch.
+**Expected result:** matches show the data screen, selected option, rejected
+options, fallback, and scope-change trigger.
 
-Course 1 demonstrates the concepts locally; it does not prove production
-security.
+**Why each action matters:** purpose limits collection; data flow exposes
+transfers; consequence screening prevents an unsuitable beginner project;
+option comparison avoids custom-building by habit; ownership makes the chosen
+solution operable.
 
-### 8. Record total ownership and cost
+**Troubleshooting:**
 
-Include:
+- If every option says “AI,” add process improvement and existing-tool
+  configuration.
+- If “no personal data” is based on not asking rather than inspecting fields,
+  mark it unknown and stop.
+- If the person who owns backup, access, incident, or exit is “IT” with no
+  named role, clarify the role.
 
-- platform subscription;
-- model usage;
-- implementation time;
-- review time;
-- support and monitoring;
-- training;
-- failure and rework;
-- vendor change;
-- exit or migration.
+### Stage 2 — Test one scope change
 
-Do not compare only API token prices.
+Create `worked_scope_change.md`:
 
-### 9. Decide
+```markdown
+# Worked scope-change decision
 
-Choose and justify:
+Request: add employee names and automatically message the person responsible.
+Effect: introduces personal data and an external action.
+Decision: STOP CURRENT SCOPE. Reopen privacy, authority, security, user,
+necessity, transparency, works-council where applicable, vendor, fallback, and
+testing review. Do not bolt the request onto the approved workflow.
+```
 
-- `CONFIGURE EXISTING TOOL`;
-- `PROCESS FIX FIRST`;
-- `BUILD CONTROLLED PROTOTYPE`;
-- `SEEK SPECIALIST REVIEW`;
-- `STOP`.
+This demonstrates that a small feature request can materially change risk.
+
+## Now recreate it yourself
+
+Assess the different Synthetic SME Operations Exception Assistant.
+
+1. Copy the two current worksheets:
+
+```powershell
+$courseRoot = Read-Host 'Paste the full path to AI_WORKFLOW_DOCUMENT_SYSTEMS_COURSE'
+Copy-Item -LiteralPath (Join-Path $courseRoot 'templates\risk_and_escalation_screen.md') -Destination .\recreated_risk_screen.md
+Copy-Item -LiteralPath (Join-Path $courseRoot 'templates\tool_fit_and_ownership_record.md') -Destination .\recreated_tool_fit.md
+notepad .\recreated_risk_screen.md
+```
+
+2. Complete every field yourself using evidence from Modules 1–6. Then complete
+   `recreated_tool_fit.md`.
+3. Compare at least:
+
+- manual process improvement;
+- spreadsheet configuration;
+- the current local Python workflow;
+- a general workflow platform;
+- bought SME software with existing exception features;
+- custom cloud service;
+- no AI;
+- bounded replaceable AI summary.
+
+4. For every option record fit, evidence, implementation time, licence or usage
+cost, review, support, security, data location/transfer, portability, exit,
+failure route, and owner.
+5. Your Course 1 decision should keep the local Python proof with the mock
+summary for learning, preserve the manual fallback, and state that a real
+client recommendation depends on the client's existing tools. It must not
+claim production readiness.
+6. Add a data-flow list from CSV input through issue output, summary, approval,
+local draft, retention, and deletion. Mark every boundary and owner.
+7. Add a scope-change test for real employee names plus automatic email. The
+   result must be `STOP AND REASSESS`.
+
+Verify:
+
+```powershell
+Select-String -Path .\recreated_risk_screen.md,.\recreated_tool_fit.md -Pattern 'synthetic','manual fallback','owner','exit','STOP'
+```
+
+**Expected result:** all five concepts appear. Missing output means the
+worksheets are incomplete, not that PowerShell failed.
+
+## Ask Codex to check your work
+
+Run `(Resolve-Path $moduleFolder).Path` to obtain the full path. Replace
+`[PASTE FULL PATH HERE]` and copy:
+
+```text
+READ-ONLY COURSE REVIEW.
+
+I authorize inspection of only this full path:
+[PASTE FULL PATH HERE]
+
+Do not create, edit, delete, rename, move, format, or execute anything. Do not
+inspect the parent or another path. Stop if there are secrets, credentials,
+real client data, workplace data, personal data, or health data.
+
+Return:
+1. PASS or NOT YET;
+2. checks for: intended purpose; complete data flow; personal-data screen;
+consequence and AI-use screen; synthetic-only scope; at least seven realistic
+options including improve/configure/buy/build/no-AI; evidence rather than
+preference; security baseline; transfer and retention; total ownership cost;
+named access/backup/incident/exit owners; portability; manual fallback; no
+production-readiness claim; scope changes trigger STOP AND REASSESS; worked
+example correctly rejects unnecessary AI;
+3. the smallest corrections for me to make if NOT YET.
+
+Remain read-only. Do not make a legal conclusion or replacement recommendation.
+```
+
+## Pass criteria
+
+- [ ] Intended purpose and end-to-end data flow are explicit.
+- [ ] Personal-data and consequence screens use evidence or say unknown.
+- [ ] Options include improve, configure, buy, build, and no AI.
+- [ ] The selected tool follows evidence, not enthusiasm.
+- [ ] Security, transfer, retention, deletion, support, cost, and exit are
+      addressed proportionately.
+- [ ] Every continuing responsibility has a role owner.
+- [ ] Manual fallback remains viable.
+- [ ] Material scope changes stop and reopen assessment.
+- [ ] No legal approval or production-readiness claim is made.
+- [ ] Codex returns `PASS` read-only.
 
 ## Consultant lens
 
-Ask:
-
-- Who owns the process and budget?
-- What does the existing license already include?
-- Which data cannot leave the current environment?
-- Which specialists must sign off?
-- Who supports the workflow after handover?
-- What would make the organization stop the pilot?
-
-Request:
-
-- current architecture and approved-tool inventory;
-- information-security and privacy contacts;
-- vendor agreements and data documentation;
-- retention schedule;
-- access model;
-- incident process;
-- existing reports and automation.
-
-Do not request confidential material during an initial market interview.
-
-Stop when:
-
-- no accountable owner exists;
-- lawful use of data is unresolved;
-- access cannot be limited;
-- an existing safe feature makes custom work unnecessary;
-- the consultant is expected to provide legal certification;
-- the use is outside the agreed low-risk boundary.
-
-Client-style deliverable:
-
-- one-page risk/escalation screen and tool-fit recommendation.
+Clients pay for fit and control, not code volume. Recommending a spreadsheet
+configuration or existing product can be better consulting than selling a
+custom AI build.
 
 ## Capstone increment
 
-Complete the supplied risk, tool-fit, and ownership worksheets for the
-fictional capstone. The likely answer may still be to keep the prototype local.
+The capstone has a Dutch SME guardrail screen, data flow, proportionate tool
+decision, ownership, security baseline, cost/exit view, and reassessment
+triggers.
 
 ## Required artifact
 
-- `evidence/module_07_risk_screen.md`;
-- data-flow map;
-- minimisation table;
-- build-versus-buy comparison;
-- vendor/access question record;
-- ownership and cost record;
-- escalation list;
-- implementation decision.
+The teaching contract creates the worked decision, worked scope change, and two
+completed recreated worksheets under `module-07`.
 
 ## Test gate
 
-- [ ] Intended purpose and exclusions are specific.
-- [ ] Every data flow and storage location is visible.
-- [ ] Personal-data and consequence screens are complete.
-- [ ] Existing-tool alternatives were examined.
-- [ ] Unknown legal/security/vendor answers are blockers.
-- [ ] Owners and recurring costs are named.
-- [ ] No document claims legal compliance.
-- [ ] A stop/configure/process-fix decision is allowed.
+The **Pass criteria** are the complete gate.
 
 ## Stop or rework
 
-Stop if the analysis assumes:
-
-- synthetic evidence proves real-data safety;
-- a vendor's marketing page proves compliance;
-- human review removes all AI Act or AVG questions;
-- the client can use your personal tenant;
-- a custom build is automatically more valuable.
+Stop when data necessity is unknown, the use affects people or safety, external
+action enters scope, no owner accepts continuing duties, vendor terms or
+transfer remain unknown, or the solution is chosen before alternatives.
 
 ## Common failures
 
-- beginning vendor selection before intended purpose;
-- treating all internal data as non-personal;
-- forgetting free text and logs;
-- evaluating token cost but not review/support;
-- calling a checklist a DPIA or legal assessment;
-- using “EU region” as the entire transfer analysis.
+- Treating “minimal risk” as “no obligations.”
+- Buying before mapping existing capabilities.
+- Comparing licence price while ignoring support and exit.
+- Calling pseudonymous data anonymous.
+- Presenting screening as legal advice.
 
 ## Estimated time
 
-10–14 hours. Real client analysis takes longer and requires appropriate
-specialists.
+8–12 hours.
