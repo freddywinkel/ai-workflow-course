@@ -1,88 +1,106 @@
 #!/usr/bin/env python3
-"""Validate the static course package and generated synthetic corpus.
+"""Deterministically validate the current Course 1 package.
 
-This script performs deterministic structural checks. It does not claim that
-external links, legal statements, model behaviour, or visual rendering are
-current/correct; those require the evergreen live audit and render review.
+The curriculum manifest is the source of truth for the current course. Archived
+future-course material and generated/dependency directories are intentionally
+outside this validator's scope.
+
+Only the Python standard library is required. When jsonschema or PyYAML is not
+installed, the related optional checks are reported as warnings rather than
+silently skipped.
 """
 
 from __future__ import annotations
 
 import argparse
-import hashlib
+import csv
 import json
 import os
 import re
 import sys
+from collections import Counter
 from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Any
+from datetime import date
+from decimal import Decimal, InvalidOperation
+from pathlib import Path, PurePosixPath
+from typing import Any, Iterable
 from urllib.parse import unquote
 
 
-REQUIRED_WEEK_HEADINGS = (
+EXPECTED_PROGRAM_ID = "controlled-ai-workflow-consultant-path"
+EXPECTED_COURSE_ID = "course-1-controlled-ai-workflow-foundations"
+EXPECTED_SCHEMA_VERSION = 2
+FIXED_ASSESSMENT_DATE_TEXT = "2026-07-26"
+FIXED_ASSESSMENT_DATE = date.fromisoformat(FIXED_ASSESSMENT_DATE_TEXT)
+
+STABLE_ID_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+REVISION_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+$")
+WORK_ITEM_ID_RE = re.compile(r"^WI-\d{4}$")
+SOURCE_REFERENCE_RE = re.compile(r"^REF-\d{4}$")
+
+REQUIRED_MODULE_HEADINGS = (
     "## Outcome",
+    "## Beginner checkpoint",
     "## Concepts",
     "## Official readings",
     "## Guided build",
+    "## Consultant lens",
     "## Capstone increment",
     "## Required artifact",
     "## Test gate",
+    "## Stop or rework",
     "## Common failures",
     "## Estimated time",
 )
 
-REQUIRED_ROOT_FILES = (
-    "README.md",
-    "BEGINNER_READINESS_CHECK.md",
-    "COURSE_OVERVIEW.md",
-    "SOFTWARE_MATRIX.md",
-    "SETUP_WINDOWS.md",
-    "ARCHITECTURE_AND_CONTRACTS.md",
-    "CAPSTONE_SPECIFICATION.md",
-    "ASSESSMENT_AND_RUBRIC.md",
-    "SOURCE_REGISTER.md",
-    "COURSE_CHANGELOG.md",
-    "EVERGREEN_UPDATE_PROMPT.md",
-    "PWA_AND_UPDATES.md",
-    "RELEASE_VALIDATION.md",
-    "stack-manifest.yaml",
-    "requirements-course.txt",
-    "schemas/contracts.schema.json",
-    "schemas/golden_case.schema.json",
-    "corpus/README.md",
-    "corpus/manifest.jsonl",
-    "corpus/golden.jsonl",
-    "updates/README.md",
-    "foundations/README.md",
-    "foundations/01_FILES_AND_TEXT.md",
-    "foundations/02_COMMAND_LINE_SURVIVAL.md",
-    "foundations/03_CODE_AND_PYTHON.md",
-    "foundations/04_WEB_APIS_AND_JSON.md",
-    "foundations/05_GIT_AND_SAFE_CHANGES.md",
-    "foundations/06_AI_AND_DOCUMENT_WORKFLOWS.md",
-    "foundations/07_SAFE_VIBE_CODING.md",
-    "foundations/08_N8N_DOCKER_AND_DATABASES.md",
-    "foundations/GLOSSARY.md",
-    "templates/ai_assistance_log.md",
-    "templates/debugging_record.md",
-    "tools/requirements-validation.txt",
-)
-
-STATE_ENUM = {
-    "received",
-    "validated",
-    "parsed",
-    "needs_review",
-    "pending_approval",
-    "approved",
-    "rejected",
-    "expired",
-    "completed",
-    "failed_manual",
+EXPECTED_SCHEMA_FILES = {
+    "approval.schema.json",
+    "audit_event.schema.json",
+    "issue.schema.json",
+    "summary.schema.json",
+    "work_item.schema.json",
 }
 
-MARKDOWN_LINK_RE = re.compile(r"(?<!!)\[[^\]]+\]\(([^)]+)\)")
+WORK_ITEM_FIELDS = (
+    "work_item_id",
+    "source_reference",
+    "title",
+    "owner_role",
+    "status",
+    "priority",
+    "received_date",
+    "due_date",
+    "completed_date",
+    "amount",
+    "currency",
+    "category",
+)
+
+EXPECTED_ISSUE_FIELDS = (
+    "issue_id",
+    "work_item_id",
+    "field",
+    "rule_code",
+    "severity",
+    "expected_message",
+)
+
+RULE_CODES = {f"R{number:03d}" for number in range(1, 12)}
+ALLOWED_STATUSES = {"new", "in_progress", "waiting", "completed", "cancelled"}
+OPEN_STATUSES = {"new", "in_progress", "waiting"}
+OWNER_REQUIRED_STATUSES = {"in_progress", "waiting", "completed"}
+ALLOWED_PRIORITIES = {"low", "medium", "high"}
+ALLOWED_SEVERITIES = {"low", "medium", "high"}
+REQUIRED_VALUE_FIELDS = (
+    "work_item_id",
+    "source_reference",
+    "title",
+    "received_date",
+    "category",
+)
+DATE_FIELDS = ("received_date", "due_date", "completed_date")
+
 IGNORED_DIRECTORY_NAMES = {
     ".git",
     ".pytest_cache",
@@ -91,6 +109,11 @@ IGNORED_DIRECTORY_NAMES = {
     "dist",
     "node_modules",
 }
+IGNORED_TOP_LEVEL_DIRECTORIES = {"future_courses"}
+
+FENCED_CODE_RE = re.compile(r"```.*?```|~~~.*?~~~", re.DOTALL)
+INLINE_LINK_RE = re.compile(r"!?\[[^\]]*\]\(([^)]+)\)")
+REFERENCE_LINK_RE = re.compile(r"^\s*\[[^\]]+\]:\s*(\S+)", re.MULTILINE)
 
 
 @dataclass
@@ -111,335 +134,1301 @@ class Report:
         self.warnings.append(f"{name}: {detail}")
 
 
-def sha256_file(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as stream:
-        for block in iter(lambda: stream.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
+def compact(items: Iterable[str], limit: int = 12) -> str:
+    values = [str(item) for item in items]
+    if len(values) <= limit:
+        return "; ".join(values)
+    return "; ".join(values[:limit]) + f"; ... and {len(values) - limit} more"
 
 
-def load_jsonl(path: Path) -> list[dict[str, Any]]:
-    rows: list[dict[str, Any]] = []
-    for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
-        if not line.strip():
-            continue
-        try:
-            value = json.loads(line)
-        except json.JSONDecodeError as exc:
-            raise ValueError(f"{path}:{line_number}: {exc}") from exc
-        if not isinstance(value, dict):
-            raise ValueError(f"{path}:{line_number}: JSONL row is not an object")
-        rows.append(value)
-    return rows
+def is_nonempty_string(value: Any) -> bool:
+    return isinstance(value, str) and bool(value.strip())
 
 
-def iter_course_files(root: Path, suffix: str) -> list[Path]:
-    """Return course files while pruning generated/dependency directories."""
+def valid_revision(value: Any) -> bool:
+    if not isinstance(value, str) or not REVISION_RE.fullmatch(value):
+        return False
+    try:
+        return date.fromisoformat(value).isoformat() == value
+    except ValueError:
+        return False
+
+
+def path_is_ignored(relative: Path) -> bool:
+    parts = relative.parts
+    if not parts:
+        return False
+    if parts[0] in IGNORED_TOP_LEVEL_DIRECTORIES:
+        return True
+    return any(part in IGNORED_DIRECTORY_NAMES for part in parts)
+
+
+def iter_current_files(root: Path, suffix: str) -> list[Path]:
+    """Return in-scope files while pruning archives, generated files, and deps."""
 
     matches: list[Path] = []
     for current_root, directory_names, file_names in os.walk(root):
-        directory_names[:] = [
-            name for name in directory_names if name not in IGNORED_DIRECTORY_NAMES
-        ]
+        current = Path(current_root)
+        retained: list[str] = []
+        for directory_name in directory_names:
+            relative = (current / directory_name).relative_to(root)
+            if not path_is_ignored(relative):
+                retained.append(directory_name)
+        directory_names[:] = retained
+
         for file_name in file_names:
             if file_name.endswith(suffix):
-                matches.append(Path(current_root) / file_name)
+                matches.append(current / file_name)
     return sorted(matches)
 
 
-def validate_required_files(root: Path, report: Report) -> None:
-    missing = [name for name in REQUIRED_ROOT_FILES if not (root / name).is_file()]
-    if missing:
-        report.failed("required-files", f"missing: {', '.join(missing)}")
+def load_json_object(path: Path) -> dict[str, Any]:
+    value = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(value, dict):
+        raise ValueError("top-level JSON value is not an object")
+    return value
+
+
+def validate_curriculum(root: Path, report: Report) -> dict[str, Any] | None:
+    path = root / "curriculum.json"
+    if not path.is_file():
+        report.failed("curriculum-load", "curriculum.json is missing")
+        return None
+
+    try:
+        curriculum = load_json_object(path)
+    except Exception as exc:
+        report.failed("curriculum-load", str(exc))
+        return None
+    report.passed("curriculum-load", "curriculum.json parsed as a JSON object")
+
+    metadata_failures: list[str] = []
+    if curriculum.get("schemaVersion") != EXPECTED_SCHEMA_VERSION:
+        metadata_failures.append(
+            f"schemaVersion must be {EXPECTED_SCHEMA_VERSION}"
+        )
+
+    program = curriculum.get("program")
+    course = curriculum.get("course")
+    groups = curriculum.get("groups")
+    career = curriculum.get("career")
+    if not isinstance(program, dict):
+        metadata_failures.append("program must be an object")
+        program = {}
+    if not isinstance(course, dict):
+        metadata_failures.append("course must be an object")
+        course = {}
+    if not isinstance(groups, list):
+        metadata_failures.append("groups must be an array")
+        groups = []
+    if not isinstance(career, dict):
+        metadata_failures.append("career must be an object")
+        career = {}
+
+    if program.get("id") != EXPECTED_PROGRAM_ID:
+        metadata_failures.append(f"program.id must be {EXPECTED_PROGRAM_ID}")
+    if not is_nonempty_string(program.get("title")):
+        metadata_failures.append("program.title is missing")
+    if program.get("targetMarket") != "Dutch SMEs":
+        metadata_failures.append("program.targetMarket must be Dutch SMEs")
+    if not is_nonempty_string(program.get("positioning")):
+        metadata_failures.append("program.positioning is missing")
+    if not is_nonempty_string(program.get("durableValue")):
+        metadata_failures.append("program.durableValue is missing")
+
+    if course.get("id") != EXPECTED_COURSE_ID:
+        metadata_failures.append(f"course.id must be {EXPECTED_COURSE_ID}")
+    if course.get("sequence") != 1:
+        metadata_failures.append("course.sequence must be 1")
+    if not is_nonempty_string(course.get("title")):
+        metadata_failures.append("course.title is missing")
+    if not isinstance(course.get("version"), str) or not SEMVER_RE.fullmatch(
+        course.get("version", "")
+    ):
+        metadata_failures.append("course.version must use x.y.z")
+    verified_through = course.get("verifiedThrough")
+    if not valid_revision(verified_through):
+        metadata_failures.append("course.verifiedThrough must be a valid ISO date")
+
+    estimated_hours = course.get("estimatedHours")
+    if not isinstance(estimated_hours, dict):
+        metadata_failures.append("course.estimatedHours must be an object")
     else:
-        report.passed("required-files", f"{len(REQUIRED_ROOT_FILES)} required files present")
+        minimum = estimated_hours.get("minimum")
+        typical = estimated_hours.get("typical")
+        maximum = estimated_hours.get("maximum")
+        if not all(
+            isinstance(value, int) and value > 0
+            for value in (minimum, typical, maximum)
+        ):
+            metadata_failures.append(
+                "course estimated hours must be positive integers"
+            )
+        elif not minimum <= typical <= maximum:
+            metadata_failures.append(
+                "course estimated hours must satisfy minimum <= typical <= maximum"
+            )
+
+    capstone = course.get("capstone")
+    if not isinstance(capstone, dict):
+        metadata_failures.append("course.capstone must be an object")
+    else:
+        if capstone.get("title") != "Synthetic SME Operations Exception Assistant":
+            metadata_failures.append("unexpected Course 1 capstone title")
+        if not is_nonempty_string(capstone.get("summary")):
+            metadata_failures.append("course.capstone.summary is missing")
+        non_goals = capstone.get("nonGoals")
+        if not isinstance(non_goals, list) or not all(
+            is_nonempty_string(item) for item in non_goals
+        ):
+            metadata_failures.append("course.capstone.nonGoals must be text entries")
+
+    if metadata_failures:
+        report.failed("curriculum-metadata", compact(metadata_failures))
+    else:
+        report.passed(
+            "curriculum-metadata",
+            f"Course 1 metadata is complete through {verified_through}",
+        )
+
+    group_failures: list[str] = []
+    document_failures: list[str] = []
+    identity_failures: list[str] = []
+    group_ids: list[str] = []
+    current_ids: list[str] = []
+    legacy_ids: list[str] = []
+    source_paths: list[str] = []
+
+    for group_index, group in enumerate(groups):
+        location = f"groups[{group_index}]"
+        if not isinstance(group, dict):
+            group_failures.append(f"{location} is not an object")
+            continue
+        group_id = group.get("id")
+        if not isinstance(group_id, str) or not STABLE_ID_RE.fullmatch(group_id):
+            group_failures.append(f"{location}.id is not a stable slug")
+            group_id = f"<invalid-{group_index}>"
+        else:
+            group_ids.append(group_id)
+        if not is_nonempty_string(group.get("title")):
+            group_failures.append(f"{group_id}.title is missing")
+        if not is_nonempty_string(group.get("kind")):
+            group_failures.append(f"{group_id}.kind is missing")
+        if not isinstance(group.get("core"), bool):
+            group_failures.append(f"{group_id}.core must be boolean")
+
+        documents = group.get("documents")
+        if not isinstance(documents, list) or not documents:
+            group_failures.append(f"{group_id}.documents must be a non-empty array")
+            continue
+
+        for document_index, document in enumerate(documents):
+            document_location = f"{group_id}.documents[{document_index}]"
+            if not isinstance(document, dict):
+                document_failures.append(f"{document_location} is not an object")
+                continue
+
+            document_id = document.get("id")
+            if not isinstance(document_id, str) or not STABLE_ID_RE.fullmatch(
+                document_id
+            ):
+                identity_failures.append(
+                    f"{document_location}.id is not a stable slug"
+                )
+                document_id = document_location
+            else:
+                current_ids.append(document_id)
+                if not document_id.startswith("course-1-"):
+                    identity_failures.append(
+                        f"{document_id} must start with course-1-"
+                    )
+
+            revision = document.get("revision")
+            if not valid_revision(revision):
+                document_failures.append(
+                    f"{document_id}.revision is not a valid ISO date"
+                )
+            elif valid_revision(verified_through) and revision > verified_through:
+                document_failures.append(
+                    f"{document_id}.revision is after course.verifiedThrough"
+                )
+
+            if "title" in document and not is_nonempty_string(document.get("title")):
+                document_failures.append(
+                    f"{document_id}.title is present but empty"
+                )
+
+            legacy = document.get("legacyIds")
+            if not isinstance(legacy, list):
+                identity_failures.append(f"{document_id}.legacyIds must be an array")
+            else:
+                for legacy_id in legacy:
+                    if not isinstance(legacy_id, str) or not STABLE_ID_RE.fullmatch(
+                        legacy_id
+                    ):
+                        identity_failures.append(
+                            f"{document_id} has invalid legacy ID {legacy_id!r}"
+                        )
+                    else:
+                        legacy_ids.append(legacy_id)
+
+            source_path = document.get("sourcePath")
+            if not isinstance(source_path, str) or not source_path:
+                document_failures.append(f"{document_id}.sourcePath is missing")
+                continue
+            pure_path = PurePosixPath(source_path)
+            if (
+                pure_path.is_absolute()
+                or ".." in pure_path.parts
+                or "." in pure_path.parts
+                or "\\" in source_path
+                or pure_path.as_posix() != source_path
+            ):
+                document_failures.append(
+                    f"{document_id}.sourcePath is not a normalized relative path"
+                )
+                continue
+            source_paths.append(source_path)
+            relative = Path(*pure_path.parts)
+            if path_is_ignored(relative):
+                document_failures.append(
+                    f"{document_id}.sourcePath points outside the current-course scope"
+                )
+                continue
+            resolved = (root / relative).resolve()
+            try:
+                resolved.relative_to(root.resolve())
+            except ValueError:
+                document_failures.append(
+                    f"{document_id}.sourcePath escapes the course root"
+                )
+                continue
+            if not resolved.is_file() and source_path != "VALIDATION_REPORT.md":
+                document_failures.append(
+                    f"{document_id}.sourcePath does not exist: {source_path}"
+                )
+
+    duplicate_groups = sorted(
+        group_id for group_id, count in Counter(group_ids).items() if count > 1
+    )
+    if duplicate_groups:
+        group_failures.append(f"duplicate group IDs: {duplicate_groups}")
+
+    duplicate_current = sorted(
+        item_id for item_id, count in Counter(current_ids).items() if count > 1
+    )
+    duplicate_legacy = sorted(
+        item_id for item_id, count in Counter(legacy_ids).items() if count > 1
+    )
+    collisions = sorted(set(current_ids) & set(legacy_ids))
+    duplicate_paths = sorted(
+        source for source, count in Counter(source_paths).items() if count > 1
+    )
+    if duplicate_current:
+        identity_failures.append(f"duplicate current IDs: {duplicate_current}")
+    if duplicate_legacy:
+        identity_failures.append(f"duplicate legacy IDs: {duplicate_legacy}")
+    if collisions:
+        identity_failures.append(
+            f"IDs used as both current and legacy IDs: {collisions}"
+        )
+    if duplicate_paths:
+        document_failures.append(f"duplicate source paths: {duplicate_paths}")
+
+    if group_failures:
+        report.failed("curriculum-groups", compact(group_failures))
+    else:
+        report.passed(
+            "curriculum-groups",
+            f"{len(groups)} configured groups have stable IDs and valid structure",
+        )
+    if identity_failures:
+        report.failed("curriculum-stable-ids", compact(identity_failures))
+    else:
+        report.passed(
+            "curriculum-stable-ids",
+            f"{len(current_ids)} unique current IDs and {len(legacy_ids)} unique legacy IDs",
+        )
+    if document_failures:
+        report.failed("curriculum-documents", compact(document_failures))
+    else:
+        report.passed(
+            "curriculum-documents",
+            f"{len(source_paths)} unique configured lesson paths and revisions are valid",
+        )
+
+    core_group_ids = course.get("coreGroupIds")
+    groups_by_id = {
+        group.get("id"): group for group in groups if isinstance(group, dict)
+    }
+    core_failures: list[str] = []
+    if core_group_ids != ["foundations", "modules"]:
+        core_failures.append(
+            "course.coreGroupIds must be ['foundations', 'modules'] in that order"
+        )
+    for group_id in ("foundations", "modules"):
+        group = groups_by_id.get(group_id)
+        if not isinstance(group, dict):
+            core_failures.append(f"missing {group_id} group")
+        elif group.get("core") is not True:
+            core_failures.append(f"{group_id} group must be core")
+    if core_failures:
+        report.failed("curriculum-core-groups", compact(core_failures))
+    else:
+        report.passed(
+            "curriculum-core-groups",
+            "only foundations and modules are configured as progress groups",
+        )
+
+    validate_career_metadata(career, report)
+    return curriculum
 
 
-def validate_weeks(root: Path, report: Report) -> None:
-    week_files = sorted((root / "weeks").glob("WEEK_*.md"))
-    expected_names = [f"WEEK_{number:02d}.md" for number in range(1, 13)]
-    actual_names = [path.name for path in week_files]
-    if actual_names != expected_names:
-        report.failed("week-count-and-names", f"expected {expected_names}; found {actual_names}")
-        return
-    report.passed("week-count-and-names", "exactly WEEK_01.md through WEEK_12.md")
-
+def validate_career_metadata(career: dict[str, Any], report: Report) -> None:
     failures: list[str] = []
-    for path in week_files:
-        text = path.read_text(encoding="utf-8")
-        positions = [text.find(heading) for heading in REQUIRED_WEEK_HEADINGS]
-        missing = [
-            heading for heading, position in zip(REQUIRED_WEEK_HEADINGS, positions) if position < 0
-        ]
-        if missing:
-            failures.append(f"{path.name} missing {missing}")
-        elif positions != sorted(positions):
-            failures.append(f"{path.name} headings are out of order")
+    if career.get("targetRole") != (
+        "Controlled AI Workflow Implementation Consultant for Dutch SMEs"
+    ):
+        failures.append("career.targetRole is missing or unexpected")
+    courses = career.get("courses")
+    if not isinstance(courses, list) or not courses:
+        failures.append("career.courses must be a non-empty array")
+        courses = []
+
+    course_ids: list[str] = []
+    sequences: list[int] = []
+    current_ids: list[str] = []
+    for index, course in enumerate(courses):
+        if not isinstance(course, dict):
+            failures.append(f"career.courses[{index}] is not an object")
+            continue
+        course_id = course.get("id")
+        if not isinstance(course_id, str) or not STABLE_ID_RE.fullmatch(course_id):
+            failures.append(f"career.courses[{index}].id is not stable")
+        else:
+            course_ids.append(course_id)
+        sequence = course.get("sequence")
+        if not isinstance(sequence, int) or sequence < 1:
+            failures.append(f"{course_id}.sequence is invalid")
+        else:
+            sequences.append(sequence)
+        if not all(
+            is_nonempty_string(course.get(field_name))
+            for field_name in ("title", "status", "purpose", "exitEvidence")
+        ):
+            failures.append(f"{course_id} is missing descriptive metadata")
+        if course.get("status") == "current" and isinstance(course_id, str):
+            current_ids.append(course_id)
+
+    if len(course_ids) != len(set(course_ids)):
+        failures.append("career course IDs are not unique")
+    if sequences != list(range(1, len(sequences) + 1)):
+        failures.append("career course sequences must be ordered 1..N")
+    if current_ids != [EXPECTED_COURSE_ID]:
+        failures.append("the Course 1 ID must be the only current career course")
+
     if failures:
-        report.failed("week-structure", "; ".join(failures))
+        report.failed("career-metadata", compact(failures))
     else:
-        report.passed("week-structure", "all nine required headings appear in order")
+        report.passed(
+            "career-metadata",
+            f"{len(courses)} ordered career courses; Course 1 is the only current course",
+        )
 
 
-def validate_machine_files(root: Path, report: Report) -> None:
-    json_files = iter_course_files(root, ".json")
+def group_documents(
+    curriculum: dict[str, Any], group_id: str
+) -> list[dict[str, Any]]:
+    groups = curriculum.get("groups")
+    if not isinstance(groups, list):
+        return []
+    for group in groups:
+        if isinstance(group, dict) and group.get("id") == group_id:
+            documents = group.get("documents")
+            if isinstance(documents, list):
+                return [
+                    document
+                    for document in documents
+                    if isinstance(document, dict)
+                ]
+    return []
+
+
+def validate_progress_lessons(
+    root: Path, curriculum: dict[str, Any] | None, report: Report
+) -> None:
+    if curriculum is None:
+        report.failed(
+            "progress-lessons",
+            "cannot validate progress lessons without curriculum.json",
+        )
+        return
+
+    foundations = group_documents(curriculum, "foundations")
+    modules = group_documents(curriculum, "modules")
+    foundation_failures: list[str] = []
+    module_failures: list[str] = []
+
+    expected_foundation_ids = [
+        f"course-1-foundation-{number:02d}" for number in range(1, 10)
+    ]
+    actual_foundation_ids = [item.get("id") for item in foundations]
+    if actual_foundation_ids != expected_foundation_ids:
+        foundation_failures.append(
+            f"expected IDs {expected_foundation_ids}; found {actual_foundation_ids}"
+        )
+
+    expected_foundation_paths: list[str] = []
+    for number, document in enumerate(foundations, 1):
+        source_path = document.get("sourcePath")
+        if not isinstance(source_path, str) or not re.fullmatch(
+            rf"foundations/{number:02d}_[A-Z0-9_]+\.md", source_path
+        ):
+            foundation_failures.append(
+                f"foundation {number} has unexpected source path {source_path!r}"
+            )
+        else:
+            expected_foundation_paths.append(source_path)
+        if not is_nonempty_string(document.get("title")):
+            foundation_failures.append(
+                f"foundation {number} requires a progress title"
+            )
+
+    disk_foundations = sorted(
+        path.relative_to(root).as_posix()
+        for path in (root / "foundations").glob("[0-9][0-9]_*.md")
+    )
+    if sorted(expected_foundation_paths) != disk_foundations:
+        foundation_failures.append(
+            "configured foundation paths do not match numbered foundation files"
+        )
+
+    expected_module_ids = [
+        f"course-1-module-{number:02d}" for number in range(1, 10)
+    ]
+    expected_module_paths = [
+        f"modules/MODULE_{number:02d}.md" for number in range(1, 10)
+    ]
+    actual_module_ids = [item.get("id") for item in modules]
+    actual_module_paths = [item.get("sourcePath") for item in modules]
+    if actual_module_ids != expected_module_ids:
+        module_failures.append(
+            f"expected IDs {expected_module_ids}; found {actual_module_ids}"
+        )
+    if actual_module_paths != expected_module_paths:
+        module_failures.append(
+            f"expected paths {expected_module_paths}; found {actual_module_paths}"
+        )
+    for number, document in enumerate(modules, 1):
+        if not is_nonempty_string(document.get("title")):
+            module_failures.append(f"module {number} requires a progress title")
+
+    disk_modules = sorted(
+        path.relative_to(root).as_posix()
+        for path in (root / "modules").glob("MODULE_*.md")
+    )
+    if disk_modules != expected_module_paths:
+        module_failures.append(
+            f"disk module set must be MODULE_01.md through MODULE_09.md; found {disk_modules}"
+        )
+
+    if foundation_failures:
+        report.failed("progress-foundations", compact(foundation_failures))
+    else:
+        report.passed(
+            "progress-foundations",
+            "exactly 9 ordered foundation progress lessons",
+        )
+    if module_failures:
+        report.failed("progress-modules", compact(module_failures))
+    else:
+        report.passed(
+            "progress-modules",
+            "exactly 9 ordered module progress lessons",
+        )
+
+    if not foundation_failures and not module_failures:
+        report.passed(
+            "progress-total",
+            "18 progress lessons: 9 foundations plus 9 modules",
+        )
+    else:
+        report.failed(
+            "progress-total",
+            f"found {len(foundations)} foundation and {len(modules)} module entries",
+        )
+
+
+def validate_module_structure(
+    root: Path, curriculum: dict[str, Any] | None, report: Report
+) -> None:
+    if curriculum is None:
+        report.failed(
+            "module-structure",
+            "cannot validate modules without curriculum.json",
+        )
+        return
+
     failures: list[str] = []
+    modules = group_documents(curriculum, "modules")
+    for number, document in enumerate(modules, 1):
+        source_path = document.get("sourcePath")
+        if not isinstance(source_path, str):
+            failures.append(f"module {number} lacks sourcePath")
+            continue
+        path = root / Path(*PurePosixPath(source_path).parts)
+        if not path.is_file():
+            failures.append(f"{source_path} is missing")
+            continue
+        try:
+            lines = path.read_text(encoding="utf-8").splitlines()
+        except Exception as exc:
+            failures.append(f"{source_path} cannot be read: {exc}")
+            continue
+        if not lines or not re.fullmatch(rf"# Module {number} .+", lines[0]):
+            failures.append(
+                f"{source_path} first line must identify Module {number}"
+            )
+
+        positions: list[int] = []
+        for heading in REQUIRED_MODULE_HEADINGS:
+            indexes = [index for index, line in enumerate(lines) if line == heading]
+            if len(indexes) != 1:
+                failures.append(
+                    f"{source_path} requires exactly one {heading!r}; found {len(indexes)}"
+                )
+            else:
+                positions.append(indexes[0])
+        if len(positions) == len(REQUIRED_MODULE_HEADINGS) and positions != sorted(
+            positions
+        ):
+            failures.append(f"{source_path} required headings are out of order")
+
+    if failures:
+        report.failed("module-structure", compact(failures))
+    else:
+        report.passed(
+            "module-structure",
+            f"all {len(modules)} modules use the {len(REQUIRED_MODULE_HEADINGS)} required headings in order",
+        )
+
+
+def validate_current_json(root: Path, report: Report) -> None:
+    failures: list[str] = []
+    json_files = iter_current_files(root, ".json")
     for path in json_files:
         try:
             json.loads(path.read_text(encoding="utf-8"))
-        except Exception as exc:  # precise path retained in report
+        except Exception as exc:
             failures.append(f"{path.relative_to(root)}: {exc}")
     if failures:
-        report.failed("json-parse", "; ".join(failures))
+        report.failed("current-json-syntax", compact(failures))
     else:
-        report.passed("json-parse", f"{len(json_files)} JSON files parsed")
+        report.passed(
+            "current-json-syntax",
+            f"{len(json_files)} in-scope JSON files parsed",
+        )
 
-    jsonl_files = iter_course_files(root, ".jsonl")
-    failures = []
-    row_count = 0
-    for path in jsonl_files:
+
+def validate_json_schemas(root: Path, report: Report) -> None:
+    schema_directory = root / "schemas"
+    schema_paths = sorted(schema_directory.glob("*.schema.json"))
+    names = {path.name for path in schema_paths}
+    missing = sorted(EXPECTED_SCHEMA_FILES - names)
+    if missing:
+        report.failed("schema-set", f"missing current schemas: {missing}")
+    else:
+        report.passed(
+            "schema-set",
+            f"{len(schema_paths)} current schema files include all required Course 1 contracts",
+        )
+
+    structural_failures: list[str] = []
+    schemas: list[tuple[Path, dict[str, Any]]] = []
+    schema_ids: list[str] = []
+    for path in schema_paths:
         try:
-            row_count += len(load_jsonl(path))
+            schema = load_json_object(path)
         except Exception as exc:
-            failures.append(str(exc))
-    if failures:
-        report.failed("jsonl-parse", "; ".join(failures))
+            structural_failures.append(f"{path.name}: {exc}")
+            continue
+        schemas.append((path, schema))
+        if schema.get("$schema") != "https://json-schema.org/draft/2020-12/schema":
+            structural_failures.append(
+                f"{path.name}: $schema must identify Draft 2020-12"
+            )
+        schema_id = schema.get("$id")
+        if not is_nonempty_string(schema_id):
+            structural_failures.append(f"{path.name}: $id is missing")
+        else:
+            schema_ids.append(schema_id)
+        if not is_nonempty_string(schema.get("title")):
+            structural_failures.append(f"{path.name}: title is missing")
+        if schema.get("type") != "object":
+            structural_failures.append(f"{path.name}: top-level type must be object")
+        if schema.get("additionalProperties") is not False:
+            structural_failures.append(
+                f"{path.name}: additionalProperties must be false"
+            )
+        properties = schema.get("properties")
+        required = schema.get("required")
+        if not isinstance(properties, dict) or not properties:
+            structural_failures.append(f"{path.name}: properties must be non-empty")
+        if not isinstance(required, list) or not all(
+            isinstance(item, str) for item in required
+        ):
+            structural_failures.append(
+                f"{path.name}: required must be an array of strings"
+            )
+        elif isinstance(properties, dict):
+            unknown_required = sorted(set(required) - set(properties))
+            if unknown_required:
+                structural_failures.append(
+                    f"{path.name}: required fields absent from properties {unknown_required}"
+                )
+
+    duplicate_schema_ids = sorted(
+        schema_id
+        for schema_id, count in Counter(schema_ids).items()
+        if count > 1
+    )
+    if duplicate_schema_ids:
+        structural_failures.append(
+            f"duplicate schema IDs: {duplicate_schema_ids}"
+        )
+
+    if structural_failures:
+        report.failed("schema-structure", compact(structural_failures))
     else:
-        report.passed("jsonl-parse", f"{len(jsonl_files)} JSONL files / {row_count} rows parsed")
-
-    try:
-        import yaml  # type: ignore
-
-        yaml.safe_load((root / "stack-manifest.yaml").read_text(encoding="utf-8"))
-        report.passed("yaml-parse", "stack-manifest.yaml parsed")
-    except ModuleNotFoundError:
-        report.warn("yaml-parse", "PyYAML unavailable; YAML parse not run")
-    except Exception as exc:
-        report.failed("yaml-parse", str(exc))
+        report.passed(
+            "schema-structure",
+            f"{len(schemas)} schemas have unique IDs and closed object contracts",
+        )
 
     try:
         import jsonschema  # type: ignore
-
-        for relative in ("schemas/contracts.schema.json", "schemas/golden_case.schema.json"):
-            schema = json.loads((root / relative).read_text(encoding="utf-8"))
-            jsonschema.Draft202012Validator.check_schema(schema)
-        report.passed("json-schema-meta-validation", "both schemas valid under Draft 2020-12")
-
-        golden_schema = json.loads(
-            (root / "schemas/golden_case.schema.json").read_text(encoding="utf-8")
+    except ModuleNotFoundError:
+        report.warn(
+            "schema-meta-validation",
+            "jsonschema is not installed; standard-library schema structure checks passed, but Draft 2020-12 meta-validation was not run",
         )
-        golden_rows = load_jsonl(root / "corpus/golden.jsonl")
-        validator = jsonschema.Draft202012Validator(
-            golden_schema,
-            format_checker=jsonschema.FormatChecker(),
+    except Exception as exc:
+        report.warn(
+            "schema-meta-validation",
+            f"jsonschema could not be imported: {exc}",
         )
-        instance_errors: list[str] = []
-        for row in golden_rows:
-            errors = sorted(validator.iter_errors(row), key=lambda error: list(error.path))
-            for error in errors:
-                location = ".".join(str(part) for part in error.path) or "<root>"
-                instance_errors.append(f"{row.get('case_id')}:{location}: {error.message}")
-        if instance_errors:
-            report.failed("golden-schema-validation", "; ".join(instance_errors))
+    else:
+        meta_failures: list[str] = []
+        for path, schema in schemas:
+            try:
+                jsonschema.Draft202012Validator.check_schema(schema)
+            except Exception as exc:
+                meta_failures.append(f"{path.name}: {exc}")
+        if meta_failures:
+            report.failed("schema-meta-validation", compact(meta_failures))
         else:
             report.passed(
-                "golden-schema-validation",
-                f"{len(golden_rows)} golden rows validate against the course schema",
+                "schema-meta-validation",
+                f"jsonschema accepted all {len(schemas)} schemas as Draft 2020-12",
             )
+
+
+def validate_optional_yaml(root: Path, report: Report) -> None:
+    path = root / "stack-manifest.yaml"
+    if not path.is_file():
+        report.warn("yaml-parse", "stack-manifest.yaml is not present")
+        return
+    try:
+        import yaml  # type: ignore
     except ModuleNotFoundError:
-        report.warn("json-schema-meta-validation", "jsonschema unavailable; meta-validation not run")
+        report.warn(
+            "yaml-parse",
+            "PyYAML is not installed; stack-manifest.yaml was not parsed",
+        )
     except Exception as exc:
-        report.failed("json-schema-meta-validation", str(exc))
+        report.warn("yaml-parse", f"PyYAML could not be imported: {exc}")
+    else:
+        try:
+            value = yaml.safe_load(path.read_text(encoding="utf-8"))
+            if not isinstance(value, dict):
+                raise ValueError("top-level YAML value is not a mapping")
+        except Exception as exc:
+            report.failed("yaml-parse", str(exc))
+        else:
+            report.passed("yaml-parse", "stack-manifest.yaml parsed as a mapping")
 
 
-def clean_link_target(raw: str) -> str | None:
-    target = raw.strip()
-    if target.startswith("<") and target.endswith(">"):
-        target = target[1:-1]
-    if target.startswith(("http://", "https://", "mailto:", "#")):
+def load_csv_rows(path: Path) -> tuple[list[str], list[dict[str, str]]]:
+    with path.open("r", encoding="utf-8-sig", newline="") as stream:
+        reader = csv.DictReader(stream)
+        headers = list(reader.fieldnames or [])
+        rows: list[dict[str, str]] = []
+        for row_number, row in enumerate(reader, 2):
+            if None in row:
+                raise ValueError(
+                    f"row {row_number} has more values than the header"
+                )
+            normalized: dict[str, str] = {}
+            for key, value in row.items():
+                normalized[key] = "" if value is None else value
+            rows.append(normalized)
+    return headers, rows
+
+
+def blank(value: str) -> bool:
+    return value.strip() == ""
+
+
+def parse_iso_date(value: str) -> date | None:
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+        return None
+    try:
+        parsed = date.fromisoformat(value)
+    except ValueError:
+        return None
+    return parsed if parsed.isoformat() == value else None
+
+
+def parse_decimal(value: str) -> Decimal | None:
+    try:
+        parsed = Decimal(value)
+    except (InvalidOperation, ValueError):
+        return None
+    return parsed if parsed.is_finite() else None
+
+
+def computed_practice_issues(
+    rows: list[dict[str, str]]
+) -> list[dict[str, str]]:
+    issues: list[dict[str, str]] = []
+    parsed_dates_by_item: dict[str, dict[str, date | None]] = {}
+
+    def add(
+        row: dict[str, str],
+        field_name: str,
+        rule_code: str,
+        severity: str,
+        message: str,
+    ) -> None:
+        issues.append(
+            {
+                "work_item_id": row["work_item_id"],
+                "field": field_name,
+                "rule_code": rule_code,
+                "severity": severity,
+                "expected_message": message,
+            }
+        )
+
+    for row in rows:
+        for field_name in REQUIRED_VALUE_FIELDS:
+            if blank(row[field_name]):
+                add(
+                    row,
+                    field_name,
+                    "R001",
+                    "medium",
+                    f"Required {field_name} is missing.",
+                )
+
+        status = row["status"].strip()
+        priority = row["priority"].strip()
+        if status not in ALLOWED_STATUSES:
+            add(
+                row,
+                "status",
+                "R002",
+                "high",
+                "Status is not in the allowed list.",
+            )
+        if priority not in ALLOWED_PRIORITIES:
+            add(
+                row,
+                "priority",
+                "R003",
+                "medium",
+                "Priority is not in the allowed list.",
+            )
+
+        parsed_dates: dict[str, date | None] = {}
+        for field_name in DATE_FIELDS:
+            value = row[field_name].strip()
+            parsed = parse_iso_date(value) if value else None
+            parsed_dates[field_name] = parsed
+            if value and parsed is None:
+                add(
+                    row,
+                    field_name,
+                    "R004",
+                    "high",
+                    "Date must use ISO format YYYY-MM-DD.",
+                )
+        parsed_dates_by_item[row["work_item_id"]] = parsed_dates
+
+        received = parsed_dates["received_date"]
+        due = parsed_dates["due_date"]
+        if received is not None and due is not None and due < received:
+            add(
+                row,
+                "due_date",
+                "R005",
+                "high",
+                "Due date is before received date.",
+            )
+
+        completion_value = row["completed_date"].strip()
+        if status == "completed" and not completion_value:
+            add(
+                row,
+                "completed_date",
+                "R006",
+                "high",
+                "Completed work requires a completion date.",
+            )
+        elif status in (ALLOWED_STATUSES - {"completed"}) and completion_value:
+            add(
+                row,
+                "completed_date",
+                "R006",
+                "medium",
+                "Non-completed work must not have a completion date.",
+            )
+
+        if status in OWNER_REQUIRED_STATUSES and blank(row["owner_role"]):
+            add(
+                row,
+                "owner_role",
+                "R007",
+                "medium",
+                "Active work requires an owner role.",
+            )
+
+        amount_value = row["amount"].strip()
+        currency_value = row["currency"].strip()
+        if amount_value:
+            parsed_amount = parse_decimal(amount_value)
+            if parsed_amount is None or parsed_amount < 0:
+                add(
+                    row,
+                    "amount",
+                    "R008",
+                    "high",
+                    "Amount must not be negative.",
+                )
+            if currency_value != "EUR":
+                add(
+                    row,
+                    "currency",
+                    "R009",
+                    "medium",
+                    "A populated amount requires currency EUR.",
+                )
+        elif currency_value:
+            add(
+                row,
+                "currency",
+                "R009",
+                "medium",
+                "Currency must be blank when amount is blank.",
+            )
+
+    reference_counts = Counter(
+        row["source_reference"].strip()
+        for row in rows
+        if row["source_reference"].strip()
+    )
+    for row in rows:
+        reference = row["source_reference"].strip()
+        if reference and reference_counts[reference] > 1:
+            add(
+                row,
+                "source_reference",
+                "R010",
+                "high",
+                f"Source reference {reference} is duplicated.",
+            )
+
+    for row in rows:
+        status = row["status"].strip()
+        due = parsed_dates_by_item[row["work_item_id"]]["due_date"]
+        if (
+            status in OPEN_STATUSES
+            and due is not None
+            and due < FIXED_ASSESSMENT_DATE
+        ):
+            add(
+                row,
+                "due_date",
+                "R011",
+                "high",
+                "Open work is overdue on the fixed assessment date.",
+            )
+
+    return issues
+
+
+def validate_practice_data(root: Path, report: Report) -> None:
+    directory = root / "practice_data"
+    readme_path = directory / "README.md"
+    work_path = directory / "work_items.csv"
+    expected_path = directory / "expected_issues.csv"
+    missing = [
+        path.relative_to(root).as_posix()
+        for path in (readme_path, work_path, expected_path)
+        if not path.is_file()
+    ]
+    if missing:
+        report.failed("practice-files", f"missing: {missing}")
+        return
+    report.passed(
+        "practice-files",
+        "practice README, work_items.csv, and expected_issues.csv are present",
+    )
+
+    try:
+        work_headers, work_rows = load_csv_rows(work_path)
+        issue_headers, expected_rows = load_csv_rows(expected_path)
+    except Exception as exc:
+        report.failed("practice-csv-parse", str(exc))
+        return
+
+    shape_failures: list[str] = []
+    if tuple(work_headers) != WORK_ITEM_FIELDS:
+        shape_failures.append(
+            f"work-item headers differ: expected {WORK_ITEM_FIELDS}; found {tuple(work_headers)}"
+        )
+    if tuple(issue_headers) != EXPECTED_ISSUE_FIELDS:
+        shape_failures.append(
+            f"expected-issue headers differ: expected {EXPECTED_ISSUE_FIELDS}; found {tuple(issue_headers)}"
+        )
+    if len(work_rows) != 15:
+        shape_failures.append(f"work_items.csv must have 15 rows; found {len(work_rows)}")
+    if len(expected_rows) != 13:
+        shape_failures.append(
+            f"expected_issues.csv must have 13 rows; found {len(expected_rows)}"
+        )
+    if shape_failures:
+        report.failed("practice-shape", compact(shape_failures))
+    else:
+        report.passed(
+            "practice-shape",
+            "12 work-item columns / 15 rows and 6 issue columns / 13 rows",
+        )
+
+    key_failures: list[str] = []
+    work_item_ids = [row.get("work_item_id", "") for row in work_rows]
+    expected_work_item_ids = [f"WI-{number:04d}" for number in range(1, 16)]
+    if work_item_ids != expected_work_item_ids:
+        key_failures.append(
+            f"work item IDs must be ordered WI-0001..WI-0015; found {work_item_ids}"
+        )
+    if len(work_item_ids) != len(set(work_item_ids)):
+        key_failures.append("work_item_id values are not unique")
+
+    issue_ids = [row.get("issue_id", "") for row in expected_rows]
+    expected_issue_ids = [f"ISS-{number:03d}" for number in range(1, 14)]
+    if issue_ids != expected_issue_ids:
+        key_failures.append(
+            f"issue IDs must be ordered ISS-001..ISS-013; found {issue_ids}"
+        )
+    if len(issue_ids) != len(set(issue_ids)):
+        key_failures.append("issue_id values are not unique")
+
+    comparison_keys = [
+        (row.get("work_item_id", ""), row.get("rule_code", ""))
+        for row in expected_rows
+    ]
+    if len(comparison_keys) != len(set(comparison_keys)):
+        key_failures.append(
+            "(work_item_id, rule_code) expected-issue keys are not unique"
+        )
+
+    known_work_items = set(work_item_ids)
+    for row in expected_rows:
+        if row.get("work_item_id") not in known_work_items:
+            key_failures.append(
+                f"{row.get('issue_id')} references unknown {row.get('work_item_id')}"
+            )
+        if row.get("field") not in WORK_ITEM_FIELDS:
+            key_failures.append(
+                f"{row.get('issue_id')} references unknown field {row.get('field')}"
+            )
+        if row.get("severity") not in ALLOWED_SEVERITIES:
+            key_failures.append(
+                f"{row.get('issue_id')} has invalid severity {row.get('severity')}"
+            )
+        if not is_nonempty_string(row.get("expected_message")):
+            key_failures.append(
+                f"{row.get('issue_id')} has no expected message"
+            )
+
+    if key_failures:
+        report.failed("practice-unique-keys", compact(key_failures))
+    else:
+        report.passed(
+            "practice-unique-keys",
+            "work-item IDs, issue IDs, and expected comparison keys are unique and referentially valid",
+        )
+
+    rule_failures: list[str] = []
+    actual_rule_codes = {row.get("rule_code", "") for row in expected_rows}
+    if actual_rule_codes != RULE_CODES:
+        rule_failures.append(
+            f"expected issues must cover R001-R011; found {sorted(actual_rule_codes)}"
+        )
+    readme = readme_path.read_text(encoding="utf-8")
+    readme_rule_codes = re.findall(r"^\|\s*(R\d{3})\s*\|", readme, re.MULTILINE)
+    if set(readme_rule_codes) != RULE_CODES:
+        rule_failures.append(
+            f"README rule register must contain R001-R011; found {sorted(set(readme_rule_codes))}"
+        )
+    duplicated_readme_rules = sorted(
+        code for code, count in Counter(readme_rule_codes).items() if count != 1
+    )
+    if duplicated_readme_rules:
+        rule_failures.append(
+            f"README rule codes must appear once in the table: {duplicated_readme_rules}"
+        )
+    if FIXED_ASSESSMENT_DATE_TEXT not in readme:
+        rule_failures.append(
+            f"README does not state fixed assessment date {FIXED_ASSESSMENT_DATE_TEXT}"
+        )
+
+    if rule_failures:
+        report.failed("practice-rule-register", compact(rule_failures))
+    else:
+        report.passed(
+            "practice-rule-register",
+            f"R001-R011 are documented and covered using fixed date {FIXED_ASSESSMENT_DATE_TEXT}",
+        )
+
+    safety_failures: list[str] = []
+    lower_readme = " ".join(readme.lower().split())
+    required_safety_statements = (
+        "every row is fictional",
+        "do not describe a real person, employer, customer, or transaction",
+        "do not replace these files with workplace or customer exports",
+    )
+    for statement in required_safety_statements:
+        if statement not in lower_readme:
+            safety_failures.append(f"README lacks safety statement: {statement}")
+
+    sensitive_headers = {
+        "name",
+        "email",
+        "phone",
+        "address",
+        "bsn",
+        "patient",
+        "diagnosis",
+        "employee",
+        "birth_date",
+    }
+    present_sensitive_headers = sorted(sensitive_headers & set(work_headers))
+    if present_sensitive_headers:
+        safety_failures.append(
+            f"unexpected personal/sensitive columns: {present_sensitive_headers}"
+        )
+
+    for row in work_rows:
+        if not WORK_ITEM_ID_RE.fullmatch(row.get("work_item_id", "")):
+            safety_failures.append(
+                f"non-synthetic work-item identifier {row.get('work_item_id')!r}"
+            )
+        reference = row.get("source_reference", "")
+        if reference and not SOURCE_REFERENCE_RE.fullmatch(reference):
+            safety_failures.append(
+                f"non-synthetic source reference {reference!r}"
+            )
+        owner_role = row.get("owner_role", "")
+        if owner_role and not re.fullmatch(r"[a-z][a-z0-9_]*", owner_role):
+            safety_failures.append(
+                f"owner_role must remain a role token, not a name: {owner_role!r}"
+            )
+
+    if safety_failures:
+        report.failed("practice-synthetic-safety", compact(safety_failures))
+    else:
+        report.passed(
+            "practice-synthetic-safety",
+            "fixed fictional identifiers, role-only ownership, no personal-data columns, and explicit no-real-data guarantees",
+        )
+
+    if not shape_failures:
+        computed = computed_practice_issues(work_rows)
+        tuple_fields = (
+            "work_item_id",
+            "field",
+            "rule_code",
+            "severity",
+            "expected_message",
+        )
+        computed_set = {
+            tuple(row[field_name] for field_name in tuple_fields)
+            for row in computed
+        }
+        expected_set = {
+            tuple(row[field_name] for field_name in tuple_fields)
+            for row in expected_rows
+        }
+        oracle_failures: list[str] = []
+        missing_expected = sorted(computed_set - expected_set)
+        unexpected_expected = sorted(expected_set - computed_set)
+        if missing_expected:
+            oracle_failures.append(
+                f"computed issues absent from answer key: {missing_expected}"
+            )
+        if unexpected_expected:
+            oracle_failures.append(
+                f"answer-key issues not reproduced by rules: {unexpected_expected}"
+            )
+        if len(computed) != 13:
+            oracle_failures.append(
+                f"deterministic evaluator produced {len(computed)} issues, expected 13"
+            )
+
+        r010_items = {
+            row["work_item_id"]
+            for row in computed
+            if row["rule_code"] == "R010"
+        }
+        if r010_items != {"WI-0006", "WI-0007"}:
+            oracle_failures.append(
+                f"R010 must identify both duplicate rows; found {sorted(r010_items)}"
+            )
+        r011_items = {
+            row["work_item_id"]
+            for row in computed
+            if row["rule_code"] == "R011"
+        }
+        if r011_items != {"WI-0010"}:
+            oracle_failures.append(
+                f"R011 fixed-date result must be WI-0010; found {sorted(r011_items)}"
+            )
+
+        if oracle_failures:
+            report.failed("practice-rule-oracle", compact(oracle_failures))
+        else:
+            report.passed(
+                "practice-rule-oracle",
+                "standard-library evaluator reproduces all 13 frozen issues, including both R010 duplicates and fixed-date R011",
+            )
+    else:
+        report.failed(
+            "practice-rule-oracle",
+            "not run because practice-data shape is invalid",
+        )
+
+
+def clean_link_target(raw_target: str) -> str | None:
+    target = raw_target.strip()
+    if target.startswith("<"):
+        closing = target.find(">")
+        if closing < 0:
+            return target
+        target = target[1:closing]
+    else:
+        target = target.split(maxsplit=1)[0]
+
+    lower = target.lower()
+    if lower.startswith(
+        (
+            "http://",
+            "https://",
+            "mailto:",
+            "tel:",
+            "data:",
+            "javascript:",
+            "//",
+        )
+    ):
+        return None
+    if target.startswith("#"):
         return None
     target = target.split("#", 1)[0].split("?", 1)[0]
     return unquote(target) if target else None
 
 
 def validate_internal_links(root: Path, report: Report) -> None:
-    missing: list[str] = []
+    failures: list[str] = []
     checked = 0
-    for markdown in iter_course_files(root, ".md"):
-        text = markdown.read_text(encoding="utf-8")
-        for match in MARKDOWN_LINK_RE.finditer(text):
-            target = clean_link_target(match.group(1))
+    ignored_targets = 0
+    markdown_files = iter_current_files(root, ".md")
+
+    for markdown in markdown_files:
+        try:
+            text = markdown.read_text(encoding="utf-8")
+        except Exception as exc:
+            failures.append(f"{markdown.relative_to(root)} cannot be read: {exc}")
+            continue
+        searchable = FENCED_CODE_RE.sub("", text)
+        raw_targets = [
+            match.group(1) for match in INLINE_LINK_RE.finditer(searchable)
+        ]
+        raw_targets.extend(
+            match.group(1) for match in REFERENCE_LINK_RE.finditer(searchable)
+        )
+        for raw_target in raw_targets:
+            target = clean_link_target(raw_target)
             if target is None:
                 continue
-            checked += 1
-            resolved = (markdown.parent / target).resolve()
+            candidate = markdown.parent / Path(target.replace("/", os.sep))
+            resolved = candidate.resolve()
             try:
-                resolved.relative_to(root.resolve())
+                relative = resolved.relative_to(root.resolve())
             except ValueError:
-                missing.append(f"{markdown.relative_to(root)} -> escapes root: {target}")
+                failures.append(
+                    f"{markdown.relative_to(root)} -> escapes root: {target}"
+                )
                 continue
+            if path_is_ignored(relative):
+                ignored_targets += 1
+                continue
+            checked += 1
             if not resolved.exists():
-                missing.append(f"{markdown.relative_to(root)} -> {target}")
-    if missing:
-        report.failed("internal-links", "; ".join(missing))
+                failures.append(f"{markdown.relative_to(root)} -> {target}")
+
+    if failures:
+        report.failed("internal-links", compact(failures, limit=20))
     else:
-        report.passed("internal-links", f"{checked} local targets exist")
-
-
-def case_id(row: dict[str, Any]) -> str | None:
-    return row.get("case_id") or row.get("id")
-
-
-def validate_corpus(root: Path, report: Report) -> None:
-    corpus = root / "corpus"
-    manifest_path = corpus / "manifest.jsonl"
-    golden_path = corpus / "golden.jsonl"
-    if not manifest_path.exists() or not golden_path.exists():
-        report.failed("corpus", "manifest.jsonl or golden.jsonl missing")
-        return
-
-    try:
-        manifest = load_jsonl(manifest_path)
-        golden = load_jsonl(golden_path)
-    except Exception as exc:
-        report.failed("corpus-jsonl", str(exc))
-        return
-
-    manifest_ids = [case_id(row) for row in manifest]
-    golden_ids = [case_id(row) for row in golden]
-    expected = [f"C{number:03d}" for number in range(1, 21)]
-    if manifest_ids != expected or golden_ids != expected:
-        report.failed(
-            "corpus-case-set",
-            f"expected ordered {expected}; manifest={manifest_ids}; golden={golden_ids}",
+        report.passed(
+            "internal-links",
+            f"{checked} current local targets exist; {ignored_targets} archived/generated targets ignored",
         )
-    else:
-        report.passed("corpus-case-set", "20 ordered unique cases agree")
-
-    state_failures = []
-    for row in manifest + golden:
-        state = row.get("expected_checkpoint_state")
-        if state not in STATE_ENUM:
-            state_failures.append(f"{case_id(row)}:{state}")
-    if state_failures:
-        report.failed("corpus-states", ", ".join(state_failures))
-    else:
-        report.passed("corpus-states", "all manifest/gold checkpoint states are named states")
-
-    file_failures: list[str] = []
-    files_checked = 0
-    file_by_document_id: dict[str, Path] = {}
-    for row in manifest:
-        for item in row.get("files", []):
-            relative = item.get("relative_path")
-            if not relative:
-                file_failures.append(f"{case_id(row)} file lacks relative_path")
-                continue
-            path = corpus / relative
-            if not path.is_file():
-                file_failures.append(f"missing {relative}")
-                continue
-            files_checked += 1
-            actual_hash = sha256_file(path)
-            actual_size = path.stat().st_size
-            if item.get("sha256") != actual_hash:
-                file_failures.append(f"{relative} sha256 mismatch")
-            expected_size = item.get("byte_length", item.get("byte_size"))
-            if expected_size is not None and expected_size != actual_size:
-                file_failures.append(f"{relative} byte length mismatch")
-            document_id = item.get("fixture_document_id") or item.get("document_id")
-            if document_id:
-                file_by_document_id[document_id] = path
-    if file_failures:
-        report.failed("corpus-file-integrity", "; ".join(file_failures))
-    else:
-        report.passed("corpus-file-integrity", f"{files_checked} referenced files match metadata")
-
-    by_case = {case_id(row): row for row in manifest}
-    try:
-        c001 = by_case["C001"]
-        c009 = by_case["C009"]
-        for role in ("quotation", "terms"):
-            one = next(item for item in c001["files"] if item["role"] == role)
-            nine = next(item for item in c009["files"] if item["role"] == role)
-            one_path = corpus / one["relative_path"]
-            nine_path = corpus / nine["relative_path"]
-            if one_path.read_bytes() != nine_path.read_bytes():
-                raise AssertionError(f"{role} bytes differ")
-            if nine.get("duplicate_of_fixture_document_id") not in (
-                one.get("fixture_document_id"),
-                one.get("document_id"),
-            ):
-                raise AssertionError(f"{role} duplicate reference is wrong")
-        report.passed("corpus-C009-duplicate", "quotation and terms are byte-identical to C001")
-    except Exception as exc:
-        report.failed("corpus-C009-duplicate", str(exc))
-
-    try:
-        c010 = by_case["C010"]
-        quote = next(item for item in c010["files"] if item["role"] == "quotation")
-        path = corpus / quote["relative_path"]
-        expected_bytes = b"NOT_A_PDF\nSYNTHETIC_CASE=C010\n"
-        if path.read_bytes() != expected_bytes:
-            raise AssertionError(f"unexpected bytes: {path.read_bytes()!r}")
-        report.passed("corpus-C010-corrupt", "exact specified corrupt bytes")
-    except Exception as exc:
-        report.failed("corpus-C010-corrupt", str(exc))
-
-    safety_failures = []
-    for row in manifest:
-        safety = row.get("safety", {})
-        if safety.get("synthetic") is not True:
-            safety_failures.append(f"{case_id(row)} not marked synthetic")
-        for key in (
-            "contains_personal_data",
-            "contains_special_category_data",
-            "contains_real_organisation_data",
-        ):
-            if safety.get(key) is not False:
-                safety_failures.append(f"{case_id(row)} {key} is not false")
-    if safety_failures:
-        report.failed("corpus-safety-flags", "; ".join(safety_failures))
-    else:
-        report.passed("corpus-safety-flags", "all cases carry strict synthetic/no-data flags")
-
-    checksum_path = corpus / "checksums.sha256"
-    checksum_failures: list[str] = []
-    checksum_count = 0
-    if not checksum_path.is_file():
-        checksum_failures.append("checksums.sha256 missing")
-    else:
-        for line_number, line in enumerate(
-            checksum_path.read_text(encoding="utf-8").splitlines(), 1
-        ):
-            if not line.strip():
-                continue
-            match = re.fullmatch(r"([a-f0-9]{64})  (.+)", line)
-            if not match:
-                checksum_failures.append(f"line {line_number} malformed")
-                continue
-            expected_hash, relative = match.groups()
-            path = corpus / relative
-            if not path.is_file():
-                checksum_failures.append(f"missing {relative}")
-                continue
-            checksum_count += 1
-            if sha256_file(path) != expected_hash:
-                checksum_failures.append(f"{relative} hash mismatch")
-    if checksum_failures:
-        report.failed("corpus-checksum-file", "; ".join(checksum_failures))
-    else:
-        report.passed("corpus-checksum-file", f"{checksum_count} checksum entries verified")
 
 
-def write_report(root: Path, report: Report, output: Path) -> None:
+def write_report(
+    root: Path,
+    report: Report,
+    output: Path,
+    curriculum: dict[str, Any] | None,
+) -> None:
+    result = "PASS" if not report.errors else "FAIL"
+    course = curriculum.get("course", {}) if isinstance(curriculum, dict) else {}
+    course_title = course.get("title", "Course 1")
+    course_version = course.get("version", "unknown")
+    verified_through = course.get("verifiedThrough", "unknown")
+
     lines = [
-        "# Package Validation Report",
+        "# Course 1 Package Validation Report",
         "",
-        "Course root: repository root (`.`)  ",
-        f"Result: **{'PASS' if not report.errors else 'FAIL'}**  ",
+        f"Course: **{course_title}**",
+        "",
+        f"Course version: `{course_version}`",
+        "",
+        f"Curriculum verified through: `{verified_through}`",
+        "",
+        f"Result: **{result}**",
+        "",
         f"Checks: {len(report.checks)}; failures: {len(report.errors)}; warnings: {len(report.warnings)}",
+        "",
+        "## Scope",
+        "",
+        "This report covers the current curriculum manifest, configured lesson files,",
+        "the 9 foundation and 9 module progress lessons, module structure, current",
+        "JSON contracts, synthetic practice data, and current internal links.",
+        "`future_courses/`, `app/dist/`, dependency folders, Git metadata, caches, and",
+        "external websites are outside this deterministic validation.",
         "",
         "| Status | Check | Detail |",
         "|---|---|---|",
@@ -447,41 +1436,86 @@ def write_report(root: Path, report: Report, output: Path) -> None:
     for check in report.checks:
         detail = check["detail"].replace("|", "\\|").replace("\n", " ")
         lines.append(f"| {check['status']} | {check['name']} | {detail} |")
+
+    if report.errors:
+        lines.extend(["", "## Release blockers", ""])
+        lines.extend(f"- {error}" for error in report.errors)
+    if report.warnings:
+        lines.extend(["", "## Warnings", ""])
+        lines.extend(f"- {warning}" for warning in report.warnings)
+
     lines.extend(
         [
             "",
-            "This is deterministic structural validation only. External-source currency and visual quality require the live audit and render review.",
+            "## Limits",
+            "",
+            "A PASS confirms deterministic package structure; it does not confirm external",
+            "source currency, legal compliance, production security, model quality, visual",
+            "layout, accessibility, or a learner's implementation. Those require the live",
+            "source audit, PWA tests and visual review, and the course evaluation and UAT",
+            "gates.",
             "",
         ]
     )
+    output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text("\n".join(lines), encoding="utf-8", newline="\n")
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description="Validate the current Course 1 package"
+    )
     parser.add_argument(
         "--root",
         type=Path,
         default=Path(__file__).resolve().parents[1],
-        help="Course package root",
+        help="course package root (default: parent of tools/)",
     )
     parser.add_argument(
         "--report",
         type=Path,
         default=None,
-        help="Markdown report path (default: <root>/VALIDATION_REPORT.md)",
+        help="report path (default: <root>/VALIDATION_REPORT.md)",
     )
     args = parser.parse_args()
     root = args.root.resolve()
     output = (args.report or (root / "VALIDATION_REPORT.md")).resolve()
 
+    if not root.is_dir():
+        print(
+            json.dumps(
+                {
+                    "result": "FAIL",
+                    "failures": [f"course root is not a directory: {root}"],
+                },
+                indent=2,
+            )
+        )
+        return 2
+
     report = Report()
-    validate_required_files(root, report)
-    validate_weeks(root, report)
-    validate_machine_files(root, report)
+    curriculum = validate_curriculum(root, report)
+    validate_progress_lessons(root, curriculum, report)
+    validate_module_structure(root, curriculum, report)
+    validate_current_json(root, report)
+    validate_json_schemas(root, report)
+    validate_optional_yaml(root, report)
+    validate_practice_data(root, report)
     validate_internal_links(root, report)
-    validate_corpus(root, report)
-    write_report(root, report, output)
+
+    try:
+        write_report(root, report, output, curriculum)
+    except Exception as exc:
+        print(
+            json.dumps(
+                {
+                    "result": "FAIL",
+                    "failures": [f"could not write validation report: {exc}"],
+                },
+                indent=2,
+            )
+        )
+        return 2
 
     summary = {
         "result": "PASS" if not report.errors else "FAIL",

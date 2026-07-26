@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { readFile, readdir, rm, mkdir, writeFile } from "node:fs/promises";
+import { readFile, rm, mkdir, writeFile } from "node:fs/promises";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { deflateSync } from "node:zlib";
@@ -10,23 +10,12 @@ const appRoot = resolve(scriptDirectory, "..");
 const courseRoot = resolve(appRoot, "..");
 const sourceRoot = join(appRoot, "src");
 const outputRoot = join(appRoot, "dist");
+const curriculumPath = join(courseRoot, "curriculum.json");
 
 function normaliseBasePath(value = "/") {
   const trimmed = String(value).trim();
   if (!trimmed || trimmed === "/") return "/";
   return `/${trimmed.replace(/^\/+|\/+$/g, "")}/`;
-}
-
-function documentId(sourcePath) {
-  return sourcePath
-    .replace(/\.md$/i, "")
-    .replace(/README$/i, "index")
-    .replace(/[\\/]+/g, "-")
-    .replace(/_/g, "-")
-    .replace(/[^a-zA-Z0-9-]+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "")
-    .toLowerCase();
 }
 
 function titleFromMarkdown(markdown, fallback) {
@@ -57,139 +46,209 @@ function descriptionFromMarkdown(markdown) {
   return description.length > 190 ? `${description.slice(0, 187)}…` : description;
 }
 
-async function markdownFiles(directory, filter = () => true) {
-  const names = await readdir(join(courseRoot, directory));
-  return names
-    .filter((name) => name.toLowerCase().endsWith(".md") && filter(name))
-    .sort((a, b) => a.localeCompare(b, "en", { numeric: true }))
-    .map((name) => `${directory}/${name}`.replaceAll("\\", "/"));
+function assertMetadata(condition, message) {
+  if (!condition) throw new Error(`Invalid curriculum.json: ${message}`);
+}
+
+function validateSourcePath(sourcePath, documentId) {
+  assertMetadata(
+    typeof sourcePath === "string" && sourcePath.endsWith(".md"),
+    `document "${documentId}" must have a Markdown sourcePath`,
+  );
+  const normalised = sourcePath.replaceAll("\\", "/");
+  assertMetadata(
+    normalised === sourcePath &&
+      !normalised.startsWith("/") &&
+      !/^[a-zA-Z]:/.test(normalised) &&
+      !normalised.split("/").includes(".."),
+    `document "${documentId}" has an unsafe sourcePath`,
+  );
+}
+
+async function readCurriculum() {
+  let curriculum;
+  try {
+    curriculum = JSON.parse(await readFile(curriculumPath, "utf8"));
+  } catch (error) {
+    throw new Error(`Could not read curriculum.json: ${error.message}`);
+  }
+
+  assertMetadata(curriculum?.schemaVersion === 2, "schemaVersion must be 2");
+  assertMetadata(curriculum.program?.id, "program.id is required");
+  assertMetadata(curriculum.program?.title, "program.title is required");
+  assertMetadata(curriculum.course?.id, "course.id is required");
+  assertMetadata(curriculum.course?.title, "course.title is required");
+  assertMetadata(
+    /^\d+\.\d+\.\d+$/.test(curriculum.course?.version || ""),
+    "course.version must be semantic version text",
+  );
+  assertMetadata(
+    /^\d{4}-\d{2}-\d{2}$/.test(curriculum.course?.verifiedThrough || ""),
+    "course.verifiedThrough must be an ISO date",
+  );
+  assertMetadata(
+    Array.isArray(curriculum.course?.coreGroupIds),
+    "course.coreGroupIds must be an array",
+  );
+  assertMetadata(Array.isArray(curriculum.groups), "groups must be an array");
+  assertMetadata(Array.isArray(curriculum.career?.courses), "career.courses must be an array");
+
+  const groupIds = new Set();
+  const documentIds = new Set();
+  const legacyIds = new Set();
+  const sourcePaths = new Set();
+  const careerCourseIds = new Set();
+
+  for (const group of curriculum.groups) {
+    assertMetadata(group?.id && group?.title, "every group needs an id and title");
+    assertMetadata(!groupIds.has(group.id), `duplicate group id "${group.id}"`);
+    groupIds.add(group.id);
+    assertMetadata(
+      Array.isArray(group.documents) && group.documents.length > 0,
+      `group "${group.id}" must contain documents`,
+    );
+    for (const document of group.documents) {
+      assertMetadata(document?.id, `a document in "${group.id}" is missing its stable id`);
+      assertMetadata(
+        /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(document.id),
+        `document id "${document.id}" must be lower-case kebab-case`,
+      );
+      assertMetadata(
+        !documentIds.has(document.id) && !legacyIds.has(document.id),
+        `document id "${document.id}" is duplicated or conflicts with a legacy id`,
+      );
+      documentIds.add(document.id);
+      assertMetadata(
+        /^\d{4}-\d{2}-\d{2}$/.test(document.revision || ""),
+        `document "${document.id}" needs an ISO revision date`,
+      );
+      validateSourcePath(document.sourcePath, document.id);
+      assertMetadata(
+        !sourcePaths.has(document.sourcePath),
+        `sourcePath "${document.sourcePath}" is listed more than once`,
+      );
+      sourcePaths.add(document.sourcePath);
+      assertMetadata(
+        document.legacyIds === undefined || Array.isArray(document.legacyIds),
+        `document "${document.id}" legacyIds must be an array`,
+      );
+      for (const legacyId of document.legacyIds || []) {
+        assertMetadata(
+          typeof legacyId === "string" && legacyId,
+          `document "${document.id}" has an invalid legacy id`,
+        );
+        assertMetadata(
+          !documentIds.has(legacyId) && !legacyIds.has(legacyId),
+          `legacy id "${legacyId}" is ambiguous`,
+        );
+        legacyIds.add(legacyId);
+      }
+    }
+  }
+
+  for (const coreGroupId of curriculum.course.coreGroupIds) {
+    assertMetadata(groupIds.has(coreGroupId), `unknown core group "${coreGroupId}"`);
+  }
+
+  for (const course of curriculum.career.courses) {
+    assertMetadata(course?.id && course?.title, "each career course needs an id and title");
+    assertMetadata(
+      Number.isInteger(course.sequence) && course.sequence > 0,
+      `career course "${course.id}" needs a positive integer sequence`,
+    );
+    assertMetadata(!careerCourseIds.has(course.id), `duplicate career course "${course.id}"`);
+    careerCourseIds.add(course.id);
+  }
+  assertMetadata(
+    careerCourseIds.has(curriculum.course.id),
+    "the current course must appear in career.courses",
+  );
+
+  return curriculum;
 }
 
 async function collectGroups() {
-  const foundations = await markdownFiles("foundations");
-  const foundationIndex = foundations.filter((path) => path.endsWith("/README.md"));
-  const foundationLessons = foundations.filter((path) => /\/\d{2}_.+\.md$/.test(path));
-  const glossary = foundations.filter((path) => path.endsWith("/GLOSSARY.md"));
-  const weeks = await markdownFiles("weeks", (name) => /^WEEK_\d{2}\.md$/.test(name));
-  const templates = await markdownFiles("templates");
-  const updateReports = await markdownFiles(
-    "updates",
-    (name) => name !== "README.md",
-  );
-
-  return [
-    {
-      id: "start",
-      title: "Start here",
-      documents: [
-        "README.md",
-        "BEGINNER_READINESS_CHECK.md",
-        "COURSE_OVERVIEW.md",
-        "SETUP_WINDOWS.md",
-      ],
-    },
-    {
-      id: "foundations",
-      title: "Beginner foundations",
-      documents: [...foundationIndex, ...foundationLessons, ...glossary],
-    },
-    {
-      id: "weeks",
-      title: "Twelve-week build",
-      documents: weeks,
-    },
-    {
-      id: "reference",
-      title: "Build reference",
-      documents: [
-        "ARCHITECTURE_AND_CONTRACTS.md",
-        "SOFTWARE_MATRIX.md",
-        "CAPSTONE_SPECIFICATION.md",
-        "ASSESSMENT_AND_RUBRIC.md",
-        "SOURCE_REGISTER.md",
-      ],
-    },
-    {
-      id: "worksheets",
-      title: "Worksheets",
-      documents: templates,
-    },
-    {
-      id: "updates",
-      title: "Updates and release",
-      documents: [
-        "PWA_AND_UPDATES.md",
-        "EVERGREEN_UPDATE_PROMPT.md",
-        "COURSE_CHANGELOG.md",
-        "RELEASE_VALIDATION.md",
-        "VALIDATION_REPORT.md",
-        "updates/README.md",
-        ...updateReports,
-      ],
-    },
-  ];
+  const curriculum = await readCurriculum();
+  return curriculum.groups.map((group) => ({
+    ...group,
+    documents: group.documents.map((document) => ({ ...document })),
+  }));
 }
 
 async function createCourseBundle() {
-  const groups = await collectGroups();
-  const seenPaths = new Set();
+  const curriculum = await readCurriculum();
+  const groups = [];
   const documents = [];
 
-  for (const group of groups) {
-    const documentIds = [];
-    for (const sourcePath of group.documents) {
-      if (seenPaths.has(sourcePath)) continue;
-      seenPaths.add(sourcePath);
+  for (const groupMetadata of curriculum.groups) {
+    const group = {
+      id: groupMetadata.id,
+      title: groupMetadata.title,
+      kind: groupMetadata.kind || "reference",
+      core:
+        groupMetadata.core === true ||
+        curriculum.course.coreGroupIds.includes(groupMetadata.id),
+      documents: [],
+    };
+    for (const documentMetadata of groupMetadata.documents) {
+      const sourcePath = documentMetadata.sourcePath;
       const absolutePath = join(courseRoot, ...sourcePath.split("/"));
-      const markdown = await readFile(absolutePath, "utf8");
-      const id = documentId(sourcePath);
+      let markdown;
+      try {
+        markdown = await readFile(absolutePath, "utf8");
+      } catch (error) {
+        throw new Error(
+          `Curriculum source missing for "${documentMetadata.id}": ${sourcePath} (${error.message})`,
+        );
+      }
       const searchableText = plainText(markdown);
       documents.push({
-        id,
-        title: titleFromMarkdown(markdown, sourcePath),
+        id: documentMetadata.id,
+        revision: documentMetadata.revision,
+        legacyIds: [...(documentMetadata.legacyIds || [])],
+        title: documentMetadata.title || titleFromMarkdown(markdown, sourcePath),
         group: group.id,
+        kind: group.kind,
+        core: group.core,
+        courseId: curriculum.course.id,
         order: documents.length,
         sourcePath,
-        description: descriptionFromMarkdown(markdown),
+        description:
+          documentMetadata.description || descriptionFromMarkdown(markdown),
+        learningOutcome: documentMetadata.learningOutcome || null,
         markdown,
         searchableText,
         wordCount: searchableText ? searchableText.split(/\s+/).length : 0,
       });
-      documentIds.push(id);
+      group.documents.push(documentMetadata.id);
     }
-    group.documents = documentIds;
+    groups.push(group);
   }
 
-  const rootReadme = documents.find((document) => document.sourcePath === "README.md");
-  const version =
-    rootReadme?.markdown.match(/^Version:\s*([0-9]+\.[0-9]+\.[0-9]+)/m)?.[1] ||
-    "0.0.0";
-  const verifiedThrough =
-    rootReadme?.markdown.match(/^Verified through:\s*(\d{4}-\d{2}-\d{2})/m)?.[1] ||
-    "unknown";
-
-  const digestInput = documents
-    .map((document) => `${document.sourcePath}\n${document.markdown}`)
-    .join("\n---COURSE-DOCUMENT---\n");
+  const digestInput = [
+    JSON.stringify(curriculum),
+    documents
+      .map((document) => `${document.sourcePath}\n${document.markdown}`)
+      .join("\n---COURSE-DOCUMENT---\n"),
+  ].join("\n---CURRICULUM-METADATA---\n");
   const contentHash = createHash("sha256").update(digestInput).digest("hex");
+  const coreDocuments = documents.filter((document) => document.core);
+  const foundations = documents.filter((document) => document.group === "foundations");
+  const modules = documents.filter((document) => document.group === "modules");
 
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
+    program: curriculum.program,
     course: {
-      title: "AI Workflow & Document Systems",
-      subtitle: "A zero-to-builder course with human approval and traceable sources",
-      version,
-      verifiedThrough,
+      ...curriculum.course,
       contentHash,
-      foundationCount: documents.filter((document) =>
-        /^foundations\/\d{2}_/.test(document.sourcePath),
-      ).length,
-      weekCount: documents.filter((document) =>
-        /^weeks\/WEEK_\d{2}\.md$/.test(document.sourcePath),
-      ).length,
+      foundationCount: foundations.length,
+      moduleCount: modules.length,
+      coreLessonCount: coreDocuments.length,
     },
     groups,
     documents,
+    career: curriculum.career,
   };
 }
 
@@ -342,9 +401,10 @@ async function build() {
 
   const manifest = {
     id: basePath,
-    name: "AI Workflow & Document Systems Course",
+    name: "Controlled AI Workflow Foundations",
     short_name: "AI Workflow",
-    description: "A zero-to-builder course for safe, source-grounded AI document workflows.",
+    description:
+      "Course 1 of the path to controlled AI workflow implementation consulting for Dutch SMEs.",
     lang: "en",
     start_url: basePath,
     scope: basePath,
@@ -380,6 +440,9 @@ async function build() {
     `${JSON.stringify(
       {
         buildId,
+        bundleSchemaVersion: bundle.schemaVersion,
+        programId: bundle.program.id,
+        courseId: bundle.course.id,
         courseVersion: bundle.course.version,
         verifiedThrough: bundle.course.verifiedThrough,
         contentHash: bundle.course.contentHash,
@@ -406,7 +469,8 @@ async function build() {
     courseVersion: bundle.course.version,
     documents: bundle.documents.length,
     foundations: bundle.course.foundationCount,
-    weeks: bundle.course.weekCount,
+    modules: bundle.course.moduleCount,
+    coreLessons: bundle.course.coreLessonCount,
   };
   process.stdout.write(`${JSON.stringify(summary, null, 2)}\n`);
   return summary;

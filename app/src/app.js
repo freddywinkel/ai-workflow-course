@@ -6,10 +6,11 @@ import {
 
 const config = window.__COURSE_APP__;
 const STORAGE_KEY = "ai-workflow-course-state-v1";
-const CORE_GROUPS = new Set(["foundations", "weeks"]);
+const STATE_SCHEMA_VERSION = 2;
 const views = {
   home: document.querySelector("#home-view"),
   reader: document.querySelector("#reader-view"),
+  career: document.querySelector("#career-view"),
   search: document.querySelector("#search-view"),
   settings: document.querySelector("#settings-view"),
 };
@@ -26,6 +27,7 @@ let toastTimer = null;
 let noteTimer = null;
 let lastAutomaticUpdateCheck = 0;
 let pendingRouteFocus = false;
+let pendingLegacyState = null;
 
 const state = loadState();
 
@@ -48,29 +50,62 @@ function iconSvg(name, className = "ui-icon") {
   return `<svg class="${className}" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${ICON_PATHS[name] || ""}</svg>`;
 }
 
-function loadState() {
-  const fallback = {
-    schemaVersion: 1,
+function defaultState() {
+  return {
+    schemaVersion: STATE_SCHEMA_VERSION,
     completed: [],
+    completionRevisions: {},
     notes: {},
+    archivedLegacyNotes: {},
     lastDocument: null,
     theme: "system",
     fontSize: 100,
     lastUpdateCheck: null,
     expandedGroups: ["foundations"],
+    migration: null,
   };
+}
+
+function normaliseV2State(parsed) {
+  const fallback = defaultState();
+  return {
+    ...fallback,
+    ...parsed,
+    schemaVersion: STATE_SCHEMA_VERSION,
+    completed: Array.isArray(parsed.completed) ? parsed.completed : [],
+    completionRevisions:
+      parsed.completionRevisions && typeof parsed.completionRevisions === "object"
+        ? parsed.completionRevisions
+        : {},
+    notes: parsed.notes && typeof parsed.notes === "object" ? parsed.notes : {},
+    archivedLegacyNotes:
+      parsed.archivedLegacyNotes && typeof parsed.archivedLegacyNotes === "object"
+        ? parsed.archivedLegacyNotes
+        : {},
+    expandedGroups: Array.isArray(parsed.expandedGroups)
+      ? parsed.expandedGroups
+      : fallback.expandedGroups,
+  };
+}
+
+function loadState() {
+  const fallback = defaultState();
   try {
     const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-    if (!parsed || parsed.schemaVersion !== 1) return fallback;
-    return {
-      ...fallback,
-      ...parsed,
-      completed: Array.isArray(parsed.completed) ? parsed.completed : [],
-      notes: parsed.notes && typeof parsed.notes === "object" ? parsed.notes : {},
-      expandedGroups: Array.isArray(parsed.expandedGroups)
-        ? parsed.expandedGroups
-        : fallback.expandedGroups,
-    };
+    if (!parsed) return fallback;
+    if (parsed.schemaVersion === STATE_SCHEMA_VERSION) return normaliseV2State(parsed);
+    if (parsed.schemaVersion === 1) {
+      pendingLegacyState = parsed;
+      return {
+        ...fallback,
+        theme: ["system", "light", "dark"].includes(parsed.theme)
+          ? parsed.theme
+          : fallback.theme,
+        fontSize: Math.max(90, Math.min(125, Number(parsed.fontSize) || 100)),
+        lastUpdateCheck: parsed.lastUpdateCheck || null,
+      };
+    }
+    return fallback;
   } catch {
     return fallback;
   }
@@ -84,32 +119,114 @@ function saveState() {
   }
 }
 
+function documentForStoredId(storedId) {
+  if (documentById.has(storedId)) return documentById.get(storedId);
+  return courseBundle.documents.find((courseDocument) =>
+    courseDocument.legacyIds.includes(storedId),
+  );
+}
+
+function migrateSchemaV1(legacy) {
+  const migrated = defaultState();
+  const unmappedCompleted = [];
+  const unmappedNotes = {};
+
+  for (const storedId of Array.isArray(legacy.completed) ? legacy.completed : []) {
+    const courseDocument = documentForStoredId(storedId);
+    if (!courseDocument) {
+      unmappedCompleted.push(storedId);
+      continue;
+    }
+    if (!migrated.completed.includes(courseDocument.id)) {
+      migrated.completed.push(courseDocument.id);
+      migrated.completionRevisions[courseDocument.id] = courseDocument.revision;
+    }
+  }
+
+  if (legacy.notes && typeof legacy.notes === "object") {
+    for (const [storedId, value] of Object.entries(legacy.notes)) {
+      if (typeof value !== "string") continue;
+      const note = value.slice(0, 50000);
+      const courseDocument = documentForStoredId(storedId);
+      if (!courseDocument) {
+        unmappedNotes[storedId] = note;
+        continue;
+      }
+      const previous = migrated.notes[courseDocument.id];
+      migrated.notes[courseDocument.id] = previous
+        ? `${previous}\n\n--- Migrated note ---\n\n${note}`.slice(0, 50000)
+        : note;
+    }
+  }
+
+  const lastDocument = documentForStoredId(legacy.lastDocument);
+  migrated.lastDocument = lastDocument?.id || null;
+  migrated.theme = ["system", "light", "dark"].includes(legacy.theme)
+    ? legacy.theme
+    : "system";
+  migrated.fontSize = Math.max(90, Math.min(125, Number(legacy.fontSize) || 100));
+  migrated.lastUpdateCheck = legacy.lastUpdateCheck || null;
+  migrated.expandedGroups = Array.isArray(legacy.expandedGroups)
+    ? [
+        ...new Set(
+          legacy.expandedGroups
+            .map((groupId) => (groupId === "weeks" ? "modules" : groupId))
+            .filter((groupId) =>
+              courseBundle.groups.some((group) => group.id === groupId),
+            ),
+        ),
+      ]
+    : ["foundations"];
+  migrated.archivedLegacyNotes = unmappedNotes;
+  migrated.migration = {
+    fromSchemaVersion: 1,
+    migratedAt: new Date().toISOString(),
+    unmappedCompleted,
+    unmappedNoteIds: Object.keys(unmappedNotes),
+  };
+  return migrated;
+}
+
+function isDocumentComplete(courseDocument) {
+  return (
+    state.completed.includes(courseDocument.id) &&
+    state.completionRevisions[courseDocument.id] === courseDocument.revision
+  );
+}
+
+function needsRevisionReview(courseDocument) {
+  return (
+    state.completed.includes(courseDocument.id) &&
+    Boolean(state.completionRevisions[courseDocument.id]) &&
+    state.completionRevisions[courseDocument.id] !== courseDocument.revision
+  );
+}
+
 function groupTitle(groupId) {
   return courseBundle.groups.find((group) => group.id === groupId)?.title || groupId;
 }
 
 function coreDocuments() {
-  return courseBundle.documents.filter((document) => {
-    if (document.group === "weeks") return true;
-    return /^foundations\/\d{2}_/.test(document.sourcePath);
-  });
+  return courseBundle.documents.filter((courseDocument) => courseDocument.core);
 }
 
 function learningPositionLabel(courseDocument) {
-  const foundationMatch = courseDocument.sourcePath.match(/^foundations\/(\d{2})_/);
-  if (foundationMatch) {
-    return `Foundation ${Number(foundationMatch[1])} of ${courseBundle.course.foundationCount}`;
+  const group = courseBundle.groups.find((candidate) => candidate.id === courseDocument.group);
+  if (!group) return courseDocument.group;
+  const position = group.documents.indexOf(courseDocument.id);
+  if (courseDocument.kind === "foundation" && position >= 0) {
+    return `Foundation ${position + 1} of ${group.documents.length}`;
   }
-  const weekMatch = courseDocument.sourcePath.match(/^weeks\/WEEK_(\d{2})\.md$/);
-  if (weekMatch) {
-    return `Week ${Number(weekMatch[1])} of ${courseBundle.course.weekCount}`;
+  if (courseDocument.kind === "module" && position >= 0) {
+    return `Module ${position + 1} of ${group.documents.length}`;
   }
   return groupTitle(courseDocument.group);
 }
 
 function completedCoreCount() {
-  const completed = new Set(state.completed);
-  return coreDocuments().filter((document) => completed.has(document.id)).length;
+  return coreDocuments().filter((courseDocument) =>
+    isDocumentComplete(courseDocument),
+  ).length;
 }
 
 function updateProgressUi() {
@@ -122,18 +239,23 @@ function updateProgressUi() {
   document.querySelector("#sidebar-progress-bar").style.width = `${percent}%`;
   const progress = document.querySelector(".progress-track");
   progress.setAttribute("aria-valuenow", String(percent));
-  progress.setAttribute("aria-valuetext", `${percent}% of core course complete`);
-  document
-    .querySelectorAll(".nav-document")
-    .forEach((button) =>
-      button.classList.toggle("completed", state.completed.includes(button.dataset.documentId)),
+  progress.setAttribute("aria-valuetext", `${percent}% of Course 1 complete`);
+  document.querySelectorAll(".nav-document").forEach((button) => {
+    const courseDocument = documentById.get(button.dataset.documentId);
+    button.classList.toggle(
+      "completed",
+      Boolean(courseDocument && isDocumentComplete(courseDocument)),
     );
+    button.classList.toggle(
+      "needs-review",
+      Boolean(courseDocument && needsRevisionReview(courseDocument)),
+    );
+  });
 }
 
 function renderCourseNavigation() {
   const navigation = document.querySelector("#course-nav");
   navigation.replaceChildren();
-  const completed = new Set(state.completed);
 
   for (const group of courseBundle.groups) {
     const wrapper = document.createElement("section");
@@ -143,8 +265,8 @@ function renderCourseNavigation() {
     const groupDocuments = group.documents
       .map((id) => documentById.get(id))
       .filter(Boolean);
-    const completedCount = groupDocuments.filter((document) =>
-      completed.has(document.id),
+    const completedCount = groupDocuments.filter((courseDocument) =>
+      isDocumentComplete(courseDocument),
     ).length;
 
     const toggle = document.createElement("button");
@@ -173,7 +295,8 @@ function renderCourseNavigation() {
       button.type = "button";
       button.className = "nav-document";
       button.dataset.documentId = courseDocument.id;
-      if (completed.has(courseDocument.id)) button.classList.add("completed");
+      if (isDocumentComplete(courseDocument)) button.classList.add("completed");
+      if (needsRevisionReview(courseDocument)) button.classList.add("needs-review");
       button.innerHTML = `<span class="nav-check" aria-hidden="true">${iconSvg("check")}</span><span>${escapeHtml(courseDocument.title)}</span>`;
       button.addEventListener("click", () => {
         navigateToDocument(courseDocument.id);
@@ -232,26 +355,22 @@ function renderHome() {
   const core = coreDocuments();
   const completed = completedCoreCount();
   const foundationDocs = core.filter((document) => document.group === "foundations");
-  const weekDocs = core.filter((document) => document.group === "weeks");
-  const foundationCompleted = foundationDocs.filter((document) =>
-    state.completed.includes(document.id),
-  ).length;
-  const weekCompleted = weekDocs.filter((document) =>
-    state.completed.includes(document.id),
-  ).length;
+  const moduleDocs = core.filter((document) => document.group === "modules");
+  const foundationCompleted = foundationDocs.filter(isDocumentComplete).length;
+  const moduleCompleted = moduleDocs.filter(isDocumentComplete).length;
   const percent = core.length ? Math.round((completed / core.length) * 100) : 0;
   const foundationPercent = foundationDocs.length
     ? Math.round((foundationCompleted / foundationDocs.length) * 100)
     : 0;
-  const weekPercent = weekDocs.length
-    ? Math.round((weekCompleted / weekDocs.length) * 100)
+  const modulePercent = moduleDocs.length
+    ? Math.round((moduleCompleted / moduleDocs.length) * 100)
     : 0;
   const resume =
     documentById.get(state.lastDocument) ||
-    core.find((document) => !state.completed.includes(document.id)) ||
+    core.find((document) => !isDocumentComplete(document)) ||
     core[0];
   const nextDocuments = core
-    .filter((document) => !state.completed.includes(document.id))
+    .filter((document) => !isDocumentComplete(document))
     .slice(0, 3);
   const verifiedDate = new Date(`${courseBundle.course.verifiedThrough}T12:00:00`);
   const ageDays = Number.isNaN(verifiedDate.getTime())
@@ -267,46 +386,46 @@ function renderHome() {
   views.home.innerHTML = `
     <section class="hero">
       <div class="hero-copy">
-        <span class="hero-kicker"><span aria-hidden="true"></span>Learn by building one bounded system</span>
-        <h1>From zero coding knowledge to a <em>working document workflow.</em></h1>
-        <p>Begin with the foundations, then build a source-grounded supplier-document workflow in twelve careful increments. AI drafts; a human always decides.</p>
+        <span class="hero-kicker"><span aria-hidden="true"></span>Course 1 of the consultant path</span>
+        <h1>Learn to build one <em>controlled SME workflow.</em></h1>
+        <p>Start from zero technical knowledge. Learn to inspect the work, choose a bounded problem, build deterministic checks, add AI only where it helps, and keep a human responsible for every consequential decision.</p>
         <div class="hero-actions">
           <button class="button" type="button" data-home-action="resume">
             <span>${resume ? `Continue: ${escapeHtml(resume.title)}` : "Start the course"}</span>
             ${iconSvg("arrow")}
           </button>
-          <button class="button button-quiet" type="button" data-home-action="foundations">Explore the beginner path</button>
+          <button class="button button-quiet" type="button" data-home-action="career">See the full career sequence</button>
         </div>
         <div class="proof-chips" aria-label="Course safeguards">
-          <span>${iconSvg("layers")}8 foundations</span>
-          <span>${iconSvg("document")}12 build weeks</span>
+          <span>${iconSvg("layers")}${courseBundle.course.foundationCount} foundations</span>
+          <span>${iconSvg("document")}${courseBundle.course.moduleCount} implementation modules</span>
           <span>${iconSvg("shield")}Synthetic data only</span>
         </div>
       </div>
       <div class="workflow-preview" aria-label="Capstone workflow preview">
         <div class="workflow-preview-header">
-          <span>Capstone flow</span>
+          <span>Synthetic capstone</span>
           <small><span aria-hidden="true"></span>Human-controlled</small>
         </div>
         <ol>
           <li>
             <span class="workflow-stage-icon">${iconSvg("document")}</span>
-            <span><small>01 · Intake</small><strong>Source documents</strong></span>
+            <span><small>01 · Observe</small><strong>Fictional operations data</strong></span>
           </li>
           <li>
             <span class="workflow-stage-icon">${iconSvg("extract")}</span>
-            <span><small>02 · Structure</small><strong>Evidence-linked facts</strong></span>
+            <span><small>02 · Check</small><strong>Deterministic exceptions</strong></span>
           </li>
           <li>
             <span class="workflow-stage-icon">${iconSvg("review")}</span>
-            <span><small>03 · Decide</small><strong>Human review</strong></span>
+            <span><small>03 · Explain</small><strong>Evidence-linked AI summary</strong></span>
           </li>
           <li>
             <span class="workflow-stage-icon workflow-stage-approved">${iconSvg("shield")}</span>
-            <span><small>04 · Release</small><strong>Approved memo</strong></span>
+            <span><small>04 · Decide</small><strong>Human review and action</strong></span>
           </li>
         </ol>
-        <div class="workflow-assurance">${iconSvg("check")}No action without approval</div>
+        <div class="workflow-assurance">${iconSvg("check")}No autonomous external action</div>
       </div>
     </section>
     <section class="progress-overview" aria-label="Course progress summary">
@@ -315,8 +434,8 @@ function renderHome() {
           <span><strong>${percent}%</strong><small>complete</small></span>
         </div>
         <div>
-          <span class="eyebrow">Overall journey</span>
-          <h2>${completed ? "Keep building your proof" : "Your learning path is ready"}</h2>
+          <span class="eyebrow">Course 1 progress</span>
+          <h2>${completed ? "Keep building your evidence" : "Your foundation is ready"}</h2>
           <p>${completed} of ${core.length} core lessons complete</p>
         </div>
       </article>
@@ -331,10 +450,10 @@ function renderHome() {
       <article class="progress-card">
         <span class="progress-card-icon progress-card-icon-gold">${iconSvg("document")}</span>
         <div>
-          <span>Build weeks</span>
-          <strong>${weekCompleted}<small> / ${weekDocs.length}</small></strong>
+          <span>Implementation modules</span>
+          <strong>${moduleCompleted}<small> / ${moduleDocs.length}</small></strong>
         </div>
-        <div class="mini-progress mini-progress-gold" aria-hidden="true"><span style="width:${weekPercent}%"></span></div>
+        <div class="mini-progress mini-progress-gold" aria-hidden="true"><span style="width:${modulePercent}%"></span></div>
       </article>
     </section>
     <div class="dashboard-grid">
@@ -356,7 +475,7 @@ function renderHome() {
                       </li>`,
                   )
                   .join("")
-              : '<li><p>Use Week 12’s acceptance gate and keep the evergreen audit schedule active.</p></li>'
+              : '<li><p>Use Module 9’s acceptance gate, retain the manual fallback, and keep the update review active.</p></li>'
           }
         </ul>
       </section>
@@ -368,31 +487,166 @@ function renderHome() {
         <span class="eyebrow">Source currency</span>
         <h2>${escapeHtml(freshness)}</h2>
         <time datetime="${escapeAttribute(courseBundle.course.verifiedThrough)}">${escapeHtml(courseBundle.course.verifiedThrough)}</time>
-        <p>Run the live audit again before Week 7 and after material legal, security, or vendor changes.</p>
+        <p>Review the source register after material legal, security, model, or vendor changes.</p>
         <button class="button button-quiet" type="button" data-home-action="updates">${iconSvg("shield")}Open update centre</button>
       </section>
     </div>
+    <section class="course-overview" aria-labelledby="module-overview-title">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">Course 1 at a glance</span>
+          <h2 id="module-overview-title">${courseBundle.course.moduleCount} modules, one controlled implementation</h2>
+        </div>
+        <p>The foundations teach the tools. The modules apply them in the order a responsible implementation should happen.</p>
+      </div>
+      <div class="module-card-grid">
+        ${moduleDocs
+          .map((courseDocument, index) => {
+            const complete = isDocumentComplete(courseDocument);
+            const revised = needsRevisionReview(courseDocument);
+            const status = complete ? "Complete" : revised ? "Review revision" : "Ready";
+            return `
+              <button class="module-card${complete ? " complete" : ""}${revised ? " revised" : ""}" type="button" data-document-id="${escapeAttribute(courseDocument.id)}">
+                <span class="module-card-top">
+                  <span class="module-number">${String(index + 1).padStart(2, "0")}</span>
+                  <span class="module-status">${escapeHtml(status)}</span>
+                </span>
+                <strong>${escapeHtml(courseDocument.title.replace(/^Module \d+\s*[—-]\s*/, ""))}</strong>
+                <small>About ${Math.max(1, Math.ceil(courseDocument.wordCount / 210))} min · revision ${escapeHtml(courseDocument.revision)}</small>
+                ${iconSvg("arrow")}
+              </button>
+            `;
+          })
+          .join("")}
+      </div>
+    </section>
+    <section class="career-bridge">
+      <div>
+        <span class="eyebrow">Keep the boundary clear</span>
+        <h2>This course is the technical foundation—not your entire consulting career.</h2>
+        <p>Later courses separately cover discovery and value, client implementation and adoption, governance, commercial practice, and supervised market entry.</p>
+      </div>
+      <button class="button" type="button" data-home-action="career">Open career sequence ${iconSvg("arrow")}</button>
+    </section>
   `;
 
   views.home.querySelector('[data-home-action="resume"]')?.addEventListener("click", () => {
     if (resume) navigateToDocument(resume.id);
   });
   views.home
-    .querySelector('[data-home-action="foundations"]')
-    ?.addEventListener("click", () => {
-      const foundationIndex =
-        courseBundle.documents.find(
-          (document) => document.sourcePath === "foundations/README.md",
-        ) || foundationDocs[0];
-      if (foundationIndex) navigateToDocument(foundationIndex.id);
-    });
+    .querySelectorAll('[data-home-action="career"]')
+    .forEach((button) => button.addEventListener("click", () => navigate("career")));
   views.home
     .querySelector('[data-home-action="updates"]')
     ?.addEventListener("click", () => navigate("settings"));
   views.home.querySelectorAll("[data-document-id]").forEach((button) => {
     button.addEventListener("click", () => navigateToDocument(button.dataset.documentId));
   });
-  document.title = "Workflow Builder — AI Workflow Course";
+  document.title = `${courseBundle.course.shortTitle} — ${courseBundle.course.title}`;
+}
+
+function renderCareer() {
+  showOnly("career");
+  currentDocument = null;
+  document.querySelectorAll(".nav-document").forEach((button) => {
+    button.removeAttribute("aria-current");
+  });
+
+  const career = courseBundle.career;
+  const nextLesson =
+    coreDocuments().find((courseDocument) => !isDocumentComplete(courseDocument)) ||
+    coreDocuments()[0];
+
+  views.career.innerHTML = `
+    <section class="career-hero">
+      <span class="hero-kicker"><span aria-hidden="true"></span>Proposed learning sequence</span>
+      <h1>${escapeHtml(career.targetRole)}</h1>
+      <p>${escapeHtml(career.summary)}</p>
+      <div class="career-role-card">
+        <span>${iconSvg("shield")}</span>
+        <div>
+          <small>The durable professional value</small>
+          <strong>${escapeHtml(courseBundle.program.durableValue)}</strong>
+        </div>
+      </div>
+    </section>
+    <section class="career-roadmap" aria-labelledby="career-roadmap-title">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">Courses 1–6</span>
+          <h2 id="career-roadmap-title">Build proof in a deliberate order</h2>
+        </div>
+        <p>Only Course 1 is taught in this PWA. The later cards are a curriculum plan, not completed qualifications or promises of work.</p>
+      </div>
+      <ol class="career-course-list">
+        ${career.courses
+          .map(
+            (course) => `
+              <li class="career-course-card${course.status === "current" ? " current" : ""}">
+                <span class="career-sequence">${String(course.sequence).padStart(2, "0")}</span>
+                <div class="career-course-copy">
+                  <span class="career-status">${course.status === "current" ? "Current · taught here" : "Proposed separate course"}</span>
+                  <h3>${escapeHtml(course.title)}</h3>
+                  <p>${escapeHtml(course.purpose)}</p>
+                  <div class="exit-evidence">
+                    <small>Advance when you can show</small>
+                    <strong>${escapeHtml(course.exitEvidence)}</strong>
+                  </div>
+                  ${
+                    course.status === "current"
+                      ? `<button class="button" type="button" data-career-action="course">${nextLesson ? `Continue ${escapeHtml(learningPositionLabel(nextLesson))}` : "Open Course 1"} ${iconSvg("arrow")}</button>`
+                      : ""
+                  }
+                </div>
+              </li>
+            `,
+          )
+          .join("")}
+      </ol>
+    </section>
+    <section class="career-detail-grid">
+      <article class="career-detail-card specialization-card">
+        <span class="eyebrow">Optional specialisation</span>
+        ${career.optionalSpecializations
+          .map(
+            (specialization) => `
+              <h2>${escapeHtml(specialization.title)}</h2>
+              <span class="version-chip">${escapeHtml(specialization.status.replaceAll("-", " "))}</span>
+              <p>${escapeHtml(specialization.purpose)}</p>
+            `,
+          )
+          .join("")}
+      </article>
+      <article class="career-detail-card">
+        <span class="eyebrow">Readiness gates</span>
+        <h2>Do not skip the controls</h2>
+        <ul class="career-gate-list">
+          ${career.readinessGates
+            .map((gate) => `<li>${iconSvg("check")}<span>${escapeHtml(gate)}</span></li>`)
+            .join("")}
+        </ul>
+      </article>
+    </section>
+    <section class="pace-card">
+      <div>
+        <span class="eyebrow">A sustainable pace</span>
+        <h2>Design for the capacity you will have later</h2>
+      </div>
+      <dl>
+        <div><dt>For now</dt><dd>${escapeHtml(career.suggestedPace.currentCapacity)}</dd></div>
+        <div><dt>After recovery</dt><dd>${escapeHtml(career.suggestedPace.laterCapacity)}</dd></div>
+        <div><dt>When to advance</dt><dd>${escapeHtml(career.suggestedPace.sequenceRule)}</dd></div>
+      </dl>
+    </section>
+  `;
+
+  views.career
+    .querySelector('[data-career-action="course"]')
+    ?.addEventListener("click", () => {
+      if (nextLesson) navigateToDocument(nextLesson.id);
+      else navigate("home");
+    });
+  document.title = `Career sequence — ${courseBundle.program.title}`;
 }
 
 function setDocumentPager(button, document, direction) {
@@ -508,7 +762,7 @@ function renderDocument(id) {
   document.querySelector("#reader-meta").innerHTML = `
     <span>${iconSvg("clock")}About ${Math.max(1, Math.ceil(courseDocument.wordCount / 210))} min</span>
     <span>${iconSvg("layers")}${escapeHtml(learningPositionLabel(courseDocument))}</span>
-    <span title="Source: ${escapeAttribute(courseDocument.sourcePath)}">${iconSvg("document")}${escapeHtml(lessonPosition)}</span>
+    <span title="${escapeAttribute(lessonPosition)}">${iconSvg("document")}Revision ${escapeHtml(courseDocument.revision)}</span>
   `;
   const content = document.querySelector("#reader-content");
   content.innerHTML = renderCourseMarkdown(courseDocument.markdown);
@@ -516,27 +770,52 @@ function renderDocument(id) {
   wireCodeCopy(content);
 
   const completeButton = document.querySelector("#complete-button");
-  const isComplete = state.completed.includes(id);
+  const isComplete = isDocumentComplete(courseDocument);
+  const revised = needsRevisionReview(courseDocument);
   completeButton.setAttribute("aria-pressed", String(isComplete));
   completeButton.querySelector("span:last-child").textContent = isComplete
     ? "Completed"
-    : "Mark complete";
+    : revised
+      ? "Mark reviewed"
+      : "Mark complete";
 
-  document.querySelector("#checkpoint-alert").hidden =
-    courseDocument.sourcePath !== "weeks/WEEK_07.md";
+  const checkpoint =
+    courseDocument.checkpoint ||
+    courseBundle.course.checkpoints?.find(
+      (candidate) => candidate.lessonId === courseDocument.id,
+    );
+  const checkpointAlert = document.querySelector("#checkpoint-alert");
+  checkpointAlert.hidden = !checkpoint;
+  if (checkpoint) {
+    document.querySelector("#checkpoint-title").textContent =
+      checkpoint.title || "Course checkpoint";
+    document.querySelector("#checkpoint-message").textContent =
+      checkpoint.message || "Pause and verify your evidence before continuing.";
+    document.querySelector("#checkpoint-update-button").hidden =
+      checkpoint.action !== "check-updates";
+  }
+  document.querySelector("#revision-alert").hidden = !revised;
   const note = document.querySelector("#learner-note");
   note.value = state.notes[id] || "";
   document.querySelector("#note-save-status").textContent = "Saved locally";
 
-  const position = courseBundle.documents.findIndex((document) => document.id === id);
+  const group = courseBundle.groups.find(
+    (candidate) => candidate.id === courseDocument.group,
+  );
+  const pagerDocuments = courseDocument.core
+    ? core
+    : (group?.documents || [])
+        .map((documentId) => documentById.get(documentId))
+        .filter(Boolean);
+  const position = pagerDocuments.findIndex((document) => document.id === id);
   setDocumentPager(
     document.querySelector("#previous-document"),
-    courseBundle.documents[position - 1],
+    pagerDocuments[position - 1],
     "Previous",
   );
   setDocumentPager(
     document.querySelector("#next-document"),
-    courseBundle.documents[position + 1],
+    pagerDocuments[position + 1],
     "Next",
   );
 
@@ -545,7 +824,7 @@ function renderDocument(id) {
     else button.removeAttribute("aria-current");
   });
 
-  document.title = `${courseDocument.title} — Workflow Builder`;
+  document.title = `${courseDocument.title} — Course 1`;
   window.scrollTo({ top: 0, behavior: "instant" });
 }
 
@@ -618,7 +897,7 @@ function renderSearchResults() {
 function renderSearch() {
   showOnly("search");
   currentDocument = null;
-  document.title = "Search — Workflow Builder";
+  document.title = "Search — Course 1";
   window.setTimeout(() => document.querySelector("#search-input").focus(), 0);
 }
 
@@ -647,7 +926,7 @@ function renderSettings() {
     ? new Date(state.lastUpdateCheck).toLocaleString()
     : "Not yet";
   applyAppearance();
-  document.title = "Settings — Workflow Builder";
+  document.title = "Settings — Course 1";
 }
 
 function renderRoute() {
@@ -655,6 +934,8 @@ function renderRoute() {
   const route = window.location.hash.replace(/^#/, "") || "home";
   if (route.startsWith("doc=")) {
     renderDocument(decodeURIComponent(route.slice(4)));
+  } else if (route === "career") {
+    renderCareer();
   } else if (route === "search") {
     renderSearch();
   } else if (route === "settings") {
@@ -728,14 +1009,20 @@ function updateConnectionStatus() {
 
 function toggleCompleted() {
   if (!currentDocument) return;
+  const wasComplete = isDocumentComplete(currentDocument);
   const index = state.completed.indexOf(currentDocument.id);
-  if (index >= 0) state.completed.splice(index, 1);
-  else state.completed.push(currentDocument.id);
+  if (wasComplete) {
+    if (index >= 0) state.completed.splice(index, 1);
+    delete state.completionRevisions[currentDocument.id];
+  } else {
+    if (index < 0) state.completed.push(currentDocument.id);
+    state.completionRevisions[currentDocument.id] = currentDocument.revision;
+  }
   saveState();
   renderCourseNavigation();
   updateProgressUi();
   renderDocument(currentDocument.id);
-  showToast(index >= 0 ? "Marked incomplete." : "Lesson marked complete.");
+  showToast(wasComplete ? "Marked incomplete." : "Lesson marked complete.");
 }
 
 function saveCurrentNote() {
@@ -757,6 +1044,8 @@ function exportProgress() {
   const payload = {
     exportType: "ai-workflow-course-progress",
     exportedAt: new Date().toISOString(),
+    bundleSchemaVersion: courseBundle.schemaVersion,
+    courseId: courseBundle.course.id,
     courseVersion: courseBundle.course.version,
     state,
   };
@@ -771,45 +1060,73 @@ function exportProgress() {
   showToast("Progress backup exported.");
 }
 
+function sanitiseV2StateForCurrentCourse(rawState) {
+  const imported = normaliseV2State(rawState);
+  imported.completed = imported.completed.filter((id) => documentById.has(id));
+  imported.completionRevisions = Object.fromEntries(
+    Object.entries(imported.completionRevisions)
+      .filter(
+        ([id, revision]) =>
+          documentById.has(id) &&
+          typeof revision === "string" &&
+          /^\d{4}-\d{2}-\d{2}$/.test(revision),
+      ),
+  );
+  imported.notes = Object.fromEntries(
+    Object.entries(imported.notes)
+      .filter(([id, note]) => documentById.has(id) && typeof note === "string")
+      .map(([id, note]) => [id, note.slice(0, 50000)]),
+  );
+  imported.archivedLegacyNotes = Object.fromEntries(
+    Object.entries(imported.archivedLegacyNotes)
+      .filter(([_id, note]) => typeof note === "string")
+      .map(([id, note]) => [id, note.slice(0, 50000)]),
+  );
+  imported.lastDocument = documentById.has(imported.lastDocument)
+    ? imported.lastDocument
+    : null;
+  imported.theme = ["system", "light", "dark"].includes(imported.theme)
+    ? imported.theme
+    : "system";
+  imported.fontSize = Math.max(90, Math.min(125, Number(imported.fontSize) || 100));
+  imported.expandedGroups = imported.expandedGroups.filter((groupId) =>
+    courseBundle.groups.some((group) => group.id === groupId),
+  );
+  return imported;
+}
+
+function replaceState(replacement) {
+  for (const key of Object.keys(state)) delete state[key];
+  Object.assign(state, replacement);
+}
+
 async function importProgress(file) {
   try {
     const payload = JSON.parse(await file.text());
     if (
       payload?.exportType !== "ai-workflow-course-progress" ||
-      payload?.state?.schemaVersion !== 1
+      ![1, STATE_SCHEMA_VERSION].includes(payload?.state?.schemaVersion)
     ) {
       throw new Error("Not a supported course progress backup.");
     }
     if (!window.confirm("Replace progress and notes on this device with this backup?")) {
       return;
     }
-    state.completed = Array.isArray(payload.state.completed)
-      ? payload.state.completed.filter((id) => documentById.has(id))
-      : [];
-    state.notes =
-      payload.state.notes && typeof payload.state.notes === "object"
-        ? Object.fromEntries(
-            Object.entries(payload.state.notes)
-              .filter(([id, note]) => documentById.has(id) && typeof note === "string")
-              .map(([id, note]) => [id, note.slice(0, 50000)]),
-          )
-        : {};
-    state.lastDocument = documentById.has(payload.state.lastDocument)
-      ? payload.state.lastDocument
-      : null;
-    state.theme = ["system", "light", "dark"].includes(payload.state.theme)
-      ? payload.state.theme
-      : "system";
-    state.fontSize = Math.max(
-      90,
-      Math.min(125, Number(payload.state.fontSize) || 100),
-    );
+    const imported =
+      payload.state.schemaVersion === 1
+        ? migrateSchemaV1(payload.state)
+        : sanitiseV2StateForCurrentCourse(payload.state);
+    replaceState(imported);
     saveState();
     renderCourseNavigation();
     updateProgressUi();
     applyAppearance();
     renderRoute();
-    showToast("Progress backup imported.");
+    showToast(
+      payload.state.schemaVersion === 1
+        ? "Older backup imported and migrated."
+        : "Progress backup imported.",
+    );
   } catch (error) {
     showToast(error.message || "That backup could not be imported.", 4500);
   } finally {
@@ -823,16 +1140,7 @@ function resetProgress() {
   );
   if (!confirmed) return;
   localStorage.removeItem(STORAGE_KEY);
-  Object.assign(state, {
-    schemaVersion: 1,
-    completed: [],
-    notes: {},
-    lastDocument: null,
-    theme: "system",
-    fontSize: 100,
-    lastUpdateCheck: null,
-    expandedGroups: ["foundations"],
-  });
+  replaceState(defaultState());
   renderCourseNavigation();
   updateProgressUi();
   applyAppearance();
@@ -982,7 +1290,13 @@ function wireEvents() {
     button.addEventListener("click", () => {
       if (button.dataset.route === "course") {
         if (window.matchMedia("(max-width: 920px)").matches) openSidebar();
-        else if (state.lastDocument) navigateToDocument(state.lastDocument);
+        else {
+          const target =
+            documentById.get(state.lastDocument) ||
+            coreDocuments().find((courseDocument) => !isDocumentComplete(courseDocument)) ||
+            coreDocuments()[0];
+          if (target) navigateToDocument(target.id);
+        }
       } else {
         navigate(button.dataset.route);
       }
@@ -1065,9 +1379,10 @@ async function initialise() {
     if (!response.ok) throw new Error(`Course bundle returned ${response.status}`);
     courseBundle = await response.json();
     if (
-      courseBundle?.schemaVersion !== 1 ||
+      courseBundle?.schemaVersion !== 2 ||
       !Array.isArray(courseBundle.documents) ||
-      !Array.isArray(courseBundle.groups)
+      !Array.isArray(courseBundle.groups) ||
+      !Array.isArray(courseBundle.career?.courses)
     ) {
       throw new Error("Course bundle has an unsupported shape");
     }
@@ -1083,14 +1398,25 @@ async function initialise() {
         courseDocument,
       ]),
     );
-    state.completed = state.completed.filter((id) => documentById.has(id));
-    if (state.lastDocument && !documentById.has(state.lastDocument)) {
-      state.lastDocument = null;
+    if (pendingLegacyState) {
+      replaceState(migrateSchemaV1(pendingLegacyState));
+      pendingLegacyState = null;
+    } else {
+      replaceState(sanitiseV2StateForCurrentCourse(state));
     }
     saveState();
     renderCourseNavigation();
     updateProgressUi();
     renderRoute();
+    if (state.migration?.fromSchemaVersion === 1) {
+      const archivedCount = state.migration.unmappedNoteIds?.length || 0;
+      showToast(
+        archivedCount
+          ? `Progress migrated. ${archivedCount} old note${archivedCount === 1 ? "" : "s"} kept in the backup archive.`
+          : "Your existing progress was migrated to the revised course.",
+        5200,
+      );
+    }
     await registerServiceWorker();
   } catch (error) {
     const loading = document.querySelector("#loading-card");

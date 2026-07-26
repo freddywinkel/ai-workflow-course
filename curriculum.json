@@ -1,0 +1,611 @@
+{
+  "schemaVersion": 2,
+  "program": {
+    "id": "controlled-ai-workflow-consultant-path",
+    "title": "Controlled AI Workflow Implementation Consultant",
+    "targetMarket": "Dutch SMEs",
+    "positioning": "Help an SME find one worthwhile operational problem, improve the process, implement a controlled AI-assisted workflow in the systems it already uses, train the people involved, and prove the result.",
+    "durableValue": "The durable skill is controlled implementation: process discovery, data quality, deterministic rules, evidence, human approval, testing, adoption, measurement, and handover. A particular AI model or workflow canvas is only a replaceable tool."
+  },
+  "course": {
+    "id": "course-1-controlled-ai-workflow-foundations",
+    "sequence": 1,
+    "title": "Controlled AI Workflow Foundations",
+    "shortTitle": "Course 1",
+    "subtitle": "From zero technical knowledge to one safe, evidence-backed SME workflow",
+    "version": "2.0.0",
+    "verifiedThrough": "2026-07-26",
+    "learnerStartingPoint": "No coding, automation, consulting, or AI implementation knowledge is assumed.",
+    "outcome": "You can investigate a small operational workflow, decide what should and should not be automated, and build a bounded prototype with deterministic checks, evidence, human approval, testing, and a manual fallback.",
+    "estimatedHours": {
+      "minimum": 110,
+      "typical": 130,
+      "maximum": 150
+    },
+    "coreGroupIds": [
+      "foundations",
+      "modules"
+    ],
+    "capstone": {
+      "title": "Synthetic SME Operations Exception Assistant",
+      "summary": "A local-first demonstration that reads a fictional CSV export, detects operational exceptions with deterministic rules, uses AI only for bounded issue-linked explanation, and produces a review package for a human decision.",
+      "nonGoals": [
+        "It is not a production SaaS product.",
+        "It does not take autonomous external action.",
+        "It does not use real employer, patient, client, or commercially confidential data.",
+        "It is not a Veeva, eQMS, accounting, CRM, or ERP replacement."
+      ]
+    }
+  },
+  "groups": [
+    {
+      "id": "start",
+      "title": "Start here",
+      "kind": "guide",
+      "core": false,
+      "documents": [
+        {
+          "id": "course-1-guide",
+          "revision": "2026-07-26",
+          "sourcePath": "README.md",
+          "legacyIds": [
+            "index"
+          ]
+        },
+        {
+          "id": "course-1-readiness-check",
+          "revision": "2026-07-26",
+          "sourcePath": "BEGINNER_READINESS_CHECK.md",
+          "legacyIds": [
+            "beginner-readiness-check"
+          ]
+        },
+        {
+          "id": "course-1-overview",
+          "revision": "2026-07-26",
+          "sourcePath": "COURSE_OVERVIEW.md",
+          "legacyIds": [
+            "course-overview"
+          ]
+        },
+        {
+          "id": "course-1-windows-setup",
+          "revision": "2026-07-26",
+          "sourcePath": "SETUP_WINDOWS.md",
+          "legacyIds": [
+            "setup-windows"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "foundations",
+      "title": "Nine foundations",
+      "kind": "foundation",
+      "core": true,
+      "documents": [
+        {
+          "id": "course-1-foundation-01",
+          "revision": "2026-07-26",
+          "sourcePath": "foundations/01_FILES_AND_TEXT.md",
+          "title": "Foundation 1 — Files and Text",
+          "legacyIds": [
+            "foundations-01-files-and-text"
+          ]
+        },
+        {
+          "id": "course-1-foundation-02",
+          "revision": "2026-07-26",
+          "sourcePath": "foundations/02_COMMAND_LINE_SURVIVAL.md",
+          "title": "Foundation 2 — Command-Line Survival",
+          "legacyIds": [
+            "foundations-02-command-line-survival"
+          ]
+        },
+        {
+          "id": "course-1-foundation-03",
+          "revision": "2026-07-26",
+          "sourcePath": "foundations/03_CODE_AND_PYTHON.md",
+          "title": "Foundation 3 — Code and Python",
+          "legacyIds": [
+            "foundations-03-code-and-python"
+          ]
+        },
+        {
+          "id": "course-1-foundation-04",
+          "revision": "2026-07-26",
+          "sourcePath": "foundations/04_WEB_APIS_AND_JSON.md",
+          "title": "Foundation 4 — Web, APIs, and JSON",
+          "legacyIds": [
+            "foundations-04-web-apis-and-json"
+          ]
+        },
+        {
+          "id": "course-1-foundation-05",
+          "revision": "2026-07-26",
+          "sourcePath": "foundations/05_GIT_AND_SAFE_CHANGES.md",
+          "title": "Foundation 5 — Git and Safe Changes",
+          "legacyIds": [
+            "foundations-05-git-and-safe-changes"
+          ]
+        },
+        {
+          "id": "course-1-foundation-06",
+          "revision": "2026-07-26",
+          "sourcePath": "foundations/06_SPREADSHEETS_CSV_AND_DATA_QUALITY.md",
+          "title": "Foundation 6 — Spreadsheets, CSV, and Data Quality",
+          "legacyIds": []
+        },
+        {
+          "id": "course-1-foundation-07",
+          "revision": "2026-07-26",
+          "sourcePath": "foundations/07_AI_AND_CONTROLLED_WORKFLOWS.md",
+          "title": "Foundation 7 — AI and Controlled Workflows",
+          "legacyIds": []
+        },
+        {
+          "id": "course-1-foundation-08",
+          "revision": "2026-07-26",
+          "sourcePath": "foundations/08_SAFE_AI_ASSISTED_BUILDING.md",
+          "title": "Foundation 8 — Safe AI-Assisted Building",
+          "legacyIds": []
+        },
+        {
+          "id": "course-1-foundation-09",
+          "revision": "2026-07-26",
+          "sourcePath": "foundations/09_WORKFLOW_TOOLS_AND_DATA_STORES.md",
+          "title": "Foundation 9 — Workflow Tools and Data Stores",
+          "legacyIds": []
+        }
+      ]
+    },
+    {
+      "id": "modules",
+      "title": "Nine implementation modules",
+      "kind": "module",
+      "core": true,
+      "documents": [
+        {
+          "id": "course-1-module-01",
+          "revision": "2026-07-26",
+          "sourcePath": "modules/MODULE_01.md",
+          "title": "Module 1 — Observe the Work Before You Automate",
+          "legacyIds": []
+        },
+        {
+          "id": "course-1-module-02",
+          "revision": "2026-07-26",
+          "sourcePath": "modules/MODULE_02.md",
+          "title": "Module 2 — Select and Bound a Worthwhile Opportunity",
+          "legacyIds": []
+        },
+        {
+          "id": "course-1-module-03",
+          "revision": "2026-07-26",
+          "sourcePath": "modules/MODULE_03.md",
+          "title": "Module 3 — Understand the Data and Rules",
+          "legacyIds": []
+        },
+        {
+          "id": "course-1-module-04",
+          "revision": "2026-07-26",
+          "sourcePath": "modules/MODULE_04.md",
+          "title": "Module 4 — Build the Non-AI Workflow First",
+          "legacyIds": []
+        },
+        {
+          "id": "course-1-module-05",
+          "revision": "2026-07-26",
+          "sourcePath": "modules/MODULE_05.md",
+          "title": "Module 5 — Add One Bounded AI Step",
+          "legacyIds": []
+        },
+        {
+          "id": "course-1-module-06",
+          "revision": "2026-07-26",
+          "sourcePath": "modules/MODULE_06.md",
+          "title": "Module 6 — Keep Humans in Control",
+          "legacyIds": []
+        },
+        {
+          "id": "course-1-module-07",
+          "revision": "2026-07-26",
+          "sourcePath": "modules/MODULE_07.md",
+          "title": "Module 7 — Dutch SME Guardrails and Tool Choice",
+          "legacyIds": []
+        },
+        {
+          "id": "course-1-module-08",
+          "revision": "2026-07-26",
+          "sourcePath": "modules/MODULE_08.md",
+          "title": "Module 8 — Evaluate Usefulness and Business Value",
+          "legacyIds": []
+        },
+        {
+          "id": "course-1-module-09",
+          "revision": "2026-07-26",
+          "sourcePath": "modules/MODULE_09.md",
+          "title": "Module 9 — Run UAT, Plan Adoption, and Hand Over",
+          "legacyIds": []
+        }
+      ]
+    },
+    {
+      "id": "reference",
+      "title": "Implementation reference",
+      "kind": "reference",
+      "core": false,
+      "documents": [
+        {
+          "id": "course-1-architecture-contracts",
+          "revision": "2026-07-26",
+          "sourcePath": "ARCHITECTURE_AND_CONTRACTS.md",
+          "legacyIds": [
+            "architecture-and-contracts"
+          ]
+        },
+        {
+          "id": "course-1-software-matrix",
+          "revision": "2026-07-26",
+          "sourcePath": "SOFTWARE_MATRIX.md",
+          "legacyIds": [
+            "software-matrix"
+          ]
+        },
+        {
+          "id": "course-1-capstone-specification",
+          "revision": "2026-07-26",
+          "sourcePath": "CAPSTONE_SPECIFICATION.md",
+          "legacyIds": [
+            "capstone-specification"
+          ]
+        },
+        {
+          "id": "course-1-assessment-rubric",
+          "revision": "2026-07-26",
+          "sourcePath": "ASSESSMENT_AND_RUBRIC.md",
+          "legacyIds": [
+            "assessment-and-rubric"
+          ]
+        },
+        {
+          "id": "course-1-source-register",
+          "revision": "2026-07-26",
+          "sourcePath": "SOURCE_REGISTER.md",
+          "legacyIds": [
+            "source-register"
+          ]
+        },
+        {
+          "id": "course-1-career-sequence",
+          "revision": "2026-07-26",
+          "sourcePath": "CAREER_SEQUENCE.md",
+          "legacyIds": []
+        },
+        {
+          "id": "course-1-foundations-guide",
+          "revision": "2026-07-26",
+          "sourcePath": "foundations/README.md",
+          "legacyIds": []
+        },
+        {
+          "id": "course-1-glossary",
+          "revision": "2026-07-26",
+          "sourcePath": "foundations/GLOSSARY.md",
+          "legacyIds": [
+            "foundations-glossary"
+          ]
+        },
+        {
+          "id": "course-1-practice-data-guide",
+          "revision": "2026-07-26",
+          "sourcePath": "practice_data/README.md",
+          "legacyIds": []
+        },
+        {
+          "id": "course-1-schema-guide",
+          "revision": "2026-07-26",
+          "sourcePath": "schemas/README.md",
+          "legacyIds": []
+        }
+      ]
+    },
+    {
+      "id": "worksheets",
+      "title": "Worksheets and evidence",
+      "kind": "worksheet",
+      "core": false,
+      "documents": [
+        {
+          "id": "course-1-worksheet-index",
+          "revision": "2026-07-26",
+          "sourcePath": "templates/README.md",
+          "legacyIds": [
+            "templates-index"
+          ]
+        },
+        {
+          "id": "course-1-worksheet-opportunity-scorecard",
+          "revision": "2026-07-26",
+          "sourcePath": "templates/workflow_opportunity_scorecard.md",
+          "legacyIds": []
+        },
+        {
+          "id": "course-1-worksheet-stakeholder-user-map",
+          "revision": "2026-07-26",
+          "sourcePath": "templates/stakeholder_and_user_map.md",
+          "legacyIds": []
+        },
+        {
+          "id": "course-1-worksheet-baseline-value",
+          "revision": "2026-07-26",
+          "sourcePath": "templates/baseline_and_value_record.md",
+          "legacyIds": []
+        },
+        {
+          "id": "course-1-worksheet-data-quality",
+          "revision": "2026-07-26",
+          "sourcePath": "templates/data_dictionary_and_quality_check.md",
+          "legacyIds": []
+        },
+        {
+          "id": "course-1-worksheet-risk-escalation",
+          "revision": "2026-07-26",
+          "sourcePath": "templates/risk_and_escalation_screen.md",
+          "legacyIds": []
+        },
+        {
+          "id": "course-1-worksheet-tool-fit-ownership",
+          "revision": "2026-07-26",
+          "sourcePath": "templates/tool_fit_and_ownership_record.md",
+          "legacyIds": []
+        },
+        {
+          "id": "course-1-worksheet-uat-script",
+          "revision": "2026-07-26",
+          "sourcePath": "templates/uat_script.md",
+          "legacyIds": []
+        },
+        {
+          "id": "course-1-worksheet-adoption-training",
+          "revision": "2026-07-26",
+          "sourcePath": "templates/adoption_and_training_plan.md",
+          "legacyIds": []
+        },
+        {
+          "id": "course-1-worksheet-pilot-decision",
+          "revision": "2026-07-26",
+          "sourcePath": "templates/pilot_decision_record.md",
+          "legacyIds": []
+        },
+        {
+          "id": "course-1-worksheet-process-purpose",
+          "revision": "2026-07-26",
+          "sourcePath": "templates/process_and_purpose_worksheet.md",
+          "legacyIds": [
+            "templates-process-and-purpose-worksheet"
+          ]
+        },
+        {
+          "id": "course-1-worksheet-data-flow",
+          "revision": "2026-07-26",
+          "sourcePath": "templates/data_flow_avg_ai_act.md",
+          "legacyIds": [
+            "templates-data-flow-avg-ai-act"
+          ]
+        },
+        {
+          "id": "course-1-worksheet-architecture-decision",
+          "revision": "2026-07-26",
+          "sourcePath": "templates/architecture_decision_record.md",
+          "legacyIds": [
+            "templates-architecture-decision-record"
+          ]
+        },
+        {
+          "id": "course-1-worksheet-approval-design",
+          "revision": "2026-07-26",
+          "sourcePath": "templates/approval_design_review.md",
+          "legacyIds": [
+            "templates-approval-design-review"
+          ]
+        },
+        {
+          "id": "course-1-worksheet-ai-assistance",
+          "revision": "2026-07-26",
+          "sourcePath": "templates/ai_assistance_log.md",
+          "legacyIds": [
+            "templates-ai-assistance-log"
+          ]
+        },
+        {
+          "id": "course-1-worksheet-debugging",
+          "revision": "2026-07-26",
+          "sourcePath": "templates/debugging_record.md",
+          "legacyIds": [
+            "templates-debugging-record"
+          ]
+        },
+        {
+          "id": "course-1-worksheet-evaluation",
+          "revision": "2026-07-26",
+          "sourcePath": "templates/evaluation_plan.md",
+          "legacyIds": [
+            "templates-evaluation-plan"
+          ]
+        },
+        {
+          "id": "course-1-worksheet-threat-model",
+          "revision": "2026-07-26",
+          "sourcePath": "templates/threat_model.md",
+          "legacyIds": [
+            "templates-threat-model"
+          ]
+        },
+        {
+          "id": "course-1-worksheet-runbook-fallback",
+          "revision": "2026-07-26",
+          "sourcePath": "templates/runbook_and_fallback.md",
+          "legacyIds": [
+            "templates-runbook-and-fallback"
+          ]
+        },
+        {
+          "id": "course-1-worksheet-vendor-transfer",
+          "revision": "2026-07-26",
+          "sourcePath": "templates/vendor_and_transfer_review.md",
+          "legacyIds": [
+            "templates-vendor-and-transfer-review"
+          ]
+        },
+        {
+          "id": "course-1-worksheet-acceptance-handover",
+          "revision": "2026-07-26",
+          "sourcePath": "templates/acceptance_and_handover.md",
+          "legacyIds": [
+            "templates-acceptance-and-handover"
+          ]
+        },
+        {
+          "id": "course-1-worksheet-weekly-evidence",
+          "revision": "2026-07-26",
+          "sourcePath": "templates/weekly_evidence_record.md",
+          "legacyIds": [
+            "templates-weekly-evidence-record"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "updates",
+      "title": "Updates and release",
+      "kind": "maintenance",
+      "core": false,
+      "documents": [
+        {
+          "id": "course-1-pwa-updates",
+          "revision": "2026-07-26",
+          "sourcePath": "PWA_AND_UPDATES.md",
+          "legacyIds": [
+            "pwa-and-updates"
+          ]
+        },
+        {
+          "id": "course-1-evergreen-update-prompt",
+          "revision": "2026-07-26",
+          "sourcePath": "EVERGREEN_UPDATE_PROMPT.md",
+          "legacyIds": [
+            "evergreen-update-prompt"
+          ]
+        },
+        {
+          "id": "course-1-changelog",
+          "revision": "2026-07-26",
+          "sourcePath": "COURSE_CHANGELOG.md",
+          "legacyIds": [
+            "course-changelog"
+          ]
+        },
+        {
+          "id": "course-1-release-validation",
+          "revision": "2026-07-26",
+          "sourcePath": "RELEASE_VALIDATION.md",
+          "legacyIds": [
+            "release-validation"
+          ]
+        },
+        {
+          "id": "course-1-validation-report",
+          "revision": "2026-07-26",
+          "sourcePath": "VALIDATION_REPORT.md",
+          "legacyIds": [
+            "validation-report"
+          ]
+        },
+        {
+          "id": "course-1-update-report-index",
+          "revision": "2026-07-26",
+          "sourcePath": "updates/README.md",
+          "legacyIds": [
+            "updates-index"
+          ]
+        }
+      ]
+    }
+  ],
+  "career": {
+    "title": "Career sequence",
+    "summary": "This PWA teaches Course 1 in full. The remaining courses are separate future builds so technical foundations, consulting practice, governance, and commercial development are not confused with one another.",
+    "targetRole": "Controlled AI Workflow Implementation Consultant for Dutch SMEs",
+    "courses": [
+      {
+        "id": "course-1-controlled-ai-workflow-foundations",
+        "sequence": 1,
+        "title": "Controlled AI Workflow Foundations",
+        "status": "current",
+        "purpose": "Build technical and control literacy from zero, then complete one synthetic end-to-end implementation.",
+        "exitEvidence": "A tested Synthetic SME Operations Exception Assistant, evaluation evidence, a runbook, and a plain-language case study."
+      },
+      {
+        "id": "course-2-workflow-discovery-paid-diagnostics",
+        "sequence": 2,
+        "title": "SME Workflow Discovery and Paid Diagnostics",
+        "status": "proposed",
+        "purpose": "Learn ethical outreach, process interviews, observation, baseline economics, data readiness, native-tool checks, opportunity scoring, diagnostic reporting, and pilot charters.",
+        "exitEvidence": "A complete fictional diagnostic, interview script, fixed-scope report, and pilot recommendation with success and stop criteria."
+      },
+      {
+        "id": "course-3-sme-integrations-low-code-delivery",
+        "sequence": 3,
+        "title": "SME Integrations and Low-Code Pilot Delivery",
+        "status": "proposed",
+        "purpose": "Learn APIs, webhooks, OAuth, connectors, least privilege, environments, retries, rollback, client-owned tenants, UAT, and one bounded low-risk pilot.",
+        "exitEvidence": "A reproducible integration lab plus a supervised low-risk pilot or realistic sandbox equivalent."
+      },
+      {
+        "id": "course-4-controlled-document-ai-systems",
+        "sequence": 4,
+        "title": "Controlled Document AI Systems",
+        "status": "proposed",
+        "purpose": "Build source-preserving document workflows with PDF/DOCX parsing, OCR, evidence locators, extraction, policy retrieval, grounded drafting, exact-output approval, and evaluation.",
+        "exitEvidence": "A controlled synthetic supplier-document review system with parser, extraction, evidence, and reviewer tests."
+      },
+      {
+        "id": "course-5-production-governance-security-reliability",
+        "sequence": 5,
+        "title": "Production Governance, Security, and Reliability",
+        "status": "proposed",
+        "purpose": "Learn AVG and AI Act implementation records, vendor review, threat modelling, identity, tenancy, observability, incident response, backup, restore, deletion, and production acceptance.",
+        "exitEvidence": "A governed production-readiness dossier plus incident and recovery exercises for a low-risk fictional workflow."
+      },
+      {
+        "id": "course-6-adoption-consulting-managed-assurance",
+        "sequence": 6,
+        "title": "Adoption, Consulting Delivery, and Managed Assurance",
+        "status": "proposed",
+        "purpose": "Learn engagement qualification, proposals and boundaries, change control, role-specific AI literacy, adoption, benefits, support, recurring assurance, and solo-practice delivery.",
+        "exitEvidence": "An end-to-end fictional engagement pack, adoption plan, benefit review, and managed-assurance operating procedure."
+      }
+    ],
+    "optionalSpecializations": [
+      {
+        "id": "specialization-quality-document-operations",
+        "title": "Quality and Controlled-Document Operations",
+        "status": "optional-after-course-5",
+        "purpose": "Specialise later in evidence-heavy quality operations, metadata, document control, training records, change control, and cross-system reconciliation without presenting yourself as a Veeva or regulated-systems expert before you have the required experience."
+      }
+    ],
+    "readinessGates": [
+      "Do not sell autonomous decision-making or high-consequence clinical, employment, credit, legal, or safety workflows as a beginner.",
+      "Use synthetic or expressly authorised data until privacy, security, confidentiality, and client controls are understood.",
+      "Complete Course 1 before presenting implementation as a paid capability.",
+      "Complete Course 2 discovery practice before selling a build.",
+      "Validate demand with interviews and paid diagnostics before building a reusable product."
+    ],
+    "suggestedPace": {
+      "currentCapacity": "Use 15 planned hours plus up to 5 optional hours per week; health and reintegration commitments take priority.",
+      "laterCapacity": "At 8–10 hours per week, keep one major learning or client objective active at a time.",
+      "sequenceRule": "Courses are sequential foundations, not badges. Advance when the exit evidence is credible, not merely when every page is marked complete."
+    }
+  }
+}

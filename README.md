@@ -1,143 +1,160 @@
-# AI Workflow & Document Systems — 12-Week Builder Course
+# Course 1 — Controlled AI Workflow Foundations for Dutch SMEs
 
-Version: 1.2.2
-Verified through: 2026-07-25  
-Language: English, with Dutch/EU legal terms where useful  
-Workload: 8–10 hours per week  
-Endpoint: a private, reproducible technical demonstration using synthetic data
+- Version: 2.0.0
+- Verified through: 2026-07-26
+- Language: English, with Dutch and EU terms where useful
+- Format: self-paced, gate-based learning
+- Estimated effort for a literal beginner: 110–150 hours
+Endpoint: a private, reproducible portfolio demonstration using synthetic data
 
 Course reader: [open the installable PWA](https://freddywinkel.github.io/ai-workflow-course/)  
 Repository: [freddywinkel/ai-workflow-course](https://github.com/freddywinkel/ai-workflow-course)
 
-## What you will prove
+## The purpose of this course
 
-By the end of this course, you will have built and demonstrated one bounded workflow:
+This is the first technical course in a longer path towards becoming a
+**Controlled AI Workflow Implementation Consultant for Dutch SMEs**.
 
-> Fictional supplier quotations and terms enter a controlled system. The system preserves and hashes the originals, parses them, extracts commercial facts with evidence, performs deterministic checks, retrieves an internal purchasing policy, and drafts a source-cited review memo. A human can approve, edit, reject, or let the proposal expire. The system never recommends a supplier and never performs a final action without approval for the exact output being acted on.
+The durable job is not “drawing automation boxes” or knowing one AI product.
+It is learning to:
 
-The course teaches the technical capability behind an AI workflow and document-systems studio. It deliberately does **not** teach sales, positioning, pricing, client acquisition, contracts, or studio operations.
+- observe how work is actually done;
+- measure the problem before proposing technology;
+- decide whether the right answer is process improvement, ordinary rules,
+  existing software, a bounded AI step, or no automation;
+- design a workflow with visible states, tests, human control, and a manual
+  fallback;
+- evaluate usefulness, cost, failure behaviour, and adoption honestly;
+- explain assumptions, limitations, and escalation needs to a client.
+
+The PWA's separate **Career Path** tab and the
+[Career Sequence](CAREER_SEQUENCE.md) show the later courses that add paid
+diagnostics, integrations, production engineering, governance, adoption, and
+consulting delivery. Those later courses are a roadmap, not part of this
+course's completion percentage.
+
+## What you will build
+
+You will build a **Synthetic SME Operations Exception Assistant**:
+
+```text
+fictional CSV or spreadsheet-style export
+  → schema and data-quality checks
+  → deterministic exception rules
+  → named workflow state
+  → optional AI summary using verified issue IDs
+  → human approve, edit, reject, or expire
+  → local draft outbox only
+  → audit event and evaluation result
+```
+
+The workflow flags problems such as missing owners, overdue work, duplicate
+references, contradictory dates, invalid statuses, and incomplete reviews.
+Ordinary code determines the exceptions. AI may explain or group verified
+exceptions, but it does not decide whether the business is compliant and it
+does not update another system.
+
+The project is deliberately based on structured synthetic data. That gives a
+beginner a safer and more transferable foundation than starting with OCR,
+vector search, autonomous agents, production integrations, or regulated data.
+
+## What completing Course 1 proves
+
+You can:
+
+- map one bounded administrative process and identify its owner, users,
+  systems, handoffs, exceptions, and fallback;
+- create a baseline for volume, handling time, waiting time, and rework;
+- write an intended purpose, exclusions, and a build-versus-buy decision;
+- define a small data contract and deterministic business rules;
+- build a reproducible rule-first workflow;
+- add one optional, schema-constrained AI step without making AI authoritative;
+- design meaningful human review and prevent unapproved actions;
+- run a practical Dutch SME privacy, AI, vendor, and security pre-screen;
+- evaluate normal cases, edge cases, failures, time, cost, and usability;
+- produce a UAT script, runbook, limitations record, handover pack, and honest
+  portfolio demonstration.
+
+## What it does not prove
+
+Course 1 does **not** make you ready to:
+
+- deploy production systems independently;
+- process real client, employer, patient, employee, or other personal data;
+- provide legal, privacy, security, compliance, accounting, or medical advice;
+- implement clinical, employment, credit, insurance, housing, education,
+  migration, policing, or other consequential decision systems;
+- configure Veeva or another regulated platform professionally;
+- promise savings before measuring a real process;
+- call yourself an experienced AI consultant.
+
+The honest exit position is **workflow analyst in training with a controlled
+synthetic portfolio project**.
+
+## Course structure
+
+### Beginner foundations
+
+Nine foundation lessons teach files, PowerShell, Python, APIs, Git,
+spreadsheets and CSV data, AI limitations, safe AI-assisted building, workflow
+tools, and data stores. Start here if you have no technical experience.
+
+### Course 1 modules
+
+1. Observe the process.
+2. Select and bound the opportunity.
+3. Understand the data and rules.
+4. Build the non-AI workflow first.
+5. Add one bounded AI step.
+6. Keep humans in control.
+7. Apply Dutch SME guardrails and choose the right tool.
+8. Evaluate usefulness and business value.
+9. Run UAT, plan adoption, and hand over the demonstration.
+
+Each module has an evidence artifact and a gate. A calendar is not a gate. Do
+not continue merely because a scheduled week has ended.
 
 ## Safety boundary
 
-Use only the supplied synthetic corpus while taking this course. Do not introduce real client or personal data.
+Use only supplied or self-created synthetic data.
 
 Excluded throughout:
 
-- health data or other special-category personal data;
-- BSNs or national identifiers;
-- children’s data;
-- employment, credit, insurance, housing, education-admission, policing, migration, or similar consequential decisions;
-- medical diagnosis, treatment, triage, or medical-device functionality;
-- automatic supplier selection, payments, binding messages, deletions, or record changes.
+- real client or employer information;
+- personal data, special-category data, BSNs, or national identifiers;
+- patient, sample, clinical, or medical information;
+- credentials, access tokens, private URLs, or internal configurations;
+- autonomous sending, payment, deletion, record change, or binding action;
+- high-impact decisions about people;
+- claims that the workflow proves compliance.
 
-The capstone is decision support for a human reviewer, not automated decision-making. Legal material is practical engineering guidance, not legal advice.
-
-## Canonical learning path
-
-```text
-intake
-  → immutable source + SHA-256
-  → parsing/OCR
-  → evidence-aware extraction
-  → deterministic validation
-  → grounded draft
-  → human review
-  → approved action
-  → audit event
-  → evaluation feedback
-```
-
-The required path uses:
-
-- n8n for orchestration, retries, connectors, and approval pauses;
-- Python, FastAPI, Pydantic, Docling, and pytest for parsing, contracts, validation, hashes, and tests;
-- OpenAI Responses API with Structured Outputs, with model IDs supplied through configuration;
-- Supabase in a European region for private object storage, PostgreSQL state, audit records, and optional pgvector retrieval;
-- Git plus an append-only application audit ledger.
-
-Microsoft 365, Google Workspace, Make, Mistral OCR, Azure Document Intelligence, and Ollama are comparison or portability labs. They are not parallel mandatory tracks. Promptfoo and Langfuse are optional extensions after the local regression harness works.
+A technically correct **DO NOT PILOT** conclusion is a successful course
+outcome when the evidence shows that the idea is unsafe, unnecessary, or not
+worthwhile.
 
 ## Start here
 
-If you have no coding or command-line experience, that is now an explicitly
-supported starting point. Do not begin with the Windows installation commands.
-Start with the short [`Beginner Foundations`](foundations/README.md), keep the
-[`plain-language glossary`](foundations/GLOSSARY.md) open, and pass the
-foundation gate first.
+1. Read the [Beginner Readiness Check](BEGINNER_READINESS_CHECK.md).
+2. Complete the [Beginner Foundations](foundations/README.md).
+3. Read the [Course Overview](COURSE_OVERVIEW.md).
+4. Run the live check in [EVERGREEN_UPDATE_PROMPT.md](EVERGREEN_UPDATE_PROMPT.md).
+5. Complete [SETUP_WINDOWS.md](SETUP_WINDOWS.md).
+6. Work through Modules 1–9 in order.
+7. Use [CAPSTONE_SPECIFICATION.md](CAPSTONE_SPECIFICATION.md) and
+   [ASSESSMENT_AND_RUBRIC.md](ASSESSMENT_AND_RUBRIC.md) for final acceptance.
 
-Then:
+## PWA versus the workflow you build
 
-1. Run the live-audit prompt in [`EVERGREEN_UPDATE_PROMPT.md`](EVERGREEN_UPDATE_PROMPT.md). Do not start if it returns `UNVERIFIED`.
-2. Read [`COURSE_OVERVIEW.md`](COURSE_OVERVIEW.md), including the proof rules and stop conditions.
-3. Complete [`SETUP_WINDOWS.md`](SETUP_WINDOWS.md) and its smoke tests.
-4. Read the contracts and state machine in [`ARCHITECTURE_AND_CONTRACTS.md`](ARCHITECTURE_AND_CONTRACTS.md).
-5. Work through Weeks 1–12 in order. Do not continue through a failed weekly gate.
-6. Freeze the corpus and run the acceptance process in [`CAPSTONE_SPECIFICATION.md`](CAPSTONE_SPECIFICATION.md).
+The PWA is an offline course reader and progress tracker. It contains no AI and
+does not run the capstone. You build the capstone separately while following
+the lessons. Progress and private notes remain in the browser or installed
+app.
 
-The 8–10 hour estimate describes the formal project work. A literal beginner
-should expect additional learning time, especially in Weeks 2–5, and may split
-one course week across two calendar weeks. Understanding and passing the gate
-matters more than preserving the calendar.
+## Design rule for a fast-changing AI market
 
-## Course map
+Current tools, models, laws, prices, and interfaces are updateable references.
+Process discovery, data contracts, deterministic controls, evaluation, human
+oversight, failure recovery, adoption, and evidence are the durable curriculum.
 
-| Stage | Focus | Required proof |
-|---|---|---|
-| [Foundations](foundations/README.md) | Files, PowerShell, Python, APIs, Git, AI, n8n, Docker, and databases | Foundation gate explained in your own words |
-| [1](weeks/WEEK_01.md) | Process and state design | Bounded intended purpose, as-is map, exclusions, allocation, baseline |
-| [2](weeks/WEEK_02.md) | APIs and non-AI orchestration | Reliable intake-to-log workflow with branching and retries |
-| [3](weeks/WEEK_03.md) | Source integrity and storage | Immutable source, hash, manifest, private storage, state |
-| [4](weeks/WEEK_04.md) | Parsing and OCR | PDF/DOCX/table/scan provenance plus safe corrupt-file handling |
-| [5](weeks/WEEK_05.md) | LLM extraction | Schema-constrained extraction with refusal/null/validation handling |
-| [6](weeks/WEEK_06.md) | Retrieval and grounded drafting | Evidence ledger and citation-complete review memo |
-| [7](weeks/WEEK_07.md) | Meaningful human approval | Exact-output approval, expiry, rejection, idempotency |
-| [8](weeks/WEEK_08.md) | AVG and AI safety engineering | Data-flow, DPIA screen, vendor and transparency records |
-| [9](weeks/WEEK_09.md) | Security, failures, observability | Safe fallbacks, isolation, traces, restoration drill |
-| [10](weeks/WEEK_10.md) | Evaluation-driven development | Frozen JSONL gold set and vendor-neutral regression runner |
-| [11](weeks/WEEK_11.md) | Integration and portability | One connector, provider comparison, timing study, hardening |
-| [12](weeks/WEEK_12.md) | Acceptance and handover | Frozen private release and clean-start evidence-backed demo |
-
-## Key package contents
-
-- [`SOFTWARE_MATRIX.md`](SOFTWARE_MATRIX.md): required and comparison tools, selection rules, costs, and replacement boundaries.
-- [`foundations/`](foundations/README.md): beginner lessons, CLI survival guide,
-  safe vibe-coding workflow, and glossary.
-- [`BEGINNER_READINESS_CHECK.md`](BEGINNER_READINESS_CHECK.md): explicit audit
-  of beginner assumptions, remaining realities, and the self-check gate.
-- [`SOURCE_REGISTER.md`](SOURCE_REGISTER.md): dated, official-source register with applicability and volatility.
-- [`CAPSTONE_SPECIFICATION.md`](CAPSTONE_SPECIFICATION.md): scope, frozen corpus, metrics, and acceptance tests.
-- [`ASSESSMENT_AND_RUBRIC.md`](ASSESSMENT_AND_RUBRIC.md): weekly gates and final scoring.
-- [`templates/`](templates/README.md): fillable engineering worksheets and operational checklists.
-- [`schemas/`](schemas/README.md): portable JSON Schemas for the system contracts and gold cases.
-- [`corpus/`](corpus/README.md): synthetic inputs, manifest, hashes, and gold answers.
-- [`tools/`](tools/README.md): deterministic corpus generation and package validation.
-- [`COURSE_CHANGELOG.md`](COURSE_CHANGELOG.md): dated course changes and source-audit history.
-- [`VALIDATION_REPORT.md`](VALIDATION_REPORT.md): generated structural and machine-readable package checks.
-- [`RELEASE_VALIDATION.md`](RELEASE_VALIDATION.md): reproducibility, live-link, and page-render review for this issued copy.
-- [`updates/`](updates/README.md): dated evergreen-audit reports and revised-copy records.
-- [`PWA_AND_UPDATES.md`](PWA_AND_UPDATES.md): iPhone/iPad installation,
-  local-progress limits, and the safe automatic-update path.
-
-## Non-negotiable proof rules
-
-1. A model’s fluent output is never proof. Schemas, deterministic checks, locators, tests, and a reviewer supply proof.
-2. Source files are immutable. Derived text, chunks, OCR, embeddings, and drafts live separately.
-3. Document text is untrusted data, never an instruction to the workflow.
-4. Every factual memo assertion has verified evidence or is labelled `UNSUPPORTED — NEEDS REVIEW`.
-5. Approval binds to the cryptographic hash of the exact proposed output. Editing invalidates approval.
-6. An action is allowed only once for one approval and one idempotency key.
-7. Every run terminates in a named, visible state—even when a dependency fails.
-8. Logs contain operational metadata, not raw document contents, secrets, or unnecessary personal data.
-9. A manual fallback must remain usable when AI, OCR, storage, or orchestration is unavailable.
-10. Product or legal claims marked volatile must be checked with the evergreen update prompt at the prescribed checkpoints.
-
-## Checkpoints for live re-verification
-
-Run the evergreen audit:
-
-- immediately before Week 1;
-- immediately before Week 7;
-- every 8–12 weeks thereafter;
-- sooner after a vendor deprecation, security advisory, material legal change, or failed migration test.
-
-The source audit performed for this edition used official vendor and public-authority pages. The preferred OpenAI documentation connector was unavailable in the build environment, so official OpenAI web documentation was used and this limitation is recorded in the source register.
+Run the evergreen audit before starting the AI module and again before using
+the material for any real pilot.

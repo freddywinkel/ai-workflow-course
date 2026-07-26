@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { readFile, stat } from "node:fs/promises";
 import { join, resolve } from "node:path";
@@ -7,6 +8,7 @@ import { fileURLToPath } from "node:url";
 import { renderMarkdown } from "../src/markdown.js";
 
 const appRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
+const courseRoot = resolve(appRoot, "..");
 const distRoot = join(appRoot, "dist");
 const nodeExecutable = process.execPath;
 let buildModule;
@@ -31,46 +33,81 @@ before(async () => {
   cssSource = await readFile(join(distRoot, "styles.css"), "utf8");
 });
 
-test("course bundle contains the complete beginner path and twelve weeks", () => {
-  const foundationFiles = bundle.documents.filter((document) =>
-    /^foundations\/\d{2}_/.test(document.sourcePath),
+test("schema-v2 bundle contains nine foundations and nine implementation modules", () => {
+  assert.equal(bundle.schemaVersion, 2);
+  assert.equal(bundle.program.id, "controlled-ai-workflow-consultant-path");
+  assert.equal(bundle.course.id, "course-1-controlled-ai-workflow-foundations");
+  const foundationFiles = bundle.documents.filter(
+    (document) => document.group === "foundations",
   );
-  const weekFiles = bundle.documents.filter((document) =>
-    /^weeks\/WEEK_\d{2}\.md$/.test(document.sourcePath),
+  const moduleFiles = bundle.documents.filter(
+    (document) => document.group === "modules",
   );
-  assert.equal(foundationFiles.length, 8);
+  assert.equal(foundationFiles.length, 9);
   assert.deepEqual(
-    weekFiles.map((document) => document.sourcePath),
-    Array.from({ length: 12 }, (_value, index) => {
-      return `weeks/WEEK_${String(index + 1).padStart(2, "0")}.md`;
+    foundationFiles.map((document) => document.sourcePath),
+    [
+      "foundations/01_FILES_AND_TEXT.md",
+      "foundations/02_COMMAND_LINE_SURVIVAL.md",
+      "foundations/03_CODE_AND_PYTHON.md",
+      "foundations/04_WEB_APIS_AND_JSON.md",
+      "foundations/05_GIT_AND_SAFE_CHANGES.md",
+      "foundations/06_SPREADSHEETS_CSV_AND_DATA_QUALITY.md",
+      "foundations/07_AI_AND_CONTROLLED_WORKFLOWS.md",
+      "foundations/08_SAFE_AI_ASSISTED_BUILDING.md",
+      "foundations/09_WORKFLOW_TOOLS_AND_DATA_STORES.md",
+    ],
+  );
+  assert.deepEqual(
+    moduleFiles.map((document) => document.sourcePath),
+    Array.from({ length: 9 }, (_value, index) => {
+      return `modules/MODULE_${String(index + 1).padStart(2, "0")}.md`;
     }),
   );
-  assert.ok(
-    bundle.documents.some(
-      (document) => document.sourcePath === "foundations/GLOSSARY.md",
-    ),
-  );
+  assert.equal(bundle.course.foundationCount, 9);
+  assert.equal(bundle.course.moduleCount, 9);
+  assert.equal(bundle.course.coreLessonCount, 18);
   assert.ok(
     bundle.documents.some((document) => document.sourcePath === "COURSE_CHANGELOG.md"),
   );
 });
 
-test("every bundled course page has a unique id, title, source and content", () => {
+test("every bundled course page has stable revisioned metadata and content", () => {
   const ids = new Set();
+  const aliases = new Set();
   for (const document of bundle.documents) {
-    assert.ok(document.id);
+    assert.match(document.id, /^[a-z0-9]+(?:-[a-z0-9]+)*$/);
+    assert.match(document.revision, /^\d{4}-\d{2}-\d{2}$/);
     assert.ok(document.title);
     assert.ok(document.sourcePath);
     assert.ok(document.markdown.length > 20);
+    assert.equal(document.courseId, bundle.course.id);
+    assert.equal(typeof document.core, "boolean");
     assert.equal(ids.has(document.id), false, `duplicate id ${document.id}`);
     ids.add(document.id);
+    for (const alias of document.legacyIds) {
+      assert.equal(aliases.has(alias), false, `duplicate legacy id ${alias}`);
+      aliases.add(alias);
+    }
   }
+  for (const id of ids) assert.equal(aliases.has(id), false, `id also used as alias ${id}`);
   for (const group of bundle.groups) {
     for (const id of group.documents) assert.ok(ids.has(id), `missing grouped id ${id}`);
   }
 });
 
 test("content hashes and build ids are stable for identical inputs", async () => {
+  const curriculum = JSON.parse(
+    await readFile(join(courseRoot, "curriculum.json"), "utf8"),
+  );
+  const digestInput = [
+    JSON.stringify(curriculum),
+    bundle.documents
+      .map((document) => `${document.sourcePath}\n${document.markdown}`)
+      .join("\n---COURSE-DOCUMENT---\n"),
+  ].join("\n---CURRICULUM-METADATA---\n");
+  const expectedHash = createHash("sha256").update(digestInput).digest("hex");
+  assert.equal(bundle.course.contentHash, expectedHash);
   const secondBundle = await buildModule.createCourseBundle();
   assert.equal(secondBundle.course.contentHash, bundle.course.contentHash);
   const firstBuildId = version.buildId;
@@ -80,7 +117,32 @@ test("content hashes and build ids are stable for identical inputs", async () =>
   );
   assert.equal(secondVersion.buildId, firstBuildId);
   assert.equal(secondVersion.contentHash, bundle.course.contentHash);
+  assert.equal(secondVersion.bundleSchemaVersion, 2);
+  assert.equal(secondVersion.programId, bundle.program.id);
+  assert.equal(secondVersion.courseId, bundle.course.id);
   assert.match(secondVersion.courseVersion, /^\d+\.\d+\.\d+$/);
+});
+
+test("career metadata separates the current course from the later consultant path", () => {
+  assert.equal(bundle.career.targetRole.includes("Dutch SMEs"), true);
+  assert.deepEqual(
+    bundle.career.courses.map((course) => course.sequence),
+    [1, 2, 3, 4, 5, 6],
+  );
+  assert.equal(bundle.career.courses[0].id, bundle.course.id);
+  assert.equal(bundle.career.courses[0].status, "current");
+  assert.equal(
+    bundle.career.courses.slice(1).every((course) => course.status === "proposed"),
+    true,
+  );
+  assert.equal(
+    bundle.career.optionalSpecializations.some(
+      (specialization) =>
+        specialization.id === "specialization-quality-document-operations",
+    ),
+    true,
+  );
+  assert.match(bundle.course.capstone.title, /SME Operations Exception Assistant/);
 });
 
 test("GitHub Pages base path is used everywhere it must be", () => {
@@ -321,22 +383,32 @@ test("mobile and accessibility essentials are present", () => {
     cssSource,
     /@media \(max-width: 920px\)[\s\S]+?\.bottom-nav\s*\{[\s\S]+?bottom: 0;[\s\S]+?min-height: calc\(4\.45rem \+ var\(--safe-bottom\)\);[\s\S]+?background: var\(--paper-raised\);/,
   );
+  const bottomNavigation = htmlSource.match(
+    /<nav class="bottom-nav"[\s\S]+?<\/nav>/,
+  )?.[0];
+  assert.ok(bottomNavigation);
+  assert.equal((bottomNavigation.match(/<button /g) || []).length, 5);
+  assert.match(bottomNavigation, /data-route="career"[\s\S]+?<span>Career<\/span>/);
+  assert.match(cssSource, /grid-template-columns: repeat\(5, 1fr\)/);
   assert.doesNotMatch(cssSource, /width:\s*[4-9]\d{2,}px;\s*\/\* mobile/);
 });
 
 test("visual refresh stays purposeful, offline and theme-safe", () => {
   assert.match(appSource, /class="workflow-preview"/);
   for (const label of [
-    "Source documents",
-    "Evidence-linked facts",
-    "Human review",
-    "Approved memo",
+    "Fictional operations data",
+    "Deterministic exceptions",
+    "Evidence-linked AI summary",
+    "Human review and action",
   ]) {
     assert.match(appSource, new RegExp(label));
   }
   assert.match(appSource, /class="progress-ring"/);
-  assert.match(appSource, /Foundation \$\{Number/);
+  assert.match(appSource, /courseDocument\.kind === "foundation"/);
+  assert.match(appSource, /courseDocument\.kind === "module"/);
   assert.match(appSource, /Core lesson \$\{corePosition \+ 1\}/);
+  assert.match(appSource, /class="module-card-grid"/);
+  assert.match(appSource, /class="career-bridge"/);
   assert.match(htmlSource, /<svg class="ui-icon"/);
   assert.match(htmlSource, /aria-hidden="true" focusable="false"/);
   assert.doesNotMatch(htmlSource, /fonts\.(googleapis|gstatic)\.com/);
@@ -347,11 +419,53 @@ test("visual refresh stays purposeful, offline and theme-safe", () => {
   assert.doesNotMatch(cssSource, /:root\[data-theme="dark"\] \.button\s*\{/);
 });
 
-test("local progress survives course updates and reset is confirmed", () => {
+test("career view clearly separates Course 1 from the proposed sequence", () => {
+  assert.match(htmlSource, /id="career-view"/);
+  assert.match(
+    htmlSource,
+    /class="sidebar-link" type="button" data-route="career"/,
+  );
+  assert.match(appSource, /function renderCareer\(\)/);
+  assert.match(appSource, /career\.courses/);
+  assert.match(appSource, /career\.optionalSpecializations/);
+  assert.match(appSource, /Only Course 1 is taught in this PWA/);
+  assert.match(appSource, /data-career-action="course"/);
+  assert.match(cssSource, /\.career-course-card\.current/);
+  assert.match(cssSource, /\.career-detail-grid/);
+});
+
+test("core sequencing and checkpoints use bundle metadata rather than old paths", () => {
+  assert.match(
+    appSource,
+    /courseBundle\.documents\.filter\(\(courseDocument\) => courseDocument\.core\)/,
+  );
+  assert.match(appSource, /group\.documents\.indexOf\(courseDocument\.id\)/);
+  assert.match(appSource, /courseDocument\.checkpoint/);
+  assert.match(appSource, /candidate\.lessonId === courseDocument\.id/);
+  assert.match(
+    appSource,
+    /const pagerDocuments = courseDocument\.core[\s\S]+?\(group\?\.documents \|\| \[\]\)/,
+  );
+  assert.doesNotMatch(appSource, /weeks\/WEEK_07\.md/);
+  assert.doesNotMatch(appSource, /sourcePath\.match\(\^foundations/);
+});
+
+test("schema-v1 progress migrates to stable revisioned lesson ids", () => {
   assert.match(appSource, /localStorage\.setItem\(STORAGE_KEY/);
+  assert.match(appSource, /const STATE_SCHEMA_VERSION = 2/);
+  assert.match(appSource, /parsed\.schemaVersion === 1/);
+  assert.match(appSource, /function migrateSchemaV1\(legacy\)/);
+  assert.match(appSource, /courseDocument\.legacyIds\.includes\(storedId\)/);
   assert.match(appSource, /completed:/);
+  assert.match(appSource, /completionRevisions:/);
   assert.match(appSource, /notes:/);
+  assert.match(appSource, /archivedLegacyNotes:/);
   assert.match(appSource, /lastDocument:/);
+  assert.match(
+    appSource,
+    /state\.completionRevisions\[courseDocument\.id\] === courseDocument\.revision/,
+  );
+  assert.match(appSource, /\[1, STATE_SCHEMA_VERSION\]\.includes/);
   assert.match(appSource, /window\.confirm\(/);
   assert.doesNotMatch(serviceWorkerSource, /localStorage/);
 });

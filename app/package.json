@@ -1,8 +1,8 @@
 {
   "name": "ai-workflow-course-pwa",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
-  "description": "Offline course reader for the AI Workflow and Document Systems beginner course",
+  "description": "Offline reader for Controlled AI Workflow Foundations and its Dutch SME consultant career sequence",
   "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",

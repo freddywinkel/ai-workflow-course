@@ -1,21 +1,8 @@
-# Dated direct-dependency snapshot verified 2026-07-25.
-# Run the evergreen audit, install on Python 3.13, then freeze the complete
-# transitive graph. Do not update one pin without rerunning the corpus.
-fastapi==0.140.0
-uvicorn[standard]>=0.30,<1
-pydantic==2.13.4
-pydantic-settings>=2.7,<3
-openai==2.48.0
-docling==2.114.0
-psycopg[binary]>=3.2,<4
-supabase>=2,<3
-httpx>=0.28,<1
-python-multipart>=0.0.20,<1
-pytest==9.1.1
-pytest-cov>=6,<8
-pytest-timeout>=2,<3
+# Compatible learning ranges verified 2026-07-26.
+# After the evergreen audit and a green clean install, freeze exact versions
+# inside the learner's capstone repository.
+openai>=2.48,<3
+pytest>=9,<10
 jsonschema>=4,<5
-PyYAML>=6,<7
 python-dotenv>=1,<2
-structlog>=25,<27
-tenacity>=9,<10
+PyYAML>=6,<7

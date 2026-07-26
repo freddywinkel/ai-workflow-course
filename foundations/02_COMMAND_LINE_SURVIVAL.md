@@ -134,12 +134,14 @@ screenshots, logs, or careless commands.
 Some commands finish and return a prompt. A server command keeps running:
 
 ```powershell
-python -m uvicorn supplier_review.api.main:app --reload --port 8000
+python -m http.server 8000
 ```
 
-While it runs, that terminal is occupied. Open a second PowerShell window for
-the next command. Press **Ctrl+C** in the server's terminal to request that it
-stop. Wait for the prompt to return.
+This example serves the current practice folder locally for browser testing; it
+does not make the files public on the internet. While it runs, that terminal is
+occupied. Open a second PowerShell window for the next command. Press **Ctrl+C**
+in the server's terminal to request that it stop. Wait for the prompt to
+return.
 
 If a command seems frozen:
 
@@ -231,4 +233,3 @@ You pass when you can:
 - stop a running server with Ctrl+C;
 - explain why quotes are used around some paths;
 - state why a recursive deletion or hard Git reset requires a pause.
-

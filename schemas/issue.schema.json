@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://course.invalid/schemas/issue.schema.json",
+  "title": "Verified Deterministic Issue",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "issue_id",
+    "work_item_id",
+    "field",
+    "rule_code",
+    "severity",
+    "message"
+  ],
+  "properties": {
+    "issue_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "work_item_id": {
+      "type": "string",
+      "pattern": "^WI-[0-9]{4}$"
+    },
+    "field": {
+      "type": "string",
+      "minLength": 1
+    },
+    "rule_code": {
+      "type": "string",
+      "pattern": "^R[0-9]{3}$"
+    },
+    "severity": {
+      "enum": ["low", "medium", "high"]
+    },
+    "message": {
+      "type": "string",
+      "minLength": 1
+    },
+    "observed_value": {
+      "type": ["string", "number", "boolean", "null"]
+    }
+  }
+}

@@ -8,12 +8,11 @@ Release-manifest hash:
 ## Frozen inputs
 
 - [ ] exact dependency lock/Python
-- [ ] n8n image tag or digest/workflow hash
-- [ ] parser/OCR/model-cache versions
+- [ ] workflow definition or script hash
+- [ ] input and expected-result hashes
 - [ ] model IDs/snapshots/settings
 - [ ] prompt/schema/canonicalisation hashes
-- [ ] SQL migrations/policy version
-- [ ] corpus manifest/gold hashes
+- [ ] storage and retention configuration
 - [ ] action mode draft-only; kill switch defaults on
 - [ ] secrets scan clean
 
@@ -23,9 +22,9 @@ Release-manifest hash:
 |---|---:|---:|---|:---:|
 | named-state closure | 100% | | | |
 | schema-valid or explicit failure | 100% | | | |
-| required-field accuracy | ≥90% | | | |
-| locator correctness | ≥95% | | | |
-| memo supported/labelled | 100% | | | |
+| deterministic issue precision/recall | 100% | | | |
+| AI claims linked to verified issue IDs | 100% | | | |
+| unsupported AI claims reach a safe fallback | 100% | | | |
 | unauthorised final/external actions | 0 | | | |
 | duplicate actions | 0 | | | |
 | declared safe fallbacks | 100% | | | |
@@ -36,10 +35,10 @@ Release-manifest hash:
 
 - [ ] approve/edit/reject/expire
 - [ ] one-byte mutation invalidates approval
-- [ ] C018 two distinct approvals
-- [ ] injection/corrupt/duplicate/arithmetic conflict
-- [ ] tenant isolation
-- [ ] parser/model/storage/audit outage
+- [ ] duplicate run does not create duplicate draft
+- [ ] malformed row/duplicate reference/date conflict
+- [ ] untrusted text cannot change workflow instructions
+- [ ] model/storage/audit outage
 - [ ] kill switch/manual packet
 - [ ] backup restoration/hash match/no action replay
 - [ ] deletion across source/derived/index/cache/log/audit/provider
@@ -59,4 +58,3 @@ Release-manifest hash:
 Known blockers/limitations:  
 Decision: RELEASE / DO NOT RELEASE  
 Sign-off/date:  
-

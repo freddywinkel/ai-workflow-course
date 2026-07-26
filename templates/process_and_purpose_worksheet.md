@@ -45,7 +45,7 @@ Complete:
 - [ ] No children/vulnerable-person data
 - [ ] No employment/credit/insurance/benefit/education/law-enforcement/migration/judicial decision
 - [ ] No diagnosis/treatment/prescribing/dosing/prognosis/monitoring
-- [ ] No supplier recommendation/ranking/selection
+- [ ] No consequential ranking or selection of people or organisations
 - [ ] No purchase/payment/contract/external send
 
 Additional foreseeable misuse:  
@@ -54,7 +54,7 @@ Reassessment triggers:
 
 ## Allocation
 
-| Task | Parser/OCR | AI | Deterministic code | Human | Rationale | Failure route |
+| Task | Input preparation | AI | Deterministic code | Human | Rationale | Failure route |
 |---|:---:|:---:|:---:|:---:|---|---|
 | | | | | | | |
 
@@ -69,4 +69,3 @@ Reassessment triggers:
 Decision: accepted / revise / rejected  
 Reviewer comments:  
 Evidence links:  
-

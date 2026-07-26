@@ -13,7 +13,7 @@ A **folder** holds files and other folders. A **file** is stored information. A
 Example Windows path:
 
 ```text
-C:\Users\YourName\Documents\supplier-review-system\README.md
+C:\Users\YourName\Documents\controlled-ai-workflow\README.md
 ```
 
 Read it from left to right:
@@ -25,7 +25,7 @@ Read it from left to right:
 
 A full path starts at a drive. A relative path starts at the folder you are
 currently using. If your current folder is
-`C:\Users\YourName\Documents\supplier-review-system`, then `docs\runbook.md` is
+`C:\Users\YourName\Documents\controlled-ai-workflow`, then `docs\runbook.md` is
 relative to it.
 
 ## File types used in this course
@@ -123,4 +123,3 @@ Without looking back, explain:
 2. why `notes.md.txt` is not a Markdown file;
 3. why `.env.example` may be committed but `.env` may contain secrets;
 4. why a missing comma can break JSON while ordinary prose remains readable.
-

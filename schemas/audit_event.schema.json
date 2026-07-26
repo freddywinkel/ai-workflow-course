@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://course.invalid/schemas/audit_event.schema.json",
+  "title": "Course 1 Audit Event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id",
+    "run_id",
+    "event_type",
+    "state",
+    "occurred_at",
+    "actor_type",
+    "details"
+  ],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "event_type": {
+      "type": "string",
+      "minLength": 1
+    },
+    "state": {
+      "enum": [
+        "received",
+        "validated",
+        "issues_ready",
+        "summary_ready",
+        "needs_review",
+        "pending_approval",
+        "approved_draft",
+        "rejected",
+        "expired",
+        "no_action_needed",
+        "failed_manual"
+      ]
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "actor_type": {
+      "enum": ["system", "ai", "reviewer"]
+    },
+    "details": {
+      "type": "object"
+    }
+  }
+}

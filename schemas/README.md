@@ -1,15 +1,22 @@
-# Portable Contract Schemas
+# Course 1 Portable Contract Schemas
 
-- [`contracts.schema.json`](contracts.schema.json) validates the six core records.
-- [`golden_case.schema.json`](golden_case.schema.json) validates one corpus gold record at the course boundary.
+These JSON Schema Draft 2020-12 files define the capstone boundaries:
 
-Use JSON Schema Draft 2020-12. Generate Pydantic models and database migrations from one reviewed domain definition, then test that serialised records validate here. Do not loosen the schema to make a failed model response pass.
+- `work_item.schema.json` — normalized synthetic work item;
+- `issue.schema.json` — deterministic verified exception;
+- `summary.schema.json` — optional AI or offline summary;
+- `approval.schema.json` — human decision bound to an exact draft revision;
+- `audit_event.schema.json` — material workflow event.
 
-Validation example:
+Validate a schema:
 
 ```powershell
-python -c "import json, jsonschema; s=json.load(open('schemas/contracts.schema.json', encoding='utf-8')); jsonschema.Draft202012Validator.check_schema(s); print('schema ok')"
+python -c "import json, jsonschema; s=json.load(open('schemas/work_item.schema.json', encoding='utf-8')); jsonschema.Draft202012Validator.check_schema(s); print('schema ok')"
 ```
 
-The schema constrains representation, not truth. Semantic, evidence, tenant, state, approval, and idempotency checks remain code/database responsibilities.
+JSON Schema constrains representation. It does not prove that a value is true,
+that an issue is correct, or that a workflow is compliant. Deterministic rules,
+cross-record checks, evidence verification, state transitions, authorization,
+and idempotency remain separate responsibilities.
 
+Do not loosen a schema merely to make a failing model response pass.

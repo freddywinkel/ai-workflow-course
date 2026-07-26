@@ -1,154 +1,202 @@
-# Assessment Gates and Final Rubric
+# Assessment and Rubric
 
-## Gate policy
+## Assessment principle
 
-Every week has a pass/fail gate in its module. A later week may be studied after a failure, but the capstone cannot be released until all prerequisite gates are passed with observed evidence.
+Course 1 assesses controlled implementation judgment, not how much technology
+you used.
 
-These conditions are absolute:
+The following can all be excellent outcomes:
 
-- no real/sensitive/prohibited data;
-- no unnamed run state;
-- no unsupported factual claim presented as supported;
-- no cross-tenant evidence/access;
-- no action without exact valid approval;
-- no duplicate final action;
-- no supplier recommendation/selection;
-- no send/payment/binding action;
-- no secret in repository/workflow export/evidence;
-- every declared failure has a visible safe route.
+- a rule-only workflow because AI added no value;
+- a bounded AI summary with strong verification;
+- a `REWORK` decision because data quality is poor;
+- a `DO NOT PILOT` decision because existing software is better.
 
-An absolute failure cannot be averaged away by a high score.
+## Pass prerequisites
 
-## Weekly gate register
+All prerequisites must pass before scoring:
 
-| Week | Gate evidence | Pass recorded by |
-|---:|---|---|
-| 1 | purpose, exclusions, process, baseline, state tabletop | |
-| 2 | API/orchestration/retry/idempotency tests | |
-| 3 | hash/storage/state/RLS/partial-write tests | |
-| 4 | PDF/DOCX/table/scan/corrupt provenance tests | |
-| 5 | schema/refusal/null/evidence/semantic/model benchmark | |
-| 6 | retrieval/evidence-ledger/memo grounding tests | |
-| 7 | approve/edit/reject/expire/hash/idempotency tests | |
-| 8 | boundary/role/DPIA/vendor/retention/literacy evidence | |
-| 9 | threat/failure/tenant/log/kill-switch/restore tests | |
-| 10 | frozen JSONL regression and metric report | |
-| 11 | connector/provider/timing/hardening report | |
-| 12 | frozen release, clean reproduction, deletion and acceptance | |
+- only synthetic data was used;
+- no secrets are stored in code, screenshots, notes, or Git;
+- the deterministic report works with AI disabled;
+- every run ends in a named state;
+- expected exceptions are tested;
+- unsupported AI claims cannot pass silently;
+- no external send, payment, deletion, or record update exists;
+- editing invalidates approval;
+- manual fallback is demonstrated;
+- limitations and assumptions are explicit;
+- the learner can explain the system without relying on generated wording.
 
-## Final scoring rubric
+Any failure is a stop/rework condition.
 
-Minimum overall score: 80/100 **and** every mandatory condition.
+## Weighted rubric
 
-### 1. Source integrity and provenance — 20 points
-
-| Evidence | Points |
+| Area | Weight |
 |---|---:|
-| exact received bytes hashed, immutable, private, and manifest-linked | 5 |
-| raw/derived separation and versioned parser/canonicalisation | 4 |
-| page/region/span locators plus supporting-text hashes | 5 |
-| provenance persists through extraction/memo and survives restore | 4 |
-| duplicates/corrupt/partial writes handled correctly | 2 |
+| Process discovery and opportunity selection | 20% |
+| Data quality and deterministic controls | 20% |
+| Bounded AI and evidence | 15% |
+| Human control and failure behaviour | 15% |
+| Dutch SME risk and tool-fit screen | 15% |
+| Evaluation, adoption, and handover | 15% |
 
-Zero for this section if originals can be overwritten or evidence can point across tenants.
+Minimum passing score: 75%, with every area at least “competent”.
 
-### 2. Extraction and deterministic validation — 15 points
+## Performance levels
 
-| Evidence | Points |
-|---|---:|
-| strict portable schemas, nullable/missing/conflict semantics | 3 |
-| Responses/provider adapter and full version tuple | 3 |
-| independent decimal/date/policy validation | 4 |
-| ≥90% required-field accuracy with per-field report | 3 |
-| refusals/incomplete/schema/semantic failures routed safely | 2 |
+### 4 — Strong
 
-### 3. Grounded drafting and citations — 15 points
+Evidence is reproducible, assumptions are separated from observations, failure
+behaviour is tested, decisions follow the evidence, and another person can
+operate the demonstration.
 
-| Evidence | Points |
-|---|---:|
-| measured retrieval and active policy version | 3 |
-| verified evidence ledger, including derived calculations | 4 |
-| proposition-level memo contract | 3 |
-| ≥95% locator correctness | 3 |
-| 100% factual assertions supported or visibly unsupported; no forbidden claim | 2 |
+### 3 — Competent
 
-### 4. Human approval and action safety — 15 points
+The required artifacts exist, important claims are supported, controls work,
+and limitations are clear. Minor gaps do not undermine the boundary.
 
-| Evidence | Points |
-|---|---:|
-| usable review of source/evidence/uncertainty/action | 3 |
-| exact canonical output hash and edit invalidation | 4 |
-| approve/reject/expire/rework lifecycle | 3 |
-| C018 two distinct reviewers | 2 |
-| idempotent draft-only action, time-of-use recheck, kill switch | 3 |
+### 2 — Rework
 
-Zero for this section and fail release if any action occurs without a valid exact-output approval.
+The main idea is visible but evidence, tests, ownership, usability, or risk
+screening is incomplete.
 
-### 5. Privacy, legal-status, security, and failures — 15 points
+### 1 — Unsafe or unsupported
 
-| Evidence | Points |
-|---|---:|
-| fictional-data boundary and excluded-use/medical gates | 3 |
-| AVG/AI Act roles, DPIA screen, vendor/transfer/status distinctions | 3 |
-| retention/rights/deletion across all layers | 3 |
-| threat model, injection/tenant/secrets controls | 3 |
-| outage/dead-letter/manual route, observability, restore | 3 |
+The learner relies on AI output, guesses data meaning, hides failures, skips
+human authority, or makes production/compliance claims without evidence.
 
-This score is engineering literacy, not a legal-compliance certificate.
+## Area 1 — Process discovery and opportunity selection
 
-### 6. Evaluation quality — 10 points
+Strong evidence includes:
 
-| Evidence | Points |
-|---|---:|
-| frozen 20-case manifest/gold with reviewed hashes | 2 |
-| vendor-neutral local runner and offline deterministic suite | 3 |
-| exact metrics, exclusions, per-case/field results | 2 |
-| adversarial/mutation/failure tests | 2 |
-| non-zero release-gate exit and retained reports | 1 |
+- a clear process trigger, input, output, owner, users, systems, handoffs, and
+  fallback;
+- two manual walkthroughs;
+- an honest baseline with assumption labels;
+- an opportunity score that considers frequency, value, reversibility,
+  existing-tool fit, data readiness, and failure consequence;
+- intended purpose and exclusions;
+- explicit allocation to rule, AI, or human;
+- a justified go, rework, or stop decision.
 
-### 7. Reproducibility, runbook, and demonstration — 10 points
+Automatic rework:
 
-| Evidence | Points |
-|---|---:|
-| full stack/config/version/release manifest | 2 |
-| clean-start C001 reproduction | 3 |
-| runbook/manual fallback/deletion/restoration | 2 |
-| matched median hands-on improvement ≥30%, quality not reduced | 2 |
-| evidence-backed demo and honest limitations | 1 |
+- beginning with a tool instead of a process;
+- invented ROI;
+- no process owner;
+- no build-versus-buy check.
 
-## Evidence quality levels
+## Area 2 — Data quality and deterministic controls
 
-| Level | Description |
-|---|---|
-| 0 | assertion only; no artifact |
-| 1 | screenshot/narrative without reproducible procedure |
-| 2 | stored artifact plus manual verification |
-| 3 | automated repeatable check with versioned input/output |
-| 4 | independent/fresh-environment reproduction plus negative test |
+Strong evidence includes:
 
-Prefer Level 3–4 for release-blocking controls.
+- source inventory and data dictionary;
+- stable IDs and named authoritative fields;
+- explicit missing, duplicate, type, date, and allowed-value rules;
+- reproducible issue IDs;
+- correct handling of the supplied expected issues;
+- separation between source, derived issues, and output;
+- fixed evaluation-date assumptions.
 
-## Final assessor form
+Automatic rework:
 
-Release:  
-Commit/tag:  
-Evaluation report/hash:  
-Source register verified date:  
-Clean-start reproducer/date:  
+- silently filling missing values;
+- changing expected results to match faulty code;
+- AI determining objective data-quality rules.
 
-| Section | Maximum | Awarded | Blocking issue |
-|---|---:|---:|---|
-| source integrity/provenance | 20 | | |
-| extraction/validation | 15 | | |
-| grounded drafting | 15 | | |
-| approval/action | 15 | | |
-| privacy/security/failures | 15 | | |
-| evaluation | 10 | | |
-| reproduction/handover | 10 | | |
-| **Total** | **100** | | |
+## Area 3 — Bounded AI and evidence
 
-Mandatory conditions all pass: yes / no  
-Decision: RELEASE PRIVATE DEMO / DO NOT RELEASE  
-Known limitations accepted for synthetic demo:  
-Assessor/date:  
+Strong evidence includes:
 
+- AI is optional and replaceable;
+- structured output;
+- prompt and schema versions;
+- verified issue records are the only factual input;
+- issue references are checked after generation;
+- refusal, timeout, malformed output, and unsupported claims are tested;
+- a rule-based fallback remains usable.
+
+Automatic rework:
+
+- AI creates authoritative exceptions;
+- raw untrusted instructions control the prompt;
+- schema validity is treated as truth;
+- no offline test path.
+
+## Area 4 — Human control and failure behaviour
+
+Strong evidence includes:
+
+- usable approve, edit, reject, and expire paths;
+- reviewer authority and responsibility are stated;
+- deterministic and AI content are distinguishable;
+- approval is bound to the exact revision;
+- edit invalidates approval;
+- kill switch and manual fallback work;
+- retry and duplicate effects are controlled;
+- failures are visible.
+
+Automatic failure:
+
+- external action without exact review;
+- ceremonial approval where the reviewer lacks evidence or authority;
+- silent failure shown as success.
+
+## Area 5 — Dutch SME risk and tool-fit screen
+
+Strong evidence includes:
+
+- personal/special-category data screen;
+- purpose, minimisation, retention, access, vendor, transfer, logging, backup,
+  and deletion questions;
+- basic provider/deployer and AI-use risk triage;
+- specialist escalation points;
+- review of existing Microsoft, Google, ERP, CRM, DMS, or other native
+  capabilities;
+- ownership and recurring-cost record;
+- no claim of legal compliance.
+
+Automatic rework:
+
+- real sensitive data in the demonstration;
+- regulated or consequential decisions;
+- custom build proposed without checking existing capabilities.
+
+## Area 6 — Evaluation, adoption, and handover
+
+Strong evidence includes:
+
+- normal, edge, adversarial, and operational failure cases;
+- false-positive, false-negative, supported-claim, time, cost, and usability
+  results;
+- limitations and unresolved risks;
+- UAT with another person using synthetic data;
+- user instructions and role-specific AI literacy;
+- runbook, fallback, support owner, and change record;
+- portfolio story that separates facts from assumptions;
+- evidence-backed `PILOT`, `REWORK`, or `DO NOT PILOT`.
+
+Automatic rework:
+
+- claiming savings from one synthetic timing run;
+- demo succeeds only when the builder operates it;
+- no owner after handover.
+
+## Oral demonstration questions
+
+The learner must answer in plain language:
+
+1. What business problem are you solving?
+2. What evidence says it is worth solving?
+3. Which data is authoritative?
+4. Which decisions are deterministic?
+5. What does AI contribute?
+6. What happens when AI fails?
+7. What exactly does the reviewer approve?
+8. What can the system never do?
+9. How would you detect regression?
+10. Why is your final pilot decision justified?
+
+If the learner cannot answer without reading generated text, the handover gate
+has not passed.

@@ -1,0 +1,16 @@
+work_item_id,source_reference,title,owner_role,status,priority,received_date,due_date,completed_date,amount,currency,category
+WI-0001,REF-1001,Confirm delivery window,operations,in_progress,medium,2026-07-20,2026-07-30,,125.00,EUR,order_admin
+WI-0002,REF-1002,Resolve missing purchase reference,,in_progress,high,2026-07-21,2026-08-02,,,,reference_check
+WI-0003,REF-1003,Archive completed service request,service_desk,completed,low,2026-07-15,2026-07-14,2026-07-18,,,service_admin
+WI-0004,REF-1004,Check duplicate contact record,,new,urgent,2026-07-22,2026-08-05,,,,data_admin
+WI-0005,REF-1005,Complete supplier record,procurement,completed,medium,2026-07-10,2026-07-20,,340.50,EUR,supplier_admin
+WI-0006,REF-1006,Verify order acknowledgement,operations,completed,medium,2026-07-01,2026-07-12,2026-07-11,82.00,EUR,order_admin
+WI-0007,REF-1006,Reconcile service line,finance_ops,completed,low,2026-07-02,2026-07-15,2026-07-14,48.00,EUR,invoice_admin
+WI-0008,REF-1008,Correct credit amount,finance_ops,completed,high,2026-07-09,2026-07-19,2026-07-18,-25.00,EUR,invoice_admin
+WI-0009,REF-1009,Record approved service fee,finance_ops,completed,medium,2026-07-11,2026-07-21,2026-07-20,210.00,,invoice_admin
+WI-0010,REF-1010,Follow up open action,operations,waiting,high,2026-07-01,2026-07-10,,,,action_tracking
+WI-0011,REF-1011,Register a new request,,new,low,14-07-2026,,,,,service_admin
+WI-0012,REF-1012,Check active training record,quality_ops,in_progress,medium,2026-07-23,2026-08-06,2026-07-24,,,training_admin
+WI-0013,REF-1013,,,new,low,2026-07-24,2026-08-10,,,,general_admin
+WI-0014,REF-1014,Clarify work-item state,service_desk,on_hold,medium,2026-07-25,2026-08-08,,,,service_admin
+WI-0015,REF-1015,Close verified action,quality_ops,completed,high,2026-07-16,2026-07-25,2026-07-24,,,action_tracking

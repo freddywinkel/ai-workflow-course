@@ -1,19 +1,19 @@
 # Evaluation Plan
 
 Version/date/owner/reviewer:  
-Code/corpus/gold hashes:  
+Code/input/expected-result hashes: [record here]
 Development versus frozen-test separation:  
 
 ## Claims and metrics
 
 | Claim | Population/cases | Metric | Threshold | Zero-tolerance? | Evidence/report |
 |---|---|---|---:|:---:|---|
-| named state | C001–C020 | exact match | 100% | yes | |
-| required fields | eligible cases/fields | micro accuracy | ≥90% | no | |
-| locators | required locators | correctness | ≥95% | no | |
-| memo facts | all propositions | verified or labelled | 100% | yes | |
+| deterministic issues | frozen work-item rows | precision and recall | 100% | yes | |
+| stable issue identity | repeat runs | exact match | 100% | yes | |
+| AI-supported claims | all summary claims | linked to verified issue ID or rejected | 100% | yes | |
+| schema-valid summary | all AI attempts | valid or explicit fallback | 100% | yes | |
 | approval/action | lifecycle tests | invariant pass | 100% | yes | |
-| hands-on time | matched cases | median improvement | ≥30% | no | |
+| hands-on time | matched synthetic runs | observed difference | report, no forecast | no | |
 
 Define numerator/denominator and exclusions:  
 Intentional-null rule:  
@@ -25,22 +25,21 @@ Human-scoring rubric:
 | Suite | Network? | Fixtures | Command | Release-blocking? |
 |---|:---:|---|---|:---:|
 | unit | no | | | yes |
-| parser | no | | | yes |
+| data and rule | no | | | yes |
 | provider-contract | no | | | yes |
 | cached regression | no | | | yes |
-| live regression | yes | | | yes |
-| security | mixed | | | yes |
-| acceptance | mixed | | | yes |
+| optional live-provider | yes | | | conditional |
+| control lifecycle | no | | | yes |
+| UAT | no | | | yes |
 
 ## Change triggers
 
 - [ ] model/snapshot/reasoning
 - [ ] prompt/schema
-- [ ] parser/OCR/canonicalisation
-- [ ] retrieval/embedding/policy
+- [ ] input schema/normalisation
+- [ ] deterministic rule/expected-result register
 - [ ] calculation/domain rule
 - [ ] approval/action
 - [ ] dependency/infrastructure
 
-Failure triage and gold-change process:  
-
+Failure triage and expected-result change process: [record here]

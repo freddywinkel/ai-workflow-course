@@ -1,4 +1,4 @@
-# Weekly Evidence Record — Week [NN]
+# Learning Evidence Record — Module or Gate [ID]
 
 Artifact ID:  
 Date/time zone:  
@@ -26,11 +26,11 @@ Course/source-register version:
 ## Version tuple
 
 Python/dependencies:  
-n8n image/workflow hash:  
-Parser/OCR/model cache:  
+Workflow/script hash: [record here]
+Input/expected-result hashes: [record here]
 Model/provider:  
 Prompt/schema/canonicalisation:  
-Corpus/gold:  
+Assessment date/rule-set version: [record here]
 
 ## Failures and open work
 
@@ -47,4 +47,3 @@ What would block real-data use?
 
 Decision: PASS / FAIL / CONDITIONAL (conditional does not unlock a prerequisite gate)  
 Reviewer/date:  
-

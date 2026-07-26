@@ -1,4 +1,4 @@
-# Course PWA
+# Controlled AI Workflow Foundations PWA
 
 This dependency-free static reader is generated from the course Markdown one
 directory above it. The Markdown remains the source of truth.
@@ -18,15 +18,21 @@ The production artifact is `app/dist`. Do not edit generated files there.
 
 The build:
 
-- bundles the foundations, twelve weeks, glossary, references, worksheets, and
-  update records;
+- reads the complete structure from `../curriculum.json`;
+- bundles nine foundations, nine implementation modules, the career sequence,
+  references, worksheets, and update records;
 - derives a deterministic content hash;
 - generates the manifest, version record, PNG icons, and versioned service
   worker;
 - applies the repository subpath to every install and cache URL.
 
+The PWA has a separate Course 1 learning view and Career Path view. Course
+completion uses stable lesson IDs and revisions, so a materially revised lesson
+can reopen for review without losing its private note. State is migrated from
+the earlier course bundle when possible.
+
 The PWA stores completion, notes, theme, and reading size only in browser
-`localStorage`. It contains no AI or GitHub credential.
+`localStorage`. It contains no AI, capstone runtime, or GitHub credential.
 
 ## Update contract
 

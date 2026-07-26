@@ -1,239 +1,283 @@
-# Architecture, Contracts, and State
+# Architecture and Contracts — Course 1 Capstone
 
 ## Design objective
 
-Build a system in which every transformation can be answered with:
+Build the smallest system that proves controlled workflow reasoning:
 
-1. Which exact source bytes entered?
-2. Which parser, model, prompt, schema, and code version ran?
-3. Which evidence supports each extracted or drafted fact?
-4. Which deterministic checks passed or failed?
-5. What exact output did a named human approve?
-6. Which single action used that approval?
-7. What safe state was reached if anything failed?
+- deterministic checks remain authoritative;
+- the AI step is optional and replaceable;
+- every AI factual statement refers to a verified issue ID;
+- a human controls the draft outcome;
+- no external system is updated;
+- every run ends in a visible state;
+- the workflow still provides value when AI is unavailable.
+
+## Logical architecture
+
+```text
+practice_data/work_items.csv
+  │
+  ▼
+input validation ──invalid──► failed_manual
+  │ valid
+  ▼
+deterministic rules
+  │
+  ├── no issues ────────────► no_action_needed
+  │
+  ▼
+verified issue register
+  │
+  ├── AI disabled/failed ───► rule_based_report
+  │
+  ▼
+bounded AI summary
+  │
+  ├── unsupported claim ────► needs_review
+  ▼
+review package
+  │
+  ├── reject ───────────────► rejected
+  ├── expire ───────────────► expired
+  ├── edit ─────────────────► pending_approval (new revision)
+  └── approve ──────────────► approved_draft
+                                │
+                                ▼
+                         local draft outbox
+```
 
 ## Trust boundaries
 
-```mermaid
-flowchart LR
-    U["Human uploader"] --> I["n8n intake boundary"]
-    I --> V["File validation and hashing"]
-    V --> S["Private immutable source storage"]
-    S --> P["Parser/OCR worker"]
-    P --> E["Evidence + extraction service"]
-    E --> D["Deterministic validator"]
-    D --> G["Grounded memo builder"]
-    G --> R["Human review interface"]
-    R --> A["Approval service"]
-    A --> X["Draft-only action adapter"]
-    I -.metadata.-> L["Append-only audit ledger"]
-    V -.metadata.-> L
-    P -.metadata.-> L
-    E -.metadata.-> L
-    R -.decision.-> L
-    X -.result.-> L
+Treat all of these as untrusted until validated:
+
+- CSV cells;
+- filenames;
+- descriptions containing instructions;
+- AI output;
+- imported configuration;
+- reviewer input;
+- retry messages;
+- timestamps supplied by another system.
+
+The supplied synthetic data is safe to use, but it intentionally contains
+malformed and adversarial examples.
+
+## Course 1 components
+
+| Component | Responsibility | Not responsible for |
+|---|---|---|
+| CSV loader | Read exact source rows and preserve row IDs | Correcting business meaning |
+| Validator | Types, required fields, allowed values | Guessing missing values |
+| Rule engine | Produce verified issue records | Writing persuasive prose |
+| Orchestrator | Move work through named states | Becoming the source of truth |
+| AI adapter | Summarize verified issues into a schema | Finding authoritative exceptions |
+| Summary verifier | Check issue references and allowed claims | Deciding business action |
+| Review package | Show source row, issue, explanation, limitations | Hiding uncertainty |
+| Approval service | Record approve/edit/reject/expire | Sending externally |
+| Local outbox | Store approved draft artifact | Emailing or updating a client system |
+| Audit log | Record material events | Replacing security monitoring |
+
+## Core records
+
+### Work item
+
+The work-item schema lives in `schemas/work_item.schema.json`. The supplied CSV
+contains:
+
+- stable `work_item_id`;
+- unique `source_reference`;
+- title and non-personal `owner_role`;
+- status and priority;
+- received, due, and completed dates;
+- optional amount and currency;
+- operational category.
+
+Never silently invent a required value.
+
+### Verified issue
+
+The issue schema lives in `schemas/issue.schema.json`.
+
+```json
+{
+  "issue_id": "ISS-001",
+  "work_item_id": "WI-0002",
+  "rule_code": "R007",
+  "severity": "medium",
+  "field": "owner_role",
+  "observed_value": "",
+  "message": "Active work requires an owner role."
+}
 ```
 
-Trust assumptions:
+Issue IDs must be stable for identical input, configuration, and evaluation
+date.
 
-- uploaded documents, filenames, metadata, OCR text, and retrieved passages are untrusted;
-- model output is untrusted until schema and semantic checks pass;
-- n8n is an orchestrator, not the system of record;
-- the database is the state authority;
-- object storage contains immutable source bytes and separately versioned derivatives;
-- the approval service—not the model or n8n canvas—authorizes an action;
-- application audit rows are append-only; corrections are new events, not edits.
+### AI summary
 
-## Portable domain contracts
+The summary schema lives in `schemas/summary.schema.json`.
 
-The normative machine-readable definitions live in [`schemas/contracts.schema.json`](schemas/contracts.schema.json). Pydantic models and database tables must preserve their meanings.
+It must contain:
 
-### `SourceDocument`
+- run ID;
+- prompt version;
+- model configuration identifier or `offline-fixture`;
+- grouped findings;
+- referenced issue IDs;
+- unsupported or uncertain statements;
+- a plain limitation that a human must review the result.
 
-| Field | Meaning |
-|---|---|
-| `source_id` | Stable UUID generated before storage |
-| `tenant_id` | Synthetic tenant boundary |
-| `sha256` | Lowercase SHA-256 of exact received bytes |
-| `original_filename` | Sanitised display filename; never a storage key by itself |
-| `media_type`, `byte_size` | Validated file facts |
-| `received_at` | UTC RFC 3339 time |
-| `storage_uri` | Private, opaque source-object location |
-| `parser_status` | `not_started`, `succeeded`, `partial`, or `failed` |
-| `retention_class` | Policy key, not an arbitrary deletion date |
+Schema-valid output is not enough. Every referenced issue ID must exist in the
+verified issue register, and every factual sentence must be supportable from
+those issues.
 
-Uniqueness: `(tenant_id, sha256)` prevents duplicate ingestion from causing duplicate work. A duplicate attempt still creates an audit event.
+### Approval decision
 
-### `EvidenceLocator`
+The approval schema lives in `schemas/approval.schema.json`.
 
-| Field | Meaning |
-|---|---|
-| `source_id` | Exact immutable source |
-| `chunk_id` | Stable ID derived from source, parser version, and sequence |
-| `page` | One-based page number when meaningful |
-| `bbox` | Optional `[left, top, right, bottom]` in a declared coordinate system |
-| `char_start`, `char_end` | Optional span in canonical derived text |
-| `supporting_text_hash` | SHA-256 of normalised supporting text |
-| `quote` | Short display excerpt, not the evidence authority |
+A decision records:
 
-At least one usable locator method is required. A page number alone may be insufficient for dense tables; a character span alone may be unavailable for scans. Store the coordinate convention with parser metadata.
+- decision ID;
+- run ID;
+- reviewer identifier suitable for synthetic use;
+- decision: `approve`, `edit`, `reject`, or `expire`;
+- exact draft revision and content hash;
+- timestamp;
+- optional reason.
 
-### `ExtractionRun`
+Editing creates a new draft revision and invalidates prior approval.
 
-Records the source, parser/model/prompt/schema/code versions, structured result, evidence links, deterministic validation results, status, timestamps, token use, cost estimate, and latency. Never overwrite a previous run when a prompt or model changes.
+### Audit event
 
-### `ApprovalDecision`
+The audit-event schema lives in `schemas/audit_event.schema.json`.
 
-Records:
+Events include:
 
-- the exact `proposed_output_sha256`;
-- reviewer identity and tenant;
-- `approved`, `edited`, or `rejected`;
-- comments;
-- UTC decision time;
-- expiry;
-- optional replacement output and its new hash.
+- input accepted or rejected;
+- rules completed;
+- AI requested, refused, failed, or completed;
+- unsupported claim detected;
+- review opened;
+- draft edited;
+- approved, rejected, or expired;
+- local outbox entry created;
+- retry deduplicated;
+- kill switch used.
 
-`edited` means the original proposal is not approved. The edited version must be re-rendered, re-hashed, and explicitly approved as a new decision before action.
+## Named states
 
-### `ActionExecution`
-
-References one valid approval, one exact output hash, and one idempotency key. It records adapter, requested action, result, attempt count, timestamps, and safe error state. The capstone adapter creates only a local or connector draft; it cannot send.
-
-### `AuditEvent`
-
-Minimum fields:
-
-- event UUID;
-- trace ID and optional parent event ID;
-- tenant and run ID;
-- event type;
-- actor type and actor ID;
-- UTC timestamp;
-- relevant code/parser/model/prompt/schema versions;
-- redacted metadata;
-- previous-event hash and event hash for tamper evidence.
-
-Do not treat a database permission as a full append-only guarantee. Limit application roles to insert/select, restrict update/delete, and periodically export and hash the ledger.
-
-## State machine
-
-The database stores the current state; the audit ledger stores every transition.
-
-```mermaid
-stateDiagram-v2
-    [*] --> received
-    received --> validated: file and scope checks pass
-    received --> failed_manual: intake cannot be made safe
-    validated --> parsed: stable derived text and locators
-    validated --> failed_manual: corrupt or unsupported
-    parsed --> needs_review: low quality, missing, conflict, or refusal
-    parsed --> pending_approval: extraction and memo gates pass
-    needs_review --> parsed: corrected input or reviewer resolution
-    needs_review --> rejected: reviewer stops run
-    pending_approval --> approved: exact hash approved before expiry
-    pending_approval --> rejected: human rejects
-    pending_approval --> expired: deadline passes
-    approved --> pending_approval: proposed output changes
-    approved --> completed: idempotent draft action succeeds
-    approved --> failed_manual: action cannot safely complete
-    expired --> pending_approval: fresh proposal and approval request
-    rejected --> [*]
-    completed --> [*]
-    failed_manual --> [*]
-```
-
-### Allowed-state rule
-
-Implement one transition function. It must:
-
-1. lock the run row;
-2. verify tenant, current state, and allowed transition;
-3. verify prerequisites;
-4. write the new state and audit event in one transaction;
-5. reject duplicate or stale transition requests.
-
-n8n asks for transitions through the API. It does not update state tables directly.
-
-### Invariants
-
-Test these independently of the model:
+Course 1 uses a deliberately small state machine:
 
 ```text
-I-01 Every run has exactly one current named state.
-I-02 Every current state is reconstructable from ordered audit events.
-I-03 A parsed source references the exact source hash it came from.
-I-04 Every extracted fact references zero or more locators; required facts without one need review.
-I-05 A memo assertion is either evidence-backed or visibly unsupported.
-I-06 An approval is valid only for its tenant, run, output hash, reviewer authority, and time window.
-I-07 Any output edit invalidates all approvals for the previous hash.
-I-08 An action cannot start from pending, rejected, expired, or changed output.
-I-09 One idempotency key cannot produce two completed actions.
-I-10 Failure to persist the audit event prevents the corresponding action.
-I-11 A duplicate source hash cannot cause a duplicate action.
-I-12 The kill switch prevents new model calls and actions while preserving manual review.
+received
+validated
+issues_ready
+summary_ready
+needs_review
+pending_approval
+approved_draft
+rejected
+expired
+no_action_needed
+failed_manual
 ```
 
-## Evidence-aware extraction
+Rules:
 
-The model returns values and candidate locator references. Your code verifies the references:
+- only validated input reaches the rule engine;
+- only verified issues reach the AI adapter;
+- no AI output bypasses summary verification;
+- only a reviewed draft can become `approved_draft`;
+- approval is bound to an exact draft revision and hash;
+- no course state represents “sent”, “paid”, or “updated externally”;
+- retries must not create duplicate outbox entries;
+- unexpected errors end in `failed_manual`, never silent success.
 
-1. resolve the referenced chunk;
-2. recompute the supporting text hash;
-3. confirm the quoted support occurs in the chunk or indicated page region;
-4. apply field-specific semantic checks;
-5. mark invalid or ambiguous support as `needs_review`.
+## Deterministic rules
 
-Confidence is not a fact and must not be accepted merely because the model emitted `0.98`. Prefer observable reasons such as `exact_label_match`, `cross_document_conflict`, `ocr_low_quality`, or `derived_calculation`.
+Required rules include:
 
-## Deterministic versus probabilistic allocation
+- R001 required field;
+- R002 allowed status;
+- R003 allowed priority;
+- R004 ISO date format;
+- R005 due date not before received date;
+- R006 status/completion-date relationship;
+- R007 owner role for active or completed work;
+- R008 non-negative amount;
+- R009 EUR currency when amount is populated;
+- R010 unique source reference;
+- R011 overdue open work using the fixed date `2026-07-26`.
 
-| Task | Mechanism |
+The exact expected issues are supplied in
+`practice_data/expected_issues.csv`. It contains 13 expected issues for the 15
+supplied rows. The learner may add separate test rules but may not change the
+expected file merely to make failing code pass.
+
+## AI boundary
+
+The default course run uses an offline fixture. A live model call is an
+optional lab.
+
+When enabled:
+
+- the model identifier comes from configuration;
+- the API key comes from an environment variable;
+- only verified issue records are provided;
+- raw employer or client data is forbidden;
+- structured output is required;
+- refusal, timeout, malformed output, and unsupported references are explicit
+  failure classes;
+- the workflow falls back to the rule-based report.
+
+Do not let the AI step:
+
+- create or remove issue records;
+- change severity without a deterministic rule;
+- determine compliance;
+- choose a person, supplier, payment, or binding action;
+- call external tools;
+- update the source register.
+
+## Idempotency and reproducibility
+
+Derive a run key from:
+
+- input file hash;
+- rule-set version;
+- fixed evaluation date;
+- prompt version;
+- AI mode and configured model identifier.
+
+Reprocessing the same key must reuse or safely replace the same logical run. It
+must not duplicate audit or outbox effects.
+
+## Minimum failure matrix
+
+| Failure | Required behaviour |
 |---|---|
-| MIME/type/size checks, UUIDs, hashes | deterministic code |
-| duplicate detection and idempotency | database constraint + code |
-| PDF/DOCX parsing and OCR | parser/OCR, with quality checks |
-| locating candidate commercial facts | model or rules |
-| output shape | JSON Schema/Pydantic |
-| VAT, totals, date arithmetic, thresholds | deterministic code |
-| conflict comparison | deterministic comparison after normalisation |
-| policy passage candidate retrieval | lexical/vector retrieval |
-| policy applicability summary | model draft, evidence required |
-| final memo wording | grounded model draft |
-| supplier selection | outside system; human only |
-| approval validity | deterministic code |
-| action execution | deterministic adapter after approval |
+| Missing input file | `failed_manual`, clear message |
+| Invalid CSV header | reject before rules |
+| Malformed date | issue or input failure according to written contract |
+| Duplicate retry | no duplicate outbox record |
+| AI timeout | rule-based report remains available |
+| AI refusal | record refusal, continue without AI |
+| Unknown issue reference | reject summary and send to review |
+| Draft edited after approval | approval invalidated |
+| Reviewer unavailable | item remains pending or expires |
+| Kill switch active | skip AI and any outbox creation |
 
-## Model configuration contract
+## Course 1 deployment boundary
 
-No model ID appears inside domain logic. Use environment or config:
+The capstone runs privately with synthetic files. It is not:
 
-```yaml
-models:
-  extraction: ${MODEL_EXTRACT}
-  drafting: ${MODEL_DRAFT}
-  embedding: ${MODEL_EMBED}
-settings:
-  response_store: false
-  max_output_tokens: 4000
-  reasoning_effort: low
-```
+- a production service;
+- multi-tenant;
+- connected to client systems;
+- approved for real personal data;
+- a legal compliance tool;
+- a Veeva or eQMS integration;
+- a medical device.
 
-For this dated edition, benchmark the current balanced and cost-efficient OpenAI models rather than permanently selecting one. [`stack-manifest.yaml`](stack-manifest.yaml) records the verified starting candidates. Pin a tested snapshot for a frozen release when the provider offers one; rerun the gold set before changing model, prompt, schema, parser, or retrieval configuration.
-
-## Version tuple
-
-Every extraction and memo must persist:
-
-```text
-(source_sha256,
- parser_name, parser_version, ocr_name, ocr_version,
- model_provider, model_id,
- prompt_id, prompt_sha256,
- schema_id, schema_sha256,
- code_commit,
- retrieval_config_sha256)
-```
-
-Without this tuple, a result cannot be reproduced or meaningfully compared.
-
+Those capabilities require later courses, client controls, and specialist
+review.

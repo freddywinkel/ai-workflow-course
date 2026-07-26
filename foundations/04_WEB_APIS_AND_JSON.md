@@ -11,8 +11,9 @@ A **client** asks for something. A **server** listens for requests and returns
 responses. A web browser is one kind of client. n8n and Python can also be
 clients.
 
-In this course, FastAPI creates a small local server. “Local” or `localhost`
-means it runs on your computer. Port `8000` identifies one listening service:
+In later exercises, a development tool may create a small local server.
+“Local” or `localhost` means it runs on your computer. Port `8000` identifies
+one listening service:
 
 ```text
 http://localhost:8000/health
@@ -94,8 +95,8 @@ JSON carries structured data:
   "accepted": true,
   "state": "received",
   "reason_code": null,
-  "documents": [
-    {"filename": "quotation.pdf", "byte_size": 12345}
+  "work_items": [
+    {"work_item_id": "WI-0001", "status": "open"}
   ]
 }
 ```
@@ -131,20 +132,21 @@ A timeout means the client stopped waiting. It does not prove the server did
 nothing. Blindly repeating a request can create a duplicate.
 
 An idempotency key lets repeated equivalent attempts refer to one intended
-operation. Week 2 and Week 7 turn this into executable safety tests.
+operation. Modules 4 and 6 turn this into executable safety tests.
 
 Retry only declared temporary failures and cap the attempts. Validation or
 permission failures normally require correction or review, not repeated calls.
+Modules 4–6 turn these principles into workflow controls.
 
 ## Practice without an external service
 
 Read this fictional interaction:
 
 ```text
-POST /v1/intake/metadata
+POST /v1/work-items/validate
 Content-Type: application/json
 
-{"request_id":"demo-001","filename":"quotation.pdf"}
+{"request_id":"demo-001","work_item_id":"WI-0001"}
 ```
 
 Response:
@@ -160,7 +162,7 @@ Answer:
 1. What is the method?
 2. What is the endpoint path?
 3. What is the body format?
-4. Does `202` mean document processing finished?
+4. Does `202` mean validation finished?
 5. What identifier should a retry preserve?
 
 Then edit the JSON by removing one quote or comma and use your editor's JSON
@@ -174,4 +176,3 @@ You pass when you can explain:
 - the difference between authentication and authorization;
 - why status `202` and schema-valid JSON do not prove factual correctness;
 - why a timed-out request must not be repeated without duplicate protection.
-

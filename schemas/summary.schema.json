@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://course.invalid/schemas/summary.schema.json",
+  "title": "Bounded Exception Summary",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id",
+    "prompt_version",
+    "generator",
+    "headline",
+    "groups",
+    "unsupported_statements",
+    "review_required"
+  ],
+  "properties": {
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "prompt_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "generator": {
+      "type": "string",
+      "minLength": 1
+    },
+    "headline": {
+      "type": "string",
+      "minLength": 1
+    },
+    "groups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["label", "issue_ids", "summary"],
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "issue_ids": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "unsupported_statements": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "review_required": {
+      "const": true
+    }
+  }
+}

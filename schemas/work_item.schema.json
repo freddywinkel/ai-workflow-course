@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://course.invalid/schemas/work_item.schema.json",
+  "title": "Synthetic SME Work Item",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "work_item_id",
+    "source_reference",
+    "title",
+    "owner_role",
+    "status",
+    "priority",
+    "received_date",
+    "due_date",
+    "completed_date",
+    "amount",
+    "currency",
+    "category"
+  ],
+  "properties": {
+    "work_item_id": {
+      "type": "string",
+      "pattern": "^WI-[0-9]{4}$"
+    },
+    "source_reference": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "owner_role": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "priority": {
+      "type": "string"
+    },
+    "received_date": {
+      "type": "string"
+    },
+    "due_date": {
+      "type": "string"
+    },
+    "completed_date": {
+      "type": "string"
+    },
+    "amount": {
+      "type": "string"
+    },
+    "currency": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string"
+    }
+  }
+}

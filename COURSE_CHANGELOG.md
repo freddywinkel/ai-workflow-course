@@ -1,145 +1,71 @@
 # Course Changelog
 
-This file records issued course changes. Dated audit reports belong in `updates/`.
+## 2.0.0 — 2026-07-26
 
-## 1.2.2 — 2026-07-26
+### Career outcome
 
-Course-reader text-alignment patch.
+- Changed the end goal from a supplier-document system builder to a first
+  foundation for becoming a **Controlled AI Workflow Implementation Consultant
+  for Dutch SMEs**.
+- Added an honest Course 1 capability boundary.
+- Added a separate career sequence covering diagnostics, integrations,
+  controlled document AI, production governance, adoption, and optional
+  quality/eQMS specialization.
 
-Fixed:
+### Curriculum
 
-- valid wrapped Markdown now remains inside its bullet or numbered item instead
-  of becoming a detached, flush-left paragraph;
-- ordered lists retain their starting number, and nested choices remain under
-  the correct parent step;
-- checklist rows use one aligned text column without an extra native bullet;
-- filenames formatted as inline code inside links display their real label
-  rather than an internal renderer token.
+- Preserved and expanded the absolute-beginner foundation.
+- Added spreadsheets, CSV, and SME data quality as a dedicated foundation.
+- Reframed AI as a bounded workflow component rather than the system authority.
+- Replaced “safe vibe coding” with professional safe AI-assisted building.
+- Simplified workflow-tool and data-store learning; moved Docker, FastAPI,
+  Supabase, OCR, RAG, and multi-tenancy to later courses.
+- Replaced 12 calendar weeks with nine gate-based consultant modules.
+- Added a consultant lens, stop/rework behavior, and client-style artifact to
+  every module.
 
-Verified:
+### Capstone
 
-- the rendered-course audit covered 87 affected items and 96 continuation
-  lines across ten bundled documents;
-- list, nesting, numbering, checklist, escaping, code-block, and table
-  regressions are covered by the local PWA tests;
-- the corrected reader was inspected at narrow-phone, iPhone, and iPad
-  dimensions, including increased text size, with no horizontal overflow.
+- Replaced the advanced supplier-document capstone with a Synthetic SME
+  Operations Exception Assistant using 15 fictional work items.
+- Added a frozen 13-issue expected register and rules R001–R011.
+- Made the deterministic exception report useful without AI.
+- Made the live model lab optional and kept model ID in configuration.
+- Added meaningful review, exact-revision approval, local draft outbox, kill
+  switch, fallback, evaluation, UAT, adoption, and handover.
+- Made `PILOT`, `REWORK`, and `DO NOT PILOT` equally valid evidence-based
+  outcomes.
 
-## 1.2.1 — 2026-07-25
+### Preserved advanced material
 
-Visual-design and accessibility release.
+- Moved the former 12 weeks, 20-case supplier corpus, supplier schemas, and
+  generation tools into
+  `future_courses/course_04_controlled_document_ai/source_material/`.
+- Excluded archived source material from Course 1 progress and validation.
 
-Changed:
+### PWA architecture
 
-- rebuilt the home screen around a course-specific source → extraction →
-  human-review → approved-output visual;
-- replaced equal-weight statistics with a prominent overall progress ring and
-  separate foundation/build-week progress;
-- replaced platform-dependent interface glyphs with one offline inline-SVG
-  icon system;
-- strengthened card hierarchy, spacing, motion, touch feedback, light/dark
-  surfaces, and the iPhone/iPad navigation treatment;
-- widened the mobile/tablet shell breakpoint so an 834-pixel iPad uses the
-  focused drawer and bottom navigation;
-- reduced technical noise in lesson metadata and constrained prose to a more
-  readable line length;
-- improved the next-step path, source-currency card, search results, settings,
-  notes, and previous/next lesson controls.
+- Added canonical `curriculum.json`.
+- Added stable lesson IDs and revisions.
+- Made course grouping, progress, reading order, checkpoints, and career path
+  metadata-driven.
+- Added a separate Career tab.
+- Added state-v1 migration and old-backup support.
+- Included curriculum metadata in the content and service-worker build hash.
+- Preserved manifest identity, base path, cache prefix, offline bundle, and
+  learner-controlled updates.
 
-Fixed:
+### Validation
 
-- dark-theme secondary buttons no longer inherit near-invisible dark text;
-- course progress now exposes real progressbar semantics;
-- route changes move keyboard focus meaningfully;
-- the mobile course drawer has an explicit close control and focus containment;
-- search result counts are announced, hidden file import receives a visible
-  focus state, and code-copy/range controls meet the 44-pixel target;
-- the skip link stays fully outside the iOS status area until keyboard focus
-  makes it relevant;
-- the mobile tab bar is docked to the viewport edge, fills the bottom safe
-  area, and no longer lets course content show beneath its floating gap.
+- Replaced fixed 8-foundation/12-week/supplier-corpus assertions with
+  metadata-driven Course 1 checks.
+- Added practice-data and schema checks.
+- Expanded PWA tests for career separation, stable IDs, migration, mobile
+  navigation, and offline/update behavior.
 
-## 1.2.0 — 2026-07-25
+## 1.2.x and earlier
 
-Course-reader and maintained-publication release.
-
-Added:
-
-- a dependency-free iPhone/iPad/desktop PWA generated directly from the course
-  Markdown;
-- full-course search, a glossary path, local completion tracking, private
-  device notes, progress export/import, themes, and adjustable text size;
-- an iOS/iPadOS installation guide and offline core-reading cache;
-- a learner-controlled waiting-service-worker update prompt;
-- deterministic PWA content hashes, generated PNG/maskable icons, and eleven
-  build/update/accessibility tests;
-- a GitHub Pages workflow that validates the course, tests the PWA, builds the
-  repository subpath, and deploys only after every gate passes;
-- an eight-week Codex maintenance schedule that runs the evergreen official-
-  source audit and publishes only verified, allowlisted, tested course edits.
-
-Verified:
-
-- desktop, 390-pixel phone, and iPad responsive layouts without horizontal
-  overflow;
-- course navigation, full-text search, Week 7 update checkpoint, local progress
-  and note persistence;
-- a real old-worker → waiting-worker prompt → learner activation → new-version
-  reload sequence;
-- current GitHub Pages action majors, Apple installation steps, and Codex
-  scheduled-task constraints against official sources.
-
-## 1.1.0 — 2026-07-25
-
-Beginner-accessibility revision.
-
-Added:
-
-- an eight-chapter pre-Week-1 foundation sequence for a learner with no coding
-  or command-line experience;
-- a plain-language glossary;
-- PowerShell copy/paste, error-reporting, stop, and destructive-command safety;
-- first-Python, API/JSON, Git, AI/document-workflow, n8n/Docker/database, and
-  safe vibe-coding lessons;
-- reusable AI-assistance and debugging records;
-- an explicit beginner-readiness audit and self-check gate;
-- explicit beginner checkpoints in every project week.
-
-Changed:
-
-- removed prior technical knowledge as an assumed prerequisite;
-- clarified that complete beginners may need extra time or two calendar weeks
-  for one formal course week;
-- annotated the Windows setup to distinguish commands, file content, output,
-  long-running servers, and verification checks.
-
-## 1.0.0 — 2026-07-25
-
-Initial standalone course release.
-
-Added:
-
-- 12 build weeks at 8–10 hours each with consistent outcome, concepts, official readings, guided build, capstone increment, artifact, gate, failure, and time sections;
-- Windows setup based on observed local preflight state;
-- canonical n8n/Python/FastAPI/Pydantic/Docling/pytest/OpenAI Responses/Supabase path;
-- six portable contracts, state machine, and approval/idempotency invariants;
-- synthetic supplier-review capstone and reproducible frozen 20-case corpus;
-- local vendor-neutral JSONL evaluation contract;
-- AVG/AI Act/legal-status engineering week;
-- security, failure, observability, restoration, deletion, and clean-start requirements;
-- templates, schemas, software matrix, stack manifest, source register, and evergreen audit prompt.
-
-Dated source decisions:
-
-- Responses selected; Assistants excluded because of its 2026-08-26 shutdown.
-- Hosted OpenAI Evals excluded because of 2026-10-31 read-only and 2026-11-30 shutdown dates.
-- GPT-5.6 Terra/Luna selected as configurable benchmark candidates; Sol optional as quality ceiling.
-- Regulation (EU) 2026/1744 recorded as adopted/published but not yet in force on audit date; entry into force 2026-07-27.
-- Article 50 general application date recorded as 2026-08-02 with limited transition explained.
-- Amended high-risk dates recorded generally as 2027-12-02 for Annex III systems and 2028-08-02 for Annex I product systems, subject to exact scope.
-- Dutch supervisory/proposal and consultation material labelled according to non-final status.
-
-Validation state:
-
-- generated structural, schema, JSON/JSONL/YAML, internal-link, and corpus-integrity results are in [`VALIDATION_REPORT.md`](VALIDATION_REPORT.md);
-- deterministic regeneration, official-link audit, and visual review of every rendered corpus page are recorded separately in [`RELEASE_VALIDATION.md`](RELEASE_VALIDATION.md).
+The earlier course built a controlled synthetic supplier quotation and terms
+review system. Its engineering material remains preserved as future Course 4
+source material. See the archived legacy documents for the detailed 1.x
+history and design.

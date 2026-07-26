@@ -1,102 +1,103 @@
-# Beginner Readiness Audit
+# Beginner Readiness Check
 
-Audit date: 2026-07-25  
-Learning-path version audited: 1.1.0; carried into course 1.2.2 unchanged
-Learner profile tested: no coding knowledge, no CLI knowledge, uses an AI
-assistant for “vibe coding”
+## You may start with zero technical knowledge
 
-## Audit conclusion
+You do not need prior experience with:
 
-The original 1.0.0 course was **not** a literal-beginner course. It stated that
-the learner should already be comfortable with PowerShell, Git, Markdown,
-JSON, YAML, `.env` files, and simple Python. Week 2 then required FastAPI,
-Pydantic, HTTP, pytest, n8n, branching, and retries.
+- programming;
+- PowerShell;
+- Git;
+- APIs or JSON;
+- spreadsheets beyond basic use;
+- databases;
+- n8n or other workflow tools;
+- AI APIs.
 
-Version 1.1.0 removes that hidden prerequisite. It adds a required beginner
-foundation sequence and places a prerequisite/explanation checkpoint before
-the concepts in every project week.
+Start with the [Beginner Foundations](foundations/README.md). Do not skip them
+because an AI assistant can generate code. The professional skill is being able
+to explain, test, stop, and repair what was generated.
 
-This does not make the capstone trivial or “no-code.” It makes the learning
-path explicit, slower, safer, and inspectable.
+## Practical prerequisites
 
-## Audit criteria and evidence
+Before starting, confirm:
 
-| Criterion | Evidence in version 1.1.0 | Result |
-|---|---|---|
-| Clear first click/order | [`README.md`](README.md#start-here) and [`foundations/README.md`](foundations/README.md) | Pass |
-| No assumed CLI knowledge | [`foundations/02_COMMAND_LINE_SURVIVAL.md`](foundations/02_COMMAND_LINE_SURVIVAL.md) | Pass |
-| Commands distinguished from prompts/output/file content | CLI chapter and annotated [`SETUP_WINDOWS.md`](SETUP_WINDOWS.md) | Pass |
-| Safe copy/paste and stop/recovery rules | CLI chapter plus [`templates/debugging_record.md`](templates/debugging_record.md) | Pass |
-| Files, paths, extensions, and text formats taught | [`foundations/01_FILES_AND_TEXT.md`](foundations/01_FILES_AND_TEXT.md) | Pass |
-| First Python and test concepts taught | [`foundations/03_CODE_AND_PYTHON.md`](foundations/03_CODE_AND_PYTHON.md) | Pass |
-| APIs, HTTP, JSON, auth, timeout, and retry vocabulary taught | [`foundations/04_WEB_APIS_AND_JSON.md`](foundations/04_WEB_APIS_AND_JSON.md) | Pass |
-| Git/GitHub distinction, status, diff, commit, and secret safety taught | [`foundations/05_GIT_AND_SAFE_CHANGES.md`](foundations/05_GIT_AND_SAFE_CHANGES.md) | Pass |
-| AI limitations, schemas, OCR, retrieval, and approval explained plainly | [`foundations/06_AI_AND_DOCUMENT_WORKFLOWS.md`](foundations/06_AI_AND_DOCUMENT_WORKFLOWS.md) | Pass |
-| Vibe-coding method is bounded and test-led | [`foundations/07_SAFE_VIBE_CODING.md`](foundations/07_SAFE_VIBE_CODING.md) and [`templates/ai_assistance_log.md`](templates/ai_assistance_log.md) | Pass |
-| n8n, Docker, FastAPI, PostgreSQL, Supabase, and component boundaries explained | [`foundations/08_N8N_DOCKER_AND_DATABASES.md`](foundations/08_N8N_DOCKER_AND_DATABASES.md) | Pass |
-| New terminology has a lookup path | [`foundations/GLOSSARY.md`](foundations/GLOSSARY.md) | Pass |
-| Each project week states what a beginner must understand first | “Beginner checkpoint” in [`weeks/`](weeks/WEEK_01.md) Weeks 1–12 | Pass |
-| Beginner pace is honest | [`foundations/README.md`](foundations/README.md#beginner-pace) | Pass |
+- [ ] I have a Windows computer on which I may install software.
+- [ ] I can create a separate folder for this course.
+- [ ] I will use only synthetic course data.
+- [ ] I will not paste employer, client, patient, employee, or personal
+      information into the course project or an AI tool.
+- [ ] I will keep API keys outside code and Git.
+- [ ] I am willing to stop when I cannot explain an observed result.
+- [ ] I understand that the PWA is the course reader, not the workflow itself.
 
-## Remaining realities
+## Learning readiness
 
-The course still requires:
+The course is gate-based. A healthy study rhythm matters more than speed.
 
-- a Windows computer on which software can be installed;
-- enough storage and memory for Docker, Python packages, Docling, and OCR;
-- creating vendor accounts for the later live labs;
-- a small, controlled API budget;
-- reading technical errors and working through them;
-- learning some Python, JSON, SQL, HTTP, Git, and security concepts;
-- extra time beyond 8–10 hours during the first technical weeks;
-- willingness to repeat a failed lab instead of accepting an AI assistant's
-  unverified claim.
+You are ready when you can:
 
-The course cannot responsibly turn the capstone into a click-only/no-code
-exercise. Its central proof is that the learner understands and can test the
-safety boundaries. A complete beginner can take the course, but must do the
-foundation exercises and build in small increments.
+- reserve several short, focused sessions rather than relying on one long
+  session;
+- write down errors and observed outputs instead of repeatedly trying random
+  changes;
+- redo a small exercise without copying;
+- explain uncertainty without hiding it;
+- accept `NO AI`, `REWORK`, or `DO NOT PILOT` as valid conclusions.
 
-## Learner self-check gate
+## Health and employment boundary
 
-Before Week 1, demonstrate each item without asking an AI assistant for the
-answer:
+If study or business preparation happens during sick leave, discuss sustained
+workload, interviews, and especially paid activity with the relevant
+bedrijfsarts, casemanager, employer, or UWV contact as applicable. Self-paced
+study is not automatically equivalent to normal job capacity, but it should
+not conflict with recovery or reintegration obligations.
 
-- [ ] Show a full path, file name, and extension.
-- [ ] Open PowerShell and run `Get-Location` and `Get-ChildItem`.
-- [ ] Explain which text in a lesson is the command and which text is output.
-- [ ] Explain how Ctrl+C is used with a local server.
-- [ ] Describe what JSON object, array, string, Boolean, and null mean.
-- [ ] Read a five-to-ten-line Python function and name its inputs and output.
-- [ ] Run a tiny passing test, deliberately make it fail, and restore it.
-- [ ] Explain request, response, endpoint, status code, timeout, and retry.
-- [ ] Use `git status`, `git diff`, and `git diff --staged`.
-- [ ] Explain Git versus GitHub and why `.env` must not be committed.
-- [ ] Draw n8n → FastAPI → storage/database and explain each component.
-- [ ] Explain why schema-valid AI output can still be factually wrong.
-- [ ] Explain why document text is untrusted and approval binds to an exact
-  output.
-- [ ] Use the safe vibe-coding prompt for one small change and complete an AI
-  assistance log.
+This course does not provide employment or benefits advice.
 
-If any box cannot be demonstrated, return to the linked foundation chapter.
-There is no penalty for repeating it.
+## Foundation gate
 
-## Weekly learner check
+Do not begin Module 1 until you can demonstrate all of the following:
 
-At the start of every project week:
+- [ ] I can identify the folder a command will affect.
+- [ ] I can distinguish code, configuration, data, secrets, and generated
+      output.
+- [ ] I can read a small Python function line by line.
+- [ ] I can explain a JSON object, a CSV row, a column, an ID, and a missing
+      value.
+- [ ] I can use Git status and diff to inspect a change.
+- [ ] I know that valid JSON from an AI model is not automatically true.
+- [ ] I can explain the difference between a deterministic rule and an AI
+      judgment.
+- [ ] I can describe a trigger, a workflow step, a state, an exception, and a
+      manual fallback.
+- [ ] I can run a small check twice and compare the results.
+- [ ] I know how to stop a running command.
 
-1. Read the outcome and beginner checkpoint.
-2. Define each listed term in your own words.
-3. perform the smallest pre-build exercise;
-4. copy the week's safe AI-assistance request only after filling in its narrow
-   goal;
-5. stop if the assistant proposes a broader system than the week's increment.
+If one item is unclear, return to the matching foundation. This is normal.
 
-At the end of every project week:
+## Module 1 entry exercise
 
-1. run the stated test gate;
-2. save observed output;
-3. explain one failure path;
-4. explain every AI-assisted material change;
-5. state what remains unverified.
+Choose a harmless everyday process such as:
+
+- preparing a weekly shopping list;
+- checking whether household tasks are overdue;
+- organizing fictional project actions;
+- validating a synthetic spreadsheet.
+
+Write:
+
+1. what starts the process;
+2. what information enters;
+3. which steps always follow fixed rules;
+4. where a person makes a judgment;
+5. what can go wrong;
+6. how the task can still be completed manually.
+
+Do not automate it. The ability to observe before building is the first
+consulting skill.
+
+## Not ready is useful information
+
+If the readiness check feels overwhelming, complete one foundation per study
+session. The course intentionally separates foundational literacy from the
+project so you can see what you are learning and why.

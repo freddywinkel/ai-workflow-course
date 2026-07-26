@@ -1,103 +1,66 @@
-course_version: 1.2.1
-last_verified: "2026-07-25"
+schema_version: 2
+course_id: course-1-controlled-ai-workflow-foundations
+course_version: 2.0.0
+last_verified: "2026-07-26"
 verification_timezone: Europe/Amsterdam
 purpose: private synthetic-data learning demonstration
 
 runtime:
-  operating_system: Windows
+  operating_system: Windows 11
   python_target: "3.13"
-  python_reason: mature compatibility target; re-check Docling and dependency support
-  orchestration_runtime: Docker Desktop with n8n container
+  python_policy: "Use any audited supported Python >=3.12 that passes the clean test suite."
+  orchestration: local n8n learning instance
+  data_store: local synthetic CSV and JSON files
 
 required:
-  n8n:
-    version_policy: pin current stable after live audit
-    audited_stable: "2.31.6"
-    audited_prerelease_not_selected: "2.32.5"
-    role: orchestration, connector, retry, approval pause
-    source: https://docs.n8n.io/deploy/host-n8n/install-options/install-with-docker
+  git:
+    version_policy: current supported
+    role: change inspection and version history
+    source: https://git-scm.com/download/win
   python:
-    version_policy: "3.13.x"
-    role: domain service and tests
+    version_policy: ">=3.12"
+    role: deterministic rules, reports, and tests
     source: https://docs.python.org/3/using/windows.html
-  fastapi:
-    audited_version: "0.140.0"
-    version_policy: exact lock after clean tests
-    role: HTTP boundary
-    source: https://fastapi.tiangolo.com/
-  pydantic:
-    audited_stable: "2.13.4"
-    audited_prerelease_not_selected: "2.14.0a1"
-    version_policy: exact stable lock
-    role: runtime contracts and JSON Schema
-    source: https://docs.pydantic.dev/latest/
-  docling:
-    audited_github_release: "2.115.0"
-    audited_pypi_release: "2.114.0"
-    version_policy: resolve official-channel discrepancy; clean-install and corpus-test the selected exact version
-    role: PDF/DOCX parsing and OCR
-    source: https://docling-project.github.io/docling/getting_started/installation/
   pytest:
-    audited_version: "9.1.1"
-    version_policy: exact lock
-    role: local vendor-neutral regression
+    version_policy: compatible current major, then freeze
+    role: local regression tests
     source: https://docs.pytest.org/
-  postgresql:
-    version_policy: use a Supabase-supported current version; do not assume dashboard value
-    role: state, audit, retrieval
-    source: https://supabase.com/docs/guides/database/overview
-  supabase:
-    region_policy: explicitly select and record a European project region
-    bucket_policy: private
-    role: managed PostgreSQL and object storage
-    source: https://supabase.com/docs/guides/platform/regions
+  node:
+    version_policy: current LTS supported by selected n8n
+    role: local n8n runtime
+    source: https://nodejs.org/en/download
+  n8n:
+    version_policy: current stable after live audit, then pin
+    role: visual orchestration, branching, retry, and review pause
+    source: https://docs.n8n.io/hosting/installation/npm/
 
-model_provider:
-  api: OpenAI Responses API
-  structured_output: JSON Schema through Structured Outputs
-  response_store: false
-  model_ids_are_configuration: true
-  candidates_verified_2026_07_25:
-    balanced:
-      id: gpt-5.6-terra
-      input_usd_per_million_tokens: 2.50
-      output_usd_per_million_tokens: 15.00
-    cost_efficient:
-      id: gpt-5.6-luna
-      input_usd_per_million_tokens: 1.00
-      output_usd_per_million_tokens: 6.00
-    capability_reference:
-      id: gpt-5.6-sol
-      input_usd_per_million_tokens: 5.00
-      output_usd_per_million_tokens: 30.00
-  source: https://developers.openai.com/api/docs/models
-  python_sdk:
-    audited_version: "2.48.0"
-    version_policy: exact lock
-  exclusions:
-    - Assistants API
-    - hosted OpenAI Evals platform as test foundation
+ai:
+  required_for_course_pass: false
+  default_mode: offline-fixture
+  live_lab:
+    api_pattern: OpenAI Responses API or equivalent current structured-output API
+    model_id_is_configuration: true
+    model_environment_variable: AI_MODEL
+    structured_output: JSON Schema
+    raw_data_allowed: synthetic verified issue records only
+    source: https://developers.openai.com/api/docs/guides/structured-outputs
 
-optional:
-  retrieval: pgvector
-  model_comparison:
-    - Mistral OCR
-    - Azure Document Intelligence
-    - Ollama
-  orchestration_comparison:
-    - Power Automate
-    - Make
-  observability:
-    - Langfuse
-  evaluation_ui:
-    - Promptfoo
+deferred:
+  - FastAPI or production web service
+  - Docker
+  - PostgreSQL or Supabase
+  - OCR and document parsing
+  - vector retrieval
+  - OAuth production connectors
+  - multitenancy
+  - autonomous agents
+  - external write-back
 
-frozen_release_requires:
-  - exact dependency lock
-  - exact n8n image tag or digest
-  - recorded parser and OCR model versions
-  - recorded model IDs and available snapshots
-  - prompt and schema hashes
-  - code commit
-  - full regression rerun
-  - source-register refresh
+release_requires:
+  - curriculum and source audit
+  - exact dependency record
+  - package validation
+  - PWA tests
+  - clean-start capstone reproduction
+  - accessibility and responsive review
+  - installed-client update verification

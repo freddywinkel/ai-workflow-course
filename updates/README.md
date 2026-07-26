@@ -1,7 +1,8 @@
 # Evergreen Update Reports
 
 Run [`../EVERGREEN_UPDATE_PROMPT.md`](../EVERGREEN_UPDATE_PROMPT.md) before
-Week 1, before Week 7, and every 8–12 weeks thereafter.
+starting Course 1, before Module 5's live AI option, before any real pilot, and
+every 8–12 weeks while the material is actively used.
 
 For each audit, first save the unchanged report here as:
 
@@ -14,7 +15,7 @@ old issued copy and changelog entry. A revision record should identify:
 
 - the original and replacement statements;
 - legal or product status and effective date;
-- affected weeks, labs, manifests, and tests;
+- affected foundations, modules, labs, manifests, and tests;
 - primary official sources and verification date;
 - migration work and test reruns;
 - unresolved risks and next review date.

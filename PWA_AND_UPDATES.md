@@ -1,103 +1,138 @@
-# Course PWA and Automatic Updates
+# PWA and Course Updates
 
-The course reader is a static progressive web app (PWA) published from this
-repository. It contains no AI key, database password, learner account, or real
-document data.
+## What the PWA is
 
-## What the app does
+The PWA is an offline course reader and local progress tracker.
 
-- presents the beginner foundations, glossary, twelve weeks, and course update
-  history in a phone- and tablet-friendly reader;
-- saves reading progress, completed sections, notes, text size, and theme on the
-  current device;
-- keeps the core reading material available after it has been opened online;
-- checks for a newly published version at startup, when the app returns to the
-  foreground, and when **Check for updates** is selected;
-- asks before activating a waiting version, then reloads once under the new
-  service worker.
+It:
 
-Progress is deliberately local to each browser or installed app. It is not
-synced between an iPhone and iPad and is removed if Safari website data for the
-site is deleted. The course source remains in GitHub.
+- bundles the current Course 1 Markdown;
+- shows a separate Career Path tab;
+- tracks completion only for current foundations and modules;
+- stores notes, appearance, and progress in local browser storage;
+- searches the bundled reading material;
+- installs on supported desktop and mobile browsers;
+- presents learner-controlled course updates.
 
-## Install on iPhone or iPad
+It does not:
 
-1. Open `https://freddywinkel.github.io/ai-workflow-course/` in Safari.
-2. Select Safari's **Share** button.
-3. Select **Add to Home Screen**. If it is not visible, scroll the share sheet
-   and choose **Edit Actions**.
-4. Turn on **Open as Web App** when Safari presents that option.
-5. Keep the suggested name or shorten it, then select **Add**.
-6. Launch the new home-screen icon once while online so the reading material can
-   be cached.
+- run the capstone;
+- contain an AI model;
+- store an API key;
+- connect to GitHub after installation except for static course updates;
+- synchronize progress;
+- include unfinished future-course lessons.
 
-Safari, not an in-app browser, is required for the normal iOS/iPadOS
-home-screen installation path.
+## Canonical structure
 
-## How a course change reaches the app
+`curriculum.json` is the canonical information architecture:
 
-```text
-official-source audit
-  → dated change report
-  → minimum justified course edits
-  → deterministic course and app tests
-  → Git commit and push
-  → GitHub Pages validation/build/deploy
-  → installed PWA detects a waiting version
-  → learner accepts update
+- stable lesson IDs;
+- lesson revisions;
+- ordered groups and reading sequence;
+- progress eligibility;
+- current-course promise and boundary;
+- module summaries;
+- career-course roadmap.
+
+Markdown remains the lesson-content source of truth.
+
+The build fails when curriculum metadata references a missing, duplicated, or
+invalid source.
+
+## Progress model
+
+Course 2.0 uses stable lesson IDs plus revision dates. This prevents:
+
+- a renamed file from losing progress unnecessarily;
+- a substantially rewritten lesson from remaining falsely completed;
+- future course cards from inflating Course 1 progress.
+
+The app migrates the old schema-v1 local state:
+
+- appearance and reading size are preserved;
+- notes are retained where possible;
+- completion is preserved only for lessons declared equivalent;
+- rewritten lessons require completion again;
+- future planned courses never receive completion controls.
+
+Export a progress backup before a major release.
+
+## Build
+
+From `app` with Node 22 or another audited compatible release:
+
+```powershell
+node scripts/build.mjs
+node --test tests\*.test.mjs
 ```
 
-The app is generated from the course Markdown. A course edit does not require
-hand-copying the same text into app source code.
+For the GitHub Pages subpath:
 
-## Scheduled audit
+```powershell
+$env:BASE_PATH="/ai-workflow-course/"
+node scripts/build.mjs
+```
 
-A Codex heartbeat attached to the course task runs every eight weeks. It uses
-[`EVERGREEN_UPDATE_PROMPT.md`](EVERGREEN_UPDATE_PROMPT.md), checks primary
-official sources, and stops with `UNVERIFIED` when browsing or a required
-source is unavailable.
+Generated files belong in `app/dist`. Do not edit them directly.
 
-The computer must be on, the Codex desktop app must be running, and this local
-repository must remain available when the heartbeat is due. The PWA itself does
-not run research in the background.
+## Content and update identity
 
-The automation may publish only when all of these are true:
+The build ID changes when any of these change:
 
-1. a dated audit report identifies the exact old and replacement statements;
-2. enacted law, future applicable requirements, proposals, consultations,
-   non-binding guidance, and vendor recommendations are labelled separately;
-3. human approval, provenance, synthetic-data restrictions, manual fallback,
-   and the vendor-neutral gold set remain intact;
-4. the deterministic package validator and PWA tests pass;
-5. the app builds for the repository subpath;
-6. no secret, real client document, personal data, generated dependency folder,
-   or unrelated workspace file is staged;
-7. the GitHub Pages deployment succeeds and the live course/version can be
-   verified.
+- curriculum metadata;
+- bundled Markdown;
+- PWA HTML, JavaScript, CSS, or service worker;
+- base path.
 
-When there is no applicable change, the automation records `NO CHANGE` without
-creating a cosmetic course revision. When verification or testing fails, it
-does not push or deploy and reports the blocker in the Codex task.
+The content bundle includes its schema version, curriculum version,
+current-course ID, content hash, and lesson metadata.
 
-## Manual checkpoints
+## Installed-update contract
 
-The scheduled audit does not replace the course checkpoints. Run the evergreen
-audit manually:
+Keep unchanged unless intentionally replacing the installed app:
 
-- immediately before starting Week 1;
-- immediately before starting Week 7;
-- after a material deprecation, security advisory, or legal change;
-- whenever the app's displayed verification date is older than the permitted
-  course review interval.
+- manifest ID;
+- start URL;
+- scope;
+- GitHub Pages base path;
+- service-worker cache prefix;
+- local-storage key migration.
 
-Use the app's **Check for updates** action after an audit has been published.
+The service worker:
 
-## Recovery
+- fetches new precache resources with `cache: "reload"`;
+- waits rather than activating silently;
+- displays an update choice;
+- activates after the learner selects **Update now**;
+- deletes only obsolete caches with the course prefix;
+- leaves local progress and notes untouched.
 
-If the app says it is offline, keep using the cached reading material and do
-not assume a new audit was completed. Reconnect, open the app, and select
-**Check for updates**.
+## Update schedule
 
-If a new version cannot activate, close every open tab and installed copy of
-the course, reopen the home-screen app, and check again. Clearing Safari website
-data is a last resort because it also removes local progress.
+Run the evergreen audit:
+
+- before the learner starts the live AI module;
+- before any real pilot;
+- after a material AI Act, AVG, or AP guidance change;
+- after a model, API, or data-policy change;
+- after a major n8n, Microsoft, or Google workflow change;
+- at least every 12 weeks while the course is active.
+
+Durable concepts should rarely require revision. Put current tool and legal
+details in updateable references instead of scattering them through lessons.
+
+## Course update checklist
+
+1. Run `EVERGREEN_UPDATE_PROMPT.md`.
+2. Update affected sources and `SOURCE_REGISTER.md`.
+3. Update lesson revision dates in `curriculum.json`.
+4. Add a changelog entry.
+5. Run package validation.
+6. Run PWA tests and production build.
+7. Test Overview, Course, Career, Search, and Settings.
+8. Test mobile and desktop layouts.
+9. Test offline reading.
+10. Rehearse an old-installed-client update.
+11. Confirm migrated progress behavior.
+12. Publish only after `RELEASE_VALIDATION.md` passes.

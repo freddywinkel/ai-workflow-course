@@ -1,0 +1,14 @@
+issue_id,work_item_id,field,rule_code,severity,expected_message
+ISS-001,WI-0002,owner_role,R007,medium,Active work requires an owner role.
+ISS-002,WI-0003,due_date,R005,high,Due date is before received date.
+ISS-003,WI-0004,priority,R003,medium,Priority is not in the allowed list.
+ISS-004,WI-0005,completed_date,R006,high,Completed work requires a completion date.
+ISS-005,WI-0006,source_reference,R010,high,Source reference REF-1006 is duplicated.
+ISS-006,WI-0007,source_reference,R010,high,Source reference REF-1006 is duplicated.
+ISS-007,WI-0008,amount,R008,high,Amount must not be negative.
+ISS-008,WI-0009,currency,R009,medium,A populated amount requires currency EUR.
+ISS-009,WI-0010,due_date,R011,high,Open work is overdue on the fixed assessment date.
+ISS-010,WI-0011,received_date,R004,high,Date must use ISO format YYYY-MM-DD.
+ISS-011,WI-0012,completed_date,R006,medium,Non-completed work must not have a completion date.
+ISS-012,WI-0013,title,R001,medium,Required title is missing.
+ISS-013,WI-0014,status,R002,high,Status is not in the allowed list.
