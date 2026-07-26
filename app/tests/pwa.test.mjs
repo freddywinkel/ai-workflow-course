@@ -4,6 +4,7 @@ import { readFile, stat } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { before, test } from "node:test";
 import { fileURLToPath } from "node:url";
+import { renderMarkdown } from "../src/markdown.js";
 
 const appRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const distRoot = join(appRoot, "dist");
@@ -108,6 +109,140 @@ test("service worker preserves a learner-controlled waiting update", () => {
   assert.match(serviceWorkerSource, /const cache = await caches\.open\(CACHE_NAME\)/);
   assert.match(serviceWorkerSource, /request\.mode === "navigate"/);
   assert.match(serviceWorkerSource, /course-content\.json/);
+  assert.match(serviceWorkerSource, /markdown\.js/);
+});
+
+test("Markdown lists keep wrapped lines inside their list items", () => {
+  assert.match(appSource, /from "\.\/markdown\.js"/);
+  assert.doesNotMatch(appSource, /function renderMarkdown\(/);
+
+  const rendered = renderMarkdown(`## What you need before starting
+
+- A Windows computer on which you are allowed to install software.
+- A normal text editor. Visual Studio Code is recommended, but Notepad is
+  sufficient for the first two chapters.
+- The supplied synthetic course files.
+- Willingness to stop when you do not understand a command or when observed
+  output differs from the lesson.`);
+
+  const unorderedLists = rendered.match(/<ul>/g) || [];
+  const listItems = rendered.match(/<li(?:\s|>)/g) || [];
+  assert.equal(unorderedLists.length, 1);
+  assert.equal(listItems.length, 4);
+  assert.match(
+    rendered,
+    /<li>A normal text editor[^<]*Notepad is sufficient for the first two chapters\.<\/li>/,
+  );
+  assert.match(
+    rendered,
+    /<li>Willingness to stop[^<]*observed output differs from the lesson\.<\/li>/,
+  );
+  assert.doesNotMatch(rendered, /<p>(?:sufficient|output differs)/);
+
+  let wrappedItemsChecked = 0;
+  for (const courseDocument of bundle.documents) {
+    const lines = courseDocument.markdown.replace(/\r\n?/g, "\n").split("\n");
+    let fenced = false;
+    let sourceListItems = 0;
+    for (let index = 0; index < lines.length; index += 1) {
+      if (/^\s*```/.test(lines[index])) {
+        fenced = !fenced;
+        continue;
+      }
+      if (fenced) continue;
+      const marker = lines[index].match(/^([ \t]*)(?:[-*+]|\d+\.)\s+(.+)$/);
+      if (!marker) continue;
+      sourceListItems += 1;
+      const baseIndent = marker[1].replaceAll("\t", "    ").length;
+      const continuation = [];
+      for (let lookahead = index + 1; lookahead < lines.length; lookahead += 1) {
+        const next = lines[lookahead];
+        if (!next.trim() || /^([ \t]*)(?:[-*+]|\d+\.)\s+/.test(next)) break;
+        const indent = (next.match(/^[ \t]*/)?.[0] || "")
+          .replaceAll("\t", "    ").length;
+        if (indent <= baseIndent || /^```/.test(next.trim())) break;
+        continuation.push(next);
+      }
+      if (!continuation.length) continue;
+      wrappedItemsChecked += 1;
+      const isolated = renderMarkdown([lines[index], ...continuation].join("\n"));
+      assert.equal(
+        (isolated.match(/<li(?:\s|>)/g) || []).length,
+        1,
+        `${courseDocument.sourcePath}:${index + 1} did not remain one list item`,
+      );
+      assert.doesNotMatch(
+        isolated,
+        /<p>/,
+        `${courseDocument.sourcePath}:${index + 1} detached a continuation`,
+      );
+    }
+    const fullPage = renderMarkdown(courseDocument.markdown);
+    assert.equal(
+      (fullPage.match(/<li(?:\s|>)/g) || []).length,
+      sourceListItems,
+      `${courseDocument.sourcePath} changed the number of list items`,
+    );
+    assert.doesNotMatch(fullPage, /\u0000|>CODE\d+</);
+  }
+  assert.ok(wrappedItemsChecked >= 87);
+});
+
+test("Markdown lists preserve nesting, numbering, and task hanging indents", () => {
+  const nested = renderMarkdown(`6. Switch on result:
+   - accepted;
+   - permanent rejection;
+   - transient failure;
+   - unexpected response.
+7. Wait and retry.
+8. Success log.
+9. Manual-failure queue.`);
+  assert.match(
+    nested,
+    /^<ol start="6"><li>Switch on result:<ul><li>accepted;<\/li><li>permanent rejection;<\/li><li>transient failure;<\/li><li>unexpected response\.<\/li><\/ul><\/li><li>Wait and retry\.<\/li><li>Success log\.<\/li><li>Manual-failure queue\.<\/li><\/ol>$/,
+  );
+
+  const continued = renderMarkdown(`9. Boundary reading.
+10. Second reading.`);
+  assert.match(continued, /^<ol start="9">/);
+
+  const task = renderMarkdown(`- [ ] I can recognise Markdown, JSON, YAML, and
+  environment files.`);
+  assert.match(task, /class="markdown-task-item"/);
+  assert.match(
+    task,
+    /<span class="markdown-task-text">I can recognise Markdown, JSON, YAML, and environment files\.<\/span>/,
+  );
+  assert.doesNotMatch(task, /<p>environment files/);
+});
+
+test("Markdown list boundaries stay safe around blocks and inline code links", () => {
+  const rendered = renderMarkdown(`- Safe item
+  <script>alert("no")</script>
+
+\`\`\`json
+{"ok": true}
+\`\`\`
+
+| Field | Value |
+| --- | --- |
+| state | received |`);
+
+  assert.match(
+    rendered,
+    /<li>Safe item &lt;script&gt;alert\(&quot;no&quot;\)&lt;\/script&gt;<\/li>/,
+  );
+  assert.equal((rendered.match(/class="code-block"/g) || []).length, 1);
+  assert.equal((rendered.match(/class="table-wrap"/g) || []).length, 1);
+
+  const linkedCode = renderMarkdown(
+    "1. [`01_FILES_AND_TEXT.md`](01_FILES_AND_TEXT.md) — start here.",
+  );
+  assert.match(
+    linkedCode,
+    /<a href="01_FILES_AND_TEXT\.md"><code>01_FILES_AND_TEXT\.md<\/code><\/a>/,
+  );
+  assert.doesNotMatch(linkedCode, />CODE\d+</);
 });
 
 test("app checks on startup, focus, foreground return and manual action", () => {
@@ -222,7 +357,7 @@ test("local progress survives course updates and reset is confirmed", () => {
 });
 
 test("built JavaScript is syntactically valid and required artifacts exist", async () => {
-  for (const file of ["app.js", "sw.js"]) {
+  for (const file of ["app.js", "markdown.js", "sw.js"]) {
     execFileSync(nodeExecutable, ["--check", join(distRoot, file)], {
       stdio: "pipe",
     });
@@ -230,6 +365,7 @@ test("built JavaScript is syntactically valid and required artifacts exist", asy
   for (const file of [
     "index.html",
     "app.js",
+    "markdown.js",
     "styles.css",
     "course-content.json",
     "manifest.webmanifest",

@@ -1325,6 +1325,15 @@ a {
   margin-top: 0.35rem;
 }
 
+.markdown-body :where(ul, ol) {
+  padding-inline-start: 1.65em;
+}
+
+.markdown-body :where(ul, ol) :where(ul, ol) {
+  margin-top: 0.35rem;
+  padding-inline-start: 1.45em;
+}
+
 .markdown-body blockquote {
   margin: 1.4rem auto;
   padding: 0.75rem 1rem;
@@ -1444,7 +1453,7 @@ a {
   width: 1.08em;
   height: 1.08em;
   place-items: center;
-  margin-right: 0.38em;
+  margin-top: 0.38em;
   border: 1.5px solid var(--faint);
   border-radius: 0.25em;
   color: transparent;
@@ -1462,6 +1471,21 @@ a {
   border-color: var(--forest);
   background: var(--forest);
   color: var(--paper);
+}
+
+.markdown-body .markdown-task-item {
+  display: grid;
+  grid-template-columns: 1.08em minmax(0, 1fr);
+  column-gap: 0.5em;
+  list-style: none;
+}
+
+.markdown-task-text {
+  min-width: 0;
+}
+
+.markdown-task-item > :where(ul, ol) {
+  grid-column: 2;
 }
 
 .learner-notes {

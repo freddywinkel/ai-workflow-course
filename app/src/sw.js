@@ -6,6 +6,7 @@ const PRECACHE_URLS = [
   BASE_PATH,
   `${BASE_PATH}index.html`,
   `${BASE_PATH}app.js`,
+  `${BASE_PATH}markdown.js`,
   `${BASE_PATH}styles.css`,
   `${BASE_PATH}favicon.svg`,
   `${BASE_PATH}course-content.json`,

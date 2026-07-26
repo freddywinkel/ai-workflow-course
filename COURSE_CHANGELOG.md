@@ -2,6 +2,29 @@
 
 This file records issued course changes. Dated audit reports belong in `updates/`.
 
+## 1.2.2 — 2026-07-26
+
+Course-reader text-alignment patch.
+
+Fixed:
+
+- valid wrapped Markdown now remains inside its bullet or numbered item instead
+  of becoming a detached, flush-left paragraph;
+- ordered lists retain their starting number, and nested choices remain under
+  the correct parent step;
+- checklist rows use one aligned text column without an extra native bullet;
+- filenames formatted as inline code inside links display their real label
+  rather than an internal renderer token.
+
+Verified:
+
+- the rendered-course audit covered 87 affected items and 96 continuation
+  lines across ten bundled documents;
+- list, nesting, numbering, checklist, escaping, code-block, and table
+  regressions are covered by the local PWA tests;
+- the corrected reader was inspected at narrow-phone, iPhone, and iPad
+  dimensions, including increased text size, with no horizontal overflow.
+
 ## 1.2.1 — 2026-07-25
 
 Visual-design and accessibility release.

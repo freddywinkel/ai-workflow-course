@@ -1,7 +1,7 @@
 # Beginner Readiness Audit
 
 Audit date: 2026-07-25  
-Learning-path version audited: 1.1.0; carried into course 1.2.1 unchanged
+Learning-path version audited: 1.1.0; carried into course 1.2.2 unchanged
 Learner profile tested: no coding knowledge, no CLI knowledge, uses an AI
 assistant for “vibe coding”
 

@@ -305,7 +305,14 @@ async function gitCommit() {
 async function build() {
   const basePath = normaliseBasePath(process.env.BASE_PATH || "/");
   const bundle = await createCourseBundle();
-  const sourceAssetNames = ["index.html", "styles.css", "app.js", "sw.js", "favicon.svg"];
+  const sourceAssetNames = [
+    "index.html",
+    "styles.css",
+    "app.js",
+    "markdown.js",
+    "sw.js",
+    "favicon.svg",
+  ];
   const sourceAssets = await Promise.all(
     sourceAssetNames.map(async (name) => [name, await readFile(join(sourceRoot, name), "utf8")]),
   );

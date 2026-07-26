@@ -1,6 +1,6 @@
-# Release Validation — Course 1.2.1
+# Release Validation — Course 1.2.2
 
-Validation date: 2026-07-25  
+Validation date: 2026-07-26
 Environment: Windows, Europe/Amsterdam  
 Scope: this issued course package and public static reader; the learner's
 capstone remains a private, synthetic-data demonstration
@@ -93,7 +93,7 @@ twelve weekly files.
 
 Observed local results:
 
-- all 12 Node PWA tests passed;
+- all 15 Node PWA tests passed;
 - the course package validator passed all 16 checks with no warnings;
 - the manifest, 192/512/maskable icons, Apple touch icon, start URL, scope,
   service worker, and `.nojekyll` artifact were generated;
@@ -135,7 +135,7 @@ Observed results:
   service-worker activation behavior remained intact;
 - browser diagnostic logs contained no warnings or errors.
 
-The final local rerun completed 12 PWA tests and all 16 course-package checks
+The final local rerun completed 15 PWA tests and all 16 course-package checks
 with no failures or warnings.
 
 ### 1.2.1 iOS safe-area follow-up
@@ -160,6 +160,33 @@ zero, every visible tab target exceeded 44 pixels, and browser diagnostics
 were empty. Both light and dark dock surfaces were inspected. Actual
 installed-iPhone appearance remains a device confirmation rather than
 something desktop emulation can prove.
+
+### 1.2.2 list-alignment follow-up
+
+The learner's installed-iPhone screenshot showed valid hard-wrapped Markdown
+continuations outside the visual indent of their bullet. A bundle-wide source
+audit found 87 affected items and 96 detached continuation lines across ten
+rendered documents. It also found a nested Week 2 choice list, ordered sections
+that intentionally begin above one, and wrapped checklist entries.
+
+The renderer now:
+
+- joins every explicitly indented source continuation to its owning list item;
+- preserves unordered and ordered nesting and emits the correct ordered-list
+  start;
+- gives checklist items a marker-free two-column layout so every wrapped line
+  shares one text edge;
+- stops safely at fenced code and table blocks, escapes continuation content,
+  and renders inline-code link labels correctly.
+
+Fifteen deterministic PWA tests passed. Rendered DOM and layout checks covered
+320×568 at 125% text in light mode, 390×844 in dark mode, 430×932 at 125% text
+in light mode, and 834×1112. The reported four-item prerequisites section
+rendered as one list with four direct items and no detached paragraph; Week 2
+rendered nine ordered steps with four choices nested under step 6; checklist
+markers computed to `list-style: none`; and every tested viewport had zero
+horizontal document overflow. Browser diagnostics were empty. Installed
+iPhone verification remains appropriate after the update is accepted.
 
 ### First production deployment
 
