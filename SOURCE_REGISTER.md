@@ -32,15 +32,17 @@ review for real work.
 | Topic | Official source | Course use |
 |---|---|---|
 | Intended scope, testing, human oversight, monitoring | [NIST AI RMF Core](https://airc.nist.gov/airmf-resources/airmf/5-sec-core/) | Evaluation and lifecycle thinking |
-| AI workflow safety | [OpenAI — Safety best practices](https://developers.openai.com/api/docs/guides/safety-best-practices) | Optional provider-specific safety reference |
-| Structured output | [OpenAI — Structured model outputs](https://developers.openai.com/api/docs/guides/structured-outputs) | Optional live summary schema |
-| Responses API | [OpenAI — Migrate to the Responses API](https://developers.openai.com/api/docs/guides/migrate-to-responses) | Current OpenAI API pattern |
-| Model guidance | [OpenAI — Model guidance](https://developers.openai.com/api/docs/guides/latest-model) | Model selection remains configuration; recheck before lab |
-| API data controls | [OpenAI — Your data](https://developers.openai.com/api/docs/guides/your-data) | Provider review; no real course data |
+| AI workflow safety | [OpenAI — Safety best practices](https://developers.openai.com/api/docs/guides/safety-best-practices) | Later-course provider-specific safety reference |
+| Structured output | [OpenAI — Structured model outputs](https://developers.openai.com/api/docs/guides/structured-outputs) | Later-course bounded-output reference |
+| Responses API | [OpenAI — Migrate to the Responses API](https://developers.openai.com/api/docs/guides/migrate-to-responses) | Later-course provider pattern; recheck before use |
+| Model guidance | [OpenAI — Model guidance](https://developers.openai.com/api/docs/guides/latest-model) | Later-course model selection; recheck before use |
+| API data controls | [OpenAI — Your data](https://developers.openai.com/api/docs/guides/your-data) | Later-course provider review; never use real Course 1 data |
 
 The current official OpenAI model guidance identified GPT-5.6 as the current
-family on 2026-07-28. Course 1 does not hard-code it because cost, availability, and
-behaviour change. The offline fixture remains the default.
+family on 2026-07-28. Course 1 does not use a live provider. These links are
+retained only for a later-course dated audit; model availability, cost, and
+behaviour can change. Course 1 requires the offline mock and deterministic
+fallback.
 
 ## Workflow platforms and commoditisation
 

@@ -12,9 +12,18 @@ npm ci
 npm test
 $env:BASE_PATH="/ai-workflow-course/"
 npm run build
+npm run smoke:browser
+npm run smoke:update
 ```
 
 The production artifact is `app/dist`. Do not edit generated files there.
+The two local browser checks use installed Chrome. The first opens every
+required page at the 320 CSS-pixel equivalent of 200% reflow and exercises
+keyboard navigation, forced colours, backup/import/reset, blocked-storage
+reporting, old-state migration, and offline reload/search. The second serves a
+controlled previous and current build at one scope, then verifies **Later**,
+**Update now**, state retention, targeted cache cleanup, and cold reopen. Set
+`CHROME_PATH` if Chrome is installed in a non-standard location.
 
 The build:
 
@@ -29,14 +38,24 @@ The build:
 
 The PWA has a separate Course 1 learning view and Career Path view. The Career
 Path marks the advanced Course 4 capstone prototype separately and links to its
-overview. Document-level `courseId` metadata keeps those lessons attached to
-Course 4 while Course 1 remains the current course. Course completion uses
-stable lesson IDs and revisions, so a materially revised lesson can reopen for
-review without losing its private note. State is migrated from the earlier
-course bundle when possible.
+overview through an intentional disclosure. Document-level `courseId` metadata
+keeps those lessons attached to Course 4 while Course 1 remains the current
+course. Later-course pages are excluded from the default Course 1 menu and
+search.
 
-The PWA stores completion, notes, theme, and reading size only in browser
-`localStorage`. It contains no AI or capstone runtime, Google Cloud or GitHub
+The interface shows reading time separately from practical effort. Per-document
+`estimatedPracticeHours` metadata is preferred; module Markdown estimates and a
+conservative foundation fallback keep older bundles readable. Page-read marks
+and practical-task self-checks are separate revision-aware records. Even 100%
+reading is never labelled as course competence, and a practical self-check is
+explicitly described as the learner's record rather than an independent
+assessment. Stable lesson IDs and revisions let a materially revised lesson
+reopen both records without losing its private note. State is migrated from the
+earlier course bundle when possible.
+
+The PWA stores page-read marks, practical self-checks, notes, theme, and reading
+size only in browser `localStorage`. Export and import include all of that
+local state. It contains no AI or capstone runtime, Google Cloud or GitHub
 credential, billing authority, or real-data upload facility. It only displays
 the capstone instructions; the runnable demonstration remains a separate
 learner project.
@@ -44,10 +63,11 @@ learner project.
 ## Update contract
 
 Course changes are made in the Markdown source and verified before commit. A
-push to `main` runs package validation, PWA tests, the production build, and the
-GitHub Pages deployment. The content hash changes the service-worker cache
-version. Existing installations show a visible update prompt and activate the
-new worker only after the learner chooses **Update now**.
+push to `main` runs package validation, both offline workflow suites, PWA unit
+tests, the production build, both real-Chrome checks, and then the GitHub Pages
+deployment. The content hash changes the service-worker cache version. Existing
+installations show a visible update prompt and activate the new worker only
+after the learner chooses **Update now**.
 
 The worker fetches every new precache resource with `cache: "reload"` so an old
 HTTP cache cannot silently repopulate the new version.

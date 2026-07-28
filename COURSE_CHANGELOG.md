@@ -1,5 +1,73 @@
 # Course Changelog
 
+## 2.4.0 — 2026-07-28
+
+### Literal-beginner Course 1 execution
+
+- Rebuilt the Windows start route around the official Python Install Manager
+  and stable Python 3.14, while verifying compatibility on Python 3.12, 3.13,
+  and 3.14.
+- Removed virtual-environment activation and PowerShell policy changes from the
+  learner path. Every command uses the project's Python interpreter directly.
+- Added exact checks for the Windows Store command alias, Documents-folder
+  location, disk space, browser, Git, internet access, and safe restart or
+  resume behavior.
+- Fully pinned the Course 1 dependency tree and kept cloud accounts, paid
+  services, application programming interface (API) keys, Node.js, n8n, and
+  Google Cloud outside the required Course 1 path.
+- Added safe start-or-resume sections and realistic session divisions to every
+  module and required setup page.
+
+### Runnable Course 1 reference workflow
+
+- Added `course1_capstone`, a complete synthetic-only offline workflow that
+  validates inputs, runs deterministic rules, creates source-linked summaries,
+  records human approve/edit/reject/expire decisions, exports approved
+  comma-separated values (CSV) and JavaScript Object Notation (JSON), and keeps
+  an audit trail.
+- Rebuilt Modules 4–6 around that working reference: first follow the exact
+  demonstration, then recreate it with different fictional data, ask Codex for
+  a bounded read-only check, and pass objective criteria.
+- Added explicit normal, malformed-input, missing-file, duplicate, retry,
+  artificial intelligence (AI) timeout/refusal/invalid-output, stale-revision,
+  missing-evidence, edit, rejection, expiry, tamper, and fallback scenarios.
+- Standardised issue identity as work-item identifier, rule code, and field;
+  aligned the five current JSON schemas; and added generated-output schema
+  validation.
+
+### Assessment and evidence alignment
+
+- Standardised the opportunity scorecard at nine factors scored 0–3, for a
+  maximum of 27.
+- Added completed worked examples for the risk/tool-fit and evaluation lessons,
+  plus a requirement-to-practice traceability map.
+- Aligned Module 8 with the actual 13-issue evaluation and a
+  `PROVISIONAL PRE-UAT` recommendation, then made Module 9 preserve and reassess
+  it as the `FINAL POST-UAT` decision after executable UAT, defect/retest,
+  adoption, and handover evidence.
+- Integrated the mandatory six-area rubric and ten oral answers into Module 9
+  with a completed example, exact arithmetic check, independent recreation,
+  bounded Codex review, and objective pass gate.
+- Made the Module 9 solo route honest: a competent Course 1 pass is possible
+  with tester-role evidence, while independent user acceptance testing remains
+  explicitly unverified and is required for a Strong rating.
+
+### Progressive web app and release controls
+
+- Changed required progress to the complete 21-page learning sequence:
+  readiness, software check, Windows Setup, nine foundations, and nine modules.
+- Aligned the displayed 137–181 total-hour range with the exact sum of those
+  21 page-level practice ranges.
+- Kept page-read marks separate from revision-aware practical self-checks, so
+  100% reading is never presented as competence.
+- Kept later-course material out of default navigation and search, behind an
+  intentional Career disclosure.
+- Added exact wildcard rendering, 320-pixel and forced-colour safeguards,
+  keyboard checks, backup/restore coverage, and a reusable real-Chrome smoke
+  test.
+- Added a fresh-process Course 1 acceptance runner and made it a GitHub Pages
+  release gate across the supported Python range.
+
 ## 2.3.0 — 2026-07-28
 
 ### Optional advanced Course 4 capstone

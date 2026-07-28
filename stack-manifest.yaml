@@ -1,15 +1,19 @@
 schema_version: 2
 course_id: course-1-controlled-ai-workflow-foundations
-course_version: 2.3.0
-practice_revision: 2
+course_version: 2.4.0
+practice_revision: 3
 last_verified: "2026-07-28"
 verification_timezone: Europe/Amsterdam
 purpose: private synthetic-data learning demonstration
 
 runtime:
   operating_system: Windows 11
-  python_target: "3.13"
-  python_policy: "Use any audited supported Python >=3.12 that passes the clean test suite."
+  python_installation: Python Install Manager
+  python_target: "3.14"
+  python_policy: "Use stable CPython 3.14 for the learner path; audited compatibility range is >=3.12,<3.15; reject prereleases."
+  virtual_environment_interpreter: ".venv\\Scripts\\python.exe"
+  activation_required: false
+  powershell_policy_change_required: false
   orchestration: local Python scripts and files
   data_store: local synthetic CSV and JSON files
 
@@ -19,23 +23,30 @@ required:
     role: change inspection and version history
     source: https://git-scm.com/download/win
   python:
-    version_policy: ">=3.12"
+    version_policy: ">=3.12,<3.15; learner target 3.14 stable"
     role: deterministic rules, reports, and tests
     source: https://docs.python.org/3/using/windows.html
   pytest:
     version_policy: "9.0.2"
     role: local regression tests
     source: https://docs.pytest.org/
+  jsonschema:
+    version_policy: "4.26.0"
+    role: validate schemas and generated JSON evidence
+    source: https://python-jsonschema.readthedocs.io/
 
 ai:
   required_for_course_pass: false
-  default_mode: offline-fixture
-  live_lab:
+  course1_mode: offline-mock
+  deterministic_fallback: true
+  live_provider_in_course1: false
+  later_course_provider_lab:
+    status: deferred
     api_pattern: OpenAI Responses API or equivalent current structured-output API
     model_id_is_configuration: true
-    model_environment_variable: AI_MODEL
     structured_output: JSON Schema
     raw_data_allowed: synthetic verified issue records only
+    requires_separate_value_privacy_security_cost_and_teardown_decision: true
     source: https://developers.openai.com/api/docs/guides/structured-outputs
 
 optional_vendor_labs:
@@ -45,11 +56,6 @@ optional_vendor_labs:
     role: optional visual crosswalk after the offline capstone passes
     runtime: use a currently supported Node.js Long-Term Support release
     source: https://docs.n8n.io/hosting/installation/npm/
-  provider_api:
-    required_for_course_pass: false
-    dependency_policy: install in a separate optional environment only after a dated audit
-    role: optional comparison with the required offline fixture
-
 deferred:
   - FastAPI or production web service
   - Docker
@@ -62,6 +68,7 @@ deferred:
   - external write-back
   - required Node.js or n8n installation
   - required live artificial-intelligence provider
+  - any optional live provider lab
 
 release_requires:
   - curriculum and source audit
@@ -71,3 +78,21 @@ release_requires:
   - clean-start capstone reproduction
   - accessibility and responsive review
   - installed-client update verification
+
+dependency_audit:
+  verified_on: "2026-07-28"
+  operating_system: Windows
+  clean_tested_python:
+    - "3.12.13"
+    - "3.13.14"
+    - "3.14.6"
+  complete_pin_file: requirements-course.txt
+  install_command: "& .\\.venv\\Scripts\\python.exe -m pip install -r requirements-course.txt"
+  evidence_command: "& .\\.venv\\Scripts\\python.exe -m pip list --format=freeze"
+
+accounts_required:
+  cloud: false
+  paid_subscription: false
+  api_key: false
+  github: false
+  employer_system: false

@@ -1,0 +1,7 @@
+work_item_id,source_reference,title,owner_role,status,priority,received_date,due_date,completed_date,amount,currency,category
+WI-9001,REF-9001,,operations,new,low,2026-07-20,2026-08-01,,,,general
+WI-9002,REF-9002,Valid completed item,operations,completed,medium,2026-07-10,2026-07-20,2026-07-19,0,EUR,general
+WI-9003,REF-9003,Due before received,operations,completed,high,2026-07-12,2026-07-10,2026-07-15,,,general
+WI-9004,REF-9004,Unexpected completion,operations,in_progress,medium,2026-07-20,2026-08-01,2026-07-25,,,general
+WI-9005,REF-9005,Negative amount,operations,completed,high,2026-07-01,2026-07-20,2026-07-19,-1,EUR,general
+WI-9006,REF-9006,Overdue waiting item,operations,waiting,high,2026-07-01,2026-07-10,,,,general

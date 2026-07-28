@@ -65,41 +65,62 @@ address, or business record.
 ### Prerequisites and start state
 
 - Foundations 1–3 are complete.
-- Python 3 is installed.
+- Windows Setup is complete, including the project virtual environment at
+  `Documents\AI-workflow-learning\operations-exception-assistant\.venv`.
 - `Documents\controlled-ai-course-practice` exists.
 - PowerShell is showing a ready prompt or is closed.
 
-### Part A — create and enter the lesson folder
+### Start or resume safely — run this at every new PowerShell session
 
-Open PowerShell and run these commands one at a time:
-
-```powershell
-Set-Location ([Environment]::GetFolderPath("MyDocuments"))
-```
-
-What this does: it moves the terminal to your actual Documents folder.
+PowerShell forgets variables when you close its window. Run this whole block
+whenever you start or resume Foundation 4:
 
 ```powershell
-Set-Location "controlled-ai-course-practice"
-```
+$documentsPath = [Environment]::GetFolderPath("MyDocuments")
+$projectRoot = Join-Path $documentsPath "AI-workflow-learning\operations-exception-assistant"
+$pythonExe = Join-Path $projectRoot ".venv\Scripts\python.exe"
+$practiceRoot = Join-Path $documentsPath "controlled-ai-course-practice"
+$lessonPath = Join-Path $practiceRoot "foundation-04"
 
-```powershell
-New-Item -ItemType Directory -Path "foundation-04"
-```
+if (-not (Test-Path -LiteralPath $pythonExe -PathType Leaf)) {
+    throw "STOP: the exact course Python file is missing. Return to Windows Setup; do not use a bare python command."
+}
+$pythonVersion = & $pythonExe --version
+if ($LASTEXITCODE -ne 0 -or $pythonVersion -notmatch '^Python 3\.14\.\d+$') {
+    throw "STOP: expected a stable Python 3.14 patch from the project virtual environment."
+}
+if (-not (Test-Path -LiteralPath $practiceRoot -PathType Container)) {
+    throw "STOP: the controlled-ai-course-practice folder is missing. Return to Foundation 1."
+}
+if (Test-Path -LiteralPath $lessonPath -PathType Leaf) {
+    throw "STOP: foundation-04 is a file, not a folder. Do not rename or delete it; ask Codex to inspect read-only."
+}
+if (-not (Test-Path -LiteralPath $lessonPath -PathType Container)) {
+    New-Item -ItemType Directory -Path $lessonPath | Out-Null
+    "Created a new foundation-04 folder."
+}
+else {
+    "Existing foundation-04 folder found; nothing was overwritten."
+}
 
-```powershell
-Set-Location "foundation-04"
-```
-
-```powershell
+Set-Location -LiteralPath $lessonPath
 Get-Location
+$pythonExe
+$pythonVersion
+Get-ChildItem -Force
 ```
 
-What the setup commands do: they enter your Windows Documents folder, enter
-the existing course-practice root, create only `foundation-04`, enter it, and
-then print the current location.
+This derives the exact project interpreter from your real Documents path,
+checks that it exists, accepts only a stable Python 3.14 patch, creates the
+lesson folder only when it is absent, and shows any existing content before
+you edit. The displayed executable path must end in
+`AI-workflow-learning\operations-exception-assistant\.venv\Scripts\python.exe`,
+and the current location must end in
+`controlled-ai-course-practice\foundation-04`.
 
-Expected result: the path ends in `foundation-04`.
+If existing files are listed, inspect them before continuing. Resume only your
+own synthetic lesson attempt. Do not overwrite unfamiliar material and do not
+use a folder containing real data.
 
 ### Part B — create a fictional request
 
@@ -159,7 +180,7 @@ What this represents: a server accepted the request and recorded the state
 1. Run:
 
    ```powershell
-   python -m json.tool ".\request.json"
+   & $pythonExe -m json.tool ".\request.json"
    ```
 
    What this does: `-m` asks Python to run its installed `json.tool` module.
@@ -169,7 +190,7 @@ What this represents: a server accepted the request and recorded the state
 2. Run:
 
    ```powershell
-   python -m json.tool ".\response.json"
+   & $pythonExe -m json.tool ".\response.json"
    ```
 
 3. Run:
@@ -191,8 +212,8 @@ What the last two commands do: `Get-ChildItem` lists the saved files, and
 
 ### Expected result — exact
 
-- Both `python -m json.tool` commands print indented JSON and return to the
-  prompt without an error.
+- Both `& $pythonExe -m json.tool` commands print indented JSON and return to
+  the prompt without an error.
 - The request output contains `"method": "POST"` and
   `"work_item_id": "WI-DEMO-21"`.
 - The response output contains `"status_code": 202` and
@@ -205,8 +226,10 @@ What the last two commands do: `Get-ChildItem` lists the saved files, and
 - If validation reports a line and column error, compare quotation marks,
   commas, braces, and spelling with the sample. Do not remove the validator.
 - If a file ends in `.json.txt`, correct the extension using Foundation 1.
-- If `python` is not recognised, return to the course setup. Do not install an
-  unverified package with a similar name.
+- If `$pythonExe` is missing, not recognised, or reports the wrong version,
+  rerun the complete **Start or resume safely** block. If it still stops,
+  return to Windows Setup. Do not use a bare `python` command and do not
+  install an unverified package with a similar name.
 - If `foundation-04` already exists, do not delete it. Enter it and confirm it
   contains only synthetic practice.
 
@@ -224,8 +247,15 @@ Create two different valid JSON files in `foundation-04`:
    - state `waiting`;
    - Boolean field `contains_real_data` set to `false`.
 
-Choose a clear JSON object shape yourself. Validate each file with
-`python -m json.tool`. Do not reuse `WI-DEMO-21`, `POST`, or state `received`.
+Choose a clear JSON object shape yourself. Validate both files with the exact
+project interpreter:
+
+```powershell
+& $pythonExe -m json.tool ".\get-request.json"
+& $pythonExe -m json.tool ".\get-response.json"
+```
+
+Do not reuse `WI-DEMO-21`, `POST`, or state `received`.
 
 ## Ask Codex to check your work
 
@@ -250,8 +280,11 @@ Report PASS or NOT YET for each criterion:
    TICKET-77, state waiting, and contains_real_data false.
 5. None of the files contains a credential, real URL, or real business data.
 
-You may run only a read-only JSON validator. Explain NOT YET in beginner
-language and make no changes.
+You may derive only
+Documents\AI-workflow-learning\operations-exception-assistant\.venv\Scripts\python.exe
+and use that exact executable with its built-in json.tool module as a
+read-only JSON validator. Do not use a bare python command. Explain NOT YET in
+beginner language and make no changes.
 This folder must contain synthetic course data only. I must not include
 secrets, personal data, client data, employer data, or other work data. If you
 notice such content, stop, do not repeat it, and tell me to remove it locally.
@@ -262,6 +295,8 @@ work data.
 ## Pass criteria
 
 - [ ] All four files pass local JSON validation.
+- [ ] Every validation used the derived project `$pythonExe`, which reports a
+      stable Python 3.14 patch.
 - [ ] I can identify method, path, body, response, and status code.
 - [ ] I can explain why `202 Accepted` does not mean completed or correct.
 - [ ] I can explain authentication versus authorisation.

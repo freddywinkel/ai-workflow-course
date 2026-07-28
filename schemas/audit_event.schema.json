@@ -16,15 +16,15 @@
   "properties": {
     "event_id": {
       "type": "string",
-      "minLength": 1
+      "pattern": "^EVT-[A-F0-9]{16}$"
     },
     "run_id": {
       "type": "string",
-      "minLength": 1
+      "pattern": "^RUN-[A-F0-9]{12}$"
     },
     "event_type": {
       "type": "string",
-      "minLength": 1
+      "pattern": "^[a-z_]+$"
     },
     "state": {
       "enum": [
@@ -33,7 +33,8 @@
         "issues_ready",
         "summary_ready",
         "needs_review",
-        "pending_approval",
+        "changes_requested",
+        "approved_for_local_export",
         "approved_draft",
         "rejected",
         "expired",
@@ -46,7 +47,7 @@
       "format": "date-time"
     },
     "actor_type": {
-      "enum": ["system", "ai", "reviewer"]
+      "enum": ["system", "mock_ai", "ai", "reviewer"]
     },
     "details": {
       "type": "object"

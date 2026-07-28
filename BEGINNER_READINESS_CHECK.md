@@ -30,7 +30,16 @@ to explain, test, stop, and repair what was generated.
 Before starting, confirm:
 
 - [ ] I have a Windows computer on which I may install software.
+- [ ] I have at least 2 gigabytes (GB) of free space on the drive that contains
+      my Documents folder.
+- [ ] I can use an internet connection for the official Python download and
+      the one-time package installation. The required workflow runs offline
+      after setup.
+- [ ] I have a current web browser and can open the Course 1 progressive web
+      app (PWA), an installable website.
 - [ ] I can create a separate folder for this course.
+- [ ] I can find the `AI_WORKFLOW_DOCUMENT_SYSTEMS_COURSE` source folder in
+      Codex or File Explorer.
 - [ ] I will use only **synthetic** course data, meaning information created for
       practice rather than copied from real people or work.
 - [ ] I will not paste employer, client, patient, employee, or personal
@@ -40,6 +49,16 @@ Before starting, confirm:
 - [ ] I am willing to stop when I cannot explain an observed result.
 - [ ] I understand that the progressive web app (PWA)—an installable
       website—is the course reader, not the workflow itself.
+
+A cloud account, GitHub account, paid subscription, application programming
+interface (API) key, employer login, Node.js, and n8n are **not** prerequisites.
+A `Restricted` PowerShell execution policy is also acceptable: Course 1 calls
+the virtual environment's Python file directly and does not require you to
+activate it or weaken that policy.
+
+The exact storage, internet, write-access, browser, and source-folder checks are
+in [Windows Setup](SETUP_WINDOWS.md). Complete that preflight before
+installing Python.
 
 ## Learning readiness
 

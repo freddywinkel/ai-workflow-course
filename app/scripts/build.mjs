@@ -151,6 +151,17 @@ async function readCurriculum() {
         document.legacyIds === undefined || Array.isArray(document.legacyIds),
         `document "${document.id}" legacyIds must be an array`,
       );
+      if (document.estimatedPracticeHours !== undefined) {
+        const estimate = document.estimatedPracticeHours;
+        assertMetadata(
+          estimate &&
+            Number.isFinite(estimate.minimum) &&
+            Number.isFinite(estimate.maximum) &&
+            estimate.minimum > 0 &&
+            estimate.maximum >= estimate.minimum,
+          `document "${document.id}" estimatedPracticeHours needs positive minimum and maximum values`,
+        );
+      }
       for (const legacyId of document.legacyIds || []) {
         assertMetadata(
           typeof legacyId === "string" && legacyId,
@@ -221,6 +232,8 @@ async function createCourseBundle() {
         description:
           documentMetadata.description || descriptionFromMarkdown(markdown),
         learningOutcome: documentMetadata.learningOutcome || null,
+        estimatedPracticeHours:
+          documentMetadata.estimatedPracticeHours || null,
         markdown,
         searchableText,
         wordCount: searchableText ? searchableText.split(/\s+/).length : 0,

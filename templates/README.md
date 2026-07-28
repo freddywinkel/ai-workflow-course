@@ -32,7 +32,7 @@ out the exact record where it is first needed; the first four mappings are:
 | 7 | [`tool_fit_and_ownership_record.md`](tool_fit_and_ownership_record.md) | compare the simplest tool options and assign lifecycle ownership |
 | 9 | [`uat_script.md`](uat_script.md) | let representative users test business scenarios and exception routes |
 | 9 | [`adoption_and_training_plan.md`](adoption_and_training_plan.md) | prepare users, support, training, feedback, and adoption measures |
-| 8 | [Course 1 final decision record](pilot_decision_record.md) | record `ACCEPT FOR SYNTHETIC PORTFOLIO`, `REWORK`, or `DO NOT CONTINUE`; it does not authorize a client pilot |
+| 8 and 9 | [Course 1 decision record](pilot_decision_record.md) | record the Module 8 `PROVISIONAL PRE-UAT` recommendation, then preserve and reassess it as `FINAL POST-UAT` in Module 9; neither authorizes a client pilot |
 
 The sequence is logical, not rigid. Revisit earlier records when evidence
 changes the process, data, risk, or value hypothesis.
@@ -47,6 +47,7 @@ Use these existing templates when relevant:
 | [`debugging_record.md`](debugging_record.md) | an unresolved command, build, import, or test failure |
 | [`weekly_evidence_record.md`](weekly_evidence_record.md) | optional module progress and gate evidence |
 | [`architecture_decision_record.md`](architecture_decision_record.md) | a material technical decision with alternatives and consequences |
+| [`acceptance_and_handover.md`](acceptance_and_handover.md) | Module 9 Course 1 closeout, ownership, recovery, limitations, and evidence index; it is not production acceptance |
 
 ## Advanced follow-on templates
 
@@ -64,7 +65,6 @@ readiness.
 | [`threat_model.md`](threat_model.md) | deeper technical threat and incident analysis |
 | [`evaluation_plan.md`](evaluation_plan.md) | frozen test populations, metrics, and regression gates |
 | [`runbook_and_fallback.md`](runbook_and_fallback.md) | production-oriented operations, recovery, and drills |
-| [`acceptance_and_handover.md`](acceptance_and_handover.md) | advanced release acceptance and technical handover |
 
 ## Completion rules
 

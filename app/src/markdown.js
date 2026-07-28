@@ -64,16 +64,29 @@ function renderInline(rawValue) {
     return token;
   });
 
+  // Protect strong spans before parsing emphasis. A label such as
+  // **All files (*.*)** contains literal asterisks inside the bold text. If
+  // those asterisks reach the emphasis expressions below, the visible file
+  // picker label is silently changed.
+  for (const [expression, tag] of [
+    [/\*\*([^\n]+?)\*\*/g, "strong"],
+    [/__([^\n]+?)__/g, "strong"],
+  ]) {
+    value = value.replace(expression, (_match, content) => {
+      const token = `\u0000STRONG${tokens.length}\u0000`;
+      tokens.push(`<${tag}>${escapeHtml(content)}</${tag}>`);
+      return token;
+    });
+  }
+
   value = escapeHtml(value)
-    .replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>")
-    .replace(/__([^_\n]+)__/g, "<strong>$1</strong>")
     .replace(/(^|[^\w])\*([^*\n]+)\*(?!\w)/g, "$1<em>$2</em>")
     .replace(/(^|[^\w])_([^_\n]+)_(?!\w)/g, "$1<em>$2</em>");
 
   let rendered = value;
   for (let pass = 0; pass <= tokens.length; pass += 1) {
     const expanded = rendered.replace(
-      /\u0000(?:CODE|LINK)(\d+)\u0000/g,
+      /\u0000(?:CODE|LINK|STRONG)(\d+)\u0000/g,
       (_match, index) => tokens[Number(index)] || "",
     );
     if (expanded === rendered) break;

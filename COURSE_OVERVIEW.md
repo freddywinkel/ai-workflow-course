@@ -121,11 +121,13 @@ Terms used in the evidence table:
 - a **data dictionary** explains every field; a **data contract** states
   required fields, formats, and allowed values; and **expected issues** are the
   known correct answers used to test detection;
-- a **rule-first workflow** uses fixed ordinary code before optional AI, while
-  **failure tests** confirm that expected problems are visible;
-- a **bounded summary** may discuss only supplied facts and verified issue
-  identifiers; a **review package** groups the draft, sources, and controls a
-  human needs to decide;
+- a **rule-first workflow** uses fixed ordinary code before any possible later
+  AI contribution, while **failure tests** confirm that expected problems are
+  visible;
+- a **bounded-summary contract** permits only supplied facts and verified issue
+  identifiers; Course 1 tests it with a deterministic offline mock, while a
+  **review package** groups the draft, sources, and controls a human needs to
+  decide;
 - an **approval lifecycle** names review stages such as pending, approved, and
   expired; a **local outbox** stores drafts without sending them; and a **data
   flow** shows where information enters, moves, and leaves;
@@ -142,7 +144,7 @@ Terms used in the evidence table:
 | 2 | Select and bound a worthwhile opportunity | Scorecard, intended purpose, module selection |
 | 3 | Identify authoritative data and rules | Data dictionary, contract, expected issues |
 | 4 | Build reliable logic without AI | Rule-first workflow, to-be map, architecture diagram, and failure tests |
-| 5 | Add AI only where it helps | Bounded summary supported by issue identifiers (IDs) |
+| 5 | Design a bounded AI contract and test it offline | Mock summary supported by issue identifiers (IDs); no live model call |
 | 6 | Preserve meaningful human control | Review package, approval lifecycle, local outbox |
 | 7 | Screen risk and existing-tool fit | Data flow, risk screen, tool-fit decision |
 | 8 | Evaluate utility and value | Regression report and evidence-backed Course 1 decision |
@@ -150,9 +152,10 @@ Terms used in the evidence table:
 
 ### Layer 3 — Capstone acceptance
 
-The final demonstration is assessed on discovery, data and rules, bounded AI,
-human control, Dutch SME **guardrails** (stated limits that prevent unsafe
-use), evaluation, adoption, and handover.
+The final demonstration is assessed on discovery, data and rules, the boundary
+and offline testing of a possible bounded AI contribution, human control,
+Dutch SME **guardrails** (stated limits that prevent unsafe use), evaluation,
+adoption, and handover.
 
 ## The fictional scenario
 
@@ -243,12 +246,13 @@ real data in Git.
 ## Gates, not calendar pressure
 
 Each **gate** is a pass checklist that must be satisfied before you continue.
-The 140–180 hour estimate is a planning range, not a deadline. The additional
-time covers following a worked example, recreating the skill independently,
-and correcting your own work after read-only review.
+The 137–181 hour estimate is the sum of all 21 required page ranges. It is a
+planning range, not a deadline. The time covers following a worked example,
+recreating the skill independently, and correcting your own work after
+read-only review.
 
 At roughly 20 hours per week, a literal beginner may need 7–10 calendar weeks.
-At 8–10 hours per week, 16–23 weeks is more realistic. Stop when:
+At 8–10 hours per week, roughly 14–23 weeks is more realistic. Stop when:
 
 - you cannot explain what a command changes;
 - a test result differs from the lesson;
@@ -261,15 +265,9 @@ At 8–10 hours per week, 16–23 weeks is more realistic. Stop when:
 
 ## What moves to later courses
 
-The previous supplier-document material is preserved for the later Controlled
-Document AI course. One optional advanced
-[Controlled Document Intake capstone](advanced_capstone/README.md) is now
-available as a Course 4 prototype, but it is not part of Course 1 and is not
-the complete Course 4. Its private synthetic reference implementation recorded
-a live `PASS` on 28 July 2026 and was then torn down; its dedicated project is
-`DELETE_REQUESTED`. Gemini selected bounded candidate identifiers while fixed
-application code rendered exact source-linked wording. Course 1 intentionally
-defers:
+The previous supplier-document material remains preserved for a later
+Controlled Document AI course. It is not a Course 1 task and is shown only in
+the separate Career Path. Course 1 intentionally defers:
 
 - **parsing**, meaning reading a file's structure with software, for Portable
   Document Format (PDF) and Microsoft Word document (`.docx`) files;

@@ -1,6 +1,6 @@
 {
   "name": "ai-workflow-course-pwa",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "private": true,
   "description": "Offline reader for Controlled Artificial Intelligence (AI) Workflow Foundations and its Dutch small and medium-sized enterprise (SME) consultant career sequence",
   "type": "module",
@@ -9,6 +9,8 @@
     "pretest": "node scripts/build.mjs",
     "test": "node --test tests/*.test.mjs",
     "check": "npm test && npm run build",
+    "smoke:browser": "node scripts/browser-smoke.mjs",
+    "smoke:update": "node scripts/browser-update-smoke.mjs",
     "preview": "node scripts/serve.mjs"
   },
   "engines": {

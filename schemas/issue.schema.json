@@ -7,23 +7,37 @@
   "required": [
     "issue_id",
     "work_item_id",
+    "source_reference",
+    "source_row",
     "field",
+    "raw_value",
     "rule_code",
     "severity",
-    "message"
+    "message",
+    "assessment_date"
   ],
   "properties": {
     "issue_id": {
       "type": "string",
-      "minLength": 1
+      "pattern": "^WI-[0-9]{4}\\|R[0-9]{3}\\|[a-z_]+$"
     },
     "work_item_id": {
       "type": "string",
       "pattern": "^WI-[0-9]{4}$"
     },
+    "source_reference": {
+      "type": "string"
+    },
+    "source_row": {
+      "type": "integer",
+      "minimum": 2
+    },
     "field": {
       "type": "string",
-      "minLength": 1
+      "pattern": "^[a-z_]+$"
+    },
+    "raw_value": {
+      "type": "string"
     },
     "rule_code": {
       "type": "string",
@@ -36,8 +50,9 @@
       "type": "string",
       "minLength": 1
     },
-    "observed_value": {
-      "type": ["string", "number", "boolean", "null"]
+    "assessment_date": {
+      "type": "string",
+      "format": "date"
     }
   }
 }

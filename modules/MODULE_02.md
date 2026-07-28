@@ -55,6 +55,22 @@ same method to different synthetic candidates.
 Windows PowerShell is the Windows command application used below. Notepad is
 the Windows plain-text editor used to create practice files.
 
+## Start or resume safely
+
+At the start of every study session, rerun Stage 1. PowerShell variables vanish
+when its window closes; your saved files do not. Stage 1 restores the two paths
+and returns to the same evidence folder without deleting anything. Later copy
+steps deliberately leave an existing learner file unchanged.
+
+Suggested sessions:
+
+1. complete and check the worked brief and worked scorecard;
+2. screen and score the three different recreation candidates;
+3. run the Codex check, correct the records, and make the Git checkpoint.
+
+Before stopping, save every file and note the last completed numbered step.
+After reopening PowerShell, rerun Stage 1 and continue with the next step.
+
 ## Follow along — I show you exactly how
 
 ### Stage 1 — Prepare the module folder
@@ -105,25 +121,31 @@ example below, and save with **Ctrl+S**:
 | B. Prepare an internal low-stock exception list | no | internal draft, deterministic thresholds, human review |
 | C. Generate marketing slogans | no | low consequence, but no measured operational pain |
 
-## Suitability score
+## Opportunity score
 
-Scale: 0 = poor or unknown; 1 = partly suitable; 2 = supported.
+Use the same scale as the reusable Course 1 scorecard:
 
-| Criterion | A | B | C |
+- 0 = absent, unknown, or unsuitable;
+- 1 = weak evidence;
+- 2 = useful evidence with open questions;
+- 3 = strong observed evidence.
+
+| Factor | A | B | C |
 |---|---:|---:|---:|
-| repeated and measurable | 2 | 2 | 1 |
-| clear outcome | 2 | 2 | 1 |
-| permitted synthetic data | 1 | 2 | 2 |
-| approved rules possible | 1 | 2 | 0 |
-| low consequence if wrong | 0 | 2 | 2 |
-| easy human review | 0 | 2 | 2 |
-| easy to stop | 0 | 2 | 2 |
-| manual fallback | 1 | 2 | 2 |
-| testable with synthetic cases | 1 | 2 | 2 |
-| named owner and user | 1 | 2 | 0 |
-| total | 9 | 20 | 14 |
+| Repeated volume or frequency | 3 | 3 | 1 |
+| Measurable time, waiting, error, or rework | 2 | 3 | 0 |
+| Stable unit of work and completion condition | 2 | 3 | 1 |
+| Rules can be stated and tested | 1 | 3 | 0 |
+| Input data is available and understandable | 1 | 3 | 1 |
+| Process owner and reviewer are available | 1 | 3 | 1 |
+| Course evaluation can be synthetic, bounded, and reversible | 0 | 3 | 3 |
+| Users have a reason and capacity to adopt it | 1 | 2 | 0 |
+| Manual fallback is practical | 1 | 3 | 2 |
+| **Total, maximum 27** | **12** | **26** | **9** |
 
-Candidate A remains stopped regardless of score. Candidate B is selected.
+Candidate A remains stopped regardless of score. Candidate B is selected. A
+score supports a discussion; it never overrides the stop screen or an
+authorised owner's decision.
 
 ## Problem statement
 
@@ -234,6 +256,24 @@ financial action. No hard stop applies to the internal draft list.
 Clarifying thresholds and using a spreadsheet rule must be compared before AI.
 The bounded rule-first report is selected only for a synthetic proof.
 
+## Opportunity score
+
+Scale: 0 = absent, unknown, or unsuitable; 1 = weak evidence; 2 = useful
+evidence with open questions; 3 = strong observed evidence.
+
+| Factor | Score | Evidence and limitation |
+|---|---:|---|
+| Repeated volume or frequency | 3 | Four observed checks per month |
+| Measurable time, waiting, error, or rework | 3 | Worked baseline is 35 active minutes per check |
+| Stable unit of work and completion condition | 3 | One stock row; complete when reviewer records a decision |
+| Rules can be stated and tested | 3 | Quantity is compared with an approved threshold |
+| Input data is available and understandable | 3 | Synthetic item ID, quantity, and threshold are defined |
+| Process owner and reviewer are available | 3 | Operations lead owns and reviews the process |
+| Course evaluation can be synthetic, bounded, and reversible | 3 | Local fictional rows and manual fallback |
+| Users have a reason and capacity to adopt it | 2 | Repeated scanning exists; adoption capacity is assumed and must be tested |
+| Manual fallback is practical | 3 | Coordinator can apply the approved spreadsheet filter |
+| **Total, maximum 27** | **26** | The number does not override the stop screen |
+
 ## Selection decision
 
 SELECT FOR SYNTHETIC PROOF. No client test, message, order, payment, approval,
@@ -244,10 +284,10 @@ Check it without editing:
 
 ```powershell
 Get-Item .\worked_workflow_opportunity_scorecard.md
-Select-String -Path .\worked_workflow_opportunity_scorecard.md -Pattern 'baseline','Hard stop','spreadsheet','SELECT FOR SYNTHETIC PROOF'
+Select-String -Path .\worked_workflow_opportunity_scorecard.md -Pattern 'baseline','Hard stop','maximum 27','26','spreadsheet','SELECT FOR SYNTHETIC PROOF'
 ```
 
-**Expected result:** the file exists and all four evidence concepts are found.
+**Expected result:** the file exists and all six evidence concepts are found.
 If a term is missing, compare your pasted text with the example and correct
 your own file.
 
@@ -263,7 +303,11 @@ First copy the blank scorecard template, then create
 ```powershell
 $courseRoot = Read-Host 'Paste the full path to AI_WORKFLOW_DOCUMENT_SYSTEMS_COURSE'
 $scorecardTemplate = Join-Path $courseRoot 'templates\workflow_opportunity_scorecard.md'
-Copy-Item -LiteralPath $scorecardTemplate -Destination .\workflow_opportunity_scorecard.md
+if (Test-Path -LiteralPath .\workflow_opportunity_scorecard.md) {
+    Write-Host 'Resume: workflow_opportunity_scorecard.md already exists and was left unchanged.'
+} else {
+    Copy-Item -LiteralPath $scorecardTemplate -Destination .\workflow_opportunity_scorecard.md
+}
 Get-Item .\workflow_opportunity_scorecard.md
 ```
 
@@ -275,7 +319,7 @@ capstone record the exact required name.
 2. automatic ranking of employees by performance;
 3. an internal meeting-summary generator with no measured baseline.
 
-Use the same ten scoring criteria, but write your own evidence note beside
+Use the same nine scoring factors, but write your own evidence note beside
 every score. Candidate 2 must hit the course hard stop because it ranks people
 for employment-related use. Select Candidate 1 and include:
 

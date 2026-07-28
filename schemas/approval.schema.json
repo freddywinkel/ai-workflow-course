@@ -12,16 +12,18 @@
     "draft_revision",
     "draft_sha256",
     "decided_at",
+    "expires_at",
+    "evidence_reviewed",
     "reason"
   ],
   "properties": {
     "decision_id": {
       "type": "string",
-      "minLength": 1
+      "pattern": "^DEC-[A-F0-9]{12}$"
     },
     "run_id": {
       "type": "string",
-      "minLength": 1
+      "pattern": "^RUN-[A-F0-9]{12}$"
     },
     "reviewer_role": {
       "type": "string",
@@ -42,8 +44,35 @@
       "type": "string",
       "format": "date-time"
     },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "evidence_reviewed": {
+      "type": "boolean"
+    },
     "reason": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "decision": {
+            "const": "approve"
+          }
+        },
+        "required": ["decision"]
+      },
+      "then": {
+        "properties": {
+          "evidence_reviewed": {
+            "const": true
+          }
+        }
+      }
+    }
+  ]
 }

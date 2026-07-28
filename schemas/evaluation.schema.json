@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://course.invalid/schemas/evaluation.schema.json",
+  "title": "Course 1 Technical Evaluation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id",
+    "dataset_kind",
+    "expected_issue_count",
+    "detected_issue_count",
+    "true_positives",
+    "false_positives",
+    "false_negatives",
+    "correct_issue_references",
+    "unsupported_ai_claims",
+    "summary_fallback_used",
+    "duplicate_retry_safe",
+    "external_actions",
+    "current_state",
+    "course1_recommendation",
+    "recommendation_reason"
+  ],
+  "properties": {
+    "run_id": {
+      "type": "string",
+      "pattern": "^RUN-[A-F0-9]{12}$"
+    },
+    "dataset_kind": {
+      "const": "synthetic"
+    },
+    "expected_issue_count": {
+      "type": ["integer", "null"],
+      "minimum": 0
+    },
+    "detected_issue_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "true_positives": {
+      "type": ["integer", "null"],
+      "minimum": 0
+    },
+    "false_positives": {
+      "type": ["integer", "null"],
+      "minimum": 0
+    },
+    "false_negatives": {
+      "type": ["integer", "null"],
+      "minimum": 0
+    },
+    "correct_issue_references": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "unsupported_ai_claims": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "summary_fallback_used": {
+      "type": "boolean"
+    },
+    "duplicate_retry_safe": {
+      "const": true
+    },
+    "external_actions": {
+      "const": 0
+    },
+    "current_state": {
+      "type": "string",
+      "minLength": 1
+    },
+    "course1_recommendation": {
+      "enum": [
+        "ACCEPT FOR SYNTHETIC PORTFOLIO",
+        "REWORK",
+        "DO NOT CONTINUE"
+      ]
+    },
+    "recommendation_reason": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

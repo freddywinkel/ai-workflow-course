@@ -63,7 +63,8 @@ Outcome:
 
 - observe and bound one low-risk process;
 - build a rule-first workflow using made-up (synthetic) data;
-- add one optional bounded AI step;
+- design one optional bounded AI contribution and test its controls with an
+  offline mock; no live provider is used in Course 1;
 - test failures and human control;
 - evaluate and hand over a portfolio demonstration.
 

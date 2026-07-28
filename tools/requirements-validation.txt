@@ -1,2 +1,9 @@
+# Validator packages and their complete transitive dependency set.
+# Re-audit these pins together; do not let release validation resolve newer
+# packages silently.
 jsonschema==4.26.0
 PyYAML==6.0.3
+attrs==26.1.0
+jsonschema-specifications==2025.9.1
+referencing==0.37.0
+rpds-py==2026.6.3
