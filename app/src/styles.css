@@ -2050,6 +2050,11 @@ a {
   text-align: right;
 }
 
+.save-status.save-error {
+  color: var(--danger);
+  font-weight: 750;
+}
+
 .document-pager {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -2454,9 +2459,27 @@ a {
   font-size: 1.8rem;
 }
 
+.install-platform {
+  margin-top: 1rem;
+  padding: 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 0.85rem;
+  background: var(--canvas);
+}
+
+.install-platform h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
 .install-dialog ol {
+  margin-bottom: 0;
   padding-left: 1.4rem;
   line-height: 1.6;
+}
+
+.install-platform .dialog-action {
+  margin-top: 0.8rem;
 }
 
 .install-dialog li + li {

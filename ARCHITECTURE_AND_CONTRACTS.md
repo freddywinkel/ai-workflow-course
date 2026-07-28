@@ -172,7 +172,7 @@ Events include:
 - approved, rejected, or expired;
 - local outbox entry created;
 - retry deduplicated;
-- kill switch used.
+- `EXTERNAL_ACTIONS_ENABLED=false` safety control used.
 
 ## Named states
 
@@ -275,7 +275,7 @@ must not duplicate audit or outbox effects.
 | Unknown issue reference | reject summary and send to review |
 | Draft edited after approval | approval invalidated |
 | Reviewer unavailable | item remains pending or expires |
-| Kill switch active | skip AI and any outbox creation |
+| Safe-stop condition active | skip AI and any outbox creation |
 
 ## Course 1 deployment boundary
 

@@ -20,7 +20,7 @@ Source/model/dependency update process:
 |---|---|---|---|---|---|
 | | | | | | |
 
-## Kill switch
+## Safe-stop controls
 
 Activation:  
 What it blocks:  
@@ -54,4 +54,3 @@ RTO/RPO observed:
 
 Detect → contain → revoke/isolate → preserve → assess → notify owner → recover → verify → learn  
 Personal-data breach decision owner and template:  
-

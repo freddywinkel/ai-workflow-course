@@ -14,19 +14,25 @@ testing (UAT)**.
 
 ## Course 1 — required consulting records
 
-These nine records form a small, coherent engagement trail.
+These nine records form a small, coherent engagement trail. The modules call
+out the exact record where it is first needed; the first four mappings are:
 
-| Sequence | Template | Purpose |
+- Module 1: stakeholder/user map and baseline/value record;
+- Module 2: workflow opportunity scorecard;
+- Module 3: data dictionary and quality check;
+- Module 4: architecture decision and diagrams.
+
+| Module first used | Template | Purpose |
 |---:|---|---|
-| 1 | [`workflow_opportunity_scorecard.md`](workflow_opportunity_scorecard.md) | select a bounded problem using evidence and stop conditions |
-| 2 | [`stakeholder_and_user_map.md`](stakeholder_and_user_map.md) | identify users, owners, authority, needs, and adoption risks |
-| 3 | [`baseline_and_value_record.md`](baseline_and_value_record.md) | define the manual baseline, value hypothesis, and honest measures |
-| 4 | [`data_dictionary_and_quality_check.md`](data_dictionary_and_quality_check.md) | define fields, source, quality rules, provenance, and input acceptance |
-| 5 | [`risk_and_escalation_screen.md`](risk_and_escalation_screen.md) | screen unsafe scope and assign risk, pause, fallback, and escalation routes |
-| 6 | [`tool_fit_and_ownership_record.md`](tool_fit_and_ownership_record.md) | compare the simplest tool options and assign lifecycle ownership |
-| 7 | [`uat_script.md`](uat_script.md) | let representative users test business scenarios and exception routes |
-| 8 | [`adoption_and_training_plan.md`](adoption_and_training_plan.md) | prepare users, support, training, feedback, and adoption measures |
-| 9 | [`pilot_decision_record.md`](pilot_decision_record.md) | decide stop, revise, portfolio completion, or later pilot assessment |
+| 1 | [`stakeholder_and_user_map.md`](stakeholder_and_user_map.md) | identify users, owners, authority, needs, and adoption risks |
+| 1 | [`baseline_and_value_record.md`](baseline_and_value_record.md) | define the manual baseline, value hypothesis, and honest measures |
+| 2 | [`workflow_opportunity_scorecard.md`](workflow_opportunity_scorecard.md) | select a bounded problem using evidence and stop conditions |
+| 3 | [`data_dictionary_and_quality_check.md`](data_dictionary_and_quality_check.md) | define fields, source, quality rules, provenance, and input acceptance |
+| 7 | [`risk_and_escalation_screen.md`](risk_and_escalation_screen.md) | screen unsafe scope and assign risk, pause, fallback, and escalation routes |
+| 7 | [`tool_fit_and_ownership_record.md`](tool_fit_and_ownership_record.md) | compare the simplest tool options and assign lifecycle ownership |
+| 9 | [`uat_script.md`](uat_script.md) | let representative users test business scenarios and exception routes |
+| 9 | [`adoption_and_training_plan.md`](adoption_and_training_plan.md) | prepare users, support, training, feedback, and adoption measures |
+| 8 | [Course 1 final decision record](pilot_decision_record.md) | record `ACCEPT FOR SYNTHETIC PORTFOLIO`, `REWORK`, or `DO NOT CONTINUE`; it does not authorize a client pilot |
 
 The sequence is logical, not rigid. Revisit earlier records when evidence
 changes the process, data, risk, or value hypothesis.
@@ -71,3 +77,5 @@ readiness.
 - Record “not tested” or “unknown” honestly.
 - A Course 1 result is a synthetic portfolio demonstration, not production
   approval.
+- Course 2 teaches client discovery and assessment. Course 3 teaches supervised
+  pilot preparation and governance.

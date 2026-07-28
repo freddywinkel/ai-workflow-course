@@ -55,7 +55,8 @@ You are ready when you can:
   changes;
 - redo a small exercise without copying;
 - explain uncertainty without hiding it;
-- accept `NO AI`, `REWORK`, or `DO NOT PILOT` as valid conclusions.
+- accept `ACCEPT FOR SYNTHETIC PORTFOLIO`, `REWORK`, or `DO NOT CONTINUE` as
+  valid evidence-based Course 1 conclusions.
 
 ## Health and employment boundary
 

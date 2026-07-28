@@ -123,6 +123,24 @@ test("content hashes and build ids are stable for identical inputs", async () =>
   assert.match(secondVersion.courseVersion, /^\d+\.\d+\.\d+$/);
 });
 
+test("build ids also change when the build and generated-asset logic changes", () => {
+  const inputs = {
+    contentHash: "content-hash",
+    sourceAssets: [["app.js", "application source"]],
+    buildScriptSource: "manifest and icon logic version one",
+    basePath: "/ai-workflow-course/",
+  };
+  const first = buildModule.createBuildId(inputs);
+  const repeated = buildModule.createBuildId(inputs);
+  const changed = buildModule.createBuildId({
+    ...inputs,
+    buildScriptSource: "manifest and icon logic version two",
+  });
+  assert.equal(repeated, first);
+  assert.notEqual(changed, first);
+  assert.match(first, /^[a-f0-9]{12}$/);
+});
+
 test("career metadata separates the current course from the later consultant path", () => {
   assert.match(
     bundle.career.targetRole,
@@ -310,6 +328,21 @@ test("Markdown list boundaries stay safe around blocks and inline code links", (
   assert.doesNotMatch(linkedCode, />CODE\d+</);
 });
 
+test("CommonMark secure URL autolinks render as safe external links", () => {
+  const rendered = renderMarkdown(
+    "Download it from <https://example.com/tool?channel=stable&lang=en>.",
+  );
+  assert.match(
+    rendered,
+    /<a href="https:\/\/example\.com\/tool\?channel=stable&amp;lang=en" target="_blank" rel="noopener noreferrer">https:\/\/example\.com\/tool\?channel=stable&amp;lang=en<\/a>/,
+  );
+  assert.match(
+    renderMarkdown("Do not open <javascript:alert(1)>."),
+    /&lt;javascript:alert\(1\)&gt;/,
+  );
+  assert.doesNotMatch(renderMarkdown("<http://example.com>"), /<a href=/);
+});
+
 test("app checks on startup, focus, foreground return and manual action", () => {
   assert.match(appSource, /updateViaCache: "none"/);
   assert.match(appSource, /serviceWorkerRegistration\.update\(\)/);
@@ -368,7 +401,7 @@ test("mobile and accessibility essentials are present", () => {
   assert.match(cssSource, /\.skip-link:focus\s*\{/);
   assert.match(
     appSource,
-    /if \(pendingRouteFocus\)[\s\S]+?window\.scrollTo\(\{ top: 0, behavior: "instant" \}\)/,
+    /renderHome\(\);[\s\S]+?const resetRouteScroll = \(\) => window\.scrollTo\(\{ top: 0, behavior: "instant" \}\);[\s\S]+?resetRouteScroll\(\);[\s\S]+?window\.setTimeout\(resetRouteScroll, 0\);[\s\S]+?if \(pendingRouteFocus\)/,
   );
   assert.match(
     appSource,
@@ -394,6 +427,224 @@ test("mobile and accessibility essentials are present", () => {
   assert.match(bottomNavigation, /data-route="career"[\s\S]+?<span>Career<\/span>/);
   assert.match(cssSource, /grid-template-columns: repeat\(5, 1fr\)/);
   assert.doesNotMatch(cssSource, /width:\s*[4-9]\d{2,}px;\s*\/\* mobile/);
+});
+
+test("learner notes are captured before navigation and report real storage results", () => {
+  const captureSource = appSource.match(
+    /function captureNoteInState\(documentId, noteValue\) \{[\s\S]+?^\}/m,
+  )?.[0];
+  assert.ok(captureSource);
+  const noteState = { notes: {} };
+  const captureNoteInState = Function(
+    "state",
+    "noteStorageDirty",
+    `${captureSource}; return captureNoteInState;`,
+  )(noteState, false);
+  captureNoteInState("lesson-one", "Keep this note");
+  assert.equal(noteState.notes["lesson-one"], "Keep this note");
+  captureNoteInState("lesson-two", "x".repeat(50010));
+  assert.equal(noteState.notes["lesson-two"].length, 50000);
+  captureNoteInState("lesson-one", "   ");
+  assert.equal("lesson-one" in noteState.notes, false);
+
+  const saveSource = appSource.match(
+    /function saveState\(\) \{[\s\S]+?^\}/m,
+  )?.[0];
+  assert.ok(saveSource);
+  const messages = [];
+  const makeSaveState = (storage) =>
+    Function(
+      "localStorage",
+      "STORAGE_KEY",
+      "state",
+      "showToast",
+      "noteStorageDirty",
+      `${saveSource}; return saveState;`,
+    )(
+      storage,
+      "course-state",
+      noteState,
+      (message) => messages.push(message),
+      true,
+    );
+  assert.equal(makeSaveState({ setItem() {} })(), true);
+  assert.equal(
+    makeSaveState({
+      setItem() {
+        throw new Error("storage full");
+      },
+    })(),
+    false,
+  );
+  assert.match(messages.at(-1), /could not be saved/);
+
+  const wireEventsSource = appSource.match(
+    /function wireEvents\(\) \{[\s\S]+?^}/m,
+  )?.[0];
+  assert.ok(wireEventsSource);
+  assert.ok(
+    wireEventsSource.indexOf("captureNoteInState(documentId, event.currentTarget.value)") <
+      wireEventsSource.indexOf("window.setTimeout(persistPendingNote, 450)"),
+  );
+  assert.match(wireEventsSource, /addEventListener\("pagehide", flushPendingNote\)/);
+  assert.match(
+    wireEventsSource,
+    /document\.visibilityState === "hidden"\) flushPendingNote\(\)/,
+  );
+  const persistSource = appSource.match(
+    /function persistPendingNote\(\) \{[\s\S]+?^\}/m,
+  )?.[0];
+  assert.ok(persistSource);
+  assert.doesNotMatch(persistSource, /currentDocument|learner-note/);
+  assert.match(persistSource, /saved \? "Saved locally" : "Not saved on this device"/);
+  assert.match(appSource, /function navigate\(route\) \{\s+flushPendingNote\(\)/);
+  assert.match(appSource, /function toggleCompleted\(\) \{[\s\S]+?flushPendingNote\(\)/);
+  assert.match(appSource, /noteTimer === null && !noteStorageDirty/);
+  assert.doesNotMatch(appSource, /textContent = "Saved locally"/);
+  assert.match(htmlSource, /maxlength="50000"/);
+  assert.match(htmlSource, /<label id="notes-title" for="learner-note">/);
+  assert.match(htmlSource, /aria-labelledby="notes-title"/);
+  assert.doesNotMatch(htmlSource, /id="note-save-status"[^>]*>Saved locally/);
+  assert.match(cssSource, /\.save-status\.save-error/);
+});
+
+test("actionable sequence includes onboarding pages and ignores arbitrary references", () => {
+  const foundationTwoIndex = bundle.course.learningSequenceIds.indexOf(
+    "course-1-foundation-02",
+  );
+  assert.ok(foundationTwoIndex >= 0);
+  assert.deepEqual(
+    bundle.course.learningSequenceIds.slice(
+      foundationTwoIndex,
+      foundationTwoIndex + 4,
+    ),
+    [
+      "course-1-foundation-02",
+      "course-1-beginner-software-check",
+      "course-1-windows-setup",
+      "course-1-foundation-03",
+    ],
+  );
+
+  const helperSource = appSource.match(
+    /function resumeDocument\(\) \{[\s\S]+?^\}/m,
+  )?.[0];
+  assert.ok(helperSource);
+  const documents = [
+    { id: "readiness", core: false, group: "start" },
+    { id: "foundation-one", core: true },
+    { id: "foundation-two", core: true },
+    { id: "software-check", core: false, group: "start" },
+    { id: "windows-setup", core: false, group: "start" },
+    { id: "foundation-three", core: true },
+    { id: "reference-page", core: false, group: "reference" },
+  ];
+  const byId = new Map(documents.map((document) => [document.id, document]));
+  const sequence = documents.slice(0, 6);
+  const makeResume = (lastDocument, completedIds) =>
+    Function(
+      "learningSequenceDocuments",
+      "documentById",
+      "state",
+      "isDocumentComplete",
+      `${helperSource}; return resumeDocument;`,
+    )(
+      () => sequence,
+      byId,
+      { lastDocument },
+      (document) => completedIds.has(document.id),
+    );
+  const completedThroughFoundationTwo = new Set([
+    "readiness",
+    "foundation-one",
+    "foundation-two",
+  ]);
+  assert.equal(
+    makeResume("reference-page", completedThroughFoundationTwo)().id,
+    "software-check",
+  );
+  assert.equal(
+    makeResume("foundation-two", completedThroughFoundationTwo)().id,
+    "software-check",
+  );
+  assert.equal(
+    makeResume("windows-setup", completedThroughFoundationTwo)().id,
+    "windows-setup",
+  );
+
+  const pagerSource = appSource.match(
+    /function pagerDocumentsFor\(courseDocument\) \{[\s\S]+?^\}/m,
+  )?.[0];
+  assert.ok(pagerSource);
+  const pagerDocumentsFor = Function(
+    "learningSequenceDocuments",
+    "courseBundle",
+    "documentById",
+    `${pagerSource}; return pagerDocumentsFor;`,
+  )(
+    () => sequence,
+    {
+      groups: [
+        { id: "start", documents: ["readiness", "software-check", "windows-setup"] },
+        { id: "reference", documents: ["reference-page"] },
+      ],
+    },
+    byId,
+  );
+  const pager = pagerDocumentsFor(byId.get("foundation-two"));
+  const pagerIndex = pager.findIndex(
+    (courseDocument) => courseDocument.id === "foundation-two",
+  );
+  assert.deepEqual(
+    pager.slice(pagerIndex, pagerIndex + 4).map((courseDocument) => courseDocument.id),
+    [
+      "foundation-two",
+      "software-check",
+      "windows-setup",
+      "foundation-three",
+    ],
+  );
+  assert.deepEqual(
+    pagerDocumentsFor(byId.get("reference-page")).map(
+      (courseDocument) => courseDocument.id,
+    ),
+    ["reference-page"],
+  );
+});
+
+test("course navigation waits for content and announces state and route focus", () => {
+  const initialiseSource = appSource.match(
+    /async function initialise\(\) \{[\s\S]+?^\}/m,
+  )?.[0];
+  assert.ok(initialiseSource);
+  assert.ok(
+    initialiseSource.indexOf("wireEvents();") >
+      initialiseSource.indexOf("courseBundle = await response.json();"),
+  );
+  assert.match(htmlSource, /id="app-shell" aria-busy="true"/);
+  assert.match(htmlSource, /id="menu-button"[^>]+disabled/);
+  assert.match(appSource, /function setCourseShellReady\(\)/);
+  assert.match(appSource, /querySelectorAll\("\[data-route\]"\)/);
+  assert.match(appSource, /class="sr-only nav-document-status"/);
+  assert.match(appSource, /"Completed"[\s\S]+?"Review again"[\s\S]+?"Not completed"/);
+  assert.match(
+    appSource,
+    /const activeView = Object\.values\(views\)\.find[\s\S]+?querySelector\("h1"\)/,
+  );
+  assert.match(appSource, /heading\.setAttribute\("tabindex", "-1"\)/);
+  assert.doesNotMatch(appSource, /querySelector\("#main-content"\)\.focus/);
+});
+
+test("effort and installation language reflect real practice and all devices", () => {
+  assert.match(appSource, /total course hours/);
+  assert.match(appSource, /minutes reading · allow extra practice time/);
+  assert.doesNotMatch(appSource, /\} minutes<\/span>/);
+  assert.match(htmlSource, /Install Course 1 on this device/);
+  assert.match(htmlSource, /Desktop computer or Android device/);
+  assert.match(htmlSource, /iPhone or iPad/);
+  assert.match(htmlSource, /Install app/);
+  assert.match(htmlSource, /Add to Home Screen/);
+  assert.match(cssSource, /\.install-platform/);
 });
 
 test("visual refresh stays purposeful, offline and theme-safe", () => {
@@ -514,18 +765,21 @@ test("first visible abbreviations are expanded in beginner language", () => {
   assert.doesNotMatch(appSource, /A deployment is available/);
 });
 
-test("core sequencing and checkpoints use bundle metadata rather than old paths", () => {
+test("learning sequence and checkpoints use bundle metadata rather than old paths", () => {
   assert.match(
     appSource,
     /courseBundle\.documents\.filter\(\(courseDocument\) => courseDocument\.core\)/,
   );
+  assert.match(appSource, /courseBundle\.course\.learningSequenceIds/);
+  assert.match(
+    appSource,
+    /const nextDocuments = learningSequenceDocuments\(\)/,
+  );
+  assert.match(appSource, /const nextLesson = resumeDocument\(\)/);
   assert.match(appSource, /group\.documents\.indexOf\(courseDocument\.id\)/);
   assert.match(appSource, /courseDocument\.checkpoint/);
   assert.match(appSource, /candidate\.lessonId === courseDocument\.id/);
-  assert.match(
-    appSource,
-    /const pagerDocuments = courseDocument\.core[\s\S]+?\(group\?\.documents \|\| \[\]\)/,
-  );
+  assert.match(appSource, /const pagerDocuments = pagerDocumentsFor\(courseDocument\)/);
   assert.doesNotMatch(appSource, /weeks\/WEEK_07\.md/);
   assert.doesNotMatch(appSource, /sourcePath\.match\(\^foundations/);
 });
@@ -551,7 +805,8 @@ test("schema-v1 progress migrates to stable revisioned lesson ids", () => {
 });
 
 test("course practice revision reopens old completions without changing lesson dates", () => {
-  assert.equal(bundle.course.practiceRevision, 2);
+  assert.ok(Number.isInteger(bundle.course.practiceRevision));
+  assert.ok(bundle.course.practiceRevision >= 2);
   const coreDocument = bundle.documents.find((document) => document.core);
   assert.ok(coreDocument);
   const helperSource = appSource.match(

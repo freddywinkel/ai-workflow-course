@@ -13,7 +13,7 @@ Release-manifest hash:
 - [ ] model IDs/snapshots/settings
 - [ ] prompt/schema/canonicalisation hashes
 - [ ] storage and retention configuration
-- [ ] action mode draft-only; kill switch defaults on
+- [ ] action mode draft-only; `EXTERNAL_ACTIONS_ENABLED=false`
 - [ ] secrets scan clean
 
 ## Acceptance
@@ -39,7 +39,7 @@ Release-manifest hash:
 - [ ] malformed row/duplicate reference/date conflict
 - [ ] untrusted text cannot change workflow instructions
 - [ ] model/storage/audit outage
-- [ ] kill switch/manual packet
+- [ ] external-actions-disabled/manual packet
 - [ ] backup restoration/hash match/no action replay
 - [ ] deletion across source/derived/index/cache/log/audit/provider
 
@@ -56,5 +56,5 @@ Release-manifest hash:
 - [ ] artifact hashes
 
 Known blockers/limitations:  
-Decision: RELEASE / DO NOT RELEASE  
+Course 1 decision: ACCEPT FOR SYNTHETIC PORTFOLIO / REWORK / DO NOT CONTINUE
 Sign-off/date:  

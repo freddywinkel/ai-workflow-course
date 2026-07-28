@@ -4,7 +4,7 @@
 
 You will calculate rule quality, inspect summary support, compare active time,
 model cost and capacity honestly, record usability evidence, and make a
-go/rework/stop decision before claiming value.
+bounded evidence-based decision before claiming value.
 
 ## Beginner checkpoint
 
@@ -22,6 +22,9 @@ prompt versions must be frozen for the evaluation run.
 - A **matched baseline** compares equivalent manual and assisted work.
 - **Regression** is a previously passing behaviour that fails after change.
 - A **decision threshold** is written before seeing a result.
+- Course 1 uses exactly three final decision labels:
+  `ACCEPT FOR SYNTHETIC PORTFOLIO`, `REWORK`, and `DO NOT CONTINUE`.
+  Each is a valid pass when the recorded evidence supports it.
 
 ## Official readings
 
@@ -56,8 +59,11 @@ ending.
 Open Windows PowerShell and run:
 
 ```powershell
-$practiceBase = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'controlled-ai-course-practice'
-$moduleFolder = Join-Path $practiceBase 'module-08'
+$projectRoot = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'AI-workflow-learning\operations-exception-assistant'
+if (-not (Test-Path (Join-Path $projectRoot '.git'))) {
+    throw 'Project repository not found. Complete Windows Setup before Module 8.'
+}
+$moduleFolder = Join-Path $projectRoot 'evidence\module-08'
 New-Item -ItemType Directory -Force -Path $moduleFolder
 Set-Location -LiteralPath $moduleFolder
 notepad .\worked_expected.csv
@@ -258,7 +264,7 @@ Evaluate the different capstone result:
 
 ```powershell
 $courseRoot = Read-Host 'Paste the full path to AI_WORKFLOW_DOCUMENT_SYSTEMS_COURSE'
-$moduleFour = Join-Path $practiceBase 'module-04'
+$moduleFour = Join-Path $projectRoot 'evidence\module-04'
 Copy-Item -LiteralPath (Join-Path $courseRoot 'practice_data\expected_issues.csv') -Destination .\recreated_expected.csv
 Copy-Item -LiteralPath (Join-Path $moduleFour 'found_issues.csv') -Destination .\recreated_found.csv
 Copy-Item .\evaluate_worked.py .\evaluate_recreated.py
@@ -286,10 +292,14 @@ severity mismatches.
 - licence/usage, review, maintenance, training, fallback, and incident costs;
 - a five-task usability test;
 - limitations, including self-testing and synthetic data;
-- decision `SYNTHETIC DEMONSTRATION ONLY`, `REWORK`, or `STOP`.
+- exactly one decision: `ACCEPT FOR SYNTHETIC PORTFOLIO`, `REWORK`, or
+  `DO NOT CONTINUE`.
 
-Even with perfect frozen metrics, do not choose a real-client pilot: Course 1
-has synthetic data and no external user acceptance.
+`ACCEPT FOR SYNTHETIC PORTFOLIO` means the synthetic case may be shown with
+its limitations. It does not authorize business use. `REWORK` means record and
+repair the gaps. `DO NOT CONTINUE` means close the exercise safely and preserve
+the evidence explaining why. Course 1 never transitions to a client or live
+business implementation.
 
 3. Create `recreated_regression_policy.md` using the capstone's actual change
 triggers.
@@ -323,8 +333,8 @@ true-positive/false-positive/false-negative arithmetic; precision and recall;
 high-severity recall; severity match; statement-level support review; matched
 active time including human review; labelled volume/cost scenarios; all costs;
 usability tasks; thresholds set before decision; quality overriding attractive
-value; synthetic-demonstration-only boundary; regression triggers; gold-change
-control;
+value; synthetic-portfolio-only boundary; regression triggers; gold-change
+control; exactly one permitted final decision with evidence;
 3. the smallest corrections for me to make if NOT YET.
 
 Remain read-only and do not recalculate by changing files.
@@ -341,8 +351,27 @@ Remain read-only and do not recalculate by changing files.
       included.
 - [ ] Usability evidence and limitations are recorded.
 - [ ] The decision follows thresholds, not enthusiasm.
+- [ ] The decision is exactly `ACCEPT FOR SYNTHETIC PORTFOLIO`, `REWORK`, or
+      `DO NOT CONTINUE`; every outcome can pass when evidence-backed.
 - [ ] Regression and gold-change policies are explicit.
 - [ ] Codex returns `PASS` read-only.
+
+### Record your Module 8 PASS in Git
+
+Do this only after Codex returns `PASS`.
+
+```powershell
+$projectRoot = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'AI-workflow-learning\operations-exception-assistant'
+Set-Location -LiteralPath $projectRoot
+git status --short
+git add -- "evidence/module-08"
+git commit -m "complete module 8 evidence"
+git status --short
+```
+
+If Git reports `nothing to commit`, confirm that the module evidence was
+already recorded and unchanged. Never add secrets, real data, or unrelated
+files.
 
 ## Consultant lens
 
@@ -358,7 +387,7 @@ scenarios, usability evidence, a bounded decision, and regression policy.
 ## Required artifact
 
 The teaching contract creates worked and recreated datasets, metric reports,
-evaluation decisions, and regression policies under `module-08`.
+evaluation decisions, and regression policies under `evidence/module-08`.
 
 ## Test gate
 

@@ -37,7 +37,9 @@ the workflow will have a visible stop and manual route.
   correct, reject, or escalate, and is not pressured to approve.
 - An **audit event** records a significant action, actor or component, time,
   subject, and result.
-- A **kill switch** disables a capability or action path.
+- An **external-actions safety control** prevents a workflow from sending or
+  changing anything outside its local practice files. In this course it is
+  written unambiguously as `EXTERNAL_ACTIONS_ENABLED=false`.
 - A **deterministic rule** produces the same result for the same input and rule
   version.
 - **Autonomy** is the degree to which a system may act without a person's
@@ -88,7 +90,7 @@ receive allowed synthetic input
 → check every draft claim against evidence
 → let an authorised person accept, edit, reject, or escalate
 → record the outcome
-→ retain a manual fallback and kill switch
+→ retain a manual fallback and `EXTERNAL_ACTIONS_ENABLED=false`
 ```
 
 An LLM may change. The process definition, rules, evidence, tests, review
@@ -184,8 +186,9 @@ priority, contact anyone, or perform an external action.
 ## Failure route
 
 Invalid input or an unsupported draft receives reason code NEEDS_MANUAL_REVIEW.
-The reviewer uses the issue records directly. The kill switch blocks new draft
-generation but does not hide existing issue records.
+The reviewer uses the issue records directly.
+`EXTERNAL_ACTIONS_ENABLED=false` blocks every external action but does not hide
+existing issue records.
 ```
 
 Save and close Notepad.

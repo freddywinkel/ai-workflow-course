@@ -1,5 +1,63 @@
 # Course Changelog
 
+## 2.2.0 — 2026-07-28
+
+### One reproducible learner project
+
+- Kept foundation rehearsals in `controlled-ai-course-practice`, then moved
+  every module increment into the one Git repository created during Windows
+  Setup: `AI-workflow-learning\operations-exception-assistant`.
+- Added a consistent `evidence\module-01` through `evidence\module-09`
+  structure, a pass-only Git checkpoint after every module, and a final
+  `CAPSTONE_INDEX.md` plus project `CHANGELOG.md`.
+- Connected every required capstone artifact to the module that teaches and
+  produces it, including the previously unused stakeholder, baseline,
+  opportunity, and data-quality worksheets.
+
+### Honest Course 1 decision boundary
+
+- Replaced conflicting pilot language with exactly three evidence-backed
+  Course 1 outcomes: `ACCEPT FOR SYNTHETIC PORTFOLIO`, `REWORK`, and
+  `DO NOT CONTINUE`.
+- Made all three outcomes completable in Module 9. None authorizes a client
+  pilot: discovery belongs in Course 2 and supervised low-risk pilot delivery
+  belongs in Course 3.
+- Standardised the external-action safety setting as
+  `EXTERNAL_ACTIONS_ENABLED=false`.
+- Replaced ambiguous kill-switch and Course 1 pilot-phase wording with
+  explicit safe-stop, synthetic-portfolio, and later-course boundaries.
+
+### Beginner setup and durable dependencies
+
+- Separated the learner's read-only software check from the maintainer-only
+  course update prompt.
+- Made the core Course 1 path local and rule-first; the OpenAI package and n8n
+  are optional labs rather than required setup.
+- Pinned the small required Python package set, taught the learner to record
+  the installed environment, and pinned release validation and GitHub Actions
+  dependencies.
+- Added the missing Python list and membership demonstration before the
+  learner recreates it independently.
+
+### Progressive web app product fixes
+
+- Prevented private notes from being lost during immediate navigation and
+  report storage failures truthfully.
+- Made Resume choose the next incomplete actionable lesson.
+- Added an actionable learning sequence so Resume and previous/next insert the
+  read-only software check and Windows Setup between Foundations 2 and 3,
+  without counting those setup gates as core progress.
+- Added secure CommonMark web links, an accessible note label and lesson
+  statuses, heading focus after navigation, clearer install guidance, and
+  reading-time wording that does not understate practice time.
+- Reset each newly rendered page to the top after button, browser-history, or
+  copied-link navigation.
+- Included the build generator in update identity so manifest or icon build
+  changes reach existing installed clients.
+- Added regression checks for the unified repository, artifact coverage,
+  decision vocabulary, maintainer boundary, links, learner state,
+  accessibility, and update identity.
+
 ## 2.1.0 — 2026-07-26
 
 ### Certified-beginner practice

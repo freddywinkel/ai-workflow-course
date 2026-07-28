@@ -83,7 +83,7 @@ Score each item from **0 to 3**:
 | Rules can be stated and tested | | |
 | Input data is available and understandable | | |
 | Process owner and reviewer are available | | |
-| Pilot can be synthetic, bounded, and reversible | | |
+| Course evaluation can be synthetic, bounded, and reversible | | |
 | Users have a reason and capacity to adopt it | | |
 | Manual fallback is practical | | |
 

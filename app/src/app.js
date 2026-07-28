@@ -25,6 +25,7 @@ let deferredInstallPrompt = null;
 let reloadingForUpdate = false;
 let toastTimer = null;
 let noteTimer = null;
+let noteStorageDirty = false;
 let lastAutomaticUpdateCheck = 0;
 let pendingRouteFocus = false;
 let pendingLegacyState = null;
@@ -148,8 +149,11 @@ function loadState() {
 function saveState() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    noteStorageDirty = false;
+    return true;
   } catch {
     showToast("Progress could not be saved on this device.");
+    return false;
   }
 }
 
@@ -258,6 +262,50 @@ function coreDocuments() {
   return courseBundle.documents.filter((courseDocument) => courseDocument.core);
 }
 
+function learningSequenceDocuments() {
+  const sequenceIds = courseBundle.course.learningSequenceIds;
+  if (!Array.isArray(sequenceIds) || !sequenceIds.length) {
+    return coreDocuments();
+  }
+  const sequence = sequenceIds
+    .map((documentId) => documentById.get(documentId))
+    .filter(Boolean);
+  return sequence.length ? sequence : coreDocuments();
+}
+
+function resumeDocument() {
+  const sequence = learningSequenceDocuments();
+  const lastDocument = documentById.get(state.lastDocument);
+  const lastIsActionable = sequence.some(
+    (courseDocument) => courseDocument.id === lastDocument?.id,
+  );
+  if (lastIsActionable && !isDocumentComplete(lastDocument)) {
+    return lastDocument;
+  }
+  return (
+    sequence.find((courseDocument) => !isDocumentComplete(courseDocument)) ||
+    sequence[0] ||
+    null
+  );
+}
+
+function pagerDocumentsFor(courseDocument) {
+  const sequence = learningSequenceDocuments();
+  if (
+    sequence.some(
+      (candidateDocument) => candidateDocument.id === courseDocument.id,
+    )
+  ) {
+    return sequence;
+  }
+  const group = courseBundle.groups.find(
+    (candidate) => candidate.id === courseDocument.group,
+  );
+  return (group?.documents || [])
+    .map((documentId) => documentById.get(documentId))
+    .filter(Boolean);
+}
+
 function learningPositionLabel(courseDocument) {
   const group = courseBundle.groups.find((candidate) => candidate.id === courseDocument.group);
   if (!group) return courseDocument.group;
@@ -290,15 +338,22 @@ function updateProgressUi() {
   progress.setAttribute("aria-valuetext", `${percent}% of Course 1 complete`);
   document.querySelectorAll(".nav-document").forEach((button) => {
     const courseDocument = documentById.get(button.dataset.documentId);
-    button.classList.toggle(
-      "completed",
-      Boolean(courseDocument && isDocumentComplete(courseDocument)),
-    );
-    button.classList.toggle(
-      "needs-review",
-      Boolean(courseDocument && needsRevisionReview(courseDocument)),
-    );
+    if (courseDocument) updateNavigationDocumentState(button, courseDocument);
   });
+}
+
+function updateNavigationDocumentState(button, courseDocument) {
+  const complete = isDocumentComplete(courseDocument);
+  const needsReview = needsRevisionReview(courseDocument);
+  button.classList.toggle("completed", complete);
+  button.classList.toggle("needs-review", needsReview);
+  const status = complete
+    ? "Completed"
+    : needsReview
+      ? "Review again"
+      : "Not completed";
+  const statusText = button.querySelector(".nav-document-status");
+  if (statusText) statusText.textContent = ` — ${status}.`;
 }
 
 function renderCourseNavigation() {
@@ -343,9 +398,8 @@ function renderCourseNavigation() {
       button.type = "button";
       button.className = "nav-document";
       button.dataset.documentId = courseDocument.id;
-      if (isDocumentComplete(courseDocument)) button.classList.add("completed");
-      if (needsRevisionReview(courseDocument)) button.classList.add("needs-review");
-      button.innerHTML = `<span class="nav-check" aria-hidden="true">${iconSvg("check")}</span><span>${escapeHtml(courseDocument.title)}</span>`;
+      button.innerHTML = `<span class="nav-check" aria-hidden="true">${iconSvg("check")}</span><span>${escapeHtml(courseDocument.title)}</span><span class="sr-only nav-document-status"></span>`;
+      updateNavigationDocumentState(button, courseDocument);
       button.addEventListener("click", () => {
         navigateToDocument(courseDocument.id);
         closeSidebar();
@@ -380,6 +434,7 @@ function showOnly(viewName) {
 }
 
 function navigate(route) {
+  flushPendingNote();
   pendingRouteFocus = true;
   const target = route.startsWith("#") ? route : `#${route}`;
   if (window.location.hash === target) {
@@ -413,13 +468,16 @@ function renderHome() {
   const modulePercent = moduleDocs.length
     ? Math.round((moduleCompleted / moduleDocs.length) * 100)
     : 0;
-  const resume =
-    documentById.get(state.lastDocument) ||
-    core.find((document) => !isDocumentComplete(document)) ||
-    core[0];
-  const nextDocuments = core
+  const resume = resumeDocument();
+  const nextDocuments = learningSequenceDocuments()
     .filter((document) => !isDocumentComplete(document))
     .slice(0, 3);
+  const estimatedHours = courseBundle.course.estimatedHours;
+  const effortLabel =
+    Number.isFinite(estimatedHours?.minimum) &&
+    Number.isFinite(estimatedHours?.maximum)
+      ? `${estimatedHours.minimum}–${estimatedHours.maximum} total course hours`
+      : null;
   const verifiedDate = new Date(`${courseBundle.course.verifiedThrough}T12:00:00`);
   const ageDays = Number.isNaN(verifiedDate.getTime())
     ? null
@@ -447,6 +505,7 @@ function renderHome() {
         <div class="proof-chips" aria-label="Course safeguards">
           <span>${iconSvg("layers")}${courseBundle.course.foundationCount} foundations</span>
           <span>${iconSvg("document")}${courseBundle.course.moduleCount} implementation modules</span>
+          ${effortLabel ? `<span>${iconSvg("clock")}${escapeHtml(effortLabel)}</span>` : ""}
           <span>${iconSvg("shield")}Made-up practice data only</span>
         </div>
       </div>
@@ -520,7 +579,7 @@ function renderHome() {
                       <li>
                         <button class="${index === 0 ? "path-featured" : ""}" type="button" data-document-id="${escapeAttribute(document.id)}">
                           <span class="path-number">${String(index + 1).padStart(2, "0")}</span>
-                          <span><small>${escapeHtml(learningPositionLabel(document))} · about ${Math.max(1, Math.ceil(document.wordCount / 210))} minutes</small><strong>${escapeHtml(document.title)}</strong></span>
+                          <span><small>${escapeHtml(learningPositionLabel(document))} · about ${Math.max(1, Math.ceil(document.wordCount / 210))} minutes reading · allow extra practice time</small><strong>${escapeHtml(document.title)}</strong></span>
                           ${iconSvg("arrow")}
                         </button>
                       </li>`,
@@ -563,7 +622,7 @@ function renderHome() {
                   <span class="module-status">${escapeHtml(status)}</span>
                 </span>
                 <strong>${escapeHtml(courseDocument.title.replace(/^Module \d+\s*[—-]\s*/, ""))}</strong>
-                <small>About ${Math.max(1, Math.ceil(courseDocument.wordCount / 210))} minutes · revision ${escapeHtml(courseDocument.revision)}</small>
+                <small>About ${Math.max(1, Math.ceil(courseDocument.wordCount / 210))} minutes reading · allow extra practice time · revision ${escapeHtml(courseDocument.revision)}</small>
                 ${iconSvg("arrow")}
               </button>
             `;
@@ -608,9 +667,7 @@ function renderCareer() {
   const careerSummary = /progressive web app \(PWA\)/i.test(rawCareerSummary)
     ? rawCareerSummary
     : rawCareerSummary.replace(/\bPWA\b/, "progressive web app (PWA)");
-  const nextLesson =
-    coreDocuments().find((courseDocument) => !isDocumentComplete(courseDocument)) ||
-    coreDocuments()[0];
+  const nextLesson = resumeDocument();
 
   views.career.innerHTML = `
     <section class="career-hero">
@@ -804,7 +861,7 @@ function renderDocument(id) {
   showOnly("reader");
   currentDocument = courseDocument;
   state.lastDocument = id;
-  saveState();
+  const routeStateSaved = saveState();
 
   document.querySelector("#reader-group").textContent = groupTitle(courseDocument.group);
   document.querySelector("#reader-title").textContent = courseDocument.title;
@@ -815,7 +872,7 @@ function renderDocument(id) {
       ? `Core lesson ${corePosition + 1} of ${core.length}`
       : `${groupTitle(courseDocument.group)} page`;
   document.querySelector("#reader-meta").innerHTML = `
-    <span>${iconSvg("clock")}About ${Math.max(1, Math.ceil(courseDocument.wordCount / 210))} minutes</span>
+    <span>${iconSvg("clock")}About ${Math.max(1, Math.ceil(courseDocument.wordCount / 210))} minutes reading · allow extra practice time</span>
     <span>${iconSvg("layers")}${escapeHtml(learningPositionLabel(courseDocument))}</span>
     <span title="${escapeAttribute(lessonPosition)}">${iconSvg("document")}Revision ${escapeHtml(courseDocument.revision)}</span>
   `;
@@ -858,16 +915,12 @@ function renderDocument(id) {
   document.querySelector("#revision-alert").hidden = !revised;
   const note = document.querySelector("#learner-note");
   note.value = state.notes[id] || "";
-  document.querySelector("#note-save-status").textContent = "Saved locally";
-
-  const group = courseBundle.groups.find(
-    (candidate) => candidate.id === courseDocument.group,
+  setNoteSaveStatus(
+    routeStateSaved ? "Saved locally" : "Not saved on this device",
+    { error: !routeStateSaved },
   );
-  const pagerDocuments = courseDocument.core
-    ? core
-    : (group?.documents || [])
-        .map((documentId) => documentById.get(documentId))
-        .filter(Boolean);
+
+  const pagerDocuments = pagerDocumentsFor(courseDocument);
   const position = pagerDocuments.findIndex((document) => document.id === id);
   setDocumentPager(
     document.querySelector("#previous-document"),
@@ -991,6 +1044,8 @@ function renderSettings() {
 }
 
 function renderRoute() {
+  if (!courseBundle) return;
+  flushPendingNote();
   closeSidebar();
   const route = window.location.hash.replace(/^#/, "") || "home";
   if (route.startsWith("doc=")) {
@@ -1004,13 +1059,28 @@ function renderRoute() {
   } else {
     renderHome();
   }
+  // A hash change can come from our buttons, browser history, or a copied URL.
+  // Reset once now and once after the browser's built-in fragment scrolling,
+  // because route names such as #settings can also match an element ID.
+  const resetRouteScroll = () => window.scrollTo({ top: 0, behavior: "instant" });
+  resetRouteScroll();
+  window.setTimeout(resetRouteScroll, 0);
   if (pendingRouteFocus) {
-    window.scrollTo({ top: 0, behavior: "instant" });
-    if (route !== "search") {
-      window.setTimeout(() => {
-        document.querySelector("#main-content").focus({ preventScroll: true });
-      }, 0);
-    }
+    window.setTimeout(() => {
+      const activeView = Object.values(views).find((view) => !view.hidden);
+      const heading = activeView?.querySelector("h1");
+      if (!heading) return;
+      const hadTabIndex = heading.hasAttribute("tabindex");
+      if (!hadTabIndex) heading.setAttribute("tabindex", "-1");
+      heading.focus({ preventScroll: true });
+      if (!hadTabIndex) {
+        heading.addEventListener(
+          "blur",
+          () => heading.removeAttribute("tabindex"),
+          { once: true },
+        );
+      }
+    }, 0);
   }
   pendingRouteFocus = false;
 }
@@ -1070,6 +1140,7 @@ function updateConnectionStatus() {
 
 function toggleCompleted() {
   if (!currentDocument) return;
+  flushPendingNote();
   const wasComplete = isDocumentComplete(currentDocument);
   const index = state.completed.indexOf(currentDocument.id);
   if (wasComplete) {
@@ -1080,20 +1151,47 @@ function toggleCompleted() {
     state.completionRevisions[currentDocument.id] =
       completionRevisionFor(currentDocument);
   }
-  saveState();
+  const saved = saveState();
   renderCourseNavigation();
   updateProgressUi();
   renderDocument(currentDocument.id);
-  showToast(wasComplete ? "Marked incomplete." : "Lesson marked complete.");
+  showToast(
+    saved
+      ? wasComplete
+        ? "Marked incomplete."
+        : "Lesson marked complete."
+      : "The lesson changed on screen but could not be saved on this device.",
+  );
 }
 
-function saveCurrentNote() {
-  if (!currentDocument) return;
-  const note = document.querySelector("#learner-note").value;
-  if (note.trim()) state.notes[currentDocument.id] = note;
-  else delete state.notes[currentDocument.id];
-  saveState();
-  document.querySelector("#note-save-status").textContent = "Saved locally";
+function setNoteSaveStatus(message, { error = false } = {}) {
+  const status = document.querySelector("#note-save-status");
+  status.textContent = message;
+  status.classList.toggle("save-error", error);
+}
+
+function captureNoteInState(documentId, noteValue) {
+  if (!documentId) return;
+  const note = String(noteValue).slice(0, 50000);
+  if (note.trim()) state.notes[documentId] = note;
+  else delete state.notes[documentId];
+  noteStorageDirty = true;
+}
+
+function persistPendingNote() {
+  window.clearTimeout(noteTimer);
+  noteTimer = null;
+  const saved = saveState();
+  setNoteSaveStatus(
+    saved ? "Saved locally" : "Not saved on this device",
+    { error: !saved },
+  );
+  return saved;
+}
+
+function flushPendingNote() {
+  if (noteTimer === null && !noteStorageDirty) return true;
+  return persistPendingNote();
 }
 
 function showInstallDialog() {
@@ -1103,6 +1201,7 @@ function showInstallDialog() {
 }
 
 function exportProgress() {
+  flushPendingNote();
   const payload = {
     exportType: "ai-workflow-course-progress",
     exportedAt: new Date().toISOString(),
@@ -1310,13 +1409,24 @@ async function registerServiceWorker() {
   }
 }
 
+function setCourseShellReady() {
+  document.querySelector("#app-shell").setAttribute("aria-busy", "false");
+  document.querySelector("#menu-button").disabled = false;
+  document.querySelectorAll("[data-route]").forEach((button) => {
+    button.disabled = false;
+  });
+  document.querySelector(".brand").setAttribute("aria-disabled", "false");
+}
+
 function wireEvents() {
   window.addEventListener("hashchange", renderRoute);
   window.addEventListener("online", updateConnectionStatus);
   window.addEventListener("offline", updateConnectionStatus);
   window.addEventListener("focus", () => checkForUpdates());
+  window.addEventListener("pagehide", flushPendingNote);
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") checkForUpdates();
+    if (document.visibilityState === "hidden") flushPendingNote();
+    else checkForUpdates();
   });
   window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
     if (state.theme === "system") applyAppearance();
@@ -1353,10 +1463,7 @@ function wireEvents() {
       if (button.dataset.route === "course") {
         if (window.matchMedia("(max-width: 920px)").matches) openSidebar();
         else {
-          const target =
-            documentById.get(state.lastDocument) ||
-            coreDocuments().find((courseDocument) => !isDocumentComplete(courseDocument)) ||
-            coreDocuments()[0];
+          const target = resumeDocument();
           if (target) navigateToDocument(target.id);
         }
       } else {
@@ -1366,10 +1473,13 @@ function wireEvents() {
   });
 
   document.querySelector("#complete-button").addEventListener("click", toggleCompleted);
-  document.querySelector("#learner-note").addEventListener("input", () => {
+  document.querySelector("#learner-note").addEventListener("input", (event) => {
+    const documentId = currentDocument?.id;
+    if (!documentId) return;
+    captureNoteInState(documentId, event.currentTarget.value);
     window.clearTimeout(noteTimer);
-    document.querySelector("#note-save-status").textContent = "Saving…";
-    noteTimer = window.setTimeout(saveCurrentNote, 450);
+    setNoteSaveStatus("Saving…");
+    noteTimer = window.setTimeout(persistPendingNote, 450);
   });
   document.querySelector("#search-input").addEventListener("input", renderSearchResults);
 
@@ -1434,7 +1544,6 @@ function wireEvents() {
 async function initialise() {
   applyAppearance();
   updateConnectionStatus();
-  wireEvents();
 
   try {
     const response = await fetch(`${config.basePath}course-content.json`);
@@ -1469,6 +1578,8 @@ async function initialise() {
     saveState();
     renderCourseNavigation();
     updateProgressUi();
+    wireEvents();
+    setCourseShellReady();
     renderRoute();
     if (state.migration?.fromSchemaVersion === 1) {
       const archivedCount = state.migration.unmappedNoteIds?.length || 0;

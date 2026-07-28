@@ -6,30 +6,31 @@ Course 1 uses a small local stack so the learner can understand every
 component. Tool names are implementation examples, not the professional
 identity.
 
-Before any real pilot, repeat the build-versus-buy assessment and prefer the
-client's supported platform when it already meets the need.
+**Artificial intelligence (AI)** means software that can generate or classify
+content but can still be wrong.
+
+Before any real implementation, repeat the build-versus-buy assessment and
+prefer the organisation's supported platform when it already meets the need.
 
 ## Required
 
 | Tool or capability | Course role | Selection policy |
 |---|---|---|
 | Windows 11 | Learning workstation | Keep supported and updated |
-| Visual Studio Code or plain editor | Read and edit text/code | Any editor that preserves UTF-8 is acceptable |
+| Visual Studio Code or plain editor | Read and edit text/code | Any editor that preserves 8-bit Unicode Transformation Format (UTF-8) is acceptable |
 | Git | Inspect and version changes | Current supported release |
-| Python | CSV checks, reports, and tests | Python 3.12+; course examples target 3.13 |
+| Python | Comma-separated values (CSV) checks, reports, and tests | Python 3.12+; course examples target 3.13 |
 | `venv` and `pip` | Isolated Python dependencies | Included with Python |
-| pytest | Reproducible tests | Compatible current major, locked in the learner project |
-| JSON Schema validator | Validate contracts | Compatible current major |
-| n8n | Visual orchestration and human pause | Current stable verified by live audit; pin the selected release |
-| Node.js | Local n8n runtime | A Node LTS release supported by the selected n8n version |
-| Browser | n8n UI and PWA | Current Edge, Chrome, Safari, or Firefox |
+| pytest | Reproducible tests | Exact version pinned in `requirements-course.txt` |
+| Browser | Course progressive web app (PWA) | Current Edge, Chrome, Safari, or Firefox |
 
 ## Optional
 
 | Tool or capability | Course role | Boundary |
 |---|---|---|
-| OpenAI Responses API | Optional live structured-summary lab | Synthetic verified issues only; model ID in configuration |
-| Another provider with JSON Schema output | Portability comparison | Same tests and boundary |
+| n8n plus Node.js | Optional visual-orchestration crosswalk after the capstone passes | Not installed or required in the core path; verify and pin compatible versions before use |
+| OpenAI Responses application programming interface (API) | Optional live structured-summary lab | Synthetic verified issues only; model identifier (ID) in configuration |
+| Another provider with JavaScript Object Notation (JSON) Schema output | Portability comparison | Same tests and boundary |
 | Power Automate / Copilot Studio | Microsoft concept crosswalk | Do not buy or configure solely for Course 1 |
 | Google Workspace Studio | Google concept crosswalk | Do not buy or configure solely for Course 1 |
 | Make | Orchestration comparison | Not a parallel mandatory track |
@@ -42,13 +43,16 @@ These are useful later but not Course 1 prerequisites:
 - FastAPI or another production web service;
 - Docker Desktop;
 - PostgreSQL, Supabase, or multi-tenant storage;
-- PDF/DOCX parsing and OCR;
-- embeddings, vector databases, or advanced RAG;
-- OAuth production connectors;
+- Portable Document Format (PDF), Microsoft Word Open XML Document (DOCX)
+  parsing, and optical character recognition (OCR);
+- embeddings, vector databases, or advanced retrieval-augmented generation
+  (RAG);
+- Open Authorization (OAuth) production connectors;
 - hosted observability platforms;
 - autonomous or computer-use agents;
 - infrastructure-as-code;
-- Veeva or eQMS platform configuration.
+- Veeva or electronic quality management system (eQMS) platform
+  configuration.
 
 ## Model policy
 
@@ -66,14 +70,16 @@ For the optional live lab:
 
 ## Dependency policy
 
-`requirements-course.txt` provides compatible ranges for the learning
-environment. In the capstone repository:
+`requirements-course.txt` provides the exact required offline learning
+dependency. In the capstone repository:
 
 1. create a virtual environment;
 2. install the audited set;
 3. run tests;
-4. freeze the complete working environment;
-5. commit the lock or freeze record;
+4. run `python -m pip freeze | Set-Content
+   evidence\setup-dependencies.txt` to freeze the complete working
+   environment;
+5. inspect and commit that freeze record;
 6. change one dependency group at a time;
 7. rerun the regression set after every material change.
 

@@ -61,6 +61,38 @@ REQUIRED_PRACTICE_HEADINGS = (
     "## Pass criteria",
 )
 
+PROJECT_REPOSITORY_FRAGMENT = (
+    r"AI-workflow-learning\operations-exception-assistant"
+)
+MODULE_TEMPLATE_REFERENCES = {
+    1: ("stakeholder_and_user_map.md", "baseline_and_value_record.md"),
+    2: ("workflow_opportunity_scorecard.md",),
+    3: ("data_dictionary_and_quality_check.md",),
+}
+FINAL_DECISIONS = (
+    "ACCEPT FOR SYNTHETIC PORTFOLIO",
+    "REWORK",
+    "DO NOT CONTINUE",
+)
+FINAL_DECISION_FILES = (
+    "README.md",
+    "COURSE_OVERVIEW.md",
+    "CAPSTONE_SPECIFICATION.md",
+    "ASSESSMENT_AND_RUBRIC.md",
+    "modules/MODULE_08.md",
+    "modules/MODULE_09.md",
+    "templates/pilot_decision_record.md",
+)
+FORBIDDEN_FINAL_DECISION_PHRASES = (
+    "`PILOT`",
+    "`DO NOT PILOT`",
+    "`STOP`",
+    "SYNTHETIC DEMONSTRATION ONLY",
+    "`REVISE AND RETEST`",
+    "COMPLETE AS PORTFOLIO DEMO",
+    "ASSESS A LATER CONTROLLED PILOT",
+)
+
 REQUIRED_ONBOARDING_PHRASES = {
     "README.md": (
         "Artificial Intelligence (AI)",
@@ -958,6 +990,299 @@ def validate_beginner_terminology(root: Path, report: Report) -> None:
         )
 
 
+def validate_integrated_course_contract(
+    root: Path, curriculum: dict[str, Any] | None, report: Report
+) -> None:
+    if curriculum is None:
+        report.failed(
+            "integrated-course-contract",
+            "cannot validate the integrated contract without curriculum.json",
+        )
+        return
+
+    repository_failures: list[str] = []
+    artifact_failures: list[str] = []
+    decision_failures: list[str] = []
+    boundary_failures: list[str] = []
+    dependency_failures: list[str] = []
+    sequence_failures: list[str] = []
+
+    modules = group_documents(curriculum, "modules")
+    for number, document in enumerate(modules, start=1):
+        source_path = document.get("sourcePath", f"module {number}")
+        path = root / Path(*PurePosixPath(str(source_path)).parts)
+        if not path.is_file():
+            repository_failures.append(f"{source_path} is missing")
+            continue
+        text = path.read_text(encoding="utf-8")
+        normalized = text.replace("/", "\\")
+        required_repository_fragments = (
+            PROJECT_REPOSITORY_FRAGMENT,
+            f"evidence\\module-{number:02d}",
+            f'git add -- "evidence\\module-{number:02d}"',
+            f'git commit -m "complete module {number} evidence"',
+            "Join-Path $projectRoot '.git'",
+        )
+        for fragment in required_repository_fragments:
+            if fragment not in normalized:
+                repository_failures.append(
+                    f"{source_path} lacks integrated repository step {fragment!r}"
+                )
+        if re.search(
+            r"controlled-ai-course-practice[\\/]+module-\d+",
+            text,
+            re.IGNORECASE,
+        ):
+            repository_failures.append(
+                f"{source_path} still creates a separate module practice root"
+            )
+
+        for template_name in MODULE_TEMPLATE_REFERENCES.get(number, ()):
+            if template_name not in text:
+                artifact_failures.append(
+                    f"{source_path} does not teach or produce {template_name}"
+                )
+
+    if len(modules) != 9:
+        repository_failures.append(
+            f"integrated contract expected 9 modules; found {len(modules)}"
+        )
+
+    learning_sequence = curriculum.get("course", {}).get("learningSequenceIds")
+    all_documents = [
+        document
+        for group in curriculum.get("groups", [])
+        for document in group.get("documents", [])
+    ]
+    all_document_ids = {
+        document.get("id")
+        for document in all_documents
+        if isinstance(document.get("id"), str)
+    }
+    core_document_ids = {
+        document.get("id")
+        for group in curriculum.get("groups", [])
+        if group.get("core") is True
+        or group.get("id") in curriculum.get("course", {}).get("coreGroupIds", [])
+        for document in group.get("documents", [])
+        if isinstance(document.get("id"), str)
+    }
+    if not isinstance(learning_sequence, list) or not learning_sequence:
+        sequence_failures.append("course.learningSequenceIds is missing or empty")
+    else:
+        if len(learning_sequence) != len(set(learning_sequence)):
+            sequence_failures.append("course.learningSequenceIds contains duplicates")
+        unknown_ids = sorted(set(learning_sequence) - all_document_ids)
+        if unknown_ids:
+            sequence_failures.append(
+                f"course.learningSequenceIds contains unknown IDs: {unknown_ids}"
+            )
+        missing_core = sorted(core_document_ids - set(learning_sequence))
+        if missing_core:
+            sequence_failures.append(
+                f"course.learningSequenceIds omits core lessons: {missing_core}"
+            )
+        required_order = (
+            "course-1-foundation-02",
+            "course-1-beginner-software-check",
+            "course-1-windows-setup",
+            "course-1-foundation-03",
+        )
+        try:
+            positions = [learning_sequence.index(item) for item in required_order]
+            if positions != sorted(positions):
+                sequence_failures.append(
+                    "beginner learning order must be Foundation 2, software check, Windows Setup, Foundation 3"
+                )
+        except ValueError:
+            sequence_failures.append(
+                "beginner learning order lacks Foundation 2, software check, Windows Setup, or Foundation 3"
+            )
+
+    module_09_path = root / "modules" / "MODULE_09.md"
+    if module_09_path.is_file():
+        module_09_text = module_09_path.read_text(encoding="utf-8")
+        for final_file in ("CAPSTONE_INDEX.md", "CHANGELOG.md"):
+            if final_file not in module_09_text:
+                artifact_failures.append(
+                    f"modules/MODULE_09.md does not create {final_file}"
+                )
+
+    for source_path in FINAL_DECISION_FILES:
+        path = root / Path(*PurePosixPath(source_path).parts)
+        if not path.is_file():
+            decision_failures.append(f"{source_path} is missing")
+            continue
+        text = path.read_text(encoding="utf-8")
+        for decision in FINAL_DECISIONS:
+            if decision not in text:
+                decision_failures.append(
+                    f"{source_path} lacks final decision {decision!r}"
+                )
+        for phrase in FORBIDDEN_FINAL_DECISION_PHRASES:
+            if phrase.casefold() in text.casefold():
+                decision_failures.append(
+                    f"{source_path} retains obsolete final-decision phrase {phrase!r}"
+                )
+
+    beginner_files = (
+        "README.md",
+        "BEGINNER_READINESS_CHECK.md",
+        "BEGINNER_SOFTWARE_CHECK.md",
+        "SETUP_WINDOWS.md",
+    )
+    for source_path in beginner_files:
+        path = root / source_path
+        if not path.is_file():
+            boundary_failures.append(f"{source_path} is missing")
+            continue
+        text = path.read_text(encoding="utf-8")
+        if "EVERGREEN_UPDATE_PROMPT.md" in text:
+            boundary_failures.append(
+                f"{source_path} sends a beginner to the maintainer update prompt"
+            )
+
+    safety_files = (
+        "SETUP_WINDOWS.md",
+        "modules/MODULE_06.md",
+        "templates/acceptance_and_handover.md",
+    )
+    for source_path in safety_files:
+        path = root / Path(*PurePosixPath(source_path).parts)
+        if not path.is_file():
+            boundary_failures.append(f"{source_path} is missing")
+            continue
+        text = path.read_text(encoding="utf-8")
+        if "EXTERNAL_ACTIONS_ENABLED=false" not in text:
+            boundary_failures.append(
+                f"{source_path} lacks EXTERNAL_ACTIONS_ENABLED=false"
+            )
+        if "KILL_SWITCH" in text:
+            boundary_failures.append(
+                f"{source_path} retains the ambiguous KILL_SWITCH setting"
+            )
+
+    requirements_path = root / "requirements-course.txt"
+    if requirements_path.is_file():
+        requirement_lines = [
+            line.strip()
+            for line in requirements_path.read_text(encoding="utf-8").splitlines()
+            if line.strip() and not line.lstrip().startswith("#")
+        ]
+        if not requirement_lines:
+            dependency_failures.append(
+                "requirements-course.txt has no required offline dependency"
+            )
+        for requirement in requirement_lines:
+            if not re.fullmatch(
+                r"[A-Za-z0-9_.-]+==[A-Za-z0-9_.+-]+", requirement
+            ):
+                dependency_failures.append(
+                    f"requirements-course.txt is not exactly pinned: {requirement!r}"
+                )
+        if any(line.casefold().startswith("openai") for line in requirement_lines):
+            dependency_failures.append(
+                "the optional OpenAI provider package remains in the required dependency set"
+            )
+    else:
+        dependency_failures.append("requirements-course.txt is missing")
+
+    setup_path = root / "SETUP_WINDOWS.md"
+    if setup_path.is_file():
+        setup_text = setup_path.read_text(encoding="utf-8")
+        for fragment in (
+            "python -m pip freeze",
+            r"evidence\setup-dependencies.txt",
+            "Do not install Node.js or n8n",
+        ):
+            if fragment not in setup_text:
+                dependency_failures.append(
+                    f"SETUP_WINDOWS.md lacks dependency boundary {fragment!r}"
+                )
+
+    workflow_path = root / ".github" / "workflows" / "pages.yml"
+    if workflow_path.is_file():
+        workflow_text = workflow_path.read_text(encoding="utf-8")
+        action_refs = re.findall(
+            r"^\s*uses:\s*([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)@([^\s#]+)",
+            workflow_text,
+            re.MULTILINE,
+        )
+        if not action_refs:
+            dependency_failures.append("Pages workflow has no action references")
+        for action_name, action_ref in action_refs:
+            if not re.fullmatch(r"[0-9a-f]{40}", action_ref):
+                dependency_failures.append(
+                    f"{action_name} is not pinned to a full commit SHA"
+                )
+
+    if repository_failures:
+        report.failed(
+            "integrated-project-repository",
+            compact(repository_failures, limit=30),
+        )
+    else:
+        report.passed(
+            "integrated-project-repository",
+            "all 9 modules use one guarded Git repository, evidence/module-NN, and a pass-only checkpoint",
+        )
+
+    if artifact_failures:
+        report.failed(
+            "capstone-artifact-coverage",
+            compact(artifact_failures, limit=20),
+        )
+    else:
+        report.passed(
+            "capstone-artifact-coverage",
+            "Modules 1-3 use all four previously missing templates and Module 9 creates the final index and change log",
+        )
+
+    if decision_failures:
+        report.failed(
+            "course-final-decisions",
+            compact(decision_failures, limit=24),
+        )
+    else:
+        report.passed(
+            "course-final-decisions",
+            "all final-decision documents use the same three synthetic-only Course 1 outcomes",
+        )
+
+    if boundary_failures:
+        report.failed(
+            "learner-maintainer-and-action-boundaries",
+            compact(boundary_failures, limit=20),
+        )
+    else:
+        report.passed(
+            "learner-maintainer-and-action-boundaries",
+            "beginner start files avoid the mutating maintainer audit and action controls use EXTERNAL_ACTIONS_ENABLED=false",
+        )
+
+    if dependency_failures:
+        report.failed(
+            "reproducible-dependency-boundaries",
+            compact(dependency_failures, limit=20),
+        )
+    else:
+        report.passed(
+            "reproducible-dependency-boundaries",
+            "required Python packages and release actions are exactly pinned; optional provider and n8n tools remain outside core setup",
+        )
+
+    if sequence_failures:
+        report.failed(
+            "beginner-learning-sequence",
+            compact(sequence_failures, limit=12),
+        )
+    else:
+        report.passed(
+            "beginner-learning-sequence",
+            "the actionable sequence includes every core lesson and inserts the read-only software check plus Windows Setup before Foundation 3",
+        )
+
+
 def validate_current_json(root: Path, report: Report) -> None:
     failures: list[str] = []
     json_files = iter_current_files(root, ".json")
@@ -1744,6 +2069,7 @@ def main() -> int:
     validate_module_structure(root, curriculum, report)
     validate_beginner_practice_contract(root, curriculum, report)
     validate_beginner_terminology(root, report)
+    validate_integrated_course_contract(root, curriculum, report)
     validate_current_json(root, report)
     validate_json_schemas(root, report)
     validate_optional_yaml(root, report)

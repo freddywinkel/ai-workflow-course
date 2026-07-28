@@ -73,8 +73,11 @@ rejects unnecessary AI and makes ownership, fallback, and reassessment visible.
 Open Windows PowerShell and run:
 
 ```powershell
-$practiceBase = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'controlled-ai-course-practice'
-$moduleFolder = Join-Path $practiceBase 'module-07'
+$projectRoot = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'AI-workflow-learning\operations-exception-assistant'
+if (-not (Test-Path (Join-Path $projectRoot '.git'))) {
+    throw 'Project repository not found. Complete Windows Setup before Module 7.'
+}
+$moduleFolder = Join-Path $projectRoot 'evidence\module-07'
 New-Item -ItemType Directory -Force -Path $moduleFolder
 Set-Location -LiteralPath $moduleFolder
 notepad .\worked_guardrail_and_tool_decision.md
@@ -186,7 +189,7 @@ Create `worked_scope_change.md`:
 
 Request: add employee names and automatically message the person responsible.
 Effect: introduces personal data and an external action.
-Decision: STOP CURRENT SCOPE. Reopen privacy, authority, security, user,
+Decision: DO NOT CONTINUE. Reopen privacy, authority, security, user,
 necessity, transparency, works-council where applicable, vendor, fallback, and
 testing review. Do not bolt the request onto the approved workflow.
 ```
@@ -229,12 +232,13 @@ claim production readiness.
 6. Add a data-flow list from CSV input through issue output, summary, approval,
 local draft, retention, and deletion. Mark every boundary and owner.
 7. Add a scope-change test for real employee names plus automatic email. The
-   result must be `STOP AND REASSESS`.
+   result must be `DO NOT CONTINUE` until a separate qualified assessment is
+   complete.
 
 Verify:
 
 ```powershell
-Select-String -Path .\recreated_risk_screen.md,.\recreated_tool_fit.md -Pattern 'synthetic','manual fallback','owner','exit','STOP'
+Select-String -Path .\recreated_risk_screen.md,.\recreated_tool_fit.md -Pattern 'synthetic','manual fallback','owner','exit','DO NOT CONTINUE'
 ```
 
 **Expected result:** all five concepts appear. Missing output means the
@@ -262,7 +266,8 @@ consequence and AI-use screen; synthetic-only scope; at least seven realistic
 options including improve/configure/buy/build/no-AI; evidence rather than
 preference; security baseline; transfer and retention; total ownership cost;
 named access/backup/incident/exit owners; portability; manual fallback; no
-production-readiness claim; scope changes trigger STOP AND REASSESS; worked
+production-readiness claim; scope changes trigger DO NOT CONTINUE and
+reassessment; worked
 example correctly rejects unnecessary AI;
 3. the smallest corrections for me to make if NOT YET.
 
@@ -283,6 +288,23 @@ Remain read-only. Do not make a legal conclusion or replacement recommendation.
 - [ ] No legal approval or production-readiness claim is made.
 - [ ] Codex returns `PASS` read-only.
 
+### Record your Module 7 PASS in Git
+
+Do this only after Codex returns `PASS`.
+
+```powershell
+$projectRoot = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'AI-workflow-learning\operations-exception-assistant'
+Set-Location -LiteralPath $projectRoot
+git status --short
+git add -- "evidence/module-07"
+git commit -m "complete module 7 evidence"
+git status --short
+```
+
+If Git reports `nothing to commit`, confirm that the module evidence was
+already recorded and unchanged. Never add secrets, real data, or unrelated
+files.
+
 ## Consultant lens
 
 Clients pay for fit and control, not code volume. Recommending a spreadsheet
@@ -298,7 +320,7 @@ triggers.
 ## Required artifact
 
 The teaching contract creates the worked decision, worked scope change, and two
-completed recreated worksheets under `module-07`.
+completed recreated worksheets under `evidence/module-07`.
 
 ## Test gate
 

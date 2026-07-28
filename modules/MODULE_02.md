@@ -9,10 +9,12 @@ correct consulting result.
 
 ## Beginner checkpoint
 
-Start when Module 1 passes and you have a measured manual baseline. The start
-state contains synthetic evidence only. You do not need a customer, application
-programming interface (API), paid subscription, or artificial intelligence
-(AI) model.
+Start when Module 1 passes and you have a measured manual baseline. Its
+evidence is recorded by **Git**, a version-control tool that records file
+changes, in the one course **repository**, a project folder whose changes are
+tracked together. The start state contains synthetic evidence only. You do not
+need a customer, application programming interface (API), paid subscription, or
+artificial intelligence (AI) model.
 
 ## Concepts
 
@@ -57,24 +59,30 @@ the Windows plain-text editor used to create practice files.
 
 ### Stage 1 — Prepare the module folder
 
-**Prerequisite:** `module-01` passes.
+**Prerequisite:** Module 1 passes and its evidence is committed in the one
+project repository created during Windows Setup. Foundations remain in
+`Documents\controlled-ai-course-practice`; Modules 1–9 do not.
 
 Open Windows PowerShell and run:
 
 ```powershell
-$practiceBase = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'controlled-ai-course-practice'
-$moduleFolder = Join-Path $practiceBase 'module-02'
+$projectRoot = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'AI-workflow-learning\operations-exception-assistant'
+if (-not (Test-Path (Join-Path $projectRoot '.git'))) { throw 'Project Git repository not found. Complete Windows Setup before Module 2.' }
+$moduleFolder = Join-Path $projectRoot 'evidence\module-02'
 New-Item -ItemType Directory -Force -Path $moduleFolder
 Set-Location -LiteralPath $moduleFolder
 (Get-Location).Path
 ```
 
-**Expected result:** one path ending in `\module-02`.
+The `if` line stops rather than letting you create a second untracked module
+project. **Expected result:** one path ending in
+`\AI-workflow-learning\operations-exception-assistant\evidence\module-02`.
 
 If it does not, run `Get-Location`, then repeat `Set-Location -LiteralPath
-$moduleFolder`.
+$moduleFolder`. If the repository error appears, stop and complete Windows
+Setup; do not remove the check.
 
-### Stage 2 — Follow a complete go/no-go decision
+### Stage 2 — Follow a complete opportunity-selection decision
 
 Run `notepad .\worked_opportunity_brief.md`, click **Yes**, paste the completed
 example below, and save with **Ctrl+S**:
@@ -163,18 +171,17 @@ Real data, new data fields, a new user group, changed thresholds, external
 messages, ordering, payments, recommendations, or source write-back all require
 new assessment and approval.
 
-## Decision
+## Selection decision
 
-GO for a synthetic, internal, read-only proof. Owner: operations lead. User:
-inventory coordinator. Reviewer: operations lead. Fallback owner: inventory
-coordinator.
+SELECT FOR SYNTHETIC PROOF. Owner: operations lead. User: inventory
+coordinator. Reviewer: operations lead. Fallback owner: inventory coordinator.
 ```
 
 Read it from top to bottom, then run:
 
 ```powershell
 Get-Item -LiteralPath .\worked_opportunity_brief.md
-Select-String -Path .\worked_opportunity_brief.md -Pattern 'GO','does not','to be tested','Scope-change'
+Select-String -Path .\worked_opportunity_brief.md -Pattern 'SELECT FOR SYNTHETIC PROOF','does not','to be tested','Scope-change'
 ```
 
 **Explanation:** `Get-Item` returns information about one named file without
@@ -190,10 +197,59 @@ search term.
 
 - If `Get-Item` says the file does not exist, save the Notepad file in
   `module-02` and rerun the command.
-- If “GO” is missing, confirm that the file was saved.
+- If “SELECT FOR SYNTHETIC PROOF” is missing, confirm that the file was saved.
 - A total score never cancels a hard stop. If Candidate A looks attractive,
   read its consequence and action again.
 - Do not replace “to be tested” with an invented saving.
+
+### Stage 3 — See how the brief maps to the scorecard template
+
+The worked brief contains the reasoning. The reusable **workflow opportunity
+scorecard** gives that reasoning a consistent evidence trail. Follow one small
+completed example before recreating it.
+
+Run `notepad .\worked_workflow_opportunity_scorecard.md`, click **Yes**, paste,
+save, and close:
+
+```markdown
+# Worked workflow opportunity scorecard
+
+- Artifact ID: WORKED-M02-SCORECARD
+- Version/date: 1.0 / 2026-07-28
+- Opportunity: fictional internal low-stock attention list
+- Unit: one stock row
+- Completion: operations lead records a review decision
+- Process owner: operations lead
+- Manual fallback: coordinator checks each row against approved thresholds
+
+## Evidence and stop screen
+
+Observed demonstration baseline: 35 active minutes per weekly check.
+Assumption to test: a controlled report may reduce repeated checking.
+Hard stop: automatic refunds are excluded because they create an external
+financial action. No hard stop applies to the internal draft list.
+
+## Simplest-option comparison
+
+Clarifying thresholds and using a spreadsheet rule must be compared before AI.
+The bounded rule-first report is selected only for a synthetic proof.
+
+## Selection decision
+
+SELECT FOR SYNTHETIC PROOF. No client test, message, order, payment, approval,
+or source-system write-back is authorized.
+```
+
+Check it without editing:
+
+```powershell
+Get-Item .\worked_workflow_opportunity_scorecard.md
+Select-String -Path .\worked_workflow_opportunity_scorecard.md -Pattern 'baseline','Hard stop','spreadsheet','SELECT FOR SYNTHETIC PROOF'
+```
+
+**Expected result:** the file exists and all four evidence concepts are found.
+If a term is missing, compare your pasted text with the example and correct
+your own file.
 
 ## Now recreate it yourself
 
@@ -201,7 +257,18 @@ Small and medium-sized enterprise (SME) describes the fictional client type
 below. Comma-separated values (CSV) is the plain-text table format used for its
 supplied practice data.
 
-Create `recreated_opportunity_brief.md` for these different candidates:
+First copy the blank scorecard template, then create
+`recreated_opportunity_brief.md` for these different candidates:
+
+```powershell
+$courseRoot = Read-Host 'Paste the full path to AI_WORKFLOW_DOCUMENT_SYSTEMS_COURSE'
+$scorecardTemplate = Join-Path $courseRoot 'templates\workflow_opportunity_scorecard.md'
+Copy-Item -LiteralPath $scorecardTemplate -Destination .\workflow_opportunity_scorecard.md
+Get-Item .\workflow_opportunity_scorecard.md
+```
+
+`Copy-Item` preserves the blank source template and gives your completed
+capstone record the exact required name.
 
 1. the Synthetic SME Operations Exception Assistant using
    `practice_data/work_items.csv`;
@@ -222,7 +289,8 @@ for employment-related use. Select Candidate 1 and include:
 - measurable provisional thresholds;
 - a manual fallback;
 - scope-change triggers;
-- a dated `GO`, `REDESIGN FIRST`, or `STOP` decision.
+- a dated `SELECT FOR SYNTHETIC PROOF`, `DISCOVER FURTHER`, or `DISCARD`
+  selection decision.
 
 Use Notepad, save the file under `module-02`, reuse the demonstrated
 `Get-Item` check, and verify:
@@ -236,6 +304,14 @@ Select-String -Path .\recreated_opportunity_brief.md -Pattern 'Synthetic SME Ope
 
 If the brief names a particular AI model or automation product in the problem
 statement, remove it; the problem must remain tool-neutral.
+
+Open `workflow_opportunity_scorecard.md` in Notepad and complete every relevant
+section using the same evidence and decision as your recreated brief. For the
+evidence status, mark observations, assumptions, decisions, and unresolved
+claims separately. Complete the stop screen, compare all six improvement
+options, give an evidence note for every score, and keep the manual fallback.
+Write `not applicable — synthetic course` where a field truly does not apply;
+do not leave an unexplained blank.
 
 ## Ask Codex to check your work
 
@@ -253,13 +329,17 @@ parent folder or any other folder. This folder must contain no secrets and no
 real client or workplace data. Stop if it contains credentials, personal data,
 or health data.
 
-Review worked_opportunity_brief.md and recreated_opportunity_brief.md. Return:
+Review worked_opportunity_brief.md,
+worked_workflow_opportunity_scorecard.md,
+recreated_opportunity_brief.md, and workflow_opportunity_scorecard.md. Return:
 1. PASS or NOT YET;
 2. a checklist for: evidence-backed problem; hard-stop screen; scores with
 evidence; hard stops overriding totals; tool-neutral statement; complete
 intended purpose; explicit negative scope; human reviewer; manual fallback;
 misuse protection; value labelled as a hypothesis; costs included; measurable
 thresholds; scope-change triggers; dated decision and owners;
+completed scorecard evidence statuses; all six improvement options; score
+evidence; the scorecard and brief use the same selection decision;
 3. the smallest corrections for me to make if NOT YET.
 
 Remain read-only. Do not rewrite the brief. Do not request or use any real
@@ -278,6 +358,10 @@ business information.
 - [ ] Value is a hypothesis with costs, not guaranteed savings.
 - [ ] Measures state what will be counted and the provisional threshold.
 - [ ] Manual fallback, owners, misuse, and scope-change triggers are present.
+- [ ] `workflow_opportunity_scorecard.md` separates evidence statuses,
+      completes the stop screen, compares all six options, and explains every
+      score.
+- [ ] The scorecard and brief use the same dated selection decision.
 - [ ] Codex returns `PASS` after read-only inspection.
 
 ## Consultant lens
@@ -289,17 +373,41 @@ discovery.
 
 ## Capstone increment
 
-The capstone has a justified go decision, intended purpose, negative scope,
-value hypothesis, owners, measures, and change triggers.
+The capstone has a justified selection decision, completed workflow opportunity
+scorecard, intended purpose, negative scope, value hypothesis, owners, measures,
+and change triggers.
 
 ## Required artifact
 
-The teaching contract produces `worked_opportunity_brief.md` and
-`recreated_opportunity_brief.md` in `module-02`.
+The teaching contract produces `worked_opportunity_brief.md`,
+`worked_workflow_opportunity_scorecard.md`,
+`recreated_opportunity_brief.md`, and
+`workflow_opportunity_scorecard.md` in `evidence\module-02`.
 
 ## Test gate
 
 The **Pass criteria** are the complete module gate.
+
+## After PASS — make the Git checkpoint
+
+Do this only after Codex returns `PASS`. Inspect the module folder yourself and
+confirm it contains only synthetic course evidence: no password, secret key,
+personal data, employer data, client data, patient data, or unrelated file.
+Then run:
+
+```powershell
+$projectRoot = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'AI-workflow-learning\operations-exception-assistant'
+Set-Location -LiteralPath $projectRoot
+git status --short
+git add -- "evidence/module-02"
+git commit -m "complete module 2 evidence"
+git status --short
+```
+
+`git status --short` previews changes. `git add --` stages only this module;
+`--` marks the end of Git options. `git commit` records the passed checkpoint.
+If a rerun produces “nothing to commit,” the unchanged evidence is already
+recorded. Do not broaden the path to force a commit.
 
 ## Stop or rework
 
@@ -312,7 +420,7 @@ approved, or value depends on removing human review.
 - Selecting a fashionable AI idea instead of measured work.
 - Hiding uncertainty behind a numerical score.
 - Confusing time capacity with cash savings.
-- Letting a pilot send, approve, rank, order, pay, or write back.
+- Letting any trial send, approve, rank, order, pay, or write back.
 - Asking Codex to improve the file instead of checking it read-only.
 
 ## Estimated time

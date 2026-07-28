@@ -55,6 +55,15 @@ function renderInline(rawValue) {
     return token;
   });
 
+  value = value.replace(/<(https:\/\/[^<>\s]+)>/gi, (_match, rawHref) => {
+    const safe = safeLink(rawHref);
+    const token = `\u0000LINK${tokens.length}\u0000`;
+    tokens.push(
+      `<a href="${escapeAttribute(safe)}" target="_blank" rel="noopener noreferrer">${escapeHtml(rawHref)}</a>`,
+    );
+    return token;
+  });
+
   value = escapeHtml(value)
     .replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>")
     .replace(/__([^_\n]+)__/g, "<strong>$1</strong>")

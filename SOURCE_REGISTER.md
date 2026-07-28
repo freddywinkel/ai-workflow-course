@@ -1,6 +1,6 @@
 # Source Register
 
-Verified through: 2026-07-26
+Verified through: 2026-07-28
 Rule: prefer current primary and official sources. Recheck dated or
 vendor-specific statements through `EVERGREEN_UPDATE_PROMPT.md`.
 
@@ -38,15 +38,15 @@ review for real work.
 | Model guidance | [OpenAI — Model guidance](https://developers.openai.com/api/docs/guides/latest-model) | Model selection remains configuration; recheck before lab |
 | API data controls | [OpenAI — Your data](https://developers.openai.com/api/docs/guides/your-data) | Provider review; no real course data |
 
-The current OpenAI model resolver identified GPT-5.6 as the current family on
-2026-07-26. Course 1 does not hard-code it because cost, availability, and
+The current official OpenAI model guidance identified GPT-5.6 as the current
+family on 2026-07-28. Course 1 does not hard-code it because cost, availability, and
 behaviour change. The offline fixture remains the default.
 
 ## Workflow platforms and commoditisation
 
 | Topic | Official source | Course use |
 |---|---|---|
-| n8n npm installation | [n8n documentation](https://docs.n8n.io/hosting/installation/npm/) | Local teaching orchestrator |
+| n8n installation with Node Package Manager (npm) | [n8n documentation](https://docs.n8n.io/hosting/installation/npm/) | Optional visual-platform crosswalk; not required for Course 1 |
 | n8n human fallback and errors | [n8n workflow documentation](https://docs.n8n.io/workflows/) | Orchestration concepts; verify current nodes in live audit |
 | Microsoft agent flows | [Microsoft Copilot Studio — Agent flows](https://learn.microsoft.com/en-us/microsoft-copilot-studio/flows-overview) | Platform crosswalk and build-versus-buy |
 | Google Workspace Studio | [Google Workspace — Workspace Studio](https://workspace.google.com/blog/product-announcements/introducing-google-workspace-studio-agents-for-everyday-work) | Platform crosswalk and natural-language workflow creation |
@@ -58,14 +58,14 @@ process, contracts, tests, human control, failures, ownership, and evidence.
 
 | Tool | Official source |
 |---|---|
-| Python on Windows | <https://docs.python.org/3/using/windows.html> |
-| Python CSV module | <https://docs.python.org/3/library/csv.html> |
-| Python virtual environments | <https://docs.python.org/3/library/venv.html> |
-| pytest | <https://docs.pytest.org/> |
-| JSON Schema | <https://json-schema.org/learn/getting-started-step-by-step> |
-| Git | <https://git-scm.com/doc> |
-| Node.js | <https://nodejs.org/en/download> |
-| Visual Studio Code | <https://code.visualstudio.com/docs> |
+| Python on Windows | [Official Python documentation](https://docs.python.org/3/using/windows.html) |
+| Python comma-separated values (CSV) module | [Official Python documentation](https://docs.python.org/3/library/csv.html) |
+| Python virtual environments | [Official Python documentation](https://docs.python.org/3/library/venv.html) |
+| pytest | [Official pytest documentation](https://docs.pytest.org/) |
+| JavaScript Object Notation (JSON) Schema | [Official JSON Schema guide](https://json-schema.org/learn/getting-started-step-by-step) |
+| Git | [Official Git documentation](https://git-scm.com/doc) |
+| Node.js | [Official Node.js downloads](https://nodejs.org/en/download) |
+| Visual Studio Code | [Official Visual Studio Code documentation](https://code.visualstudio.com/docs) |
 
 ## Source maintenance rules
 

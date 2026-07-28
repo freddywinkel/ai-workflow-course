@@ -8,7 +8,7 @@ Adoption owner:
 
 ## What changes for people
 
-| User/stakeholder group | Current work | New/changed work | Benefit | Burden or concern | Involvement before pilot |
+| User/stakeholder group | Current work | New/changed work | Benefit | Burden or concern | Involvement before the Course 1 decision |
 |---|---|---|---|---|---|
 | | | | | | |
 
@@ -37,7 +37,7 @@ Training must include:
 - AI limitations and unsupported output;
 - accept, edit, reject, and escalation;
 - exception queue and reason codes;
-- manual fallback and kill switch;
+- manual fallback and the `EXTERNAL_ACTIONS_ENABLED=false` safety control;
 - confidentiality and safe data handling;
 - how to report a defect or incident.
 
@@ -47,8 +47,8 @@ Training must include:
 |---|---|---|---|---|---|
 | Before design | | | | | |
 | Before UAT | | | | | |
-| Before pilot | | | | | |
-| During pilot | | | | | |
+| Before the Course 1 decision | | | | | |
+| After the Course 1 decision | | | | | |
 | At decision | | | | | |
 
 ## Support model
@@ -85,6 +85,6 @@ Training completion does not prove adoption or value.
 - [ ] Feedback is reviewed and acted on.
 - [ ] Manual work remains possible during failure.
 
-Readiness decision: READY FOR SYNTHETIC PILOT / REVISE / NOT READY
+Readiness decision: READY FOR SYNTHETIC EVALUATION / REWORK / NOT READY
 Open adoption risk and owner:
 Decision owner/date:

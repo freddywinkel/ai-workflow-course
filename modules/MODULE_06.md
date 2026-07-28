@@ -3,8 +3,9 @@
 ## Outcome
 
 You will bind a human decision to one exact draft revision, invalidate approval
-after any change, expire old approval, keep an external-action kill switch off,
-create only a local draft outbox, and demonstrate manual fallback.
+after any change, expire old approval, keep
+`EXTERNAL_ACTIONS_ENABLED=false`, create only a local draft outbox, and
+demonstrate manual fallback.
 
 ## Beginner checkpoint
 
@@ -30,7 +31,9 @@ command application used below.
   its file name ending.
 - **Time of check versus time of use** means approval can become invalid
   between review and later use.
-- A **kill switch** disables a class of action.
+- **External actions disabled** means sending, ordering, paying, approving, and
+  source write-back are unavailable because
+  `EXTERNAL_ACTIONS_ENABLED=false`.
 - A **draft outbox** is local prepared content; it is not a sent message.
 - An **audit event** records what happened without claiming more than occurred.
 
@@ -61,11 +64,14 @@ the Windows plain-text editor used to create practice files.
 Open Windows PowerShell and run:
 
 ```powershell
-$practiceBase = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'controlled-ai-course-practice'
-$moduleFolder = Join-Path $practiceBase 'module-06'
+$projectRoot = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'AI-workflow-learning\operations-exception-assistant'
+if (-not (Test-Path (Join-Path $projectRoot '.git'))) {
+    throw 'Project repository not found. Complete Windows Setup before Module 6.'
+}
+$moduleFolder = Join-Path $projectRoot 'evidence\module-06'
 New-Item -ItemType Directory -Force -Path $moduleFolder
 Set-Location -LiteralPath $moduleFolder
-$moduleFive = Join-Path $practiceBase 'module-05'
+$moduleFive = Join-Path $projectRoot 'evidence\module-05'
 Copy-Item -LiteralPath (Join-Path $moduleFive 'worked_issues.csv') -Destination .\worked_issues.csv
 Copy-Item -LiteralPath (Join-Path $moduleFive 'worked_validated_summary.json') -Destination .\worked_draft.json
 Get-FileHash .\worked_draft.json -Algorithm SHA256
@@ -107,13 +113,13 @@ $workedApproval = [ordered]@{
   decision = 'approve'
   draft_revision = 1
   draft_sha256 = $workedHash
-  decided_at = '2026-07-26T10:00:00+00:00'
-  expires_at = '2026-07-27T10:00:00+00:00'
+  decided_at = '2026-07-28T10:00:00+00:00'
+  expires_at = '2026-07-29T10:00:00+00:00'
   reason = 'Synthetic evidence and statements match.'
 }
 $workedApproval | ConvertTo-Json | Set-Content .\worked_approval.json -Encoding utf8
 $workedControl = [ordered]@{
-  external_actions_enabled = $false
+  EXTERNAL_ACTIONS_ENABLED = $false
   allowed_output = 'local_draft_only'
 }
 $workedControl | ConvertTo-Json | Set-Content .\worked_control.json -Encoding utf8
@@ -122,7 +128,8 @@ Get-Content .\worked_control.json
 ```
 
 `ConvertTo-Json` converts the PowerShell object into JSON. The hash binds the
-decision to revision 1. The kill switch is explicitly false.
+decision to revision 1. `EXTERNAL_ACTIONS_ENABLED=false` unambiguously means
+that sending, ordering, paying, approving, and source write-back are disabled.
 
 ### Stage 3 — Verify before creating a local draft
 
@@ -138,7 +145,7 @@ from datetime import datetime
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent
-NOW = datetime.fromisoformat("2026-07-26T12:00:00+00:00")
+NOW = datetime.fromisoformat("2026-07-28T12:00:00+00:00")
 
 
 def safe_stop(message: str) -> None:
@@ -158,8 +165,8 @@ def main() -> None:
     approval = json.loads(approval_path.read_text(encoding="utf-8-sig"))
     control = json.loads(control_path.read_text(encoding="utf-8-sig"))
 
-    if control.get("external_actions_enabled") is not False:
-        safe_stop("external-action kill switch must remain off")
+    if control.get("EXTERNAL_ACTIONS_ENABLED") is not False:
+        safe_stop("EXTERNAL_ACTIONS_ENABLED must remain false")
     if control.get("allowed_output") != "local_draft_only":
         safe_stop("only local_draft_only is permitted")
     if approval.get("decision") != "approve":
@@ -207,8 +214,8 @@ Get-ChildItem .\worked_outbox
 
 **Troubleshooting:**
 
-- “kill switch must remain off” means the control file is unsafe; restore
-  `false`.
+- `EXTERNAL_ACTIONS_ENABLED must remain false` means the control file is
+  unsafe; restore that exact setting to `false`.
 - “draft bytes changed” means approval no longer applies. Review a new
   revision; never copy the old hash.
 - A missing outbox is correct after a safe stop.
@@ -256,7 +263,8 @@ The fallback is a real route, not “try the AI again.”
 Use the different 13-issue summary from Module 5.
 
 1. Copy `recreated_issues.csv` and `recreated_validated_summary.json` into
-   `module-06` as `recreated_issues.csv` and `recreated_draft_v1.json`.
+   `evidence/module-06` as `recreated_issues.csv` and
+   `recreated_draft_v1.json`.
 2. Write `recreated_review_v1.md` with decision `edit` because you want a
    clearer headline. Do not create an approval for v1.
 3. Copy v1 to `recreated_draft_v2.json`, change only the headline, and perform a
@@ -264,7 +272,8 @@ Use the different 13-issue summary from Module 5.
 4. Create `recreated_approval.json` using the PowerShell pattern above with:
    revision 2, a new decision ID, v2's exact hash, reviewer role
    `course_reviewer`, and a future fixed expiry.
-5. Create `recreated_control.json` with the kill switch false.
+5. Create `recreated_control.json` with
+   `EXTERNAL_ACTIONS_ENABLED=false`.
 6. Copy the checker to `check_recreated_approval.py`. Change only
    `worked_outbox` and `worked_audit.json` to recreated names.
 7. Run it for v2 and expect `PASS`. Run it for v1 with the v2 approval and
@@ -301,7 +310,7 @@ Return:
 1. PASS or NOT YET;
 2. checks for: evidence package; meaningful reviewer choices; exact draft hash;
 revision; decision reason; expiry; edit invalidation; reject/edit not treated as
-approval; external-action kill switch false; local draft-only outbox; zero
+approval; EXTERNAL_ACTIONS_ENABLED false; local draft-only outbox; zero
 external actions; audit event; worked and recreated mismatch tests; practical
 manual fallback; synthetic data only;
 3. the smallest corrections for me to make if NOT YET.
@@ -314,13 +323,30 @@ Remain read-only and do not provide replacement files.
 - [ ] Approval is bound to one exact hash and revision.
 - [ ] Edited or expired drafts cannot reuse approval.
 - [ ] Approve, edit, reject, and expire are meaningful decisions.
-- [ ] The external-action kill switch remains false.
+- [ ] `EXTERNAL_ACTIONS_ENABLED=false` remains explicit.
 - [ ] The only output is a local internal draft.
 - [ ] Audit records zero external actions.
 - [ ] A new review and decision are required for v2.
 - [ ] Manual fallback is complete and role-owned.
 - [ ] All files are synthetic and secret-free.
 - [ ] Codex returns `PASS` read-only.
+
+### Record your Module 6 PASS in Git
+
+Do this only after Codex returns `PASS`.
+
+```powershell
+$projectRoot = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'AI-workflow-learning\operations-exception-assistant'
+Set-Location -LiteralPath $projectRoot
+git status --short
+git add -- "evidence/module-06"
+git commit -m "complete module 6 evidence"
+git status --short
+```
+
+If Git reports `nothing to commit`, confirm that the module evidence was
+already recorded and unchanged. Never add secrets, real data, or unrelated
+files.
 
 ## Consultant lens
 
@@ -330,7 +356,8 @@ authority, time, visible changes, and a real ability to stop progression.
 ## Capstone increment
 
 The capstone has exact-revision approval, expiry, change invalidation, local
-draft-only output, kill switch, audit evidence, and manual fallback.
+draft-only output, `EXTERNAL_ACTIONS_ENABLED=false`, audit evidence, and manual
+fallback.
 
 ## Required artifact
 
@@ -353,7 +380,8 @@ authority.
 - Treating silence as approval.
 - Hiding an edit after review.
 - Calling a local draft a sent message.
-- Providing a kill switch that is never tested.
+- Naming a safety setting so ambiguously that `false` could be misread as
+  disabling the protection.
 
 ## Estimated time
 

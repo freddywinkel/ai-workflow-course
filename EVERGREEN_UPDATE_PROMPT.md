@@ -1,9 +1,14 @@
-# Evergreen Course Audit Prompt
+# Evergreen Course Audit Prompt — Maintainers Only
 
 ## Purpose
 
-Use this prompt with a web-enabled research and coding agent before beginning a
-time-sensitive module or publishing a course update.
+This is a release-maintenance prompt for a person responsible for the course.
+It may authorize course edits, so it is not a learner setup step. Learners use
+the read-only current-software report in
+[BEGINNER_SOFTWARE_CHECK.md](BEGINNER_SOFTWARE_CHECK.md) instead.
+
+Use this prompt with a web-enabled research and coding agent when preparing a
+course release.
 
 The audit verifies current facts. It must not rewrite durable lessons merely
 because a vendor changed wording or navigation.
@@ -28,7 +33,8 @@ appropriate for a literal beginner building a synthetic low-risk workflow.
 
 Authority rules:
 1. Use primary and official sources.
-2. For OpenAI API facts, use official OpenAI developer documentation.
+2. For OpenAI application programming interface (API) facts, use official
+   OpenAI developer documentation.
 3. For Dutch privacy, use Autoriteit Persoonsgegevens and official law/guidance.
 4. For the EU AI Act, use European Commission or EUR-Lex material.
 5. For cyber guidance, prefer NCSC/DTC and other official sources.
@@ -51,15 +57,18 @@ A. Curriculum integrity
 - the capstone, dataset, schemas, templates, and assessment agree.
 
 B. Dutch SME relevance
-- refresh current CBS evidence about SME AI adoption, barriers, and automation;
+- refresh current Statistics Netherlands (*Centraal Bureau voor de Statistiek*,
+  CBS) evidence about small and medium-sized enterprise (SME) artificial
+  intelligence (AI) adoption, barriers, and automation;
 - check whether Course 1 still targets a meaningful low-risk administrative
   implementation gap;
 - identify native-platform advances that commoditize simple workflow building;
 - confirm the curriculum emphasizes process, data, evaluation, adoption, and
   ownership rather than tool clicks.
 
-C. AVG and AI Act literacy
-- verify current AP guidance linked in SOURCE_REGISTER.md;
+C. General Data Protection Regulation (GDPR/AVG) and AI Act literacy
+- verify current Dutch Data Protection Authority (*Autoriteit
+  Persoonsgegevens*, AP) guidance linked in SOURCE_REGISTER.md;
 - verify current Commission guidance on provider/deployer roles, AI literacy,
   risk categories, and transparency;
 - identify any new obligation or effective date that changes Course 1;
@@ -67,18 +76,22 @@ C. AVG and AI Act literacy
 - confirm real data and consequential decisions remain excluded.
 
 D. Security baseline
-- verify current NCSC/DTC baseline guidance;
-- confirm secrets, access, logging, backup, incident, kill-switch, and fallback
-  concepts remain appropriate;
+- verify current National Cyber Security Centre (NCSC) and Digital Trust Center
+  (DTC) baseline guidance;
+- confirm secrets, access, logging, backup, incident,
+  `EXTERNAL_ACTIONS_ENABLED=false`, and fallback concepts remain appropriate;
 - flag any unsafe command or default.
 
 E. Learning stack
 - verify a supported Python >=3.12 path for Windows;
-- verify pytest/jsonschema/PyYAML/openai package compatibility;
-- verify Node LTS support for current stable n8n;
-- select and record a current stable n8n version for a fresh learner project;
-- do not add Docker, FastAPI, Supabase, OCR, RAG, or production infrastructure
-  back to Course 1 without a curriculum-level reason.
+- verify the exact required offline pytest pin and complete clean-install
+  freeze;
+- keep OpenAI, Node.js, and n8n outside the required Course 1 installation;
+- if an optional n8n crosswalk is retained, verify and record a compatible
+  Node.js Long-Term Support release and exact n8n version;
+- do not add Docker, FastAPI, Supabase, optical character recognition (OCR),
+  retrieval-augmented generation (RAG), or production infrastructure back to
+  Course 1 without a curriculum-level reason.
 
 F. Optional AI lab
 - resolve current recommended OpenAI model guidance;
@@ -99,7 +112,7 @@ G. Synthetic data and rules
 - confirm exact agreement;
 - confirm no real organization or personal data appears.
 
-H. PWA
+H. Progressive web app (PWA)
 - run the metadata-driven build and tests;
 - verify curriculum-only changes alter content hash/build ID;
 - verify manifest ID, scope, start URL, base path, and cache prefix remain
@@ -115,7 +128,8 @@ I. Claims and tone
 - Course 1 must not claim consultant, legal, compliance, production, clinical,
   security, or regulated-platform competence;
 - synthetic timing must not be presented as forecast savings;
-- DO NOT PILOT must remain a valid pass;
+- `ACCEPT FOR SYNTHETIC PORTFOLIO`, `REWORK`, and `DO NOT CONTINUE` must all
+  remain valid evidence-based Course 1 pass outcomes;
 - archived supplier material must remain clearly assigned to a later course;
 - every lesson should include a consultant lens and stop/rework behavior.
 

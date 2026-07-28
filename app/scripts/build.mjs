@@ -361,6 +361,25 @@ async function gitCommit() {
   }
 }
 
+function createBuildId({
+  contentHash,
+  sourceAssets,
+  buildScriptSource,
+  basePath,
+}) {
+  const buildInputs = [
+    ...sourceAssets,
+    ["scripts/build.mjs", buildScriptSource],
+  ];
+  const assetDigest = buildInputs
+    .map(([name, body]) => `${name}\n${body}`)
+    .join("\n");
+  return createHash("sha256")
+    .update(`${contentHash}\n${assetDigest}\n${basePath}`)
+    .digest("hex")
+    .slice(0, 12);
+}
+
 async function build() {
   const basePath = normaliseBasePath(process.env.BASE_PATH || "/");
   const bundle = await createCourseBundle();
@@ -375,11 +394,13 @@ async function build() {
   const sourceAssets = await Promise.all(
     sourceAssetNames.map(async (name) => [name, await readFile(join(sourceRoot, name), "utf8")]),
   );
-  const assetDigest = sourceAssets.map(([name, body]) => `${name}\n${body}`).join("\n");
-  const buildId = createHash("sha256")
-    .update(`${bundle.course.contentHash}\n${assetDigest}\n${basePath}`)
-    .digest("hex")
-    .slice(0, 12);
+  const buildScriptSource = await readFile(fileURLToPath(import.meta.url), "utf8");
+  const buildId = createBuildId({
+    contentHash: bundle.course.contentHash,
+    sourceAssets,
+    buildScriptSource,
+    basePath,
+  });
   const commit = await gitCommit();
   const replacements = new Map([
     ["__BASE_PATH__", basePath],
@@ -480,6 +501,7 @@ export {
   build,
   collectGroups,
   createCourseBundle,
+  createBuildId,
   createIconPng,
   normaliseBasePath,
 };

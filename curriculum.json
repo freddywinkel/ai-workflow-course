@@ -13,9 +13,9 @@
     "title": "Controlled Artificial Intelligence (AI) Workflow Foundations",
     "shortTitle": "Course 1",
     "subtitle": "From zero technical knowledge to one safe, evidence-backed small and medium-sized enterprise (SME) workflow",
-    "version": "2.1.0",
+    "version": "2.2.0",
     "practiceRevision": 2,
-    "verifiedThrough": "2026-07-26",
+    "verifiedThrough": "2026-07-28",
     "learnerStartingPoint": "No coding, automation, consulting, or AI implementation knowledge is assumed.",
     "outcome": "You can investigate a small operational workflow, decide what should and should not be automated, and build a small prototype with clear limits, fixed checks, evidence, human approval, testing, and a documented manual way of working.",
     "estimatedHours": {
@@ -26,6 +26,29 @@
     "coreGroupIds": [
       "foundations",
       "modules"
+    ],
+    "learningSequenceIds": [
+      "course-1-readiness-check",
+      "course-1-foundation-01",
+      "course-1-foundation-02",
+      "course-1-beginner-software-check",
+      "course-1-windows-setup",
+      "course-1-foundation-03",
+      "course-1-foundation-04",
+      "course-1-foundation-05",
+      "course-1-foundation-06",
+      "course-1-foundation-07",
+      "course-1-foundation-08",
+      "course-1-foundation-09",
+      "course-1-module-01",
+      "course-1-module-02",
+      "course-1-module-03",
+      "course-1-module-04",
+      "course-1-module-05",
+      "course-1-module-06",
+      "course-1-module-07",
+      "course-1-module-08",
+      "course-1-module-09"
     ],
     "capstone": {
       "title": "Synthetic SME Operations Exception Assistant",
@@ -47,7 +70,7 @@
       "documents": [
         {
           "id": "course-1-guide",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "README.md",
           "legacyIds": [
             "index"
@@ -55,15 +78,21 @@
         },
         {
           "id": "course-1-readiness-check",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "BEGINNER_READINESS_CHECK.md",
           "legacyIds": [
             "beginner-readiness-check"
           ]
         },
         {
+          "id": "course-1-beginner-software-check",
+          "revision": "2026-07-28",
+          "sourcePath": "BEGINNER_SOFTWARE_CHECK.md",
+          "legacyIds": []
+        },
+        {
           "id": "course-1-overview",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "COURSE_OVERVIEW.md",
           "legacyIds": [
             "course-overview"
@@ -71,7 +100,7 @@
         },
         {
           "id": "course-1-windows-setup",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "SETUP_WINDOWS.md",
           "legacyIds": [
             "setup-windows"
@@ -105,7 +134,7 @@
         },
         {
           "id": "course-1-foundation-03",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "foundations/03_CODE_AND_PYTHON.md",
           "title": "Foundation 3 — Reading Code and the Python Programming Language",
           "legacyIds": [
@@ -139,7 +168,7 @@
         },
         {
           "id": "course-1-foundation-07",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "foundations/07_AI_AND_CONTROLLED_WORKFLOWS.md",
           "title": "Foundation 7 — Artificial Intelligence (AI) and Controlled Workflows",
           "legacyIds": []
@@ -153,7 +182,7 @@
         },
         {
           "id": "course-1-foundation-09",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "foundations/09_WORKFLOW_TOOLS_AND_DATA_STORES.md",
           "title": "Foundation 9 — Workflow Tools and Data Stores",
           "legacyIds": []
@@ -168,63 +197,63 @@
       "documents": [
         {
           "id": "course-1-module-01",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "modules/MODULE_01.md",
           "title": "Module 1 — Observe the Work Before You Automate",
           "legacyIds": []
         },
         {
           "id": "course-1-module-02",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "modules/MODULE_02.md",
           "title": "Module 2 — Select and Bound a Worthwhile Opportunity",
           "legacyIds": []
         },
         {
           "id": "course-1-module-03",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "modules/MODULE_03.md",
           "title": "Module 3 — Understand the Data and Rules",
           "legacyIds": []
         },
         {
           "id": "course-1-module-04",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "modules/MODULE_04.md",
           "title": "Module 4 — Build the Rule-Based Workflow Before Adding Artificial Intelligence (AI)",
           "legacyIds": []
         },
         {
           "id": "course-1-module-05",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "modules/MODULE_05.md",
           "title": "Module 5 — Add One Bounded Artificial Intelligence (AI) Step",
           "legacyIds": []
         },
         {
           "id": "course-1-module-06",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "modules/MODULE_06.md",
           "title": "Module 6 — Keep Humans in Control",
           "legacyIds": []
         },
         {
           "id": "course-1-module-07",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "modules/MODULE_07.md",
           "title": "Module 7 — Apply Dutch Small and Medium-sized Enterprise (SME) Guardrails and Choose the Right Tool",
           "legacyIds": []
         },
         {
           "id": "course-1-module-08",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "modules/MODULE_08.md",
           "title": "Module 8 — Evaluate Usefulness and Business Value",
           "legacyIds": []
         },
         {
           "id": "course-1-module-09",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "modules/MODULE_09.md",
           "title": "Module 9 — Run User Acceptance Testing (UAT), Plan Adoption, and Hand Over",
           "legacyIds": []
@@ -239,7 +268,7 @@
       "documents": [
         {
           "id": "course-1-architecture-contracts",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "ARCHITECTURE_AND_CONTRACTS.md",
           "legacyIds": [
             "architecture-and-contracts"
@@ -247,7 +276,7 @@
         },
         {
           "id": "course-1-software-matrix",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "SOFTWARE_MATRIX.md",
           "legacyIds": [
             "software-matrix"
@@ -255,7 +284,7 @@
         },
         {
           "id": "course-1-capstone-specification",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "CAPSTONE_SPECIFICATION.md",
           "legacyIds": [
             "capstone-specification"
@@ -263,7 +292,7 @@
         },
         {
           "id": "course-1-assessment-rubric",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "ASSESSMENT_AND_RUBRIC.md",
           "legacyIds": [
             "assessment-and-rubric"
@@ -271,7 +300,7 @@
         },
         {
           "id": "course-1-source-register",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "SOURCE_REGISTER.md",
           "legacyIds": [
             "source-register"
@@ -279,7 +308,7 @@
         },
         {
           "id": "course-1-career-sequence",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "CAREER_SEQUENCE.md",
           "legacyIds": []
         },
@@ -291,7 +320,7 @@
         },
         {
           "id": "course-1-glossary",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "foundations/GLOSSARY.md",
           "legacyIds": [
             "foundations-glossary"
@@ -319,7 +348,7 @@
       "documents": [
         {
           "id": "course-1-worksheet-index",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "templates/README.md",
           "legacyIds": [
             "templates-index"
@@ -327,31 +356,31 @@
         },
         {
           "id": "course-1-worksheet-opportunity-scorecard",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "templates/workflow_opportunity_scorecard.md",
           "legacyIds": []
         },
         {
           "id": "course-1-worksheet-stakeholder-user-map",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "templates/stakeholder_and_user_map.md",
           "legacyIds": []
         },
         {
           "id": "course-1-worksheet-baseline-value",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "templates/baseline_and_value_record.md",
           "legacyIds": []
         },
         {
           "id": "course-1-worksheet-data-quality",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "templates/data_dictionary_and_quality_check.md",
           "legacyIds": []
         },
         {
           "id": "course-1-worksheet-risk-escalation",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "templates/risk_and_escalation_screen.md",
           "legacyIds": []
         },
@@ -363,19 +392,19 @@
         },
         {
           "id": "course-1-worksheet-uat-script",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "templates/uat_script.md",
           "legacyIds": []
         },
         {
           "id": "course-1-worksheet-adoption-training",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "templates/adoption_and_training_plan.md",
           "legacyIds": []
         },
         {
           "id": "course-1-worksheet-pilot-decision",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "templates/pilot_decision_record.md",
           "legacyIds": []
         },
@@ -405,7 +434,7 @@
         },
         {
           "id": "course-1-worksheet-approval-design",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "templates/approval_design_review.md",
           "legacyIds": [
             "templates-approval-design-review"
@@ -437,7 +466,7 @@
         },
         {
           "id": "course-1-worksheet-threat-model",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "templates/threat_model.md",
           "legacyIds": [
             "templates-threat-model"
@@ -445,7 +474,7 @@
         },
         {
           "id": "course-1-worksheet-runbook-fallback",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "templates/runbook_and_fallback.md",
           "legacyIds": [
             "templates-runbook-and-fallback"
@@ -461,7 +490,7 @@
         },
         {
           "id": "course-1-worksheet-acceptance-handover",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "templates/acceptance_and_handover.md",
           "legacyIds": [
             "templates-acceptance-and-handover"
@@ -485,7 +514,7 @@
       "documents": [
         {
           "id": "course-1-pwa-updates",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "PWA_AND_UPDATES.md",
           "legacyIds": [
             "pwa-and-updates"
@@ -493,7 +522,7 @@
         },
         {
           "id": "course-1-evergreen-update-prompt",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "EVERGREEN_UPDATE_PROMPT.md",
           "legacyIds": [
             "evergreen-update-prompt"
@@ -501,7 +530,7 @@
         },
         {
           "id": "course-1-changelog",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "COURSE_CHANGELOG.md",
           "legacyIds": [
             "course-changelog"
@@ -509,7 +538,7 @@
         },
         {
           "id": "course-1-release-validation",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "RELEASE_VALIDATION.md",
           "legacyIds": [
             "release-validation"
@@ -517,7 +546,7 @@
         },
         {
           "id": "course-1-validation-report",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "VALIDATION_REPORT.md",
           "legacyIds": [
             "validation-report"
@@ -525,11 +554,17 @@
         },
         {
           "id": "course-1-update-report-index",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "updates/README.md",
           "legacyIds": [
             "updates-index"
           ]
+        },
+        {
+          "id": "course-1-update-report-2026-07-28",
+          "revision": "2026-07-28",
+          "sourcePath": "updates/2026-07-28_CHANGE_REPORT.md",
+          "legacyIds": []
         }
       ]
     }

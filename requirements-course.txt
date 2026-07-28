@@ -1,8 +1,4 @@
-# Compatible learning ranges verified 2026-07-26.
-# After the evergreen audit and a green clean install, freeze exact versions
-# inside the learner's capstone repository.
-openai>=2.48,<3
-pytest>=9,<10
-jsonschema>=4,<5
-python-dotenv>=1,<2
-PyYAML>=6,<7
+# Required offline Course 1 dependency set, verified 2026-07-28.
+# Exact pins make a clean learner installation reproducible. The setup also
+# records the complete installed dependency tree with `pip freeze`.
+pytest==9.0.2

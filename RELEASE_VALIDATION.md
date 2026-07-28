@@ -1,4 +1,4 @@
-# Release Validation — Course 2.1 and Progressive Web App (PWA)
+# Release Validation — Course 2.2 and Progressive Web App (PWA)
 
 ## Release rule
 
@@ -48,7 +48,11 @@ Expected: `PASS`.
       practice-data README describe the same project.
 - [ ] Course 1 boundary is prominent.
 - [ ] No lesson claims production readiness or legal compliance.
-- [ ] `DO NOT PILOT` remains a valid final result.
+- [ ] `ACCEPT FOR SYNTHETIC PORTFOLIO`, `REWORK`, and `DO NOT CONTINUE` are the
+      only Course 1 final decisions and each remains a valid evidence-backed
+      result.
+- [ ] Course 1 never authorizes a client pilot; discovery belongs in Course 2
+      and supervised low-risk pilot delivery belongs in Course 3.
 - [ ] Model IDs are configuration, not durable dependencies.
 - [ ] Live AI is optional.
 - [ ] Future courses are visibly planned, not secretly counted as current.
@@ -92,12 +96,12 @@ Verify:
 
 ## 6. Learner-state migration
 
-Create both a schema-v1 state and a Course 2.0 state before loading Course 2.1.
+Create both a schema-v1 state and a Course 2.1 state before loading Course 2.2.
 
 - [ ] Theme and font size survive.
 - [ ] Notes survive or are retained for export.
 - [ ] Equivalent retained foundations preserve completion.
-- [ ] the Course 2.1 practice revision reopens materially rewritten lessons
+- [ ] Course 2.2 revision dates reopen materially rewritten lessons
       for review without changing stable lesson IDs.
 - [ ] unknown old IDs are not misapplied.
 - [ ] old JSON backup import works.
@@ -139,24 +143,24 @@ For each relevant size:
 
 ## 9. Installed-client update
 
-Use an installed or controlled old Course 2.0 client:
+Use an installed or controlled old Course 2.1 client:
 
 1. load and record old build/version;
 2. save representative progress and notes;
-3. publish or serve Course 2.1 at the same scope;
+3. publish or serve Course 2.2 at the same scope;
 4. foreground or focus the old client;
 5. verify the update prompt appears;
 6. choose **Later** and confirm the old version remains usable;
 7. choose **Update now**;
 8. confirm the new service worker activates;
-9. verify the Course 2.1 Overview, practice loop, and Career tab;
+9. verify the Course 2.2 Overview, practice loop, and Career tab;
 10. verify state migration;
 11. cold reload and reopen the installed PWA.
 
 - [ ] new precache resources were fetched with `cache: "reload"`;
 - [ ] no broad cache deletion occurred;
 - [ ] local state was not erased;
-- [ ] Course 2.1 is still present after cold reopen.
+- [ ] Course 2.2 is still present after cold reopen.
 
 ## 10. Final release record
 

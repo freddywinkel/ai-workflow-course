@@ -1,7 +1,7 @@
 # Course 1 — Controlled Artificial Intelligence (AI) Workflow Foundations for Dutch Small and Medium-sized Enterprises (SMEs)
 
-- Version: 2.1.0
-- Verified through: 2026-07-26
+- Version: 2.2.0
+- Verified through: 2026-07-28
 - Language: English, with Dutch and European Union (EU) terms where useful
 - Format: self-paced, gate-based learning—you continue after proving a skill,
   not merely after spending a set number of days
@@ -210,9 +210,16 @@ Excluded throughout:
 - high-impact decisions about people;
 - claims that the workflow proves compliance.
 
-A technically correct **DO NOT PILOT** conclusion is a successful course
-outcome when the evidence shows that the idea is unsafe, unnecessary, or not
-worthwhile.
+Course 1 has three valid final outcomes:
+
+- **`ACCEPT FOR SYNTHETIC PORTFOLIO`** — the controlled demonstration is
+  complete enough to show as fictional portfolio evidence;
+- **`REWORK`** — the evidence identifies specific gaps to correct and retest;
+- **`DO NOT CONTINUE`** — the evidence supports a safe stop and documented
+  closeout.
+
+All three can pass when the decision is honest and evidence-backed. None
+authorizes a client pilot, real data, production use, or external action.
 
 ## Start here
 
@@ -220,14 +227,19 @@ worthwhile.
 2. Complete Foundations 1 and 2 in the
    [Beginner Foundations](foundations/README.md). They teach folders and the
    Windows command tool without requiring extra software.
-3. Run the live check in
-   [EVERGREEN_UPDATE_PROMPT.md](EVERGREEN_UPDATE_PROMPT.md).
+3. Run the read-only
+   [Beginner Software Check](BEGINNER_SOFTWARE_CHECK.md). It checks current
+   official download guidance without editing files or installing anything.
 4. Complete [SETUP_WINDOWS.md](SETUP_WINDOWS.md). It installs the tools needed
    for later foundations and tells you exactly what to click, type, and check.
 5. Finish Foundations 3–9.
 6. Read the [Course Overview](COURSE_OVERVIEW.md).
-7. Work through Modules 1–9 in order.
-8. Complete the **capstone**, the final project that combines all module work.
+7. Work through Modules 1–9 in order. Foundations stay in their safe practice
+   folder. All module evidence goes into the one Git-tracked project created
+   during Windows setup:
+   `Documents\AI-workflow-learning\operations-exception-assistant`.
+8. Complete the **capstone**, the final project that combines all module work
+   in that same repository.
    Use [CAPSTONE_SPECIFICATION.md](CAPSTONE_SPECIFICATION.md) and
    [ASSESSMENT_AND_RUBRIC.md](ASSESSMENT_AND_RUBRIC.md) for final acceptance.
 
@@ -244,5 +256,7 @@ Current tools, models, laws, prices, and interfaces are updateable references.
 Process discovery, data contracts, deterministic controls, evaluation, human
 oversight, failure recovery, adoption, and evidence are the durable curriculum.
 
-Run the evergreen audit before starting the AI module and again before using
-the material for any real pilot.
+The maintainer-only evergreen audit keeps product, law, and source references
+current. It is not a beginner setup task and it does not authorize real use.
+Course 2 teaches client discovery and assessment; Course 3 teaches how to
+prepare and govern a supervised pilot.

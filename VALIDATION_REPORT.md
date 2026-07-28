@@ -2,13 +2,13 @@
 
 Course: **Controlled Artificial Intelligence (AI) Workflow Foundations**
 
-Course version: `2.1.0`
+Course version: `2.2.0`
 
-Curriculum verified through: `2026-07-26`
+Curriculum verified through: `2026-07-28`
 
 Result: **PASS**
 
-Checks: 27; failures: 0; warnings: 0
+Checks: 33; failures: 0; warnings: 0
 
 ## Scope
 
@@ -21,10 +21,10 @@ external websites are outside this deterministic validation.
 | Status | Check | Detail |
 |---|---|---|
 | PASS | curriculum-load | curriculum.json parsed as a JSON object |
-| PASS | curriculum-metadata | Course 1 metadata is complete through 2026-07-26 |
+| PASS | curriculum-metadata | Course 1 metadata is complete through 2026-07-28 |
 | PASS | curriculum-groups | 6 configured groups have stable IDs and valid structure |
-| PASS | curriculum-stable-ids | 60 unique current IDs and 34 unique legacy IDs |
-| PASS | curriculum-documents | 60 unique configured lesson paths and revisions are valid |
+| PASS | curriculum-stable-ids | 62 unique current IDs and 34 unique legacy IDs |
+| PASS | curriculum-documents | 62 unique configured lesson paths and revisions are valid |
 | PASS | curriculum-core-groups | only foundations and modules are configured as progress groups |
 | PASS | career-metadata | 6 ordered career courses; Course 1 is the only current course |
 | PASS | progress-foundations | exactly 9 ordered foundation progress lessons |
@@ -35,6 +35,12 @@ external websites are outside this deterministic validation.
 | PASS | beginner-practice-codex-check | all 18 progress lessons include bounded read-only Codex inspection prompts |
 | PASS | beginner-practice-pass-criteria | all 18 progress lessons include objective pass checklists |
 | PASS | beginner-first-use-terms | 18 required first-use expansions and product explanations are present in onboarding |
+| PASS | integrated-project-repository | all 9 modules use one guarded Git repository, evidence/module-NN, and a pass-only checkpoint |
+| PASS | capstone-artifact-coverage | Modules 1-3 use all four previously missing templates and Module 9 creates the final index and change log |
+| PASS | course-final-decisions | all final-decision documents use the same three synthetic-only Course 1 outcomes |
+| PASS | learner-maintainer-and-action-boundaries | beginner start files avoid the mutating maintainer audit and action controls use EXTERNAL_ACTIONS_ENABLED=false |
+| PASS | reproducible-dependency-boundaries | required Python packages and release actions are exactly pinned; optional provider and n8n tools remain outside core setup |
+| PASS | beginner-learning-sequence | the actionable sequence includes every core lesson and inserts the read-only software check plus Windows Setup before Foundation 3 |
 | PASS | current-json-syntax | 8 in-scope JSON files parsed |
 | PASS | schema-set | 5 current schema files include all required Course 1 contracts |
 | PASS | schema-structure | 5 schemas have unique IDs and closed object contracts |
@@ -46,7 +52,7 @@ external websites are outside this deterministic validation.
 | PASS | practice-rule-register | R001-R011 are documented and covered using fixed date 2026-07-26 |
 | PASS | practice-synthetic-safety | fixed fictional identifiers, role-only ownership, no personal-data columns, and explicit no-real-data guarantees |
 | PASS | practice-rule-oracle | standard-library evaluator reproduces all 13 frozen issues, including both R010 duplicates and fixed-date R011 |
-| PASS | internal-links | 50 current local targets exist; 0 archived/generated targets ignored |
+| PASS | internal-links | 57 current local targets exist; 0 archived/generated targets ignored |
 
 ## Limits
 

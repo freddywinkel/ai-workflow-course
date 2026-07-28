@@ -1,8 +1,11 @@
 # Evergreen Update Reports
 
-Run [`../EVERGREEN_UPDATE_PROMPT.md`](../EVERGREEN_UPDATE_PROMPT.md) before
-starting Course 1, before Module 5's live AI option, before any real pilot, and
-every 8–12 weeks while the material is actively used.
+This folder is for course maintainers. Learners do not run
+[`../EVERGREEN_UPDATE_PROMPT.md`](../EVERGREEN_UPDATE_PROMPT.md) as a setup
+step: that prompt may authorize edits and a new release. Maintainers run it
+before changing the optional live artificial intelligence (AI) lab, before
+publishing later-course client-pilot guidance, after a material source change,
+and at least every 12 weeks while the material is actively maintained.
 
 For each audit, first save the unchanged report here as:
 
@@ -23,3 +26,7 @@ old issued copy and changelog entry. A revision record should identify:
 If live browsing of both official vendor documentation and primary legal or
 authority sources is unavailable, the audit must stop with `UNVERIFIED`; do not
 create a reassuring partial update.
+
+## Preserved reports
+
+- [2026-07-28 Version 2.2 corrective product audit](2026-07-28_CHANGE_REPORT.md)

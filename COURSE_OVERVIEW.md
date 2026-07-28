@@ -31,9 +31,14 @@ responsible implementation consultant needs:
 - how failures become visible;
 - what the workflow does when AI is unavailable;
 - who reviews the output;
-- whether the measured result supports `PILOT` (try a limited real-world
-  version), `REWORK` (redesign and retest), or `DO NOT PILOT` (stop);
+- whether the measured result supports `ACCEPT FOR SYNTHETIC PORTFOLIO`,
+  `REWORK`, or `DO NOT CONTINUE`;
 - how another person could operate and stop it.
+
+All three final decisions can pass when supported by evidence.
+`ACCEPT FOR SYNTHETIC PORTFOLIO` means only that the fictional demonstration
+is suitable to show as portfolio evidence. No Course 1 outcome authorizes a
+client pilot, real data, production use, or an external action.
 
 ## The practice method
 
@@ -111,7 +116,8 @@ Terms used in the evidence table:
   current volume, time, errors, and rework before automation;
 - a **scorecard** compares options using stated criteria; an **intended
   purpose** states exactly what the workflow should and should not do; and a
-  **go/no-go decision** records whether to continue or stop;
+  **module selection decision** records whether to select a synthetic proof,
+  investigate further, or discard that opportunity;
 - a **data dictionary** explains every field; a **data contract** states
   required fields, formats, and allowed values; and **expected issues** are the
   known correct answers used to test detection;
@@ -124,9 +130,8 @@ Terms used in the evidence table:
   expired; a **local outbox** stores drafts without sending them; and a **data
   flow** shows where information enters, moves, and leaves;
 - a **risk screen** is an early check for obvious safety or legal concerns; a
-  **tool-fit decision** compares the need with available software; a
-  **regression report** confirms that previously passing cases still pass; and
-  a **pilot** is a limited real-world trial;
+  **tool-fit decision** compares the need with available software; and a
+  **regression report** confirms that previously passing cases still pass;
 - **user acceptance testing (UAT)** lets intended users check that the workflow
   meets their needs, while a **runbook** gives operating, stopping, and recovery
   instructions.
@@ -134,14 +139,14 @@ Terms used in the evidence table:
 | Module | Consultant capability | Main evidence |
 |---:|---|---|
 | 1 | Observe before proposing | As-is map, stakeholder map, manual baseline |
-| 2 | Select and bound a worthwhile opportunity | Scorecard, intended purpose, go/no-go |
+| 2 | Select and bound a worthwhile opportunity | Scorecard, intended purpose, module selection |
 | 3 | Identify authoritative data and rules | Data dictionary, contract, expected issues |
-| 4 | Build reliable logic without AI | Rule-first workflow and failure tests |
+| 4 | Build reliable logic without AI | Rule-first workflow, to-be map, architecture diagram, and failure tests |
 | 5 | Add AI only where it helps | Bounded summary supported by issue identifiers (IDs) |
 | 6 | Preserve meaningful human control | Review package, approval lifecycle, local outbox |
 | 7 | Screen risk and existing-tool fit | Data flow, risk screen, tool-fit decision |
-| 8 | Evaluate utility and value | Regression report and pilot decision |
-| 9 | Prepare people and handover | UAT evidence, runbook, training and demonstration |
+| 8 | Evaluate utility and value | Regression report and evidence-backed Course 1 decision |
+| 9 | Prepare people and handover | UAT evidence, runbook, training, change log, and demonstration |
 
 ### Layer 3 — Capstone acceptance
 
@@ -190,9 +195,10 @@ If AI is removed, the exception report must still work.
 ## Evidence habit
 
 Every module produces a required **artifact**, meaning a file that proves what
-you did. Store artifacts in a separate project **repository**, meaning a project
-folder tracked by Git, not inside the PWA source files used to build the course
-reader.
+you did. Windows setup creates one project **repository**, meaning a project
+folder tracked by Git. Every Module 1–9 artifact belongs in that repository,
+not in the foundation practice folder and not inside the PWA source files used
+to build the course reader.
 
 In the suggested structure below, `README.md` (“read me”) is the main
 instruction file written in Markdown (`.md`); `data` holds input; `docs` means
@@ -204,6 +210,8 @@ of completed work:
 ```text
 operations-exception-assistant/
   README.md
+  CAPSTONE_INDEX.md
+  CHANGELOG.md
   data/
   docs/
   prompts/
@@ -211,7 +219,23 @@ operations-exception-assistant/
   tests/
   output/
   evidence/
+    module-01/
+    module-02/
+    module-03/
+    module-04/
+    module-05/
+    module-06/
+    module-07/
+    module-08/
+    module-09/
 ```
+
+The exact Windows location is
+`Documents\AI-workflow-learning\operations-exception-assistant`. Foundations
+remain in `Documents\controlled-ai-course-practice` because they are isolated
+skill exercises. Do not create a second module project. Each module shows how
+to save its files under `evidence\module-NN` and make a Git checkpoint only
+after that module passes.
 
 Do not store **secrets**—passwords, keys, or other access-granting values—or
 real data in Git.
@@ -260,11 +284,18 @@ Document AI course. Course 1 intentionally defers:
 Deferring these topics is sequencing, not deletion. The Career Path tab shows
 where they return.
 
-## Passing can mean “do not build”
+## Course boundary and valid final decisions
 
 A consultant is paid for judgment, not for forcing AI into every process.
-Course 1 passes a well-supported `DO NOT PILOT` decision when the learner shows
-that:
+Course 1 ends with exactly one of these evidence-backed decisions:
+
+- `ACCEPT FOR SYNTHETIC PORTFOLIO`: package the controlled fictional
+  demonstration as portfolio evidence;
+- `REWORK`: record the gaps, corrective plan, and evidence needed for another
+  Course 1 review;
+- `DO NOT CONTINUE`: close the fictional project safely and record why.
+
+All three can pass. A well-supported `DO NOT CONTINUE` decision may show that:
 
 - existing software already solves the problem;
 - the baseline is too small to justify the effort;
@@ -272,3 +303,8 @@ that:
 - the failure consequence is too high;
 - the proposed AI step adds no measurable value;
 - the organization cannot yet own or support the workflow.
+
+Course 2 teaches client discovery and a paid assessment without promising an
+implementation. Course 3 teaches how to design, authorize, and govern a
+supervised pilot. Course 1 never transitions from synthetic data to a client
+test.

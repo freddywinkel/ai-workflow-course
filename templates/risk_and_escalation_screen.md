@@ -59,7 +59,7 @@ Use roles, not personal contact details, in Course 1.
 ## Pause and kill controls
 
 How new runs are paused:
-What the kill switch blocks:
+What `EXTERNAL_ACTIONS_ENABLED=false` blocks:
 What remains available:
 How the stopped state is verified:
 Who may re-enable and on what evidence:
@@ -68,8 +68,8 @@ Manual fallback owner and location:
 ## Decision
 
 Risks accepted for synthetic demonstration:
-Risks that block a pilot:
+Risks that block later implementation or require escalation:
 Specialist or owner review required:
 Next test/control:
-Decision: CONTINUE / REVISE / STOP
+Decision: CONTINUE SYNTHETIC TEST / REWORK / DO NOT CONTINUE
 Decision owner/date:

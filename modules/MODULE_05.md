@@ -66,8 +66,11 @@ the Windows plain-text editor used to create practice files.
 Open Windows PowerShell and run:
 
 ```powershell
-$practiceBase = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'controlled-ai-course-practice'
-$moduleFolder = Join-Path $practiceBase 'module-05'
+$projectRoot = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'AI-workflow-learning\operations-exception-assistant'
+if (-not (Test-Path (Join-Path $projectRoot '.git'))) {
+    throw 'Project repository not found. Complete Windows Setup before Module 5.'
+}
+$moduleFolder = Join-Path $projectRoot 'evidence\module-05'
 New-Item -ItemType Directory -Force -Path $moduleFolder
 Set-Location -LiteralPath $moduleFolder
 notepad .\worked_issues.csv
@@ -276,10 +279,10 @@ support; the Python step verifies representation and references.
 
 Use the different 13-issue capstone output:
 
-1. Copy `found_issues.csv` from `module-04`:
+1. Copy `found_issues.csv` from `evidence/module-04`:
 
 ```powershell
-$moduleFour = Join-Path $practiceBase 'module-04'
+$moduleFour = Join-Path $projectRoot 'evidence\module-04'
 Copy-Item -LiteralPath (Join-Path $moduleFour 'found_issues.csv') -Destination .\recreated_issues.csv
 (Import-Csv .\recreated_issues.csv).Count
 Import-Csv .\recreated_issues.csv | Select-Object issue_id,severity,message
@@ -361,6 +364,23 @@ Remain read-only and do not generate a replacement summary.
 - [ ] No provider secret, exact model dependency, or real data is required.
 - [ ] Codex returns `PASS` read-only.
 
+### Record your Module 5 PASS in Git
+
+Do this only after Codex returns `PASS`.
+
+```powershell
+$projectRoot = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'AI-workflow-learning\operations-exception-assistant'
+Set-Location -LiteralPath $projectRoot
+git status --short
+git add -- "evidence/module-05"
+git commit -m "complete module 5 evidence"
+git status --short
+```
+
+If Git reports `nothing to commit`, confirm that the module evidence was
+already recorded and unchanged. Do not add secrets, real data, or unrelated
+files.
+
 ## Consultant lens
 
 The durable design is the boundary and evaluation, not a provider brand.
@@ -375,7 +395,7 @@ human support review, prompt version, and non-AI fallback.
 ## Required artifact
 
 The teaching contract creates worked and recreated prompts, inputs, responses,
-validators, audits, and support reviews under `module-05`.
+validators, audits, and support reviews under `evidence/module-05`.
 
 ## Test gate
 

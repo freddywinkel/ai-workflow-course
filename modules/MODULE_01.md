@@ -15,7 +15,9 @@ uses no employer, client, patient, employee, or other real data.
 
 Start here when you can create a folder, open a plain-text file, and copy an
 exact command. If those actions are unfamiliar, complete Foundations 1 and 2
-first.
+first. Complete Windows Setup before this module; it creates the one project
+tracked by **Git**, a version-control tool that records file changes, for
+Modules 1–9.
 
 Comma-separated values (CSV) is a plain-text table format; `.csv` is its file
 name ending.
@@ -67,10 +69,13 @@ the Windows plain-text editor used to create practice files.
 
 ## Follow along — I show you exactly how
 
-### Stage 1 — Create one controlled practice folder
+### Stage 1 — Open the one controlled project and create this evidence folder
 
-**Prerequisites and start state:** Windows is open. The course files remain
-unchanged.
+**Prerequisites and start state:** Windows is open, the course files remain
+unchanged, and Windows Setup created
+`Documents\AI-workflow-learning\operations-exception-assistant`. Foundations
+remain in `Documents\controlled-ai-course-practice`; do not put module evidence
+there.
 
 1. Press the Windows key, type `PowerShell`, and click **Windows PowerShell**.
    PowerShell is the Windows command-line application used to run exact text
@@ -78,8 +83,9 @@ unchanged.
 2. Copy and run:
 
 ```powershell
-$practiceBase = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'controlled-ai-course-practice'
-$moduleFolder = Join-Path $practiceBase 'module-01'
+$projectRoot = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'AI-workflow-learning\operations-exception-assistant'
+if (-not (Test-Path (Join-Path $projectRoot '.git'))) { throw 'Project Git repository not found. Complete Windows Setup before Module 1.' }
+$moduleFolder = Join-Path $projectRoot 'evidence\module-01'
 New-Item -ItemType Directory -Force -Path $moduleFolder
 Set-Location -LiteralPath $moduleFolder
 (Get-Location).Path
@@ -89,8 +95,11 @@ $guidedSourceCsv
 Test-Path -LiteralPath $guidedSourceCsv
 ```
 
-`Join-Path` safely combines a parent path with a child name. `New-Item` creates
-the practice folder. `Set-Location` makes it the current folder.
+`Join-Path` safely combines a parent path with a child name. The `if` line
+stops instead of silently creating a second, untracked project when the
+`.git` folder is missing. `.git` is the hidden folder Git uses to track project
+history. `New-Item` creates this module's evidence folder. `Set-Location` makes
+it the current folder.
 
 `Read-Host` pauses and stores exactly the course-folder path you paste.
 The second `Join-Path` constructs the complete source-file path without asking
@@ -98,14 +107,18 @@ you to type every backslash. `Test-Path` checks that the named source exists; it
 does not open or change it.
 
 **Expected result:** the first path ends in
-`\Documents\controlled-ai-course-practice\module-01`, the next path ends in
-`\practice_data\work_items.csv`, and the final line is `True`.
+`\Documents\AI-workflow-learning\operations-exception-assistant\evidence\module-01`,
+the next path ends in `\practice_data\work_items.csv`, and the final line is
+`True`.
 
 **Troubleshooting:**
 
+- If PowerShell reports that the Git repository was not found, stop and
+  complete `SETUP_WINDOWS.md`. Do not remove the safety check or invent another
+  project folder.
 - If PowerShell shows a red “access denied” message, confirm that the printed
-  base is your Documents folder and rerun PowerShell normally, not as another
-  user.
+  project is inside your Documents folder and rerun PowerShell normally, not as
+  another user.
 - If the prompt begins in another folder, that is harmless; `Set-Location`
   corrects it.
 - If `Test-Path` prints `False`, confirm that `$courseRoot` names the course
@@ -251,19 +264,92 @@ exception before rules are authorised.
 - If your measured time is unusually short or long, keep it. A baseline is
   evidence, not a performance test.
 
+### Stage 4 — See completed stakeholder and baseline records
+
+The observation file describes what happened. A **stakeholder and user map**
+separately records who uses, owns, reviews, supports, or is affected by the
+process. A **baseline and value record** separately defines how measurements
+were made and which statements are observations or assumptions.
+
+First follow these two small completed examples. They show the level of
+specificity expected before you fill the blank templates for the capstone.
+
+1. Run `notepad .\worked_stakeholder_map.md`, click **Yes**, paste, save, and
+   close:
+
+```markdown
+# Worked stakeholder and user map
+
+- Artifact ID: WORKED-M01-STAKEHOLDERS
+- Version/date: 1.0 / 2026-07-28
+- Process: fictional daily repair queue review
+
+| Role | Relationship and need | Decision right | Evidence status |
+|---|---|---|---|
+| operations coordinator | checks rows and needs clear source values | accepts or rejects usability | worked scenario assumption |
+| operations lead | reviews the attention list | approves process rules and may stop the check | worked scenario assumption |
+| source-system owner | supplies the export | confirms header and field meaning | unresolved |
+| affected non-user | none in this internal fictional example | not applicable | decision recorded |
+
+Adoption risk: the coordinator may treat an attention item as a confirmed
+error. Protection: label every item for human review and link it to the source.
+Unresolved question: who confirms which statuses require an owner?
+```
+
+2. Run `notepad .\worked_baseline_record.md`, click **Yes**, paste, replace the
+   two placeholders with the same measurement recorded in
+   `worked_observation.md`, save, and close:
+
+```markdown
+# Worked baseline and value record
+
+- Artifact ID: WORKED-M01-BASELINE
+- Version/date: 1.0 / 2026-07-28
+- Unit: one fictional queue row
+- Sample: one four-row manual walkthrough
+
+| Measure | Exact definition | Result | Status/limitation |
+|---|---|---|---|
+| volume | rows inspected in this walkthrough | 4 | observed |
+| active time | timer start before opening through final row check | REPLACE WITH YOUR MEASURED TIME | observed once |
+| wait time | minutes blocked during this self-run | 0 | observed only for worked run |
+| recheck | fields inspected more than once | REPLACE WITH WHAT YOU RECHECKED | observed |
+
+Value hypothesis: a controlled attention list may reduce repeated inspection,
+but no improvement, cash saving, or error reduction has been proved.
+Next evidence: repeat the same definitions on the different 15-row fixture.
+```
+
+3. Check both worked records:
+
+```powershell
+Get-Item .\worked_stakeholder_map.md,.\worked_baseline_record.md
+Select-String -Path .\worked_stakeholder_map.md,.\worked_baseline_record.md -Pattern 'Artifact ID','Unresolved','hypothesis','observed'
+```
+
+**Expected result:** two files are listed and the four search terms are found.
+If a placeholder remains, reopen the file and replace it with your actual
+worked observation before continuing.
+
 ## Now recreate it yourself
 
 Use different synthetic data: the supplied 15-row capstone register.
 
 1. Reuse the demonstrated `Read-Host`, `Join-Path`, `Copy-Item`, and
-   `Get-FileHash` pattern. In PowerShell, run:
+   `Get-FileHash` pattern. Copy the capstone data and the two blank consulting
+   templates into this module's evidence folder:
 
 ```powershell
 $courseRoot = Read-Host 'Paste the full path to AI_WORKFLOW_DOCUMENT_SYSTEMS_COURSE'
 $sourceCsv = Join-Path $courseRoot 'practice_data\work_items.csv'
+$stakeholderTemplate = Join-Path $courseRoot 'templates\stakeholder_and_user_map.md'
+$baselineTemplate = Join-Path $courseRoot 'templates\baseline_and_value_record.md'
 Copy-Item -LiteralPath $sourceCsv -Destination .\recreated_work_items.csv
+Copy-Item -LiteralPath $stakeholderTemplate -Destination .\stakeholder_and_user_map.md
+Copy-Item -LiteralPath $baselineTemplate -Destination .\baseline_and_value_record.md
 Get-FileHash -LiteralPath $sourceCsv -Algorithm SHA256
 Get-FileHash -LiteralPath .\recreated_work_items.csv -Algorithm SHA256
+Get-Item .\stakeholder_and_user_map.md,.\baseline_and_value_record.md
 ```
 
 The two SHA-256 values must match; matching values show that the copy has the
@@ -276,7 +362,17 @@ same bytes.
    trigger, completion, actors, source of truth, fallback, at least five
    observations, at least five clearly labelled assumptions, five discovery
    questions, active time, and repeated checks.
-4. Run both hash commands again. The source and recreated copy must still
+4. Open `stakeholder_and_user_map.md` in Notepad and replace the blank fields
+   with role-only fictional entries for the operations coordinator, operations
+   lead/process owner, data owner, system owner, support role, and any affected
+   non-user. Record decision rights, at least two adoption risks, evidence
+   status, and unresolved questions. Do not use real names or interviews.
+5. Open `baseline_and_value_record.md` in Notepad. Use your Module 1
+   observation to complete the unit, sample, volume, active-time, wait-time,
+   and rework definitions. Label single-run results as observations and future
+   value as an assumption. Do not invent a target or cash saving. Write `not
+   tested in Course 1` in later comparison fields that cannot yet be completed.
+6. Run both hash commands again. The source and recreated copy must still
    match.
 
 This is recreation, not copying: your observations, timing, and questions must
@@ -299,14 +395,19 @@ the parent folder or any other location. Do not run a command that changes
 state. This folder must contain no secrets and no real client or workplace
 data; stop if you see credentials, personal data, or health data.
 
-Check worked_queue.csv, worked_queue_copy.csv, worked_observation.md, and
-recreated_observation.md. Return exactly:
+Check worked_queue.csv, worked_queue_copy.csv, worked_observation.md,
+worked_stakeholder_map.md, worked_baseline_record.md,
+recreated_work_items.csv, recreated_observation.md,
+stakeholder_and_user_map.md, and
+baseline_and_value_record.md. Return exactly:
 1. PASS or NOT YET;
 2. a checklist against these criteria: synthetic boundary; trigger; observable
 completion; unit of work; actors; source of truth; fallback; step-by-step as-is
 map; observations separated from assumptions; five discovery questions;
 worked queue and guided copy are byte-identical; measured active time; no
-proposed AI solution presented as observed fact;
+proposed AI solution presented as observed fact; stakeholder roles and decision
+rights; adoption risks; baseline measurement definitions; observations
+separated from value assumptions; no invented saving;
 3. for NOT YET, the smallest corrections I should make myself.
 
 Do not make the corrections. Do not judge writing style beyond clarity and the
@@ -325,6 +426,10 @@ criteria.
 - [ ] Observations and assumptions are separate.
 - [ ] The recreated file has at least five observations and five assumptions.
 - [ ] Active time is measured rather than estimated.
+- [ ] `stakeholder_and_user_map.md` names roles, decision rights, evidence
+      status, unresolved questions, and at least two adoption risks.
+- [ ] `baseline_and_value_record.md` defines volume, active time, wait time,
+      and rework, and labels untested value as an assumption.
 - [ ] No AI feature or software product is treated as an observed user need.
 - [ ] Codex returns `PASS`, or you correct the work yourself and request another
       read-only check.
@@ -342,8 +447,8 @@ permission to inspect an employer's systems or interview colleagues.
 
 ## Capstone increment
 
-You now have an as-is process map and honest manual baseline for the Synthetic
-SME Operations Exception Assistant.
+You now have an as-is process map, stakeholder/user map, and honest manual
+baseline for the Synthetic SME Operations Exception Assistant.
 
 ## Required artifact
 
@@ -352,8 +457,12 @@ The evidence already created under the teaching contract is:
 - `worked_queue.csv`;
 - `worked_queue_copy.csv`;
 - `worked_observation.md`;
+- `worked_stakeholder_map.md`;
+- `worked_baseline_record.md`;
 - `recreated_work_items.csv`;
 - `recreated_observation.md`;
+- `stakeholder_and_user_map.md`;
+- `baseline_and_value_record.md`;
 - the read-only Codex result copied into `codex_check.txt` if you choose to
   retain it.
 
@@ -361,6 +470,28 @@ The evidence already created under the teaching contract is:
 
 The module gate is exactly the **Pass criteria** above. There are no hidden
 tasks.
+
+## After PASS — make the Git checkpoint
+
+Do this only after Codex returns `PASS`. First open the module folder yourself
+and confirm it contains only synthetic course evidence: no password, secret
+key, personal data, employer data, client data, patient data, or unrelated
+file. Then run:
+
+```powershell
+$projectRoot = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'AI-workflow-learning\operations-exception-assistant'
+Set-Location -LiteralPath $projectRoot
+git status --short
+git add -- "evidence/module-01"
+git commit -m "complete module 1 evidence"
+git status --short
+```
+
+`git status --short` previews changed files. `git add --` stages only this
+module folder; `--` marks the end of Git options. `git commit` records that
+staged checkpoint. If Git says there is nothing to commit after you rerun the
+lesson, that is expected when the files have not changed. Never broaden the
+path merely to force a commit.
 
 ## Stop or rework
 

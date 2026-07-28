@@ -61,13 +61,17 @@ Notepad is the Windows plain-text editor used to create practice files.
 Open Windows PowerShell and run:
 
 ```powershell
-$practiceBase = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'controlled-ai-course-practice'
-$moduleFolder = Join-Path $practiceBase 'module-04'
+$projectRoot = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'AI-workflow-learning\operations-exception-assistant'
+if (-not (Test-Path (Join-Path $projectRoot '.git'))) {
+    throw 'Project repository not found. Complete Windows Setup before Module 4.'
+}
+$moduleFolder = Join-Path $projectRoot 'evidence\module-04'
 New-Item -ItemType Directory -Force -Path $moduleFolder
 Set-Location -LiteralPath $moduleFolder
 $courseRoot = Read-Host 'Paste the full path to AI_WORKFLOW_DOCUMENT_SYSTEMS_COURSE'
 Copy-Item -LiteralPath (Join-Path $courseRoot 'practice_data\work_items.csv') -Destination .\worked_work_items.csv
 Copy-Item -LiteralPath (Join-Path $courseRoot 'practice_data\expected_issues.csv') -Destination .\worked_expected_issues.csv
+Copy-Item -LiteralPath (Join-Path $courseRoot 'templates\architecture_decision_record.md') -Destination .\recreated_architecture_decision.md
 Get-FileHash .\worked_work_items.csv -Algorithm SHA256
 ```
 
@@ -75,6 +79,83 @@ Record the printed Secure Hash Algorithm 256-bit (SHA-256) value in
 `input_hash_before.txt`. Do this in Notepad.
 
 **Expected result:** two CSV files and one 64-character hexadecimal hash.
+
+Create `worked_architecture_decision.md` in Notepad and paste:
+
+```markdown
+# ADR-001 — Local deterministic rule checker
+
+Status: accepted
+Date: 2026-07-28
+Owner/reviewer: course learner acting in both synthetic roles
+
+## Context
+
+The synthetic exception process needs reproducible R001-R011 checks, preserved
+source input, visible failures, and no external action.
+
+## Decision drivers
+
+- Safety/integrity: source remains unchanged; invalid input stops safely.
+- Evidence/provenance: every issue links to row, field, raw value, and rule.
+- Portability: comma-separated values and JSON remain readable.
+- Cost/latency: local standard-library Python needs no paid service.
+- Privacy/security: synthetic files stay local and contain no secret.
+- Operability: a person can inspect output and use manual fallback.
+
+## Options considered
+
+| Option | Benefits | Risks/costs | Evidence/test |
+|---|---|---|---|
+| Manual inspection only | simplest fallback | inconsistent at volume | retained as fallback |
+| Local deterministic Python | exact and testable | learner must maintain rules | selected; frozen expected set |
+| Generative AI issue detection | flexible wording | variable and unnecessary | rejected for rule detection |
+
+## Decision
+
+Use local deterministic Python for validation and R001-R011. Exclude network
+calls, source write-back, and external actions.
+
+## Consequences
+
+Positive: exact repeatable evidence.
+Negative/residual risk: incorrect written rules still produce incorrect code.
+Required controls: frozen expected set, hashes, named failure state, review.
+Migration/exit path: keep CSV and documented rules; use manual review.
+
+## Verification
+
+Tests: 13 worked issue keys plus a different five-issue recreation.
+Reassessment trigger: input schema, rule, severity, or action scope changes.
+```
+
+Create `worked_to_be_architecture.md` in Notepad and paste:
+
+```text
+# Worked to-be architecture
+
+[Preserved synthetic CSV input]
+              |
+              v
+[Header and value validation] -- invalid --> [failed_manual + evidence]
+              |
+              v
+[Deterministic rules R001-R011]
+              |
+              v
+[Stable issue CSV + JSON run summary]
+              |
+              v
+[Human review in later modules]
+
+External connections: none.
+External actions: none.
+Source write-back: none.
+```
+
+This is a **to-be architecture diagram**: a compact picture of the designed
+future workflow, including its safe failure route. The arrows show flow; they
+do not run code.
 
 ### Stage 2 — Create the complete deterministic checker
 
@@ -437,6 +518,14 @@ This recreation uses different rows, identifiers, amounts, statuses, and rule
 combinations. If it fails, fix your data or the four configured file names;
 do not weaken a rule.
 
+Using the worked decision as the example, complete the different
+`recreated_architecture_decision.md`, then create
+`recreated_to_be_architecture.md`. Your new diagram must show the capstone's
+preserved input, validation, deterministic rules, named success and
+`failed_manual` states, evidence outputs, later bounded summary and human
+review, manual fallback, and zero external action or source write-back. Use
+your own layout rather than copying the worked low-detail diagram.
+
 ## Ask Codex to check your work
 
 Run `(Resolve-Path $moduleFolder).Path` to obtain the full path, replace
@@ -453,14 +542,16 @@ inspect the parent or another folder. This folder must contain no secrets and
 no real client or workplace data. Stop if you find credentials, personal data,
 or health data.
 
-Inspect the Python, CSV, and JSON files. Return:
+Inspect the Python, CSV, JSON, and architecture files. Return:
 1. PASS or NOT YET;
 2. checks for: exact header stop; preserved raw values; configured date
 2026-07-26; R001-R011 implemented deterministically; invalid-date dependency;
 both duplicate rows reported; stable issue IDs; evidence fields; 13 worked
 issues matching gold keys; five recreated issues matching its expected keys;
 stable rerun design; named states; failed_manual path; zero external actions;
-synthetic data only;
+synthetic data only; worked and completed recreated architecture decisions;
+worked and recreated to-be diagrams with the normal path, failure path,
+evidence, human review, and system boundaries;
 3. the smallest corrections I should make if NOT YET.
 
 Remain read-only. Do not run the scripts or supply replacement code.
@@ -477,7 +568,27 @@ Remain read-only. Do not run the scripts or supply replacement code.
 - [ ] Identical reruns have the same run ID and no duplicate rows.
 - [ ] States and `failed_manual` are visible.
 - [ ] External actions remain zero.
+- [ ] Worked and recreated architecture decisions and to-be diagrams show
+      normal flow, safe failure, evidence, human review, and system boundaries.
 - [ ] Codex returns `PASS` read-only.
+
+### Record your Module 4 PASS in Git
+
+Do this only after Codex returns `PASS`. Git records the evidence inside the
+same project repository created during Windows Setup. It does not upload it.
+
+```powershell
+$projectRoot = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'AI-workflow-learning\operations-exception-assistant'
+Set-Location -LiteralPath $projectRoot
+git status --short
+git add -- "evidence/module-04"
+git commit -m "complete module 4 evidence"
+git status --short
+```
+
+If Git reports `nothing to commit`, confirm that `evidence/module-04` was
+already recorded and unchanged. Never add a secret, real workplace file, or
+unfamiliar file merely to make the message disappear.
 
 ## Consultant lens
 
@@ -487,13 +598,15 @@ later, but it must not hide contracts or failure behaviour.
 
 ## Capstone increment
 
-The capstone has a functioning non-AI issue detector, stable outputs, named
-states, deterministic evaluation, and manual failure route.
+The capstone has a to-be architecture, functioning non-AI issue detector,
+stable outputs, named states, deterministic evaluation, and manual failure
+route.
 
 ## Required artifact
 
 The teaching contract creates worked and recreated code, inputs, outputs,
-expected results, hashes, and run summaries under `module-04`.
+expected results, hashes, run summaries, an architecture decision, and to-be
+diagrams under `evidence/module-04`.
 
 ## Test gate
 

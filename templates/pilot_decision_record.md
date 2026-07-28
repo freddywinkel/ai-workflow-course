@@ -1,17 +1,19 @@
-# Pilot Decision Record
+# Course 1 Final Decision Record
 
 Artifact ID:
 Version/date:
 Author:
 Decision owner/reviewers:
 Workflow/release:
-Pilot period:
-Pilot type: SYNTHETIC COURSE DEMONSTRATION / APPROVED LATER PILOT
+Synthetic evaluation period:
+Evaluation type: COURSE 1 SYNTHETIC PORTFOLIO WORK ONLY
 
 Completing Course 1 supports a portfolio demonstration. It does not establish
-production readiness or permission to use real business data.
+production readiness, permission to use real business data, or permission to
+run a client trial. Client discovery belongs in Course 2. A supervised
+low-risk client trial belongs in Course 3.
 
-## Pilot hypothesis and scope
+## Evaluation hypothesis and scope
 
 Value hypothesis:
 Users/roles represented:
@@ -61,7 +63,7 @@ Groups/cases not represented:
 | | | | | | |
 
 Open high-severity issue:
-Evidence of kill switch/manual fallback drill:
+Evidence that `EXTERNAL_ACTIONS_ENABLED=false` and the manual fallback worked:
 Specialist review required before any real-data use:
 
 ## Operating and economic reality
@@ -77,13 +79,14 @@ Value claim supported, weakened, or untested:
 
 Choose one:
 
-- **STOP** — value, safety, ownership, or adoption is insufficient.
-- **REVISE AND RETEST** — bounded changes and new acceptance evidence are
-  required.
-- **COMPLETE AS PORTFOLIO DEMO** — Course 1 synthetic objective is met; no
-  production claim.
-- **ASSESS A LATER CONTROLLED PILOT** — requires separate organisational,
-  contractual, privacy, security, and specialist review.
+- **ACCEPT FOR SYNTHETIC PORTFOLIO** — the Course 1 practice objective is met.
+  This is not a production or client-trial claim.
+- **REWORK** — bounded corrections and new Course 1 evidence are required.
+- **DO NOT CONTINUE** — value, safety, ownership, or adoption evidence does not
+  justify further work on this practice scope.
+
+All three decisions are valid Course 1 passing outcomes when the evidence
+supports them and the closeout is documented.
 
 Decision:
 Evidence that most influenced it:

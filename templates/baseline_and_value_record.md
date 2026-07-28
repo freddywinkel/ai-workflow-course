@@ -13,7 +13,7 @@ Measurement period and sample:
 > measure] from [baseline] to [target] during [period], while not worsening
 > [safety/quality/adoption measure].
 
-Status: ASSUMPTION / BASELINE OBSERVED / PILOT TESTED
+Status: ASSUMPTION / BASELINE OBSERVED / SYNTHETIC TESTED
 
 ## Measurement definitions
 
@@ -63,7 +63,7 @@ actually changes. Label low/working/high values as scenarios, not forecasts.
 
 ## Target and stop thresholds
 
-| Measure | Baseline | Pilot target | Stop/concern threshold | Evidence method |
+| Measure | Baseline | Synthetic evaluation target | Stop/concern threshold | Evidence method |
 |---|---:|---:|---:|---|
 | Primary value metric | | | | |
 | Accuracy/quality | | | | |
@@ -71,9 +71,9 @@ actually changes. Label low/working/high values as scenarios, not forecasts.
 | User adoption | | | | |
 | Harmful or unauthorised actions | | | | |
 
-## Pilot comparison
+## Synthetic evaluation comparison
 
-| Metric | Baseline | Pilot observed | Difference | Comparable sample? | Interpretation |
+| Metric | Baseline | Synthetic result observed | Difference | Comparable sample? | Interpretation |
 |---|---:|---:|---:|:---:|---|
 | | | | | | |
 
@@ -81,4 +81,4 @@ Confounding changes:
 Benefits not measured:
 Costs or burden shifted to another role:
 Evidence that changed the value hypothesis:
-Decision supported: CONTINUE TESTING / REVISE / STOP
+Decision supported: ACCEPT FOR SYNTHETIC PORTFOLIO / REWORK / DO NOT CONTINUE

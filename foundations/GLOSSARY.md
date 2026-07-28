@@ -41,7 +41,7 @@ operating duties, and known limitations to its future owner.
 **Intended purpose** — the specific users, context, inputs, functions, and
 outputs for which a workflow is designed and evaluated.
 
-**KPI (key performance indicator)** — a defined measure used to assess a
+**Key performance indicator (KPI)** — a defined measure used to assess a
 business result. A KPI needs a calculation method, source, owner, and period.
 
 **Manual baseline** — observed time, quality, volume, errors, and rework for the
@@ -66,7 +66,7 @@ its rules, exceptions, and improvement decisions.
 **Scope** — the agreed boundary of users, steps, systems, data, deliverables,
 time, and exclusions.
 
-**SME (small or medium-sized enterprise)** — a small or medium-sized business.
+**Small or medium-sized enterprise (SME)** — a small or medium-sized business.
 The exact legal or statistical thresholds depend on context.
 
 **Stakeholder** — a person or group that performs, owns, supports, is affected
@@ -78,7 +78,7 @@ controls, exceptions, and fallback.
 **Training** — planned instruction and practice that enables a named user group
 to perform its part of the workflow.
 
-**UAT (user acceptance testing)** — representative users checking the workflow
+**User acceptance testing (UAT)** — representative users checking the workflow
 against agreed business scenarios and acceptance criteria.
 
 **Unit of work** — one item that moves through a process, such as one request,
@@ -93,7 +93,7 @@ a defined measure for a defined group under stated assumptions.
 
 **Boolean** — a value that is either true or false.
 
-**CLI (command-line interface)** — a text interface for giving a program exact
+**Command-line interface (CLI)** — a text interface for giving a program exact
 commands.
 
 **Code** — precise instructions written in a programming language.
@@ -172,7 +172,7 @@ transformations, APIs, and workflow components.
 **Consistency** — whether related values agree with each other and declared
 rules.
 
-**CSV (comma-separated values)** — a plain-text tabular format. CSV does not
+**Comma-separated values (CSV)** — a plain-text tabular format. CSV does not
 preserve workbook formulas, formatting, filters, or multiple sheets.
 
 **Data dictionary** — a controlled description of each field's name, meaning,
@@ -204,7 +204,8 @@ declared rule.
 **Issue record** — a structured record connecting a failed rule to the relevant
 work item, field, severity, message, and evidence.
 
-**ISO date** — in this course, the unambiguous exchange format `YYYY-MM-DD`.
+**International Organization for Standardization (ISO) date** — in this
+course, the unambiguous exchange format `YYYY-MM-DD`.
 
 **Row** — one record or unit of work represented across a table's columns.
 
@@ -234,10 +235,10 @@ the source export remains unchanged.
 
 **Worksheet** — one tabular sheet inside a workbook.
 
-## Web and APIs
+## Web and application programming interfaces (APIs)
 
-**API** — an agreed interface through which software components make requests
-and receive responses.
+**Application programming interface (API)** — an agreed interface through
+which software components make requests and receive responses.
 
 **API key** — a secret credential used by software to authenticate.
 
@@ -254,12 +255,14 @@ API.
 
 **Header** — request/response metadata such as content type or authentication.
 
-**HTTP** — the protocol commonly used for API requests and responses.
+**Hypertext Transfer Protocol (HTTP)** — the protocol commonly used for API
+requests and responses.
 
-**JSON** — a strict text format for objects, arrays, strings, numbers, Booleans,
-and null.
+**JavaScript Object Notation (JSON)** — a strict text format for objects,
+arrays, strings, numbers, Booleans, and null.
 
-**JSONL** — JSON Lines: one complete JSON value per line.
+**JavaScript Object Notation Lines (JSONL)** — one complete JSON value per
+line.
 
 **Localhost** — the current computer as a network host, commonly
 `127.0.0.1`.
@@ -272,8 +275,8 @@ and null.
 
 **Response** — the server's answer to a request.
 
-**SDK** — a vendor-provided software development kit that wraps an API for a
-programming language.
+**Software development kit (SDK)** — a vendor-provided set of tools that wraps
+an API for a programming language.
 
 **Server** — software that listens for requests and returns responses.
 
@@ -282,14 +285,15 @@ programming language.
 **Timeout** — the client stopped waiting; it does not prove the server performed
 no action.
 
-**URL** — an address identifying a web or API resource.
+**Uniform Resource Locator (URL)** — an address identifying a web or API
+resource.
 
 **Webhook** — an HTTP endpoint called automatically when an event occurs.
 
 ## AI and documents
 
-**AI literacy** — sufficient understanding to use, supervise, question, and
-stop an AI system appropriately.
+**Artificial intelligence (AI) literacy** — sufficient understanding to use,
+supervise, question, and stop an AI system appropriately.
 
 **Bounding box** — coordinates identifying a rectangular region on a page.
 
@@ -313,13 +317,13 @@ content.
 
 **Inference** — running a trained model to produce an output.
 
-**LLM (large language model)** — a model that generates and interprets text by
+**Large language model (LLM)** — a model that generates and interprets text by
 predicting token sequences.
 
 **Model** — the trained computational component that maps input to candidate
 output.
 
-**OCR** — optical character recognition: converting visible image text into
+**Optical character recognition (OCR)** — converting visible image text into
 candidate machine-readable characters.
 
 **Parser** — software that reads a file's text and structural elements.
@@ -379,7 +383,8 @@ rather than duplicates.
 
 **Invariant** — a condition that must always remain true.
 
-**Kill switch** — a control that disables a capability or action path.
+**Safe stop** — a stated condition that disables a capability or action path
+and returns the work to a documented manual method.
 
 **Manual fallback** — a documented non-automated way to complete or safely stop
 work when the system fails.
@@ -440,7 +445,7 @@ evaluation.
 
 **Regression test** — a repeatable test intended to detect that worsening.
 
-**RLS (Row Level Security)** — database policies restricting which rows an
+**Row level security (RLS)** — database policies restricting which rows an
 identity can access.
 
 **Supabase** — a managed platform that supplies PostgreSQL, authentication, and

@@ -140,7 +140,52 @@ What the code does:
 Python uses indentation to show which lines belong inside a function or
 condition. The four spaces before the indented lines matter.
 
-### Part C — run and inspect the program
+### Part C — use a list and the Python word `in`
+
+The recreation below will ask you to use a list and a membership check. First
+you will build and run one complete example.
+
+1. Run:
+
+   ```powershell
+   notepad "known_status.py"
+   ```
+
+2. If Notepad asks whether to create the file, click **Yes**.
+3. Type or paste this exact code:
+
+   ```python
+   def is_known_status(status):
+       allowed_statuses = ["waiting", "in_progress", "completed"]
+       return status in allowed_statuses
+
+
+   assert is_known_status("waiting") is True
+   assert is_known_status("completed") is True
+   assert is_known_status("cancelled") is False
+
+   print("3 membership checks passed")
+   ```
+
+4. Save and close Notepad, then run:
+
+   ```powershell
+   python ".\known_status.py"
+   ```
+
+Expected result:
+
+```text
+3 membership checks passed
+```
+
+Here, `allowed_statuses` is a list because the values are inside square
+brackets. The expression `status in allowed_statuses` is `True` when the input
+appears in that list and `False` when it does not. The function returns that
+Boolean directly. You will reuse this pattern with different values in the
+recreation.
+
+### Part D — run and inspect the first program
 
 1. In PowerShell, run:
 
@@ -182,8 +227,8 @@ Running the program prints exactly:
 3 checks passed
 ```
 
-No Python error appears. `Get-ChildItem` includes `status_check.py`, and the
-saved file contains three assertions.
+No Python error appears. `Get-ChildItem` includes `status_check.py` and
+`known_status.py`. The saved files contain the demonstrated assertions.
 
 ### Troubleshooting
 
@@ -227,15 +272,18 @@ Report PASS or NOT YET for each criterion:
 1. status_check.py defines needs_review and contains the three required
    assertions.
 2. The expected output from status_check.py is exactly: 3 checks passed
-3. priority_check.py defines is_allowed_priority.
-4. It accepts low, medium, and high; rejects urgent and blank; and contains five
+3. known_status.py demonstrates a list and the Python word in, and its expected
+   output is exactly: 3 membership checks passed
+4. priority_check.py defines is_allowed_priority.
+5. It accepts low, medium, and high; rejects urgent and blank; and contains five
    assertions for those inputs.
-5. The expected output from priority_check.py is exactly:
+6. The expected output from priority_check.py is exactly:
    5 priority checks passed
-6. Neither file reads, writes, deletes, installs, or calls a network service.
+7. None of the three files reads, writes, deletes, installs, or calls a network
+   service.
 
 You may reason about the code and, if your environment permits, run only these
-two local Python files to observe their output. Make no changes. Explain any
+three local Python files to observe their output. Make no changes. Explain any
 NOT YET result in beginner language.
 
 This folder must contain synthetic course data only. I must not include
@@ -249,6 +297,9 @@ work data.
 
 - [ ] `python --version` reports Python 3.
 - [ ] `status_check.py` prints exactly `3 checks passed`.
+- [ ] `known_status.py` prints exactly `3 membership checks passed`.
+- [ ] I can explain the list and the membership check demonstrated before the
+      recreation.
 - [ ] `priority_check.py` prints exactly `5 priority checks passed`.
 - [ ] I can explain each function's input, condition, and Boolean output.
 - [ ] I can explain why an assertion is stronger evidence than seeing no error.

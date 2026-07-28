@@ -32,10 +32,11 @@ Terms used in this guide:
   project that combines all course modules;
 - **virtual environment:** an isolated folder containing the Python
   **packages**, reusable units of code, for one project;
-- **Node.js:** software that runs JavaScript, a programming language used by
-  websites and automation tools, outside a web browser;
-- **n8n** (pronounced “n-eight-n”): a workflow-automation application; the name
-  is not an abbreviation you need to expand;
+- **Node.js:** optional software that runs JavaScript, a programming language
+  used by websites and some automation tools, outside a web browser; it is not
+  required for Course 1;
+- **n8n** (pronounced “n-eight-n”): an optional workflow-automation
+  application; the name is not an abbreviation you need to expand;
 - **comma-separated values (CSV):** a plain-text table format;
 - **application programming interface (API):** a defined way for software
   systems to exchange requests and responses;
@@ -141,9 +142,12 @@ Do not continue if `Get-Location` points somewhere else. Run the
 
 ## Install the required tools once
 
-The interfaces and supported versions can change. First run the live check in
-[EVERGREEN_UPDATE_PROMPT.md](EVERGREEN_UPDATE_PROMPT.md). It must confirm the
-current official download pages and supported versions.
+The interfaces and supported versions can change. First use the learner-safe,
+read-only software report in
+[BEGINNER_SOFTWARE_CHECK.md](BEGINNER_SOFTWARE_CHECK.md). That report checks
+official pages and tells you what is current. It never authorizes an assistant
+to edit files, install software, or rewrite this course. The separate evergreen
+audit is for course maintainers, not a learner setup step.
 
 Record the checked date and answers in a Notepad file named
 `setup-version-check.txt` inside `setup-follow-along`.
@@ -216,24 +220,21 @@ Expected result: Python prints a supported version. Record both outputs in
 requires an exact version such as `py -3.13`, use that exact version
 consistently.
 
-### 4. Install Node.js for n8n
+### Optional later — visual workflow-tool crosswalk
 
-1. Open <https://nodejs.org/en/download>.
-2. Choose the supported **Long-Term Support (LTS)** release confirmed by the
-   current [n8n installation documentation](https://docs.n8n.io/hosting/installation/npm/).
-3. Open the Windows installer and keep the ordinary defaults.
-4. Finish the installation.
-5. Close PowerShell and open it again. **Node Package Manager (npm)** installs
-   and runs reusable JavaScript components called **packages**. The following
-   commands ask Node.js and npm to print their versions. Run:
+Do not install Node.js or n8n for the required Course 1 path. The capstone uses
+local Python, files, and an offline artificial-intelligence fixture. This keeps
+the foundation reproducible and prevents a fast-changing vendor interface from
+becoming a learning blocker.
 
-    ```powershell
-    node --version
-    npm --version
-    ```
-
-Expected result: each command prints one version. Record both in
-`setup-version-check.txt`.
+After the complete offline capstone passes, you may compare its trigger,
+validation, rule, human-review, fallback, and evidence steps with a visual
+workflow tool. Before that optional comparison, obtain a new dated software
+report, confirm the tool's official compatibility page, and record and pin the
+exact versions selected. A **Long-Term Support (LTS)** release receives planned
+maintenance for longer than a short-lived release; use it only when the
+selected tool's current official compatibility page supports it. Do not run an
+unversioned package command.
 
 ## Now recreate it yourself — build the real learner project
 
@@ -267,23 +268,31 @@ folder that is automatically copied into an employer cloud or server account.
 
 ### 2. Start Git and create a Python virtual environment
 
-The commands below do four things:
+The commands below do six things:
 
 1. `git init` makes the current folder a Git repository.
-2. `py -m venv .venv` asks the Python Launcher (`py`) to run the `venv`
+2. The two `git config --local` commands give this practice repository a
+   clearly fictional author name and email address. `--local` means the
+   settings apply only inside this repository.
+3. `py -m venv .venv` asks the Python Launcher (`py`) to run the `venv`
    module—`venv` is short for virtual environment—and create that isolated
    environment in a folder named `.venv`.
-3. `Activate.ps1` runs a PowerShell script (`.ps1`) that makes this PowerShell
+4. `Activate.ps1` runs a PowerShell script (`.ps1`) that makes this PowerShell
    window use the isolated environment.
-4. `python --version` prints the version of the active Python.
+5. `python --version` prints the version of the active Python.
+6. `git status --short` confirms the repository is ready without changing
+   files.
 
 Run:
 
 ```powershell
 git init
+git config --local user.name "Course Learner"
+git config --local user.email "course-learner@example.invalid"
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python --version
+git status --short
 ```
 
 Expected result: the prompt usually begins with `(.venv)` and Python prints the
@@ -356,8 +365,10 @@ Expected result: `.venv` is not shown as thousands of untracked files.
 
 ### 5. Copy the course requirements and fictional data
 
-`requirements-course.txt` is a plain-text list of the Python packages this
-course needs. The **project root** is the top-level
+`requirements-course.txt` is a plain-text list of the exactly pinned Python
+packages this offline course needs. A **version pin** selects one exact package
+version instead of accepting whatever happens to be newest. The **project
+root** is the top-level
 `operations-exception-assistant` folder. `work_items.csv` is the fictional input
 table, and `expected_issues.csv` is the answer key used by tests.
 
@@ -395,7 +406,9 @@ python -m pytest --version
 ```
 
 Expected result: the last command prints a pytest version. Do not install
-requirements from the archived future course.
+requirements from the archived future course. OpenAI provider software is not
+in the required file; the bounded artificial-intelligence lesson uses an
+offline saved response.
 
 ### 7. Create configuration without a real secret
 
@@ -404,26 +417,19 @@ above. In the content below:
 
 - `EVALUATION_DATE` records when the setup was checked;
 - `AI_MODE=offline` prevents use of an external AI service;
-- `AI_MODEL` is a placeholder for a future AI system and version choice;
-- `OPENAI_API_KEY` is the empty placeholder for an **application programming
-  interface key (API key)**, a secret value that could authorize access to an
-  OpenAI service; **OpenAI** is the company that provides that service; and
-- `KILL_SWITCH` is an emergency setting intended to disable the optional AI
-  step.
+- `EXTERNAL_ACTIONS_ENABLED=false` is an explicit safety setting: the workflow
+  is not allowed to send, order, pay, approve, or write to another system.
 
 In Visual Studio Code, create `.env.example` in the project root:
 
 ```text
-EVALUATION_DATE=2026-07-26
+EVALUATION_DATE=2026-07-28
 AI_MODE=offline
-AI_MODEL=replace-after-live-audit
-OPENAI_API_KEY=
-KILL_SWITCH=false
+EXTERNAL_ACTIONS_ENABLED=false
 ```
 
-Keep `OPENAI_API_KEY=` empty.
-
-Copy `.env.example` to a new file named `.env`. Do not add a real key. The
+Copy `.env.example` to a new file named `.env`. Do not add a real key or any
+provider setting. The
 `--short` option asks `git status` for a compact result. Run:
 
 ```powershell
@@ -477,26 +483,37 @@ If the result says `failed` or `error`, stop. Copy the complete error into your
 private course notes and ask Codex to explain it. Do not ask Codex to hide or
 skip the test.
 
-### 9. Start and stop the local n8n learning instance
+### 9. Freeze and record the setup in Git
 
-`N8N_USER_FOLDER` is an environment-variable name that tells n8n where to keep
-this course's local configuration. **npx** is the command name for the package
-runner supplied with npm; it is not an abbreviation you need to expand. After
-n8n starts, `Ctrl+C`—hold the Control key and tap C—stops the running command.
-Run:
+`pip freeze` prints the exact installed Python package tree. `Set-Content`
+writes that output to the named evidence file. The Git commands then record
+only the safe setup files and fictional course data. They do not upload
+anything.
+
+First create `evidence\setup-check.txt` in Notepad. Record the date, the exact
+Git, Python, and pytest version output, `2 passed`, and the sentence
+`External actions remain disabled.` Do not record a username, computer name,
+folder path, key, or other secret.
+
+Then run:
 
 ```powershell
-$env:N8N_USER_FOLDER = "$env:USERPROFILE\Documents\AI-workflow-learning\.n8n-course"
-npx n8n
+python -m pip freeze | Set-Content .\evidence\setup-dependencies.txt
+Get-Content .\evidence\setup-dependencies.txt
+git status --short
+git add -- ".gitignore" ".env.example" "requirements-course.txt" "data/input/work_items.csv" "tests/expected_issues.csv" "tests/test_smoke.py" "evidence/setup-check.txt" "evidence/setup-dependencies.txt"
+git commit -m "initialize Course 1 project"
+git status --short
 ```
 
-Open only the **local address** printed by n8n, meaning the web address served
-on this computer. Do not create or connect an employer account. Press `Ctrl+C`
-in PowerShell to stop n8n.
+Expected result: the dependency file includes the exact pytest version, Git
+creates one commit, and the final status does not list any of those setup
+files. A **commit** is a recorded local snapshot. No remote service or GitHub
+account is needed.
 
-Record whether start and stop both worked in
-`evidence\setup-check.txt`. Before later sessions, set the same
-`N8N_USER_FOLDER` again.
+If Git reports `nothing to commit`, run `git status --short`. Continue only
+when the named setup files were already recorded in an earlier commit. If Git
+names a file you do not recognise, stop and inspect it before adding anything.
 
 ## Ask Codex to check your work
 
@@ -510,27 +527,30 @@ Please inspect this Course 1 setup folder in READ-ONLY mode:
 Do not create, edit, rename, move, delete, install, or download anything. Do
 not reveal or print secret values. Check only this folder. Verify the eight
 required subfolders, .gitignore rules, requirements-course.txt,
-data/input/work_items.csv, tests/expected_issues.csv, .env.example with an
-empty OPENAI_API_KEY, tests/test_smoke.py, and evidence/setup-check.txt.
+data/input/work_items.csv, tests/expected_issues.csv, .env.example with
+AI_MODE=offline and EXTERNAL_ACTIONS_ENABLED=false, tests/test_smoke.py,
+evidence/setup-check.txt, and evidence/setup-dependencies.txt.
 Confirm that .env and .venv are not tracked by Git without opening or printing
 .env. Report PASS or NOT YET against the setup pass criteria. If it is NOT
 YET, explain the exact smallest correction and let me perform it.
 ```
 
-Codex cannot prove from files alone that an installer was trustworthy or that
-n8n stopped correctly. Your recorded command outputs remain part of the
-evidence.
+Codex cannot prove from files alone that an installer was trustworthy. Your
+recorded command outputs remain part of the evidence.
 
 ## Pass criteria
 
 - [ ] `Get-Location` shows the exact capstone folder.
-- [ ] Git, Python, Node.js, npm, pytest, and n8n versions were recorded.
+- [ ] Git, Python, and pytest versions were recorded.
 - [ ] The eight required project folders exist.
 - [ ] `.venv` and `.env` are ignored by Git.
 - [ ] The copied CSV files remain fictional course data.
-- [ ] `OPENAI_API_KEY=` remains empty.
+- [ ] `AI_MODE=offline` and `EXTERNAL_ACTIONS_ENABLED=false` are recorded.
 - [ ] The smoke test result is `2 passed`.
-- [ ] n8n starts locally and stops with `Ctrl+C`.
+- [ ] `evidence\setup-dependencies.txt` records the exact installed package
+      tree.
+- [ ] The safe setup files and fictional inputs are recorded in the first
+      local Git commit.
 - [ ] No real data, **credential** (username, password, or access token), or
       employer/client connection was introduced.
 - [ ] Codex reports `PASS` after read-only inspection.
@@ -540,6 +560,5 @@ evidence.
 The environment is intentionally local. Do not practise deletion commands.
 When removal is genuinely needed, first confirm the exact **resolved targets**,
 meaning the full unambiguous folder paths, are inside
-`Documents\AI-workflow-learning`, then remove only the capstone and
-`.n8n-course` folders through File Explorer. Never select your whole Documents
-folder.
+`Documents\AI-workflow-learning`, then remove only the capstone folder through
+File Explorer. Never select your whole Documents folder.

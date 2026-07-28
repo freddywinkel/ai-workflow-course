@@ -40,7 +40,7 @@ Assign one accountable role. Do not write “everyone.”
 | Permit data use | | | |
 | Approve tool and access | | | |
 | Accept UAT | | | |
-| Start, pause, or stop pilot | | | |
+| Start, pause, or stop the synthetic course evaluation | | | |
 | Accept residual risk | | | |
 | Own operation after handover | | | |
 

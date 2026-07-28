@@ -70,14 +70,16 @@ Proof:
 - the Synthetic SME Operations Exception Assistant, a made-up-data practice
   workflow;
 - final practice project (capstone) handover pack;
-- an evidence-backed recommendation label: `PILOT` means run a small trial,
-  `REWORK` means change the plan and assess it again, and `DO NOT PILOT` means
-  stop.
+- one evidence-backed Course 1 result: `ACCEPT FOR SYNTHETIC PORTFOLIO`,
+  `REWORK`, or `DO NOT CONTINUE`. Each result can pass when the evidence and
+  closeout support it.
 
 Boundary after completion:
 
 - portfolio learner / workflow analyst in training;
-- not ready for independent production deployment or real sensitive data.
+- not ready for an independent production deployment, real sensitive data, or
+  a client pilot. Discovery is taught in Course 2; a supervised low-risk pilot
+  is taught in Course 3.
 
 ## Course 2 — Workflow Discovery and Paid Problem Assessments
 

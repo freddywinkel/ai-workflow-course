@@ -28,7 +28,7 @@ Approvals required and separation rule:
 | revoke | | | | |
 | two-person | | | | |
 | duplicate/concurrent action | | | | |
-| kill switch | | | | |
+| `EXTERNAL_ACTIONS_ENABLED=false` safety control | | | | |
 
 ## Exact-output binding
 
@@ -47,4 +47,3 @@ Automation-bias indicators monitored?
 Reject/escalate/manual fallback usable?  
 
 Decision/blockers:  
-

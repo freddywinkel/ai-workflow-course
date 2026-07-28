@@ -39,14 +39,14 @@
   <body>
     <a class="skip-link" href="#main-content">Skip to course content</a>
 
-    <div class="app-shell" id="app-shell">
+    <div class="app-shell" id="app-shell" aria-busy="true">
       <header class="topbar">
-        <button class="icon-button menu-button" id="menu-button" type="button" aria-label="Open course menu" aria-controls="course-sidebar" aria-expanded="false">
+        <button class="icon-button menu-button" id="menu-button" type="button" aria-label="Open course menu" aria-controls="course-sidebar" aria-expanded="false" disabled>
           <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
             <path d="M4 6.5h16M4 12h16M4 17.5h16"/>
           </svg>
         </button>
-        <a class="brand" href="#home" aria-label="Artificial intelligence workflow course home">
+        <a class="brand" href="#home" aria-label="Artificial intelligence workflow course home" aria-disabled="true">
           <img src="__BASE_PATH__favicon.svg" width="38" height="38" alt="">
           <span>
             <strong>Controlled artificial intelligence</strong>
@@ -92,21 +92,21 @@
           </div>
           <nav id="course-nav"></nav>
           <div class="sidebar-footer">
-            <button class="sidebar-link" type="button" data-route="career">
+            <button class="sidebar-link" type="button" data-route="career" disabled>
               <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                 <path d="M5 20V10m7 10V4m7 16v-7"/>
                 <path d="m4 7 7-4 7 5 3-2"/>
               </svg>
               Career sequence
             </button>
-            <button class="sidebar-link" type="button" data-route="search">
+            <button class="sidebar-link" type="button" data-route="search" disabled>
               <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                 <circle cx="10.8" cy="10.8" r="6.3"/>
                 <path d="m15.5 15.5 4 4"/>
               </svg>
               Search the course
             </button>
-            <button class="sidebar-link" type="button" data-route="settings">
+            <button class="sidebar-link" type="button" data-route="settings" disabled>
               <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                 <circle cx="12" cy="12" r="3"/>
                 <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3A1.7 1.7 0 0 0 10 3V2.8h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"/>
@@ -156,10 +156,10 @@
             <section class="learner-notes" aria-labelledby="notes-title">
               <div>
                 <span class="eyebrow">Private device note</span>
-                <h2 id="notes-title">What do you want to remember?</h2>
+                <h2><label id="notes-title" for="learner-note">What do you want to remember?</label></h2>
               </div>
-              <textarea id="learner-note" rows="5" placeholder="Stored only in this browser or installed course. Never paste secrets or real client data."></textarea>
-              <span class="save-status" id="note-save-status" role="status">Saved locally</span>
+              <textarea id="learner-note" rows="5" maxlength="50000" aria-labelledby="notes-title" placeholder="Stored only in this browser or installed course. Never paste secrets or real client data."></textarea>
+              <span class="save-status" id="note-save-status" role="status">Not yet edited</span>
             </section>
             <nav class="document-pager" aria-label="Previous and next course pages">
               <button class="pager-button" id="previous-document" type="button"></button>
@@ -263,33 +263,33 @@
       </div>
 
       <nav class="bottom-nav" aria-label="Course application navigation">
-        <button type="button" data-route="home">
+        <button type="button" data-route="home" disabled>
           <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
             <path d="m4 11 8-7 8 7v9h-6v-6h-4v6H4Z"/>
           </svg>
           <span>Home</span>
         </button>
-        <button type="button" data-route="course">
+        <button type="button" data-route="course" disabled>
           <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
             <path d="M4 5.5A3.5 3.5 0 0 1 7.5 2H12v18H7.5A3.5 3.5 0 0 0 4 23.5Zm16 0A3.5 3.5 0 0 0 16.5 2H12v18h4.5a3.5 3.5 0 0 1 3.5 3.5Z"/>
           </svg>
           <span>Course</span>
         </button>
-        <button type="button" data-route="career">
+        <button type="button" data-route="career" disabled>
           <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
             <path d="M5 20V10m7 10V4m7 16v-7"/>
             <path d="m4 7 7-4 7 5 3-2"/>
           </svg>
           <span>Career</span>
         </button>
-        <button type="button" data-route="search">
+        <button type="button" data-route="search" disabled>
           <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
             <circle cx="10.8" cy="10.8" r="6.3"/>
             <path d="m15.5 15.5 4 4"/>
           </svg>
           <span>Search</span>
         </button>
-        <button type="button" data-route="settings">
+        <button type="button" data-route="settings" disabled>
           <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
             <circle cx="12" cy="12" r="3"/>
             <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3A1.7 1.7 0 0 0 10 3V2.8h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"/>
@@ -320,18 +320,29 @@
           </svg>
         </button>
         <img src="__BASE_PATH__favicon.svg" width="64" height="64" alt="">
-        <span class="eyebrow">iPhone &amp; iPad</span>
-        <h2 id="install-dialog-title">Add Course 1 to your Home Screen</h2>
-        <p>An app is an application that opens from its own icon.</p>
-        <ol>
-          <li>Open this page in <strong>Safari</strong>, Apple’s web browser.</li>
-          <li>Tap Safari’s <strong>Share</strong> button.</li>
-          <li>Choose <strong>Add to Home Screen</strong>.</li>
-          <li>Turn on <strong>Open as Web App</strong> when that option appears.</li>
-          <li>Tap <strong>Add</strong>, then open the new icon once while online.</li>
-        </ol>
+        <span class="eyebrow">Install Course 1</span>
+        <h2 id="install-dialog-title">Install Course 1 on this device</h2>
+        <p>An installed application opens from its own icon and keeps the core reading material available offline.</p>
+        <section class="install-platform" aria-labelledby="install-desktop-title">
+          <h3 id="install-desktop-title">Desktop computer or Android device</h3>
+          <ol>
+            <li>If the <strong>Install application</strong> button appears below, select it and confirm.</li>
+            <li>If that button is absent, open your browser menu and choose <strong>Install app</strong> or <strong>Add to Home screen</strong>.</li>
+            <li>Open the new course icon once while online.</li>
+          </ol>
+          <button class="button dialog-action" id="native-install-button" value="cancel" type="button" hidden>Install application</button>
+        </section>
+        <section class="install-platform" aria-labelledby="install-apple-title">
+          <h3 id="install-apple-title">iPhone or iPad</h3>
+          <ol>
+            <li>Open this page in <strong>Safari</strong>, Apple’s web browser.</li>
+            <li>Tap Safari’s <strong>Share</strong> button.</li>
+            <li>Choose <strong>Add to Home Screen</strong>.</li>
+            <li>Turn on <strong>Open as Web App</strong> when that option appears.</li>
+            <li>Tap <strong>Add</strong>, then open the new icon once while online.</li>
+          </ol>
+        </section>
         <p class="dialog-note">The core reading material is then available offline. Progress remains local to this device.</p>
-        <button class="button dialog-action" id="native-install-button" value="cancel" type="button" hidden>Install application</button>
         <button class="button button-quiet dialog-action" value="cancel">Done</button>
       </form>
     </dialog>

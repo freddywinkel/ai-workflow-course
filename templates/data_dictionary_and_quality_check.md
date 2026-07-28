@@ -74,5 +74,5 @@ If a correction is proposed, where is it reviewed and recorded?
 Known blind spots:
 Fields unsuitable for AI:
 Human interpretation still required:
-Decision: ACCEPT FOR SYNTHETIC TEST / REVISE / QUARANTINE
+Data gate result: PASS / REWORK / QUARANTINE
 Reviewer/date:

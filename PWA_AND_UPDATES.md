@@ -42,7 +42,8 @@ invalid source.
 
 ## Progress model
 
-Course 2.0 uses stable lesson IDs plus revision dates. This prevents:
+Course 2.2 uses stable lesson identifiers (IDs) plus revision dates. This
+prevents:
 
 - a renamed file from losing progress unnecessarily;
 - a substantially rewritten lesson from remaining falsely completed;
@@ -58,9 +59,14 @@ The app migrates the old schema-v1 local state:
 
 Export a progress backup before a major release.
 
+`course.learningSequenceIds` controls Resume and previous/next. It deliberately
+places the read-only Beginner Software Check and Windows Setup between
+Foundations 2 and 3. Those onboarding gates can be marked complete but do not
+inflate the 18-lesson foundation/module progress percentage.
+
 ## Build
 
-From `app` with Node 22 or another audited compatible release:
+From `app` with Node.js 24 or another audited compatible release:
 
 ```powershell
 node scripts/build.mjs
@@ -83,6 +89,7 @@ The build ID changes when any of these change:
 - curriculum metadata;
 - bundled Markdown;
 - PWA HTML, JavaScript, CSS, or service worker;
+- the build script that creates the bundle, manifest, and icons;
 - base path.
 
 The content bundle includes its schema version, curriculum version,
@@ -110,10 +117,13 @@ The service worker:
 
 ## Update schedule
 
-Run the evergreen audit:
+The evergreen audit is a **maintainer workflow**. A learner must not run it as
+an installation step because it can authorize edits and a new course release.
+Maintainers run it:
 
-- before the learner starts the live AI module;
-- before any real pilot;
+- before revising the optional live artificial intelligence (AI) lab;
+- before publishing guidance intended for a real client pilot in a later
+  course;
 - after a material AI Act, AVG, or AP guidance change;
 - after a model, API, or data-policy change;
 - after a major n8n, Microsoft, or Google workflow change;
@@ -124,7 +134,7 @@ details in updateable references instead of scattering them through lessons.
 
 ## Course update checklist
 
-1. Run `EVERGREEN_UPDATE_PROMPT.md`.
+1. As a course maintainer, run `EVERGREEN_UPDATE_PROMPT.md`.
 2. Update affected sources and `SOURCE_REGISTER.md`.
 3. Update lesson revision dates in `curriculum.json`.
 4. Add a changelog entry.

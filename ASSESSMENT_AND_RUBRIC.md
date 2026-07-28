@@ -16,14 +16,20 @@ The following can all be excellent outcomes:
 - a rule-only workflow because artificial intelligence (AI) added no value;
 - a bounded AI summary with strong verification;
 - a `REWORK` decision because data quality is poor;
-- a `DO NOT PILOT` decision because existing software is better.
+- a `DO NOT CONTINUE` decision because existing software is better;
+- an `ACCEPT FOR SYNTHETIC PORTFOLIO` decision because every control and
+  evidence gate passed.
+
+All three named Course 1 decisions can pass when evidence-backed. None
+authorizes a client pilot, real data, production use, or external action.
 
 ## Pass prerequisites
 
 All prerequisites must pass before scoring:
 
 - only synthetic data was used;
-- no secrets are stored in code, screenshots, notes, or Git;
+- no secrets are stored in code, screenshots, notes, or **Git**, the
+  version-control tool that records file changes;
 - the deterministic report works with AI disabled;
 - every run ends in a named state;
 - expected exceptions are tested;
@@ -84,12 +90,13 @@ Strong evidence includes:
   existing-tool fit, data readiness, and failure consequence;
 - intended purpose and exclusions;
 - explicit allocation to rule, AI, or human;
-- a justified go, rework, or stop decision.
+- a justified Module 2 selection decision for a synthetic proof, further
+  discovery, or discard.
 
 Automatic rework:
 
 - beginning with a tool instead of a process;
-- invented ROI;
+- invented return on investment (ROI);
 - no process owner;
 - no build-versus-buy check.
 
@@ -139,7 +146,7 @@ Strong evidence includes:
 - deterministic and AI content are distinguishable;
 - approval is bound to the exact revision;
 - edit invalidates approval;
-- kill switch and manual fallback work;
+- `EXTERNAL_ACTIONS_ENABLED=false` and the manual fallback work;
 - retry and duplicate effects are controlled;
 - failures are visible.
 
@@ -158,8 +165,9 @@ Strong evidence includes:
   and deletion questions;
 - basic provider/deployer and AI-use risk triage;
 - specialist escalation points;
-- review of existing Microsoft, Google, ERP, CRM, DMS, or other native
-  capabilities;
+- review of existing Microsoft, Google, enterprise resource planning (ERP),
+  customer relationship management (CRM), document management system (DMS), or
+  other native capabilities;
 - ownership and recurring-cost record;
 - no claim of legal compliance.
 
@@ -177,11 +185,12 @@ Strong evidence includes:
 - false-positive, false-negative, supported-claim, time, cost, and usability
   results;
 - limitations and unresolved risks;
-- UAT with another person using synthetic data;
+- user acceptance testing (UAT) with another person using synthetic data;
 - user instructions and role-specific AI literacy;
 - runbook, fallback, support owner, and change record;
 - portfolio story that separates facts from assumptions;
-- evidence-backed `PILOT`, `REWORK`, or `DO NOT PILOT`.
+- evidence-backed `ACCEPT FOR SYNTHETIC PORTFOLIO`, `REWORK`, or
+  `DO NOT CONTINUE`.
 
 Automatic rework:
 
@@ -202,7 +211,7 @@ The learner must answer in plain language:
 7. What exactly does the reviewer approve?
 8. What can the system never do?
 9. How would you detect regression?
-10. Why is your final pilot decision justified?
+10. Why is your final Course 1 decision justified?
 
 If the learner cannot answer without reading generated text, the handover gate
 has not passed.

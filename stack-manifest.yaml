@@ -1,8 +1,8 @@
 schema_version: 2
 course_id: course-1-controlled-ai-workflow-foundations
-course_version: 2.1.0
+course_version: 2.2.0
 practice_revision: 2
-last_verified: "2026-07-26"
+last_verified: "2026-07-28"
 verification_timezone: Europe/Amsterdam
 purpose: private synthetic-data learning demonstration
 
@@ -10,7 +10,7 @@ runtime:
   operating_system: Windows 11
   python_target: "3.13"
   python_policy: "Use any audited supported Python >=3.12 that passes the clean test suite."
-  orchestration: local n8n learning instance
+  orchestration: local Python scripts and files
   data_store: local synthetic CSV and JSON files
 
 required:
@@ -23,17 +23,9 @@ required:
     role: deterministic rules, reports, and tests
     source: https://docs.python.org/3/using/windows.html
   pytest:
-    version_policy: compatible current major, then freeze
+    version_policy: "9.0.2"
     role: local regression tests
     source: https://docs.pytest.org/
-  node:
-    version_policy: current LTS supported by selected n8n
-    role: local n8n runtime
-    source: https://nodejs.org/en/download
-  n8n:
-    version_policy: current stable after live audit, then pin
-    role: visual orchestration, branching, retry, and review pause
-    source: https://docs.n8n.io/hosting/installation/npm/
 
 ai:
   required_for_course_pass: false
@@ -46,6 +38,18 @@ ai:
     raw_data_allowed: synthetic verified issue records only
     source: https://developers.openai.com/api/docs/guides/structured-outputs
 
+optional_vendor_labs:
+  n8n:
+    required_for_course_pass: false
+    version_policy: verify current supported release, record it, and pin it before use
+    role: optional visual crosswalk after the offline capstone passes
+    runtime: use a currently supported Node.js Long-Term Support release
+    source: https://docs.n8n.io/hosting/installation/npm/
+  provider_api:
+    required_for_course_pass: false
+    dependency_policy: install in a separate optional environment only after a dated audit
+    role: optional comparison with the required offline fixture
+
 deferred:
   - FastAPI or production web service
   - Docker
@@ -56,6 +60,8 @@ deferred:
   - multitenancy
   - autonomous agents
   - external write-back
+  - required Node.js or n8n installation
+  - required live artificial-intelligence provider
 
 release_requires:
   - curriculum and source audit

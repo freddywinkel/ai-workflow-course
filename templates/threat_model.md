@@ -39,10 +39,9 @@ Required scenarios:
 
 ## Incident controls
 
-Kill switch location/test:  
+Safe-stop control location/test:
 Manual fallback:  
 Credential rotation/revocation:  
 Evidence preservation:  
 Personal-data-breach decision owner:  
 Residual risks accepted by:  
-

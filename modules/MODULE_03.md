@@ -8,8 +8,12 @@ workflow.
 
 ## Beginner checkpoint
 
-Start when Module 2 passes. You need Foundations 3 and 6 and the supplied
-`practice_data` folder. All data must remain synthetic.
+Start when Module 2 passes and its evidence is committed with **Git**, a
+version-control tool that records file changes, in the one project repository
+created during Windows Setup. A **repository** is a project folder whose changes
+are tracked together. You need Foundations 3 and 6 and the supplied
+`practice_data` folder. All data must remain synthetic. Foundations remain in
+`Documents\controlled-ai-course-practice`; Modules 1–9 do not.
 
 Python is the programming language whose official documentation is linked
 below.
@@ -59,17 +63,25 @@ file name ending.
 
 ## Follow along — I show you exactly how
 
-### Stage 1 — Create the practice folder and mini-dataset
+### Stage 1 — Open the project evidence folder and create the mini-dataset
 
 Open Windows PowerShell and run:
 
 ```powershell
-$practiceBase = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'controlled-ai-course-practice'
-$moduleFolder = Join-Path $practiceBase 'module-03'
+$projectRoot = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'AI-workflow-learning\operations-exception-assistant'
+if (-not (Test-Path (Join-Path $projectRoot '.git'))) { throw 'Project Git repository not found. Complete Windows Setup before Module 3.' }
+$moduleFolder = Join-Path $projectRoot 'evidence\module-03'
 New-Item -ItemType Directory -Force -Path $moduleFolder
 Set-Location -LiteralPath $moduleFolder
+(Get-Location).Path
 notepad .\worked_jobs.csv
 ```
+
+The `if` line prevents an accidental second untracked project. **Expected
+path:** it ends in
+`\AI-workflow-learning\operations-exception-assistant\evidence\module-03`.
+If the repository error appears, stop and complete Windows Setup; do not remove
+the check.
 
 International Organization for Standardization (ISO) date format uses
 `YYYY-MM-DD`: year, month, then day. Click **Yes**, paste, save, and close
@@ -202,6 +214,52 @@ Import-Csv .\worked_boundary.csv | Format-List
 If you think zero means blank, return to Foundation 6. Zero is a supplied
 number; blank is no supplied value.
 
+### Stage 4 — See how the completed contract maps to the quality template
+
+`worked_data_and_rules.md` contains the full worked reasoning. The reusable
+**data dictionary and quality check** records the same decisions in a
+consistent consulting format. Follow this smaller completed version before you
+copy the blank template for the capstone.
+
+Run `notepad .\worked_data_dictionary_and_quality_check.md`, click **Yes**,
+paste, save, and close:
+
+```markdown
+# Worked data dictionary and quality check
+
+- Artifact ID: WORKED-M03-DATA
+- Version/date: 1.0 / 2026-07-28
+- Dataset: worked_jobs.csv
+- Status: FICTIONAL
+- Unit: one fictional job
+- Expected rows: 4
+- Unique identifier: job_id
+- Source correction: never automatic
+
+## Field and quality examples
+
+| Field | Meaning and blank | Exact quality check | Result |
+|---|---|---|---|
+| job_id | stable identifier; blank invalid | required and unique | no issue in worked rows |
+| status | workflow state; blank invalid | allowed value | J-202 fails |
+| due_date | target date; blank invalid | real YYYY-MM-DD date | J-203 fails |
+| amount/currency | amount and its currency; blank currency invalid here | non-negative amount and EUR present | J-203 and J-204 fail |
+
+Expected issue count: 4. Known blind spot: this check cannot decide why a
+value is wrong. Decision: ACCEPT FOR SYNTHETIC TEST.
+```
+
+Check it:
+
+```powershell
+Get-Item .\worked_data_dictionary_and_quality_check.md
+Select-String -Path .\worked_data_dictionary_and_quality_check.md -Pattern 'FICTIONAL','never automatic','Expected issue count: 4','Known blind spot'
+```
+
+**Expected result:** the file exists and all four concepts are found. If a
+concept is missing, compare the pasted file with the completed example and
+correct it yourself.
+
 ## Now recreate it yourself
 
 Use the different Course 1 fixture and rule set:
@@ -213,11 +271,14 @@ $courseRoot = Read-Host 'Paste the full path to AI_WORKFLOW_DOCUMENT_SYSTEMS_COU
 $sourceData = Join-Path $courseRoot 'practice_data\work_items.csv'
 $sourceGold = Join-Path $courseRoot 'practice_data\expected_issues.csv'
 $sourceReadme = Join-Path $courseRoot 'practice_data\README.md'
+$qualityTemplate = Join-Path $courseRoot 'templates\data_dictionary_and_quality_check.md'
 Copy-Item -LiteralPath $sourceData -Destination .\recreated_work_items.csv
 Copy-Item -LiteralPath $sourceGold -Destination .\recreated_expected_issues.csv
 Copy-Item -LiteralPath $sourceReadme -Destination .\recreated_requirements.md
+Copy-Item -LiteralPath $qualityTemplate -Destination .\data_dictionary_and_quality_check.md
 Get-FileHash -LiteralPath $sourceData -Algorithm SHA256
 Get-FileHash -LiteralPath .\recreated_work_items.csv -Algorithm SHA256
+Get-Item .\data_dictionary_and_quality_check.md
 ```
 
 The two hashes must match.
@@ -254,6 +315,15 @@ matches.
 
 5. Re-run the source and copy hashes. They must still match.
 
+6. Open `data_dictionary_and_quality_check.md` in Notepad and recreate the
+   demonstrated quality record for the different 15-row fixture. Complete the
+   dataset boundary, all 12 dictionary fields, R001–R011 quality rules, input
+   profile, untouched-source and working-copy locations, transformation and
+   provenance statement, issue counts, known blind spots, fields unsuitable
+   for AI, and a reviewer/date decision. Reuse the facts in
+   `recreated_data_and_rules.md`; the two files must not disagree. Do not alter
+   the source or expected-answer files.
+
 If your rules use “today,” “unusual,” or “use judgement,” replace that language
 with a configured value or an explicit human escalation.
 
@@ -273,14 +343,17 @@ the parent folder or another location. This folder must contain no secrets and
 no real client or workplace data. Stop if you find credentials, personal data,
 or health data.
 
-Inspect the worked and recreated CSV/Markdown files. Return:
+Inspect the worked and recreated comma-separated values (CSV) and Markdown
+files, including worked_data_dictionary_and_quality_check.md and
+data_dictionary_and_quality_check.md. Return:
 1. PASS or NOT YET;
 2. checks for: 12-field dictionary; exact R001-R011 coverage; fixed date
 2026-07-26; raw values preserved; blanks distinguished from zero; invalid dates
 blocking dependent checks; duplicate rule reporting both rows; evidence-linked
 issue contract; 15 input rows; 13 unique expected keys; boundary cases; no AI
 used for deterministic checks; synthetic-only data; unchanged source-copy
-content where observable;
+content where observable; complete dataset boundary and input profile;
+recreated_data_and_rules.md agrees with data_dictionary_and_quality_check.md;
 3. the smallest corrections for me to make if NOT YET.
 
 Remain read-only and do not provide replacement files.
@@ -297,6 +370,10 @@ Remain read-only and do not provide replacement files.
 - [ ] Blank and zero are distinct.
 - [ ] Every issue carries source evidence.
 - [ ] All 13 expected keys are mapped without changing the answer key.
+- [ ] `data_dictionary_and_quality_check.md` completes the dataset boundary,
+      12 fields, R001–R011, input profile, provenance, issue counts, blind
+      spots, reviewer, and dated decision.
+- [ ] The two recreated Markdown records do not disagree.
 - [ ] AI is excluded from deterministic issue detection and severity.
 - [ ] Codex returns `PASS` read-only.
 
@@ -308,17 +385,41 @@ overdue means” is not an implementable requirement.
 
 ## Capstone increment
 
-The capstone now has a frozen source, data dictionary, R001–R011 register,
-issue contract, boundary cases, rule dependencies, and expected result.
+The capstone now has a frozen source, completed data dictionary and quality
+check, R001–R011 register, issue contract, boundary cases, rule dependencies,
+and expected result.
 
 ## Required artifact
 
-The teaching contract produces the worked CSV/Markdown files and
-`recreated_data_and_rules.md` under `module-03`.
+The teaching contract produces the worked CSV/Markdown files,
+`worked_data_dictionary_and_quality_check.md`,
+`recreated_data_and_rules.md`, and
+`data_dictionary_and_quality_check.md` under `evidence\module-03`.
 
 ## Test gate
 
 The **Pass criteria** are the complete gate.
+
+## After PASS — make the Git checkpoint
+
+Do this only after Codex returns `PASS`. Inspect the module folder yourself and
+confirm it contains only synthetic course evidence: no password, secret key,
+personal data, employer data, client data, patient data, or unrelated file.
+Then run:
+
+```powershell
+$projectRoot = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'AI-workflow-learning\operations-exception-assistant'
+Set-Location -LiteralPath $projectRoot
+git status --short
+git add -- "evidence/module-03"
+git commit -m "complete module 3 evidence"
+git status --short
+```
+
+`git status --short` previews changes. `git add --` stages only this module;
+`--` marks the end of Git options. `git commit` records the passed checkpoint.
+If a rerun reports “nothing to commit,” the unchanged evidence is already
+recorded. Do not broaden the path to force a commit.
 
 ## Stop or rework
 

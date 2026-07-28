@@ -100,7 +100,7 @@ version or an authorised change in the system of record.
 ## Add tools only for named requirements
 
 A spreadsheet and manual review may be enough for discovery or a small
-synthetic pilot. Add an orchestrator, code service, or database only when a
+synthetic demonstration. Add an orchestrator, code service, or database only when a
 requirement such as concurrency, access control, durable state, integration,
 volume, monitoring, or recovery justifies the extra ownership.
 

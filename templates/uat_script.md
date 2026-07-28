@@ -16,7 +16,8 @@ Test dataset/version:
 - [ ] Rule, prompt, schema, workflow, and tool versions are recorded.
 - [ ] Tester roles and decision authority are clear.
 - [ ] Source files are unchanged and secrets are absent.
-- [ ] Exception route, manual fallback, and kill switch are usable.
+- [ ] Exception route, manual fallback, and
+      `EXTERNAL_ACTIONS_ENABLED=false` safety control are usable.
 - [ ] Known limitations are visible to testers.
 
 If an entry criterion fails, record it; do not turn it into a passed scenario.
@@ -62,7 +63,7 @@ Tester decision/date: PASS / FAIL / BLOCKED
 - [ ] reviewer edits, rejects, and escalates;
 - [ ] timeout, tool outage, or partial failure;
 - [ ] manual fallback;
-- [ ] kill switch or pause;
+- [ ] `EXTERNAL_ACTIONS_ENABLED=false` safety control or pause;
 - [ ] unauthorised action does not occur;
 - [ ] user can understand limitations and next step.
 
@@ -79,6 +80,6 @@ Open high-severity defects:
 User groups not represented:
 Requirements not tested:
 Workarounds or burden introduced:
-Decision: ACCEPT SYNTHETIC DEMO / REVISE AND RETEST / REJECT
+Decision: ACCEPT FOR SYNTHETIC PORTFOLIO / REWORK / DO NOT CONTINUE
 UAT lead/date:
 Process-owner review/date:
