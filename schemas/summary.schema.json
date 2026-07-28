@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://course.invalid/schemas/summary.schema.json",
-  "title": "Bounded Exception Summary",
+  "title": "Bounded Source-linked Exception Summary",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -10,21 +10,21 @@
     "generator",
     "headline",
     "groups",
+    "review_actions",
     "unsupported_statements",
     "review_required"
   ],
   "properties": {
     "run_id": {
       "type": "string",
-      "minLength": 1
+      "pattern": "^RUN-[A-F0-9]{12}$"
     },
     "prompt_version": {
       "type": "string",
       "minLength": 1
     },
     "generator": {
-      "type": "string",
-      "minLength": 1
+      "enum": ["offline-mock", "deterministic-fallback"]
     },
     "headline": {
       "type": "string",
@@ -32,6 +32,7 @@
     },
     "groups": {
       "type": "array",
+      "minItems": 1,
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -53,6 +54,46 @@
           "summary": {
             "type": "string",
             "minLength": 1
+          }
+        }
+      }
+    },
+    "review_actions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "action_id",
+          "action_type",
+          "issue_ids",
+          "instruction",
+          "external_action"
+        ],
+        "properties": {
+          "action_id": {
+            "type": "string",
+            "pattern": "^ACT-[0-9]{3}$"
+          },
+          "action_type": {
+            "const": "human_review"
+          },
+          "issue_ids": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "instruction": {
+            "type": "string",
+            "minLength": 1
+          },
+          "external_action": {
+            "const": false
           }
         }
       }

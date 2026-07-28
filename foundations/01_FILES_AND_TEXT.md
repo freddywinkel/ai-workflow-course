@@ -47,6 +47,29 @@ workplace, customer, patient, supplier, email address, password, or access key.
   **Notepad**, the Windows plain-text editor, are available.
 - No real business document is open.
 
+### Start or resume safely
+
+Before creating anything, look in `Documents`:
+
+1. If `controlled-ai-course-practice` does not exist, create it in Part A.
+2. If it already exists, open it. Do not create a duplicate and do not delete
+   its contents.
+3. If `foundation-01` does not exist, use that name for this attempt.
+4. If `foundation-01` already exists, open it and inspect only the file names.
+   If it contains your own synthetic work from this lesson, resume at the first
+   unfinished part. Open an existing file and read it before deciding whether
+   your own unfinished practice needs a correction. Never paste the sample over
+   an existing file without inspecting it first.
+5. If the folder contains unfamiliar material, real data, or different
+   practice you want to keep unchanged, stop. Create a new folder beside it
+   named `foundation-01-retry-01`. If that name also exists, try
+   `foundation-01-retry-02`, then the next unused number. Use that one folder
+   for the whole lesson.
+
+Where the instructions below say `foundation-01`, that means the unused or
+resumed attempt folder you selected above. The final Codex prompt uses the full
+path you paste, so a safe retry folder works without changing the check.
+
 ### Part A — create the practice folder
 
 1. Hold the Windows key and press `E`.
@@ -59,28 +82,34 @@ workplace, customer, patient, supplier, email address, password, or access key.
    include **OneDrive**, Microsoft's cloud file-synchronisation service, on some
    computers; that is acceptable.
 
-3. At the top, click **New**, then click **Folder**.
-
-   If your version of Windows has no **New** button, right-click an empty area,
-   click **New**, then click **Folder**.
-
-4. Type this exact folder name and press Enter:
+3. Look for a folder named `controlled-ai-course-practice`.
+   - If it exists, do not click **New**. Continue to step 5.
+   - If it does not exist, click **New**, then click **Folder**. If your
+     version of Windows has no **New** button, right-click an empty area, click
+     **New**, then click **Folder**.
+4. Only when the folder was absent, type this exact folder name and press
+   Enter:
 
    ```text
    controlled-ai-course-practice
    ```
 
 5. Double-click `controlled-ai-course-practice`.
-6. Create another folder in it using the same method. Name it:
+6. If your selected lesson-attempt folder does not exist, create it using the
+   same method. For a first attempt, name it:
 
    ```text
    foundation-01
    ```
 
-7. Double-click `foundation-01`.
+   If you selected an existing attempt or a numbered retry folder, do not
+   create or rename it.
+
+7. Double-click the lesson-attempt folder you selected.
 
    What this does: it gives this lesson one isolated folder. The folder should
-   currently be empty.
+   be empty for a new attempt. A resumed attempt may contain your earlier
+   synthetic lesson files; do not overwrite them automatically.
 
 ### Part B — make Windows show file extensions
 
@@ -95,10 +124,18 @@ This prevents `notes.md.txt` from looking like `notes.md`.
 
 ### Part C — create a Markdown file in Notepad
 
-1. Press the Windows key once.
-2. Type `Notepad`.
-3. Click **Notepad** in the search result.
-4. Type or paste these exact four lines:
+1. In File Explorer, first look for `process-notes.md`.
+   - If it is absent, continue to step 2.
+   - If it exists, open it in Notepad and inspect it. If it already contains
+     the exact guided synthetic content, close it without saving and continue
+     at Part D. If it is your own incomplete attempt, correct only that attempt
+     and keep the required fictional values, save it, close it, and continue at
+     Part D. If it is unfamiliar or contains real data, close it without saving
+     and use a new retry folder.
+2. Press the Windows key once.
+3. Type `Notepad`.
+4. Click **Notepad** in the search result.
+5. For a new file, type or paste these exact four lines:
 
    ```markdown
    # Synthetic request notes
@@ -107,31 +144,40 @@ This prevents `notes.md.txt` from looking like `notes.md`.
    - Contains real business data: no
    ```
 
-5. In Notepad, click **File**, then **Save as**.
-6. In the Save As window, browse to:
+6. In Notepad, click **File**, then **Save as**.
+7. In the Save As window, browse to your selected lesson-attempt folder, for
+   example:
 
    ```text
    Documents\controlled-ai-course-practice\foundation-01
    ```
 
-7. In **File name**, type:
+8. In **File name**, type:
 
    ```text
    process-notes.md
    ```
 
-8. Set **Save as type** to **All files (*.*)**.
-9. Set **Encoding** to **UTF-8**.
-10. Click **Save**.
+9. Set **Save as type** to **All files (*.*)**.
+10. Set **Encoding** to **UTF-8**.
+11. Click **Save**.
 
 What this does: it saves plain text with the intended `.md` extension instead
 of silently adding `.txt`.
 
 ### Part D — create a JSON file in Notepad
 
-1. In Notepad, click **File**, then **New tab**. If **New tab** is unavailable,
+1. In File Explorer, first look for `request.json`.
+   - If it exists, open and inspect it before changing anything. If it already
+     contains the exact guided synthetic content, close it without saving and
+     continue at Part E. If it is your own incomplete attempt, correct only
+     that attempt, save it, close it, and continue at Part E. If it is
+     unfamiliar or contains real data, close it without saving and use a new
+     retry folder.
+   - If it is absent, continue to step 2.
+2. In Notepad, click **File**, then **New tab**. If **New tab** is unavailable,
    close and reopen Notepad.
-2. Type or paste this exact content:
+3. For a new file, type or paste this exact content:
 
    ```json
    {
@@ -141,17 +187,17 @@ of silently adding `.txt`.
    }
    ```
 
-3. Click **File**, then **Save as**.
-4. Save it in the same `foundation-01` folder.
-5. Use this file name:
+4. Click **File**, then **Save as**.
+5. Save it in the same selected lesson-attempt folder.
+6. Use this file name:
 
    ```text
    request.json
    ```
 
-6. Set **Save as type** to **All files (*.*)**.
-7. Set **Encoding** to **UTF-8**.
-8. Click **Save**.
+7. Set **Save as type** to **All files (*.*)**.
+8. Set **Encoding** to **UTF-8**.
+9. Click **Save**.
 
 What this does: it creates structured data. The quotation marks, colon,
 commas, braces, lowercase `false`, and final extension are part of the format.
@@ -160,12 +206,17 @@ commas, braces, lowercase `false`, and final extension are part of the format.
 
 1. Return to the File Explorer window.
 2. If the files are not visible, press the `F5` function key once to refresh.
-3. Confirm the folder contains exactly:
+3. For a new attempt before the recreation, confirm the folder contains
+   exactly:
 
    ```text
    process-notes.md
    request.json
    ```
+
+   A resumed attempt that already completed the recreation may also contain
+   `case-card.md` and `case.json`. No unfamiliar or real-data file should be
+   present.
 
 4. Double-click `process-notes.md`. If Windows asks which program to use,
    select Notepad.
@@ -180,7 +231,8 @@ Keep it available for the Codex check below.
 
 ### Expected result — exact
 
-The `foundation-01` folder contains exactly two files, not folders:
+Before the recreation, a new lesson-attempt folder contains exactly two files,
+not folders:
 
 ```text
 process-notes.md
@@ -188,7 +240,9 @@ request.json
 ```
 
 Neither name ends in `.txt`. The Markdown file contains `REQ-001` and the JSON
-file contains `"status": "new"` and `"contains_real_data": false`.
+file contains `"status": "new"` and `"contains_real_data": false`. A resumed
+attempt may already include the two recreation files as well; that is not an
+error.
 
 ### Troubleshooting
 
@@ -204,8 +258,8 @@ file contains `"status": "new"` and `"contains_real_data": false`.
 
 ## Now recreate it yourself
 
-In the same `foundation-01` folder, create two new files without copying the
-guided filenames:
+In the same selected lesson-attempt folder, create two new files without
+copying the guided filenames:
 
 1. `case-card.md` containing:
    - a heading `Synthetic case card`;
@@ -220,6 +274,12 @@ guided filenames:
 Use Notepad, **All files (*.*)**, and **UTF-8**. Reopen both files and verify the
 contents. This uses different names, fields, and values so you demonstrate that
 you understood the method rather than merely copied it.
+
+Before creating either recreation file, check whether its name already exists.
+If it does, inspect it first. Resume your own incomplete synthetic attempt or
+leave a completed file unchanged. If it is unfamiliar or contains real data,
+use a new retry folder and repeat the guided work there. Do not automatically
+replace an existing file.
 
 ## Ask Codex to check your work
 

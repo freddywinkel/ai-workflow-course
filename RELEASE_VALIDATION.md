@@ -1,4 +1,16 @@
-# Release Validation — Course 2.3 and Progressive Web App (PWA)
+# Release Validation — Course 1 version 2.4.0 and Progressive Web App (PWA)
+
+## How release status is recorded
+
+This bundled page is the reusable execution protocol. Its empty checkboxes are
+instructions for a release reviewer, not the authoritative status of version
+2.4.0. The dated result is stored outside the PWA bundle in
+`release_evidence/COURSE_1_V2.4.0_ACCEPTANCE.md`.
+
+Do not write a derived build ID or content hash into this page: this page is
+part of that hash, so doing so would change the value being recorded. The
+unbundled acceptance record can safely capture the final identifiers and the
+real installed-client result after deployment.
 
 ## Release rule
 
@@ -11,8 +23,9 @@ installed-update behavior have been checked.
 - [ ] `curriculum.json` parses.
 - [ ] One career course is marked current.
 - [ ] Nine foundation and nine module progress lessons exist.
-- [ ] Course 1 still has exactly 18 core lessons and its established
-      `learningSequenceIds` are unchanged.
+- [ ] Course 1 has exactly 18 core foundation/module lessons and exactly 21
+      required `learningSequenceIds`: readiness, software check, Windows Setup,
+      nine foundations, and nine modules.
 - [ ] The optional `course-4-capstone` group is non-core and contains exactly
       the overview plus Labs 0–9.
 - [ ] Every capstone page has the Course 4 `courseId` and no Course 4 page
@@ -37,7 +50,7 @@ installed-update behavior have been checked.
 Run:
 
 ```powershell
-python tools\validate_package.py
+& .\.venv\Scripts\python.exe tools\validate_package.py
 ```
 
 Expected: `PASS`.
@@ -120,7 +133,8 @@ and
 - [ ] Course 1 never authorizes a client pilot; discovery belongs in Course 2
       and supervised low-risk pilot delivery belongs in Course 3.
 - [ ] Model IDs are configuration, not durable dependencies.
-- [ ] Live AI is optional.
+- [ ] Course 1 makes no live AI or provider call; it tests a possible bounded
+      future AI contribution with a deterministic offline mock.
 - [ ] Future courses are visibly planned. The Course 4 capstone is labelled an
       optional advanced prototype, not a complete course or production proof.
 - [ ] Vague practice instructions were not reintroduced.
@@ -136,14 +150,23 @@ From `app`:
 $env:BASE_PATH="/ai-workflow-course/"
 node --test tests\*.test.mjs
 node scripts\build.mjs
+node scripts\browser-smoke.mjs
+node scripts\browser-update-smoke.mjs
 ```
 
 - [ ] Bundle schema is 2.
 - [ ] Curriculum metadata is inside the content hash.
 - [ ] Stable lesson IDs and revisions are present.
 - [ ] Optional document-level `courseId` metadata survives the build.
-- [ ] Course 4 pages remain non-core and Course 1 core progress remains 18.
+- [ ] Course 4 pages remain non-core, Course 1 remains nine foundations plus
+      nine modules, and the required reading/practical totals remain 21.
 - [ ] Built JavaScript passes syntax checks.
+- [ ] Real Chrome opens all 21 required pages at 320 CSS pixels without page
+      overflow and passes keyboard, forced-colour, backup/import/reset,
+      blocked-storage, schema-v1 migration, and offline checks.
+- [ ] A controlled previous-to-current service-worker update preserves
+      reading, practical checks, notes, and unrelated caches through
+      **Later**, **Update now**, and cold reopen.
 - [ ] The complete capstone offline suite passes and is a required GitHub Pages
       deployment job without cloud credentials or live calls.
 - [ ] Manifest ID, scope, and start URL remain `/ai-workflow-course/`.
@@ -161,8 +184,9 @@ Verify:
       Course 4 prototype status.
 - [ ] **Open the optional capstone** opens the Course 4 overview.
 - [ ] Course 4 page marks are visibly separate and never change Course 1's
-      18-lesson progress or Resume.
-- [ ] Search includes current lessons, the optional capstone, and references.
+      21-page reading/practical totals or Resume.
+- [ ] Default search includes Course 1 lessons and references but excludes the
+      optional Course 4 capstone.
 - [ ] Settings and progress backup work.
 - [ ] Previous/next follows explicit reading order.
 - [ ] Resume opens the next incomplete current lesson.
@@ -170,13 +194,14 @@ Verify:
 
 ## 6. Learner-state migration
 
-Create both a schema-v1 state and a Course 2.2 state before loading Course 2.3.
+Create both a schema-v1 state and a Course 1 version 2.3.0 state before loading
+Course 1 version 2.4.0.
 
 - [ ] Theme and font size survive.
 - [ ] Notes survive or are retained for export.
 - [ ] Equivalent retained foundations preserve completion.
-- [ ] Course 2.3 revision dates reopen materially rewritten lessons
-      for review without changing stable lesson IDs.
+- [ ] Version 2.4.0's practice revision reopens materially rewritten page-read
+      and practical checks for review without changing stable lesson IDs.
 - [ ] unknown old IDs are not misapplied.
 - [ ] old JSON backup import works.
 - [ ] reset requires confirmation.
@@ -219,28 +244,30 @@ For each relevant size:
 
 ## 9. Installed-client update
 
-Use an installed or controlled old Course 2.2 client:
+Use an installed or controlled Course 1 version 2.3.0 client:
 
 1. load and record old build/version;
 2. save representative progress and notes;
-3. publish or serve Course 2.3 at the same scope;
+3. publish or serve Course 1 version 2.4.0 at the same scope;
 4. foreground or focus the old client;
 5. verify the update prompt appears;
 6. choose **Later** and confirm the old version remains usable;
 7. choose **Update now**;
 8. confirm the new service worker activates;
-9. verify the Course 2.3 Overview, practice loop, Course 4 link, and Career tab;
+9. verify the version 2.4.0 Overview, 21-page practice loop, Course 4 link, and
+   Career tab;
 10. verify state migration;
 11. cold reload and reopen the installed PWA.
 
 - [ ] new precache resources were fetched with `cache: "reload"`;
 - [ ] no broad cache deletion occurred;
 - [ ] local state was not erased;
-- [ ] Course 2.3 is still present after cold reopen.
+- [ ] Course 1 version 2.4.0 is still present after cold reopen.
 
 ## 10. Final release record
 
-Record:
+Record the following in
+`release_evidence/COURSE_1_V2.4.0_ACCEPTANCE.md`:
 
 - course version;
 - curriculum version;

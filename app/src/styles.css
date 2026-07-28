@@ -412,6 +412,14 @@ a {
   font-size: 0.78rem;
 }
 
+.progress-row-practice {
+  margin-top: 0.85rem;
+}
+
+.progress-row-practice strong {
+  font-size: 0.78rem;
+}
+
 .progress-track {
   height: 0.42rem;
   margin-top: 0.8rem;
@@ -427,6 +435,21 @@ a {
   border-radius: inherit;
   background: linear-gradient(90deg, var(--mint), var(--gold));
   transition: width 240ms ease;
+}
+
+.progress-track-practice {
+  margin-top: 0.4rem;
+}
+
+.progress-track-practice span {
+  background: var(--gold);
+}
+
+.sidebar-progress-note {
+  margin: 0.7rem 0 0;
+  color: var(--muted);
+  font-size: 0.7rem;
+  line-height: 1.45;
 }
 
 #course-nav {
@@ -1039,7 +1062,7 @@ a {
 
 .progress-overview {
   display: grid;
-  grid-template-columns: 1.55fr repeat(2, minmax(0, 0.75fr));
+  grid-template-columns: 1.55fr repeat(3, minmax(0, 0.72fr));
   gap: 0.8rem;
   margin: 1rem 0;
 }
@@ -1147,6 +1170,12 @@ a {
 
 .mini-progress-gold span {
   background: var(--gold);
+}
+
+.practice-progress-note {
+  grid-column: 1 / -1;
+  margin: 0;
+  line-height: 1.45;
 }
 
 .dashboard-grid {
@@ -1607,6 +1636,32 @@ a {
   margin-top: 0.8rem;
 }
 
+.later-course-disclosure {
+  margin-top: 0.9rem;
+  padding: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--gold) 58%, var(--line));
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--paper-raised) 78%, var(--gold-soft));
+}
+
+.later-course-disclosure summary {
+  color: var(--ink);
+  cursor: pointer;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.later-course-disclosure p {
+  margin: 0.65rem 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.later-course-disclosure .button {
+  margin-top: 0.75rem;
+}
+
 .career-detail-grid {
   display: grid;
   grid-template-columns: 0.8fr 1.2fr;
@@ -1754,6 +1809,20 @@ a {
   background: var(--gold-soft);
   color: var(--ink);
   font-weight: 700;
+}
+
+.reader-meta .reader-effort-reading {
+  border-color: color-mix(in srgb, var(--mint) 56%, var(--line));
+  background: var(--mint-soft);
+  color: var(--ink);
+  font-weight: 750;
+}
+
+.reader-meta .reader-effort-practice {
+  border-color: color-mix(in srgb, var(--gold) 64%, var(--line));
+  background: var(--gold-soft);
+  color: var(--ink);
+  font-weight: 750;
 }
 
 .complete-button[aria-pressed="true"] {
@@ -2028,6 +2097,49 @@ a {
 
 .markdown-task-item > :where(ul, ol) {
   grid-column: 2;
+}
+
+.practical-pass-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: clamp(1rem, 3vw, 1.4rem);
+  border: 1px solid color-mix(in srgb, var(--gold) 64%, var(--line));
+  border-radius: var(--radius-md);
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--gold-soft) 70%, var(--paper-raised)), var(--paper-raised));
+  box-shadow: var(--shadow-sm);
+}
+
+.practical-pass-panel[hidden] {
+  display: none;
+}
+
+.practical-pass-panel h2 {
+  margin: 0;
+  font-size: 1.08rem;
+  line-height: 1.35;
+}
+
+.practical-pass-panel p {
+  max-width: 68ch;
+  margin: 0.45rem 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.practical-pass-button {
+  max-width: 20rem;
+  text-align: left;
+}
+
+.practical-pass-button[aria-pressed="true"] {
+  border-color: var(--mint);
+  background: var(--mint-soft);
+  color: var(--ink);
 }
 
 .learner-notes {
@@ -2731,8 +2843,14 @@ a {
     display: grid;
   }
 
-  .complete-button {
+  .complete-button,
+  .practical-pass-button {
     width: 100%;
+    max-width: none;
+  }
+
+  .practical-pass-panel {
+    grid-template-columns: 1fr;
   }
 
   .markdown-body {
@@ -2875,6 +2993,39 @@ a {
   }
 }
 
+@media (max-width: 360px) {
+  .main {
+    padding-right: 0.65rem;
+    padding-left: 0.65rem;
+  }
+
+  .page-heading h1,
+  .reader-toolbar h1,
+  .career-course-copy h3,
+  .path-list strong,
+  .button {
+    overflow-wrap: anywhere;
+  }
+
+  .progress-overview {
+    grid-template-columns: 1fr;
+  }
+
+  .progress-card-main {
+    grid-column: auto;
+  }
+
+  .bottom-nav {
+    padding-right: calc(0.2rem + var(--safe-right));
+    padding-left: calc(0.2rem + var(--safe-left));
+  }
+
+  .bottom-nav button {
+    min-width: 0;
+    font-size: 0.6rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -2886,11 +3037,51 @@ a {
   }
 }
 
+@media (forced-colors: active) {
+  :focus-visible {
+    outline-color: Highlight;
+  }
+
+  .progress-track,
+  .mini-progress,
+  .progress-ring {
+    border: 1px solid CanvasText;
+    background: Canvas;
+  }
+
+  .progress-track span,
+  .mini-progress span {
+    background: Highlight;
+  }
+
+  .progress-ring::before {
+    background: Canvas;
+  }
+
+  .nav-document.completed .nav-check,
+  .complete-button[aria-pressed="true"],
+  .practical-pass-button[aria-pressed="true"] {
+    border: 2px solid Highlight;
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  .reader-meta span,
+  .practice-contract,
+  .practical-pass-panel,
+  .later-course-disclosure {
+    border: 1px solid CanvasText;
+    background: Canvas;
+    color: CanvasText;
+  }
+}
+
 @media print {
   .topbar,
   .sidebar,
   .bottom-nav,
   .reader-toolbar .complete-button,
+  .practical-pass-panel,
   .learner-notes,
   .document-pager,
   .update-banner,

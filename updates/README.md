@@ -3,7 +3,7 @@
 This folder is for course maintainers. Learners do not run
 [`../EVERGREEN_UPDATE_PROMPT.md`](../EVERGREEN_UPDATE_PROMPT.md) as a setup
 step: that prompt may authorize edits and a new release. Maintainers run it
-before changing the optional live artificial intelligence (AI) lab, before
+before changing a later-course live artificial intelligence (AI) provider lab, before
 publishing later-course client-pilot guidance, after a material source change,
 and at least every 12 weeks while the material is actively maintained.
 

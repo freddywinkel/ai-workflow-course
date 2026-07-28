@@ -1,0 +1,82 @@
+{
+  "duplicate_work_item_id": {
+    "trigger": "fixtures/failures/duplicate_work_item_id.csv",
+    "expected": "SAFE STOP duplicate_work_item_id"
+  },
+  "required_review_without_evidence": {
+    "trigger": "decide approve without --evidence-reviewed",
+    "expected": "SAFE STOP review_evidence_required"
+  },
+  "stale_update": {
+    "trigger": "decide with --expected-revision different from state.json",
+    "expected": "SAFE STOP stale_update"
+  },
+  "malformed_input": {
+    "trigger": "fixtures/failures/malformed_input.csv",
+    "expected": "SAFE STOP malformed_input"
+  },
+  "missing_file": {
+    "trigger": "prepare with a path that does not exist",
+    "expected": "SAFE STOP missing_file"
+  },
+  "unexpected_header": {
+    "trigger": "fixtures/failures/unexpected_header.csv",
+    "expected": "SAFE STOP header_mismatch"
+  },
+  "duplicate_retry": {
+    "trigger": "prepare the identical input twice in one workspace",
+    "expected": "same run directory and no duplicate logical effect"
+  },
+  "ai_disabled": {
+    "trigger": "prepare --ai-mode disabled",
+    "expected": "deterministic-fallback with reason ai_disabled"
+  },
+  "ai_timeout": {
+    "trigger": "prepare --ai-mode timeout",
+    "expected": "deterministic-fallback with reason ai_timeout"
+  },
+  "ai_refusal": {
+    "trigger": "prepare --ai-mode refusal",
+    "expected": "deterministic-fallback with reason ai_refusal"
+  },
+  "malformed_ai_json": {
+    "trigger": "prepare --ai-mode malformed_json",
+    "expected": "deterministic-fallback with reason malformed_ai_json"
+  },
+  "unknown_ai_issue_reference": {
+    "trigger": "prepare --ai-mode unknown_issue_id",
+    "expected": "deterministic-fallback with reason unknown_ai_issue_reference"
+  },
+  "edited_draft_after_approval": {
+    "trigger": "change draft/summary.json after approve and before export",
+    "expected": "SAFE STOP edited_draft_after_approval"
+  },
+  "rejected_review": {
+    "trigger": "decide reject and try export",
+    "expected": "SAFE STOP decision_not_approved"
+  },
+  "edit_review": {
+    "trigger": "decide edit and try export",
+    "expected": "SAFE STOP decision_not_approved"
+  },
+  "expired_review": {
+    "trigger": "approve, then export at or after expires_at",
+    "expected": "SAFE STOP expired_review"
+  },
+  "explicit_expire": {
+    "trigger": "decide expire and try export",
+    "expected": "SAFE STOP decision_not_approved"
+  },
+  "external_actions_false": {
+    "trigger": "successful local export with unchanged control.json",
+    "expected": "CSV and JSON local drafts, external_actions=0"
+  },
+  "external_actions_tampered": {
+    "trigger": "set EXTERNAL_ACTIONS_ENABLED true and try export",
+    "expected": "SAFE STOP external_action_blocked"
+  },
+  "untrusted_free_text": {
+    "trigger": "fixtures/failures/untrusted_instruction.csv",
+    "expected": "instruction is treated as inert data and causes no external action"
+  }
+}

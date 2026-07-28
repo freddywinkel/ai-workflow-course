@@ -34,9 +34,9 @@ The system:
 4. produces issue records that can be compared with
    `practice_data/expected_issues.csv`;
 5. creates a readable rule-based report;
-6. optionally creates a schema-constrained AI summary using only verified
-   issue records;
-7. verifies every AI issue reference;
+6. creates a schema-constrained offline-mock or deterministic-fallback summary
+   using only verified issue records;
+7. verifies every summary and review-action issue reference;
 8. creates a review package showing source row, issue, and limitation;
 9. supports approve, edit, reject, and expire;
 10. invalidates approval after an edit;
@@ -48,7 +48,10 @@ The system:
 
 For the frozen supplied dataset, the deterministic result is 13 expected issue
 keys across 15 work items using rules R001–R011 and the assessment date
-`2026-07-26`.
+`2026-07-26`. The canonical issue key is the exact triple
+`(work_item_id, rule_code, field)`. The string form is
+`WI-0002|R007|owner_role`. A comparison that omits `field` does not satisfy
+this specification.
 
 ## Required process evidence
 
@@ -65,10 +68,14 @@ Before building, produce:
 - explicit Module 2 selection decision: select for synthetic proof, discover
   further, or discard.
 
-If the scorecard supports stopping, document why. You may either select another
-fictional low-risk process or carry the stopped decision through the remaining
-modules as a documented closeout. A supported stop is evidence of judgment,
-not a failed exercise.
+Course 1 has one required reference workflow: the supplied Synthetic SME
+Operations Exception Assistant. Do not replace it with another workflow inside
+Modules 3-9, because their fixtures, runner, checks, and answer keys implement
+this exact reference. If the scorecard supports stopping, preserve that
+evidence-backed stop decision and still complete the reference workflow as a
+controlled skills exercise. The final recommendation may honestly be `DO NOT
+CONTINUE`; building the reference does not turn that stop into a business
+approval. A supported stop is evidence of judgment, not a failed exercise.
 
 ## Required data evidence
 
@@ -87,9 +94,12 @@ Do not “clean” the supplied evaluation data by deleting difficult cases.
 
 ## Required implementation
 
-The implementation may use Python plus an optional visual workflow tool, or an
-equivalent documented method. Completion must not depend on a particular
-vendor.
+The working reference implementation is in `course1_capstone/`. Module 4
+copies `workflow.py` and `cli.py` into the learner repository; Modules 4-6
+execute those copies through the exact project interpreter. The implementation
+uses only Python's standard library at runtime and has no network client or
+external-action function. Completion does not depend on a visual workflow tool
+or vendor.
 
 Required characteristics:
 
@@ -99,15 +109,42 @@ Required characteristics:
 - the deterministic checker runs without a model application programming
   interface (API);
 - every run has a traceable run ID;
-- every run ends in a named state;
-- errors are visible;
+- every run keeps a named last valid `current_state`;
+- every stopped command records a visible `failed_manual` attempt outcome
+  without disguising or overwriting that last valid workflow state;
 - duplicate retries are safe;
 - output folders are separated from source data;
-- tests can run without paid API calls.
+- tests run without paid API calls;
+- input is refused without the exact synthetic-data acknowledgement;
+- summary actions are limited to source-linked `human_review` actions with
+  `external_action=false`;
+- only an approved, evidence-reviewed, unexpired exact revision can create
+  local CSV and JSON;
+- approve, edit, reject, and expire cause separate enforced states;
+- every generated issue, summary, decision, audit event, and evaluation matches
+  the canonical schema in `schemas/`.
 
-## Optional live AI lab
+The runnable artifact flow is:
 
-The live AI step is optional for course completion. If used:
+```text
+synthetic CSV
+  -> input validation
+  -> deterministic R001-R011 issues
+  -> offline mock or deterministic fallback
+  -> source-linked review package
+  -> explicit human decision
+  -> exact hash/revision/expiry recheck
+  -> approved local CSV and JSON only
+```
+
+## Later-course live AI boundary
+
+No live provider is used in the Course 1 capstone or its acceptance tests.
+Course 1 teaches the replaceable boundary with an offline mock and fault
+simulation. A later course may authorize a separate synthetic live lab after
+its value, provider fit, cost, privacy, security, and teardown are assessed.
+The following requirements belong to that later course, not to Course 1. If
+such a later lab is approved:
 
 - select a currently supported model through configuration;
 - use a provider API that can return JavaScript Object Notation (JSON)
@@ -117,9 +154,10 @@ The live AI step is optional for course completion. If used:
 - send only synthetic verified issue records;
 - detect refusal and invalid output;
 - verify all issue IDs after generation;
-- compare the live result with the offline fixture.
+- compare the later live result with the frozen Course 1 offline mock.
 
-Using a flagship model is not a course requirement.
+Using a flagship model is not a course requirement. Promotional credit or an
+expiry date is not sufficient reason to add a provider to Course 1.
 
 ## Human-control acceptance
 
@@ -128,7 +166,7 @@ The reviewer must be able to see:
 - why each item was flagged;
 - the original synthetic row values needed to understand the issue;
 - which text came from deterministic rules;
-- which text was drafted by AI;
+- which text came from the offline mock or deterministic fallback;
 - unsupported or uncertain statements;
 - the exact draft being approved;
 - what will and will not happen after approval;
@@ -164,18 +202,39 @@ regulatory compliance.
 - malformed AI JSON;
 - unknown AI issue reference;
 - edited draft after approval;
+- edit decision and new revision;
+- rejected decision;
+- explicit expire decision;
 - expired review;
-- `EXTERNAL_ACTIONS_ENABLED=false` safety control.
+- `EXTERNAL_ACTIONS_ENABLED=false` safety control;
+- tampering that changes `EXTERNAL_ACTIONS_ENABLED` to true.
 
 ### Invariants
 
 - no issue exists without a rule result;
 - no AI factual claim exists without a verified issue ID or unsupported label;
 - no external action occurs;
-- one run key creates at most one local outbox item per approved revision;
+- one run key creates at most one logical CSV-and-JSON export pair per approved
+  revision;
 - a changed draft cannot reuse an old approval;
 - manual fallback produces a usable report;
 - a failed run never appears successful.
+
+### Executable acceptance
+
+`course1_capstone/tests/SCENARIO_MATRIX.md` maps every scenario above to a
+fixture or automated test. From the course repository, run:
+
+```powershell
+$pythonExe = Join-Path (Get-Location) '.venv\Scripts\python.exe'
+if (-not (Test-Path -LiteralPath $pythonExe)) {
+    throw 'Course project Python missing. Complete Windows Setup.'
+}
+& $pythonExe -m unittest discover -s course1_capstone\tests -v
+```
+
+Acceptance requires every test to report `ok`, the final result `OK`, and exit
+code 0. Do not substitute bare `python` or remove a failing test.
 
 ## Evaluation
 
@@ -184,17 +243,25 @@ Report at least:
 - expected issues detected;
 - missed issues;
 - false alarms;
-- unsupported AI claims;
+- unsupported generated claims;
 - correct issue references;
-- refusal and failure handling;
+- simulated refusal and failure handling;
 - repeatability across identical runs;
 - manual versus assisted handling time;
-- observed cost for any live call;
+- observed local prototype cost, with live-provider cost marked `not
+  applicable` in Course 1;
 - reviewer usability;
 - limitations and unresolved risks.
 
 Do not use a mandatory percentage-improvement threshold. Small synthetic timing
 studies are not forecasts.
+
+The runnable Modules 4-6 evaluation remains `REWORK` even when all technical
+tests pass. That is deliberate: the runner cannot prove discovery, value, risk
+ownership, usability, adoption, or handover. Module 8 records one
+`PROVISIONAL PRE-UAT` recommendation. Module 9 preserves it, adds UAT,
+defect/retest, adoption, and handover evidence, then records exactly one
+`FINAL POST-UAT` Course 1 recommendation.
 
 ## Required handover pack
 
@@ -234,12 +301,12 @@ Codex for a read-only check, and adds a Git checkpoint only after `PASS`.
 | 1 | as-is map and observation; stakeholder/user map; baseline/value record | `evidence/module-01/` |
 | 2 | opportunity brief; workflow opportunity scorecard; intended purpose and exclusions | `evidence/module-02/` |
 | 3 | frozen data/rules record; data dictionary and quality check; expected issues | `evidence/module-03/` |
-| 4 | rule-first implementation; tests; to-be map; architecture diagram | `evidence/module-04/` |
-| 5 | bounded optional AI evidence; prompt/schema versions; offline fallback | `evidence/module-05/` |
-| 6 | review package; approval lifecycle; local outbox and failure evidence | `evidence/module-06/` |
+| 4 | runnable rule-first workflow; recreated synthetic input; 13- and 5-issue checks; input failures; retry; to-be map; architecture record | `src/course1_capstone/`, `evidence/module-04/` |
+| 5 | bounded offline mock; source-linked review actions; learner candidate; all AI failure fallbacks | `evidence/module-05/` |
+| 6 | non-overwriting Module 5 evidence copies; exact-revision decisions; approve/edit/reject/expire; local CSV/JSON; full executable acceptance | `evidence/module-06/` |
 | 7 | data flow; risk/escalation screen; tool-fit and ownership record | `evidence/module-07/` |
-| 8 | regression and value evaluation; final Course 1 decision record | `evidence/module-08/` |
-| 9 | user acceptance testing (UAT); adoption/training; runbook; change log; portfolio demonstration | `evidence/module-09/` |
+| 8 | regression and value evaluation; `PROVISIONAL PRE-UAT` Course 1 recommendation | `evidence/module-08/` |
+| 9 | executable user acceptance testing (UAT); defect/retest; adoption/training; runbook; `FINAL POST-UAT` decision; six-area assessment; ten oral answers; change log; portfolio demonstration | `evidence/module-09/` |
 
 Module 9 also creates `CAPSTONE_INDEX.md` and `CHANGELOG.md` at the repository
 root. `CAPSTONE_INDEX.md` links every required artifact and its module gate.

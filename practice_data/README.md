@@ -21,8 +21,14 @@ Terms used below:
   data-quality problems.
 - `expected_issues.csv` — the 13 issues that rules R001–R011 should detect.
 
-Use the pair `(work_item_id, rule_code)` when comparing results. Do not edit the
-expected file to make a check pass.
+Use the triple `(work_item_id, rule_code, field)` when comparing results. One
+rule can validly produce separate findings for different fields, so omitting
+`field` could silently collapse evidence. Do not edit the expected file to
+make a check pass.
+
+The `issue_id` column is the same triple joined with vertical bars, for example
+`WI-0002|R007|owner_role`. It is reproducible from the evidence instead of
+being assigned from a changing row number.
 
 ## Work-item columns
 

@@ -63,6 +63,22 @@ independent recreation assesses the different Course 1 capstone.
 Windows PowerShell is the Windows command application used below. Notepad is
 the Windows plain-text editor used to create practice files.
 
+## Start or resume safely
+
+At the start of every study session, rerun Stage 1. Closing PowerShell removes
+temporary variables, not saved evidence. Stage 1 restores the paths and opens
+the same folder. Recreation copies below are create-once: an existing file is
+reported and left unchanged.
+
+Suggested sessions:
+
+1. follow the combined worked decision and scope-change test;
+2. inspect both completed worksheet examples, then recreate both forms;
+3. perform the evidence check, correct gaps, and make the Git checkpoint.
+
+Save all files and note the last numbered step before stopping. In a new
+PowerShell window, rerun Stage 1 instead of guessing the paths.
+
 ## Follow along — I show you exactly how
 
 **Expected result:** a complete worked guardrail and tool-fit decision that
@@ -196,6 +212,23 @@ testing review. Do not bolt the request onto the approved workflow.
 
 This demonstrates that a small feature request can materially change risk.
 
+### Stage 3 — Inspect the two completed worksheet-shaped examples
+
+The combined worked decision above teaches the reasoning. Before you see the
+blank forms, open the completed versions that use the exact same headings and
+tables:
+
+```powershell
+$courseRoot = Read-Host 'Paste the full path to AI_WORKFLOW_DOCUMENT_SYSTEMS_COURSE'
+notepad (Join-Path $courseRoot 'worked_examples\module_07_risk_and_escalation_screen.md')
+notepad (Join-Path $courseRoot 'worked_examples\module_07_tool_fit_and_ownership_record.md')
+```
+
+Read every row. Notice that `not applicable` includes a reason, unknown facts
+stay unknown, each continuing duty has a role, and the selected option is
+simpler than the learning prototype. These are examples to follow, not answers
+to copy into the different capstone recreation.
+
 ## Now recreate it yourself
 
 Assess the different Synthetic SME Operations Exception Assistant.
@@ -204,8 +237,17 @@ Assess the different Synthetic SME Operations Exception Assistant.
 
 ```powershell
 $courseRoot = Read-Host 'Paste the full path to AI_WORKFLOW_DOCUMENT_SYSTEMS_COURSE'
-Copy-Item -LiteralPath (Join-Path $courseRoot 'templates\risk_and_escalation_screen.md') -Destination .\recreated_risk_screen.md
-Copy-Item -LiteralPath (Join-Path $courseRoot 'templates\tool_fit_and_ownership_record.md') -Destination .\recreated_tool_fit.md
+function Copy-NewPracticeFile {
+    param([string]$Source, [string]$Destination)
+    if (Test-Path -LiteralPath $Destination) {
+        Write-Host "Resume: $Destination already exists and was left unchanged."
+    } else {
+        Copy-Item -LiteralPath $Source -Destination $Destination
+        Write-Host "Created: $Destination"
+    }
+}
+Copy-NewPracticeFile (Join-Path $courseRoot 'templates\risk_and_escalation_screen.md') .\recreated_risk_screen.md
+Copy-NewPracticeFile (Join-Path $courseRoot 'templates\tool_fit_and_ownership_record.md') .\recreated_tool_fit.md
 notepad .\recreated_risk_screen.md
 ```
 

@@ -59,46 +59,75 @@ local repository containing only synthetic Markdown files.
 - `Documents\controlled-ai-course-practice` exists.
 - PowerShell is closed or showing a ready prompt.
 
-### Part A — create a local repository
+### Start or resume safely — run this at every new PowerShell session
 
-Open PowerShell and run:
-
-```powershell
-Set-Location ([Environment]::GetFolderPath("MyDocuments"))
-```
+Run this whole block whenever you start or resume Foundation 5:
 
 ```powershell
-Set-Location "controlled-ai-course-practice"
-```
+$documentsPath = [Environment]::GetFolderPath("MyDocuments")
+$practiceRoot = Join-Path $documentsPath "controlled-ai-course-practice"
+$lessonPath = Join-Path $practiceRoot "foundation-05"
 
-```powershell
-New-Item -ItemType Directory -Path "foundation-05"
-```
+if (-not (Test-Path -LiteralPath $practiceRoot -PathType Container)) {
+    throw "STOP: the controlled-ai-course-practice folder is missing. Return to Foundation 1."
+}
+if (Test-Path -LiteralPath $lessonPath -PathType Leaf) {
+    throw "STOP: foundation-05 is a file, not a folder. Do not rename or delete it; ask Codex to inspect read-only."
+}
+if (-not (Test-Path -LiteralPath $lessonPath -PathType Container)) {
+    New-Item -ItemType Directory -Path $lessonPath | Out-Null
+    "Created a new foundation-05 folder."
+}
+else {
+    "Existing foundation-05 folder found; nothing was overwritten."
+}
 
-```powershell
-Set-Location "foundation-05"
-```
-
-What the four setup commands do: they enter Documents, enter the existing
-practice root, create only `foundation-05`, and enter it.
-
-```powershell
+Set-Location -LiteralPath $lessonPath
+Get-Location
+Get-ChildItem -Force
 git --version
 ```
 
-What this does: it confirms that Git is available. Expected output begins with
-`git version`.
+Expected result: the location ends in `foundation-05` and the final line begins
+with `git version`. If existing items are listed, do not initialise, edit,
+stage, or commit yet. Inspect the names and continue only when they are your
+synthetic work from this lesson. At a resumed repository, run
+`git status --short`, `git log --oneline -3`, and `git remote -v` before the
+next unfinished step. This inspection does not change the repository. A remote
+should not exist in this local-only lesson.
 
-Run:
+### Part A — create a local repository
+
+Run this non-overwriting repository check:
 
 ```powershell
-git init
+if (Test-Path -LiteralPath ".git" -PathType Container) {
+    "Existing local Git repository found; git init was skipped."
+    git status --short
+    if (git rev-parse --verify HEAD 2>$null) {
+        git log --oneline -3
+    }
+    else {
+        "No commits recorded yet."
+    }
+    git remote -v
+}
+elseif (@(Get-ChildItem -Force).Count -eq 0) {
+    git init
+}
+else {
+    throw "STOP: this folder has files but no .git folder. Do not initialise or change it; ask Codex to inspect read-only."
+}
 ```
 
-What this does: it creates hidden Git tracking information inside this one
-folder. It does not upload anything.
+What this does: for a new empty attempt, it creates hidden Git tracking
+information inside this one folder. For a resumed attempt, it inspects the
+existing repository instead. It does not upload anything or overwrite a file.
 
-Expected result: output includes `Initialized empty Git repository`.
+Expected result for a new attempt: output includes
+`Initialized empty Git repository`. For a resumed attempt, Git shows the
+current local status and history. If `git remote -v` prints a remote, stop and
+ask Codex for read-only help; do not push.
 
 ### Part B — set a fictional identity for this practice repository
 

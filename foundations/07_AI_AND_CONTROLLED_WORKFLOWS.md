@@ -114,34 +114,53 @@ responsibility, and a reviewed draft whose claims cite existing issue IDs.
 - `Documents\controlled-ai-course-practice` exists.
 - No live model, network service, or real data is required.
 
-### Part A — create the lesson folder and issue evidence
+### Start or resume safely — run this at every new PowerShell session
 
-Open PowerShell and run:
-
-```powershell
-Set-Location ([Environment]::GetFolderPath("MyDocuments"))
-```
+Run this whole block whenever you start or resume Foundation 7:
 
 ```powershell
-Set-Location "controlled-ai-course-practice"
+$documentsPath = [Environment]::GetFolderPath("MyDocuments")
+$practiceRoot = Join-Path $documentsPath "controlled-ai-course-practice"
+$lessonPath = Join-Path $practiceRoot "foundation-07"
+
+if (-not (Test-Path -LiteralPath $practiceRoot -PathType Container)) {
+    throw "STOP: the controlled-ai-course-practice folder is missing. Return to Foundation 1."
+}
+if (Test-Path -LiteralPath $lessonPath -PathType Leaf) {
+    throw "STOP: foundation-07 is a file, not a folder. Do not rename or delete it; ask Codex to inspect read-only."
+}
+if (-not (Test-Path -LiteralPath $lessonPath -PathType Container)) {
+    New-Item -ItemType Directory -Path $lessonPath | Out-Null
+    "Created a new foundation-07 folder."
+}
+else {
+    "Existing foundation-07 folder found; nothing was overwritten."
+}
+
+Set-Location -LiteralPath $lessonPath
+Get-Location
+Get-ChildItem -Force
 ```
 
-```powershell
-New-Item -ItemType Directory -Path "foundation-07"
-```
+Expected result: the location ends in `foundation-07`. The block creates that
+folder only when absent and lists existing contents without changing them.
+Resume only your own synthetic lesson attempt. Before opening an existing
+practice file in Notepad, read it with `Get-Content -LiteralPath` and leave a
+completed file unchanged. Stop if an item is unfamiliar or may contain real
+data.
 
-```powershell
-Set-Location "foundation-07"
-```
+### Part A — create the issue evidence
 
-What the setup commands do: they enter Documents, enter the existing practice
-root, create only `foundation-07`, and enter it.
-
-Run:
+If `issue_records.csv` was not listed, run:
 
 ```powershell
 notepad "issue_records.csv"
 ```
+
+If it was listed, inspect it first with
+`Get-Content -LiteralPath ".\issue_records.csv"`. If it already contains the
+exact synthetic guided records, skip its creation. Resume only your own
+incomplete synthetic attempt; do not paste over an unfamiliar file.
 
 Enter:
 

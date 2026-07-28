@@ -1,4 +1,4 @@
-# Course 1 Final Decision Record
+# Course 1 Evaluation Decision Record
 
 Artifact ID:
 Version/date:
@@ -7,6 +7,7 @@ Decision owner/reviewers:
 Workflow/release:
 Synthetic evaluation period:
 Evaluation type: COURSE 1 SYNTHETIC PORTFOLIO WORK ONLY
+Decision stage/status: PROVISIONAL PRE-UAT / FINAL POST-UAT
 
 Completing Course 1 supports a portfolio demonstration. It does not establish
 production readiness, permission to use real business data, or permission to
@@ -77,7 +78,12 @@ Value claim supported, weakened, or untested:
 
 ## Decision
 
-Choose one:
+First record one evidence-backed recommendation in Module 8 with
+`Decision stage/status: PROVISIONAL PRE-UAT`. In Module 9, preserve that
+pre-UAT record, add UAT/defect/adoption/handover evidence, reassess the result,
+and set the copied closeout record to `Decision stage/status: FINAL POST-UAT`.
+
+Choose one label:
 
 - **ACCEPT FOR SYNTHETIC PORTFOLIO** — the Course 1 practice objective is met.
   This is not a production or client-trial claim.
@@ -88,7 +94,10 @@ Choose one:
 All three decisions are valid Course 1 passing outcomes when the evidence
 supports them and the closeout is documented.
 
-Decision:
+Decision stage/status:
+Module 8 provisional recommendation:
+Module 9 change after UAT, defects/retests, adoption, and handover:
+Final post-UAT decision:
 Evidence that most influenced it:
 Conditions and owners:
 Next cheapest evidence-producing action:

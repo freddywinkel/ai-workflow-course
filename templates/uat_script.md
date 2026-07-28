@@ -8,6 +8,7 @@ Workflow/release:
 Intended-purpose version:
 Test environment: SYNTHETIC / [stop if not approved]
 Test dataset/version:
+Module 8 recommendation/status: [one label] / PROVISIONAL PRE-UAT
 
 ## Entry criteria
 
@@ -35,17 +36,21 @@ How to reject, report an issue, or stop:
 
 Copy this section for each scenario.
 
-### UAT-[NNN] — [Scenario name]
+Use a two-digit identifier. The Course 1 exercise uses exactly `UAT-01`
+through `UAT-09`.
+
+### UAT-[NN] — [Scenario name]
 
 Requirement/acceptance criterion:
 Tester role:
-Preconditions and input case IDs:
+**Given** — preconditions and synthetic input case IDs:
+**When** — exact user/system action:
+**Then** — expected final state or reason code and exact relative evidence path:
 
-| Step | User/system action | Expected result and evidence | Observed result | Pass? |
+| Step | Exact action | Expected relative evidence | Observed result | Pass? |
 |---:|---|---|---|:---:|
 | 1 | | | | |
 
-Expected final state/reason code:
 Source unchanged?
 Audit/issue records present?
 Usability/accessibility observation:
@@ -80,6 +85,8 @@ Open high-severity defects:
 User groups not represented:
 Requirements not tested:
 Workarounds or burden introduced:
-Decision: ACCEPT FOR SYNTHETIC PORTFOLIO / REWORK / DO NOT CONTINUE
+Effect of UAT and defects/retests on the provisional recommendation:
+Post-UAT workflow decision: ACCEPT FOR SYNTHETIC PORTFOLIO / REWORK / DO NOT CONTINUE
+Decision stage/status: FINAL POST-UAT
 UAT lead/date:
 Process-owner review/date:

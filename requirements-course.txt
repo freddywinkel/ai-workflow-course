@@ -1,4 +1,16 @@
-# Required offline Course 1 dependency set, verified 2026-07-28.
-# Exact pins make a clean learner installation reproducible. The setup also
-# records the complete installed dependency tree with `pip freeze`.
+# Required offline Course 1 dependency set, verified 2026-07-28 on Windows.
+# Every direct and transitive package is pinned so a clean install does not
+# silently select a newer dependency. Re-audit the complete set together.
+# Course 1 imports these two packages directly:
+jsonschema==4.26.0
 pytest==9.0.2
+# The packages below are required by those two direct packages:
+attrs==26.1.0
+colorama==0.4.6
+iniconfig==2.3.0
+jsonschema-specifications==2025.9.1
+packaging==26.2
+pluggy==1.6.0
+Pygments==2.20.0
+referencing==0.37.0
+rpds-py==2026.6.3

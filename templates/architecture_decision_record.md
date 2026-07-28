@@ -1,4 +1,7 @@
-# ADR-[NNN] — [Decision]
+# Architecture Decision Record (ADR) [NNN] — [Decision]
+
+An Architecture Decision Record (ADR) is a short, dated explanation of one
+important technical choice, the alternatives considered, and its consequences.
 
 Status: proposed / accepted / superseded / rejected  
 Date:  
@@ -40,4 +43,3 @@ Migration/exit path:
 Test IDs and observed results:  
 Source links and verification dates:  
 Reassessment trigger/date:  
-

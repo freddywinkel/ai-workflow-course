@@ -7,15 +7,13 @@ technical literacy needed to begin the controlled workflow course.
 It does not make you a production consultant. It gives you a safe practice
 method and objective evidence that you can recreate the basics.
 
-## What you need
+## What you need to begin Foundation 1
 
 - A Windows computer on which you may install the course software.
 - File Explorer, the Windows file-and-folder browser, and Notepad, the Windows
   plain-text editor.
-- PowerShell, the Windows command shell for typing and running text commands.
-- Python, a programming language, and Git installed using the course setup
-  instructions. Git is a version-control tool; Git is its name, not an
-  acronym.
+- PowerShell, the command shell already included with Windows for typing and
+  running text commands.
 - Permission to create this deliberately fictional, or **synthetic**, practice
   root:
 
@@ -26,11 +24,18 @@ method and objective evidence that you can recreate the basics.
 Do not use employer, client, supplier, employee, patient, or other real records.
 Do not connect these exercises to a workplace system.
 
+You do **not** need Python or Git before Foundation 1. After Foundation 2, the
+Beginner Software Check first shows what is already present on this computer.
+Windows Setup then installs and verifies Python, a programming language, and
+Git, a version-control tool. Git is its name, not an acronym.
+
 ## Complete the lessons in order
 
-After Foundation 2, follow
-[`SETUP_WINDOWS.md`](../SETUP_WINDOWS.md) to install Python and Git before
-continuing with Foundation 3.
+After Foundation 2, complete
+[`BEGINNER_SOFTWARE_CHECK.md`](../BEGINNER_SOFTWARE_CHECK.md) and then
+[`SETUP_WINDOWS.md`](../SETUP_WINDOWS.md) before continuing with Foundation 3.
+Do not skip the software check: it distinguishes software that is genuinely
+installed from Windows Store command shortcuts that only offer an installation.
 
 1. [`01_FILES_AND_TEXT.md`](01_FILES_AND_TEXT.md) — Windows folders, extensions,
    Notepad, Markdown (plain-text formatting), and JavaScript Object Notation

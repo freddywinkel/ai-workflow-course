@@ -89,34 +89,52 @@ one in this lesson and do not upload a real spreadsheet to Codex.
 - `Documents\controlled-ai-course-practice` exists.
 - No real spreadsheet or business export is open.
 
-### Part A — create the lesson folder and source CSV
+### Start or resume safely — run this at every new PowerShell session
 
-Open PowerShell and run:
-
-```powershell
-Set-Location ([Environment]::GetFolderPath("MyDocuments"))
-```
+Run this whole block whenever you start or resume Foundation 6:
 
 ```powershell
-Set-Location "controlled-ai-course-practice"
+$documentsPath = [Environment]::GetFolderPath("MyDocuments")
+$practiceRoot = Join-Path $documentsPath "controlled-ai-course-practice"
+$lessonPath = Join-Path $practiceRoot "foundation-06"
+
+if (-not (Test-Path -LiteralPath $practiceRoot -PathType Container)) {
+    throw "STOP: the controlled-ai-course-practice folder is missing. Return to Foundation 1."
+}
+if (Test-Path -LiteralPath $lessonPath -PathType Leaf) {
+    throw "STOP: foundation-06 is a file, not a folder. Do not rename or delete it; ask Codex to inspect read-only."
+}
+if (-not (Test-Path -LiteralPath $lessonPath -PathType Container)) {
+    New-Item -ItemType Directory -Path $lessonPath | Out-Null
+    "Created a new foundation-06 folder."
+}
+else {
+    "Existing foundation-06 folder found; nothing was overwritten."
+}
+
+Set-Location -LiteralPath $lessonPath
+Get-Location
+Get-ChildItem -Force
 ```
 
-```powershell
-New-Item -ItemType Directory -Path "foundation-06"
-```
+Expected result: the location ends in `foundation-06`. The block creates that
+folder only when absent and lists existing contents without changing them.
+Resume only your own synthetic lesson attempt. Before opening an existing CSV
+in Notepad, read it with `Get-Content -LiteralPath` and leave a completed file
+unchanged. Stop if an item is unfamiliar or may contain real data.
 
-```powershell
-Set-Location "foundation-06"
-```
+### Part A — create the source CSV
 
-What the setup commands do: they enter Documents, enter the existing practice
-root, create only `foundation-06`, and enter it.
-
-Run:
+If `work_items.csv` was not listed, run:
 
 ```powershell
 notepad "work_items.csv"
 ```
+
+If it was listed, inspect it first with
+`Get-Content -LiteralPath ".\work_items.csv"`. If it already contains the exact
+synthetic guided table, skip to Part B. Resume only your own incomplete
+synthetic attempt; do not paste over an unfamiliar file.
 
 Enter these exact four lines:
 

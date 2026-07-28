@@ -1,0 +1,6 @@
+issue_id,work_item_id,field,rule_code,severity,expected_message
+WI-9001|R001|title,WI-9001,title,R001,medium,Required title is missing.
+WI-9003|R005|due_date,WI-9003,due_date,R005,high,Due date is before received date.
+WI-9004|R006|completed_date,WI-9004,completed_date,R006,medium,Non-completed work must not have a completion date.
+WI-9005|R008|amount,WI-9005,amount,R008,high,Amount must not be negative.
+WI-9006|R011|due_date,WI-9006,due_date,R011,high,Open work is overdue on the fixed assessment date.

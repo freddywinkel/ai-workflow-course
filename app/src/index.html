@@ -83,12 +83,20 @@
           <div class="sidebar-summary">
             <span class="eyebrow">Course 1</span>
             <div class="progress-row">
-              <strong id="sidebar-progress-label">0% complete</strong>
-              <span id="sidebar-progress-count">0 of 18 lessons</span>
+              <strong id="sidebar-progress-label">0% pages read</strong>
+              <span id="sidebar-progress-count">0 of 21 pages</span>
             </div>
-            <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0% of Course 1 complete">
+            <div class="progress-track" role="progressbar" aria-label="Course 1 pages read" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0 of 21 required Course 1 pages read">
               <span id="sidebar-progress-bar"></span>
             </div>
+            <div class="progress-row progress-row-practice">
+              <strong>Practical self-checks</strong>
+              <span id="sidebar-practice-count">0 of 21 self-checks</span>
+            </div>
+            <div class="progress-track progress-track-practice" role="progressbar" aria-label="Practical task self-checks" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0 of 21 required practical tasks self-attested">
+              <span id="sidebar-practice-bar"></span>
+            </div>
+            <p class="sidebar-progress-note">Reading and practical self-checks are separate. Neither is an independent assessment.</p>
           </div>
           <nav id="course-nav"></nav>
           <div class="sidebar-footer">
@@ -139,7 +147,7 @@
                 <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                   <path d="m5 12.5 4.2 4.2L19 7"/>
                 </svg>
-                <span>Mark complete</span>
+                <span>Mark page read</span>
               </button>
             </div>
             <section class="practice-contract practice-contract-reader" id="practice-contract-reader" aria-label="Beginner practice method" hidden></section>
@@ -150,9 +158,23 @@
             </div>
             <div class="checkpoint-alert revision-alert" id="revision-alert" hidden>
               <strong>This lesson was revised</strong>
-              <p>Your note is safe. Review the changed lesson and mark it complete again when you are ready.</p>
+              <p>Your note is safe. Read the changed lesson again. If you previously recorded a practical self-check, repeat its pass criteria before recording it again.</p>
             </div>
             <article class="markdown-body" id="reader-content"></article>
+            <section class="practical-pass-panel" id="practical-pass-panel" aria-labelledby="practical-pass-title" hidden>
+              <div>
+                <span class="eyebrow">Practical task self-check</span>
+                <h2 id="practical-pass-title">Did your recreated result pass every lesson criterion?</h2>
+                <p id="practical-pass-help">Record this only after you completed the recreation and checked every stated pass criterion. This is your own record, not an independent assessment or proof of consultant competence.</p>
+              </div>
+              <button class="button practical-pass-button" id="practical-pass-button" type="button" aria-pressed="false" aria-describedby="practical-pass-help">
+                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M12 3 5 6v5c0 4.8 2.8 8.1 7 10 4.2-1.9 7-5.2 7-10V6Z"/>
+                  <path d="m9 12 2 2 4-5"/>
+                </svg>
+                <span>I passed every practice criterion</span>
+              </button>
+            </section>
             <section class="learner-notes" aria-labelledby="notes-title">
               <div>
                 <span class="eyebrow">Private device note</span>
@@ -172,8 +194,8 @@
           <section class="view" id="search-view" hidden>
             <div class="page-heading">
               <span class="eyebrow">Find an explanation</span>
-              <h1>Search the whole course</h1>
-              <p>Search foundations, implementation modules, worksheets, and reference material.</p>
+              <h1>Search Course 1</h1>
+              <p>Search Course 1 foundations, implementation modules, worksheets, and reference material. Later-course prototypes are intentionally excluded.</p>
             </div>
             <label class="search-box">
               <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -247,7 +269,7 @@
                   </svg>
                 </span>
                 <h2>Progress backup</h2>
-                <p>Export a small data backup before clearing your browser data or moving to another device.</p>
+                <p>Export a small data backup of pages read, practical self-checks, private notes, and reading settings before clearing browser data or moving to another device.</p>
                 <div class="button-row">
                   <button class="button button-quiet" id="export-progress" type="button">Export</button>
                   <label class="button button-quiet file-button">
@@ -255,7 +277,7 @@
                     <input id="import-progress" type="file" accept="application/json,.json">
                   </label>
                 </div>
-                <button class="danger-link" id="reset-progress" type="button">Reset all local progress and notes</button>
+                <button class="danger-link" id="reset-progress" type="button">Reset all local reading, practice, and notes</button>
               </section>
             </div>
           </section>

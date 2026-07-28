@@ -7,6 +7,17 @@ import {
 const config = window.__COURSE_APP__;
 const STORAGE_KEY = "ai-workflow-course-state-v1";
 const STATE_SCHEMA_VERSION = 2;
+const FOUNDATION_PRACTICE_HOURS = Object.freeze({
+  "course-1-foundation-01": { minimum: 4, maximum: 6 },
+  "course-1-foundation-02": { minimum: 4, maximum: 6 },
+  "course-1-foundation-03": { minimum: 8, maximum: 12 },
+  "course-1-foundation-04": { minimum: 6, maximum: 10 },
+  "course-1-foundation-05": { minimum: 5, maximum: 8 },
+  "course-1-foundation-06": { minimum: 6, maximum: 10 },
+  "course-1-foundation-07": { minimum: 5, maximum: 8 },
+  "course-1-foundation-08": { minimum: 6, maximum: 10 },
+  "course-1-foundation-09": { minimum: 6, maximum: 10 },
+});
 const views = {
   home: document.querySelector("#home-view"),
   reader: document.querySelector("#reader-view"),
@@ -90,6 +101,8 @@ function defaultState() {
     schemaVersion: STATE_SCHEMA_VERSION,
     completed: [],
     completionRevisions: {},
+    practicalPassed: [],
+    practicalPassRevisions: {},
     notes: {},
     archivedLegacyNotes: {},
     lastDocument: null,
@@ -111,6 +124,14 @@ function normaliseV2State(parsed) {
     completionRevisions:
       parsed.completionRevisions && typeof parsed.completionRevisions === "object"
         ? parsed.completionRevisions
+        : {},
+    practicalPassed: Array.isArray(parsed.practicalPassed)
+      ? parsed.practicalPassed
+      : [],
+    practicalPassRevisions:
+      parsed.practicalPassRevisions &&
+      typeof parsed.practicalPassRevisions === "object"
+        ? parsed.practicalPassRevisions
         : {},
     notes: parsed.notes && typeof parsed.notes === "object" ? parsed.notes : {},
     archivedLegacyNotes:
@@ -166,8 +187,10 @@ function documentForStoredId(storedId) {
 
 function completionRevisionFor(courseDocument) {
   const practiceRevision = Number(courseBundle?.course?.practiceRevision);
+  const requiredIds = courseBundle?.course?.learningSequenceIds;
   if (
-    !courseDocument.core ||
+    !Array.isArray(requiredIds) ||
+    !requiredIds.includes(courseDocument.id) ||
     !Number.isInteger(practiceRevision) ||
     practiceRevision < 1
   ) {
@@ -254,12 +277,48 @@ function needsRevisionReview(courseDocument) {
   );
 }
 
+function requiresPracticalSelfCheck(courseDocument) {
+  const requiredIds = courseBundle?.course?.learningSequenceIds;
+  return Boolean(
+    courseDocument?.courseId === courseBundle?.course?.id &&
+      Array.isArray(requiredIds) &&
+      requiredIds.includes(courseDocument.id),
+  );
+}
+
+function isPracticalPassed(courseDocument) {
+  return (
+    requiresPracticalSelfCheck(courseDocument) &&
+    state.practicalPassed.includes(courseDocument.id) &&
+    state.practicalPassRevisions[courseDocument.id] ===
+      completionRevisionFor(courseDocument)
+  );
+}
+
+function needsPracticalRevisionReview(courseDocument) {
+  return (
+    requiresPracticalSelfCheck(courseDocument) &&
+    state.practicalPassed.includes(courseDocument.id) &&
+    Boolean(state.practicalPassRevisions[courseDocument.id]) &&
+    state.practicalPassRevisions[courseDocument.id] !==
+      completionRevisionFor(courseDocument)
+  );
+}
+
 function groupTitle(groupId) {
   return courseBundle.groups.find((group) => group.id === groupId)?.title || groupId;
 }
 
+function belongsToCourseOne(courseDocument) {
+  return courseDocument?.courseId === courseBundle.course.id;
+}
+
 function coreDocuments() {
   return courseBundle.documents.filter((courseDocument) => courseDocument.core);
+}
+
+function courseOneDocuments() {
+  return courseBundle.documents.filter(belongsToCourseOne);
 }
 
 function learningSequenceDocuments() {
@@ -279,11 +338,21 @@ function resumeDocument() {
   const lastIsActionable = sequence.some(
     (courseDocument) => courseDocument.id === lastDocument?.id,
   );
-  if (lastIsActionable && !isDocumentComplete(lastDocument)) {
+  if (
+    lastIsActionable &&
+    (!isDocumentComplete(lastDocument) ||
+      (requiresPracticalSelfCheck(lastDocument) &&
+        !isPracticalPassed(lastDocument)))
+  ) {
     return lastDocument;
   }
   return (
     sequence.find((courseDocument) => !isDocumentComplete(courseDocument)) ||
+    sequence.find(
+      (courseDocument) =>
+        requiresPracticalSelfCheck(courseDocument) &&
+        !isPracticalPassed(courseDocument),
+    ) ||
     sequence[0] ||
     null
   );
@@ -319,23 +388,94 @@ function learningPositionLabel(courseDocument) {
   return groupTitle(courseDocument.group);
 }
 
+function practiceHoursFor(courseDocument) {
+  const explicit =
+    courseDocument?.estimatedPracticeHours || courseDocument?.practiceHours;
+  if (
+    Number.isFinite(explicit?.minimum) &&
+    Number.isFinite(explicit?.maximum) &&
+    explicit.minimum > 0 &&
+    explicit.maximum >= explicit.minimum
+  ) {
+    return {
+      minimum: Math.round(explicit.minimum),
+      maximum: Math.round(explicit.maximum),
+    };
+  }
+
+  const estimate = String(courseDocument?.markdown || "").match(
+    /^## Estimated time\s*\n+\s*(\d+)\s*[\u2013-]\s*(\d+)\s+hours\b/im,
+  );
+  if (estimate) {
+    return {
+      minimum: Number.parseInt(estimate[1], 10),
+      maximum: Number.parseInt(estimate[2], 10),
+    };
+  }
+  return FOUNDATION_PRACTICE_HOURS[courseDocument?.id] || null;
+}
+
+function effortFor(courseDocument) {
+  const readingMinutes = Math.max(1, Math.ceil(courseDocument.wordCount / 210));
+  const practiceHours = practiceHoursFor(courseDocument);
+  return {
+    readingMinutes,
+    readingLabel: `Read: about ${readingMinutes} minute${readingMinutes === 1 ? "" : "s"}`,
+    practiceLabel: practiceHours
+      ? `Practice: ${practiceHours.minimum}\u2013${practiceHours.maximum} hours`
+      : requiresPracticalSelfCheck(courseDocument)
+        ? "Practice: plan several focused sessions"
+        : null,
+  };
+}
+
+function effortText(courseDocument) {
+  const effort = effortFor(courseDocument);
+  return [effort.readingLabel, effort.practiceLabel]
+    .filter(Boolean)
+    .join(" \u00b7 ");
+}
+
 function completedCoreCount() {
-  return coreDocuments().filter((courseDocument) =>
+  return learningSequenceDocuments().filter((courseDocument) =>
     isDocumentComplete(courseDocument),
   ).length;
 }
 
+function practicalPassedCoreCount() {
+  return learningSequenceDocuments().filter((courseDocument) =>
+    isPracticalPassed(courseDocument),
+  ).length;
+}
+
 function updateProgressUi() {
-  const documents = coreDocuments();
+  const documents = learningSequenceDocuments();
   const completed = completedCoreCount();
+  const practicalPassed = practicalPassedCoreCount();
   const percent = documents.length ? Math.round((completed / documents.length) * 100) : 0;
-  document.querySelector("#sidebar-progress-label").textContent = `${percent}% complete`;
+  const practicalPercent = documents.length
+    ? Math.round((practicalPassed / documents.length) * 100)
+    : 0;
+  document.querySelector("#sidebar-progress-label").textContent = `${percent}% pages read`;
   document.querySelector("#sidebar-progress-count").textContent =
-    `${completed} of ${documents.length} lessons`;
+    `${completed} of ${documents.length} pages`;
   document.querySelector("#sidebar-progress-bar").style.width = `${percent}%`;
   const progress = document.querySelector(".progress-track");
   progress.setAttribute("aria-valuenow", String(percent));
-  progress.setAttribute("aria-valuetext", `${percent}% of Course 1 complete`);
+  progress.setAttribute(
+    "aria-valuetext",
+    `${completed} of ${documents.length} Course 1 pages read`,
+  );
+  document.querySelector("#sidebar-practice-count").textContent =
+    `${practicalPassed} of ${documents.length} self-checks`;
+  document.querySelector("#sidebar-practice-bar").style.width =
+    `${practicalPercent}%`;
+  const practicalProgress = document.querySelector(".progress-track-practice");
+  practicalProgress.setAttribute("aria-valuenow", String(practicalPercent));
+  practicalProgress.setAttribute(
+    "aria-valuetext",
+    `${practicalPassed} of ${documents.length} practical tasks self-attested`,
+  );
   document.querySelectorAll(".nav-document").forEach((button) => {
     const courseDocument = documentById.get(button.dataset.documentId);
     if (courseDocument) updateNavigationDocumentState(button, courseDocument);
@@ -344,16 +484,27 @@ function updateProgressUi() {
 
 function updateNavigationDocumentState(button, courseDocument) {
   const complete = isDocumentComplete(courseDocument);
+  const practicalPassed = isPracticalPassed(courseDocument);
   const needsReview = needsRevisionReview(courseDocument);
+  const practiceNeedsReview = needsPracticalRevisionReview(courseDocument);
   button.classList.toggle("completed", complete);
+  button.classList.toggle("practice-passed", practicalPassed);
   button.classList.toggle("needs-review", needsReview);
+  button.classList.toggle("practice-needs-review", practiceNeedsReview);
   const status = complete
-    ? "Completed"
+    ? "Page read"
     : needsReview
-      ? "Review again"
-      : "Not completed";
+      ? "Read again"
+      : "Page not read";
+  const practiceStatus = requiresPracticalSelfCheck(courseDocument)
+    ? practicalPassed
+      ? " Practical self-check recorded."
+      : practiceNeedsReview
+        ? " Practical self-check needs review."
+        : " Practical self-check not recorded."
+    : "";
   const statusText = button.querySelector(".nav-document-status");
-  if (statusText) statusText.textContent = ` — ${status}.`;
+  if (statusText) statusText.textContent = ` — ${status}.${practiceStatus}`;
 }
 
 function renderCourseNavigation() {
@@ -361,13 +512,15 @@ function renderCourseNavigation() {
   navigation.replaceChildren();
 
   for (const group of courseBundle.groups) {
+    const groupDocuments = group.documents
+      .map((id) => documentById.get(id))
+      .filter((courseDocument) => belongsToCourseOne(courseDocument));
+    if (!groupDocuments.length) continue;
+
     const wrapper = document.createElement("section");
     wrapper.className = "nav-group";
     wrapper.dataset.groupId = group.id;
     const expanded = state.expandedGroups.includes(group.id);
-    const groupDocuments = group.documents
-      .map((id) => documentById.get(id))
-      .filter(Boolean);
     const completedCount = groupDocuments.filter((courseDocument) =>
       isDocumentComplete(courseDocument),
     ).length;
@@ -376,7 +529,7 @@ function renderCourseNavigation() {
     toggle.type = "button";
     toggle.className = "nav-group-toggle";
     toggle.setAttribute("aria-expanded", String(expanded));
-    toggle.innerHTML = `${iconSvg("chevron", "ui-icon chevron")}<strong>${escapeHtml(group.title)}</strong><small>${completedCount}/${groupDocuments.length}</small>`;
+    toggle.innerHTML = `${iconSvg("chevron", "ui-icon chevron")}<strong>${escapeHtml(group.title)}</strong><small>${completedCount}/${groupDocuments.length} read</small>`;
 
     const list = document.createElement("ul");
     list.className = "nav-group-list";
@@ -455,13 +608,19 @@ function renderHome() {
     button.removeAttribute("aria-current");
   });
 
-  const core = coreDocuments();
+  const requiredDocs = learningSequenceDocuments();
   const completed = completedCoreCount();
-  const foundationDocs = core.filter((document) => document.group === "foundations");
-  const moduleDocs = core.filter((document) => document.group === "modules");
+  const practicalPassed = practicalPassedCoreCount();
+  const foundationDocs = requiredDocs.filter((document) => document.group === "foundations");
+  const moduleDocs = requiredDocs.filter((document) => document.group === "modules");
   const foundationCompleted = foundationDocs.filter(isDocumentComplete).length;
   const moduleCompleted = moduleDocs.filter(isDocumentComplete).length;
-  const percent = core.length ? Math.round((completed / core.length) * 100) : 0;
+  const percent = requiredDocs.length
+    ? Math.round((completed / requiredDocs.length) * 100)
+    : 0;
+  const practicalPercent = requiredDocs.length
+    ? Math.round((practicalPassed / requiredDocs.length) * 100)
+    : 0;
   const foundationPercent = foundationDocs.length
     ? Math.round((foundationCompleted / foundationDocs.length) * 100)
     : 0;
@@ -470,7 +629,11 @@ function renderHome() {
     : 0;
   const resume = resumeDocument();
   const nextDocuments = learningSequenceDocuments()
-    .filter((document) => !isDocumentComplete(document))
+    .filter(
+      (document) =>
+        !isDocumentComplete(document) ||
+        (requiresPracticalSelfCheck(document) && !isPracticalPassed(document)),
+    )
     .slice(0, 3);
   const estimatedHours = courseBundle.course.estimatedHours;
   const effortLabel =
@@ -494,7 +657,7 @@ function renderHome() {
       <div class="hero-copy">
         <span class="hero-kicker"><span aria-hidden="true"></span>Course 1 of the consultant path</span>
         <h1>Learn to build one <em>controlled business workflow.</em></h1>
-        <p>Start from zero technical knowledge. Learn to inspect the work, choose a small problem with clear limits, build fixed, rule-based checks, add artificial intelligence (AI) only where it helps, and keep a human responsible for every consequential decision.</p>
+        <p>Start from zero technical knowledge. Learn to inspect the work, choose a small problem with clear limits, build fixed, rule-based checks, design a bounded artificial intelligence (AI) contribution, test its controls with an offline stand-in, and keep a human responsible for every consequential decision. Course 1 makes no live AI call.</p>
         <div class="hero-actions">
           <button class="button" type="button" data-home-action="resume">
             <span>${resume ? `Continue: ${escapeHtml(resume.title)}` : "Start the course"}</span>
@@ -525,7 +688,7 @@ function renderHome() {
           </li>
           <li>
             <span class="workflow-stage-icon">${iconSvg("review")}</span>
-            <span><small>03 · Explain</small><strong>Evidence-linked AI summary</strong></span>
+            <span><small>03 · Explain</small><strong>Evidence-linked offline mock summary</strong></span>
           </li>
           <li>
             <span class="workflow-stage-icon workflow-stage-approved">${iconSvg("shield")}</span>
@@ -540,19 +703,28 @@ function renderHome() {
     </section>
     <section class="progress-overview" aria-label="Course progress summary">
       <article class="progress-card progress-card-main">
-        <div class="progress-ring" style="--progress: ${percent}" role="img" aria-label="${percent}% of the core course complete">
-          <span><strong>${percent}%</strong><small>complete</small></span>
+        <div class="progress-ring" style="--progress: ${percent}" role="img" aria-label="${completed} of ${requiredDocs.length} required Course 1 pages read">
+          <span><strong>${percent}%</strong><small>pages read</small></span>
         </div>
         <div>
-          <span class="eyebrow">Course 1 progress</span>
-          <h2>${completed ? "Keep building your evidence" : "Your foundation is ready"}</h2>
-          <p>${completed} of ${core.length} core lessons complete</p>
+          <span class="eyebrow">Reading progress</span>
+          <h2>${completed === requiredDocs.length ? "All required pages read" : completed ? "Keep reading and building" : "Your foundation is ready"}</h2>
+          <p>${completed} of ${requiredDocs.length} required pages read, including readiness and setup. Reading every page does not mean you passed the practical work.</p>
         </div>
+      </article>
+      <article class="progress-card practice-progress-card">
+        <span class="progress-card-icon progress-card-icon-gold">${iconSvg("shield")}</span>
+        <div>
+          <span>Practical self-checks</span>
+          <strong>${practicalPassed}<small> / ${requiredDocs.length}</small></strong>
+        </div>
+        <div class="mini-progress mini-progress-gold" role="progressbar" aria-label="Practical task self-checks" aria-valuemin="0" aria-valuemax="${requiredDocs.length}" aria-valuenow="${practicalPassed}" aria-valuetext="${practicalPassed} of ${requiredDocs.length} required practical tasks self-attested"><span style="width:${practicalPercent}%"></span></div>
+        <p class="practice-progress-note">Your own checklist record, not an independent assessment.</p>
       </article>
       <article class="progress-card">
         <span class="progress-card-icon">${iconSvg("layers")}</span>
         <div>
-          <span>Foundations</span>
+          <span>Foundations read</span>
           <strong>${foundationCompleted}<small> / ${foundationDocs.length}</small></strong>
         </div>
         <div class="mini-progress" aria-hidden="true"><span style="width:${foundationPercent}%"></span></div>
@@ -560,7 +732,7 @@ function renderHome() {
       <article class="progress-card">
         <span class="progress-card-icon progress-card-icon-gold">${iconSvg("document")}</span>
         <div>
-          <span>Modules</span>
+          <span>Modules read</span>
           <strong>${moduleCompleted}<small> / ${moduleDocs.length}</small></strong>
         </div>
         <div class="mini-progress mini-progress-gold" aria-hidden="true"><span style="width:${modulePercent}%"></span></div>
@@ -569,7 +741,7 @@ function renderHome() {
     <div class="dashboard-grid">
       <section class="dashboard-card next-steps-card">
         <span class="eyebrow">Your next steps</span>
-        <h2>${nextDocuments.length ? "One clear step at a time" : "Core course complete"}</h2>
+        <h2>${nextDocuments.length ? "One clear step at a time" : "Reading and self-check records complete"}</h2>
         <ul class="path-list">
           ${
             nextDocuments.length
@@ -579,13 +751,13 @@ function renderHome() {
                       <li>
                         <button class="${index === 0 ? "path-featured" : ""}" type="button" data-document-id="${escapeAttribute(document.id)}">
                           <span class="path-number">${String(index + 1).padStart(2, "0")}</span>
-                          <span><small>${escapeHtml(learningPositionLabel(document))} · about ${Math.max(1, Math.ceil(document.wordCount / 210))} minutes reading · allow extra practice time</small><strong>${escapeHtml(document.title)}</strong></span>
+                          <span><small>${escapeHtml(learningPositionLabel(document))} · ${escapeHtml(effortText(document))}${isDocumentComplete(document) ? " · practice self-check still open" : ""}</small><strong>${escapeHtml(document.title)}</strong></span>
                           ${iconSvg("arrow")}
                         </button>
                       </li>`,
                   )
                   .join("")
-              : '<li><p>Use Module 9’s final pass checklist, keep the documented manual way of working available, and continue reviewing course updates.</p></li>'
+              : '<li><p>Your reading and practical self-check records are complete. Use Module 9’s scored rubric and evidence checks before claiming the Course 1 capability. A self-check is not external proof or consultant readiness.</p></li>'
           }
         </ul>
       </section>
@@ -613,16 +785,27 @@ function renderHome() {
         ${moduleDocs
           .map((courseDocument, index) => {
             const complete = isDocumentComplete(courseDocument);
-            const revised = needsRevisionReview(courseDocument);
-            const status = complete ? "Complete" : revised ? "Review revision" : "Ready";
+            const practicePassed = isPracticalPassed(courseDocument);
+            const revised =
+              needsRevisionReview(courseDocument) ||
+              needsPracticalRevisionReview(courseDocument);
+            const status = !complete
+              ? revised
+                ? "Read revision"
+                : "Ready to read"
+              : practicePassed
+                ? "Practice checked"
+                : revised
+                  ? "Recheck practice"
+                  : "Practice open";
             return `
-              <button class="module-card${complete ? " complete" : ""}${revised ? " revised" : ""}" type="button" data-document-id="${escapeAttribute(courseDocument.id)}">
+              <button class="module-card${complete && practicePassed ? " complete" : ""}${revised ? " revised" : ""}" type="button" data-document-id="${escapeAttribute(courseDocument.id)}">
                 <span class="module-card-top">
                   <span class="module-number">${String(index + 1).padStart(2, "0")}</span>
                   <span class="module-status">${escapeHtml(status)}</span>
                 </span>
                 <strong>${escapeHtml(courseDocument.title.replace(/^Module \d+\s*[—-]\s*/, ""))}</strong>
-                <small>About ${Math.max(1, Math.ceil(courseDocument.wordCount / 210))} minutes reading · allow extra practice time · revision ${escapeHtml(courseDocument.revision)}</small>
+                <small>${escapeHtml(effortText(courseDocument))} · revision ${escapeHtml(courseDocument.revision)}</small>
                 ${iconSvg("arrow")}
               </button>
             `;
@@ -683,7 +866,13 @@ function renderCareer() {
       course.status === "prototype-capstone-available" &&
       documentById.has(course.prototypeDocumentId)
     ) {
-      return `<button class="button" type="button" data-career-action="prototype" data-document-id="${escapeHtml(course.prototypeDocumentId)}">Open the optional capstone ${iconSvg("arrow")}</button>`;
+      return `
+        <details class="later-course-disclosure">
+          <summary>Show the later-course prototype link</summary>
+          <p>This material is not part of Course 1. Open it intentionally from the Career path when its prerequisites and timing make sense.</p>
+          <button class="button" type="button" data-career-action="prototype" data-document-id="${escapeHtml(course.prototypeDocumentId)}">Open the later-course prototype ${iconSvg("arrow")}</button>
+        </details>
+      `;
     }
     return "";
   };
@@ -707,7 +896,7 @@ function renderCareer() {
           <span class="eyebrow">Courses 1–6</span>
           <h2 id="career-roadmap-title">Build proof in a deliberate order</h2>
         </div>
-        <p>Course 1 is taught in full. Course 4 now includes one optional advanced capstone prototype; the remaining later-course content is still a curriculum plan, not a completed qualification or promise of work.</p>
+        <p>Course 1 is taught in full. Later-course lessons stay out of the Course 1 menu and search. Course 4 has one optional advanced prototype that you can intentionally reveal here; the remaining later-course content is still a curriculum plan, not a completed qualification or promise of work.</p>
       </div>
       <ol class="career-course-list">
         ${career.courses
@@ -889,22 +1078,26 @@ function renderDocument(id) {
 
   document.querySelector("#reader-group").textContent = groupTitle(courseDocument.group);
   document.querySelector("#reader-title").textContent = courseDocument.title;
-  const core = coreDocuments();
-  const corePosition = core.findIndex((document) => document.id === courseDocument.id);
+  const requiredDocs = learningSequenceDocuments();
+  const requiredPosition = requiredDocs.findIndex(
+    (document) => document.id === courseDocument.id,
+  );
   const belongsToCurrentCourse =
     courseDocument.courseId === courseBundle.course.id;
+  const effort = effortFor(courseDocument);
   const lessonPosition =
-    corePosition >= 0
-      ? `Core lesson ${corePosition + 1} of ${core.length}`
+    requiredPosition >= 0
+      ? `Required page ${requiredPosition + 1} of ${requiredDocs.length}`
       : `${groupTitle(courseDocument.group)} page`;
   document.querySelector("#reader-meta").innerHTML = `
-    <span>${iconSvg("clock")}About ${Math.max(1, Math.ceil(courseDocument.wordCount / 210))} minutes reading · allow extra practice time</span>
+    <span class="reader-effort-reading">${iconSvg("clock")}${escapeHtml(effort.readingLabel)}</span>
+    ${effort.practiceLabel ? `<span class="reader-effort-practice">${iconSvg("layers")}${escapeHtml(effort.practiceLabel)}</span>` : ""}
     <span>${iconSvg("layers")}${escapeHtml(learningPositionLabel(courseDocument))}</span>
     <span title="${escapeAttribute(lessonPosition)}">${iconSvg("document")}Revision ${escapeHtml(courseDocument.revision)}</span>
     ${
       belongsToCurrentCourse
         ? ""
-        : `<span class="reader-course-boundary">${iconSvg("shield")}Optional Course ${escapeHtml(String(courseBundle.career.courses.find((course) => course.id === courseDocument.courseId)?.sequence || ""))} page · does not affect Course 1 progress</span>`
+        : `<span class="reader-course-boundary">${iconSvg("shield")}Optional Course ${escapeHtml(String(courseBundle.career.courses.find((course) => course.id === courseDocument.courseId)?.sequence || ""))} page · does not affect Course 1 reading or practice records</span>`
     }
   `;
   const content = document.querySelector("#reader-content");
@@ -919,23 +1112,37 @@ function renderDocument(id) {
   completeButton.querySelector("span:last-child").textContent =
     !belongsToCurrentCourse
       ? isComplete
-        ? "Page completed"
+        ? "Page read"
         : revised
-          ? "Mark page reviewed"
-          : "Mark page complete"
+          ? "Mark page read again"
+          : "Mark page read"
       : isComplete
-        ? "Completed"
+        ? "Page read"
         : revised
-          ? "Mark reviewed"
-          : "Mark complete";
+          ? "Mark page read again"
+          : "Mark page read";
 
   const practiceContract = document.querySelector("#practice-contract-reader");
   const showPracticeContract =
-    courseDocument.core || courseDocument.group === "course-4-capstone";
+    requiresPracticalSelfCheck(courseDocument) ||
+    courseDocument.group === "course-4-capstone";
   practiceContract.hidden = !showPracticeContract;
   if (showPracticeContract) {
     practiceContract.innerHTML = practiceContractMarkup({ compact: true });
   }
+
+  const practicalPanel = document.querySelector("#practical-pass-panel");
+  const practicalButton = document.querySelector("#practical-pass-button");
+  const showPracticalPass = requiresPracticalSelfCheck(courseDocument);
+  const practicalPassed = isPracticalPassed(courseDocument);
+  const practicalNeedsReview = needsPracticalRevisionReview(courseDocument);
+  practicalPanel.hidden = !showPracticalPass;
+  practicalButton.setAttribute("aria-pressed", String(practicalPassed));
+  practicalButton.querySelector("span:last-child").textContent = practicalPassed
+    ? "Practical self-check recorded"
+    : practicalNeedsReview
+      ? "Recheck and record the revised practical task"
+      : "I passed every practice criterion";
 
   const checkpoint =
     courseDocument.checkpoint ||
@@ -952,7 +1159,8 @@ function renderDocument(id) {
     document.querySelector("#checkpoint-update-button").hidden =
       checkpoint.action !== "check-updates";
   }
-  document.querySelector("#revision-alert").hidden = !revised;
+  const revisionAlert = document.querySelector("#revision-alert");
+  revisionAlert.hidden = !(revised || practicalNeedsReview);
   const note = document.querySelector("#learner-note");
   note.value = state.notes[id] || "";
   setNoteSaveStatus(
@@ -978,7 +1186,10 @@ function renderDocument(id) {
     else button.removeAttribute("aria-current");
   });
 
-  document.title = `${courseDocument.title} — Course 1`;
+  const courseSequence = courseBundle.career.courses.find(
+    (course) => course.id === courseDocument.courseId,
+  )?.sequence;
+  document.title = `${courseDocument.title} — Course ${courseSequence || 1}`;
   window.scrollTo({ top: 0, behavior: "instant" });
 }
 
@@ -986,7 +1197,7 @@ function searchDocuments(query) {
   const normalised = query.trim().toLowerCase();
   if (!normalised) return [];
   const terms = normalised.split(/\s+/).filter(Boolean);
-  return courseBundle.documents
+  return courseOneDocuments()
     .map((document) => {
       const title = document.title.toLowerCase();
       const text = document.searchableText.toLowerCase();
@@ -1031,8 +1242,8 @@ function renderSearchResults() {
   }
 
   summary.textContent = results.length
-    ? `${results.length} matching course page${results.length === 1 ? "" : "s"}`
-    : "No course pages matched. Try a shorter or plainer term.";
+    ? `${results.length} matching Course 1 page${results.length === 1 ? "" : "s"}`
+    : "No Course 1 pages matched. Try a shorter or plainer term.";
 
   for (const result of results) {
     const button = document.createElement("button");
@@ -1198,9 +1409,36 @@ function toggleCompleted() {
   showToast(
     saved
       ? wasComplete
-        ? "Marked incomplete."
-        : "Lesson marked complete."
+        ? "Page marked unread. Your separate practical self-check was not changed."
+        : "Page marked read. Practical work is recorded separately."
       : "The lesson changed on screen but could not be saved on this device.",
+  );
+}
+
+function togglePracticalPassed() {
+  if (!currentDocument || !requiresPracticalSelfCheck(currentDocument)) return;
+  flushPendingNote();
+  const wasPassed = isPracticalPassed(currentDocument);
+  const index = state.practicalPassed.indexOf(currentDocument.id);
+  if (wasPassed) {
+    if (index >= 0) state.practicalPassed.splice(index, 1);
+    delete state.practicalPassRevisions[currentDocument.id];
+  } else {
+    if (index < 0) state.practicalPassed.push(currentDocument.id);
+    state.practicalPassRevisions[currentDocument.id] =
+      completionRevisionFor(currentDocument);
+  }
+  const saved = saveState();
+  renderCourseNavigation();
+  updateProgressUi();
+  renderDocument(currentDocument.id);
+  showToast(
+    saved
+      ? wasPassed
+        ? "Practical self-check removed."
+        : "Practical self-check recorded. This is not an independent assessment."
+      : "The practical self-check changed on screen but could not be saved.",
+    wasPassed ? 2800 : 4200,
   );
 }
 
@@ -1273,6 +1511,19 @@ function sanitiseV2StateForCurrentCourse(rawState) {
           /^\d{4}-\d{2}-\d{2}(?:\|practice:[1-9]\d*)?$/.test(revision),
       ),
   );
+  imported.practicalPassed = imported.practicalPassed.filter((id) => {
+    const courseDocument = documentById.get(id);
+    return requiresPracticalSelfCheck(courseDocument);
+  });
+  imported.practicalPassRevisions = Object.fromEntries(
+    Object.entries(imported.practicalPassRevisions)
+      .filter(
+        ([id, revision]) =>
+          requiresPracticalSelfCheck(documentById.get(id)) &&
+          typeof revision === "string" &&
+          /^\d{4}-\d{2}-\d{2}(?:\|practice:[1-9]\d*)?$/.test(revision),
+      ),
+  );
   imported.notes = Object.fromEntries(
     Object.entries(imported.notes)
       .filter(([id, note]) => documentById.has(id) && typeof note === "string")
@@ -1306,6 +1557,7 @@ async function importProgress(file) {
     const payload = JSON.parse(await file.text());
     if (
       payload?.exportType !== "ai-workflow-course-progress" ||
+      payload?.courseId !== courseBundle.course.id ||
       ![1, STATE_SCHEMA_VERSION].includes(payload?.state?.schemaVersion)
     ) {
       throw new Error("Not a supported course progress backup.");
@@ -1317,8 +1569,14 @@ async function importProgress(file) {
       payload.state.schemaVersion === 1
         ? migrateSchemaV1(payload.state)
         : sanitiseV2StateForCurrentCourse(payload.state);
+    const previousState = JSON.parse(JSON.stringify(state));
     replaceState(imported);
-    saveState();
+    if (!saveState()) {
+      replaceState(previousState);
+      throw new Error(
+        "The backup was not imported because this browser could not save it.",
+      );
+    }
     renderCourseNavigation();
     updateProgressUi();
     applyAppearance();
@@ -1337,16 +1595,24 @@ async function importProgress(file) {
 
 function resetProgress() {
   const confirmed = window.confirm(
-    "Reset every completion mark, private note, and reading preference on this device? This cannot be undone unless you exported a backup.",
+    "Reset every page-read mark, practical self-check, private note, and reading preference on this device? This cannot be undone unless you exported a backup.",
   );
   if (!confirmed) return;
-  localStorage.removeItem(STORAGE_KEY);
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    showToast(
+      "Nothing was reset because this browser could not change local storage.",
+      4500,
+    );
+    return;
+  }
   replaceState(defaultState());
   renderCourseNavigation();
   updateProgressUi();
   applyAppearance();
-  renderHome();
-  showToast("Local progress and notes reset.");
+  navigate("home");
+  showToast("Local reading, practical self-checks, and notes reset.");
 }
 
 function showUpdateReady(worker = serviceWorkerRegistration?.waiting) {
@@ -1513,6 +1779,9 @@ function wireEvents() {
   });
 
   document.querySelector("#complete-button").addEventListener("click", toggleCompleted);
+  document
+    .querySelector("#practical-pass-button")
+    .addEventListener("click", togglePracticalPassed);
   document.querySelector("#learner-note").addEventListener("input", (event) => {
     const documentId = currentDocument?.id;
     if (!documentId) return;
@@ -1629,6 +1898,8 @@ async function initialise() {
           : "Your existing progress was migrated to the revised course.",
         5200,
       );
+      state.migration = null;
+      saveState();
     }
     await registerServiceWorker();
   } catch (error) {

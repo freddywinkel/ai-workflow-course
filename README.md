@@ -1,11 +1,12 @@
 # Course 1 — Controlled Artificial Intelligence (AI) Workflow Foundations for Dutch Small and Medium-sized Enterprises (SMEs)
 
-- Version: 2.3.0
+- Version: 2.4.0
 - Verified through: 2026-07-28
 - Language: English, with Dutch and European Union (EU) terms where useful
 - Format: self-paced, gate-based learning—you continue after proving a skill,
   not merely after spending a set number of days
-- Estimated effort for a literal beginner: 140–180 hours
+- Estimated effort for a literal beginner: 137–181 hours, equal to the sum of
+  the 21 required page ranges
 - End result: a private, **reproducible** portfolio demonstration—someone can
   repeat the documented steps and obtain the same result—using fictional
   practice data
@@ -41,18 +42,21 @@ The PWA's separate **Career Path** tab and the
 diagnostics (structured problem assessments), integrations (connections between
 systems), production engineering (building for real daily use), governance
 (rules, ownership, and oversight), adoption (helping people use the change), and
-consulting delivery. Course 4 includes one optional advanced
-[Controlled Document Intake capstone](advanced_capstone/README.md); it is not
-the complete Course 4 and it is not part of this course's completion
-percentage. The remaining later-course material is a roadmap.
+consulting delivery. Those later stages are a roadmap, not Course 1 tasks, and
+they do not affect Course 1 progress. Open the Career Path only when you want
+that wider view.
 
-The capstone is not merely a paper design: its synthetic-only private Google
-Cloud reference implementation recorded a live `PASS` on 28 July 2026 and was
-then torn down. Gemini selected bounded candidate identifiers while fixed code
-rendered the exact wording. The dedicated project is `DELETE_REQUESTED`, so
-there is intentionally no live service to try. The recorded Billing screen
-showed an unactivated Free Trial and €0, with the explicit warning that Billing
-data can lag.
+## Project decision rule
+
+Every material change to this course must pass the
+[Strategic Focus Rule](STRATEGIC_FOCUS.md) before it is implemented. New tools,
+free credits, deadlines, and interesting ideas are evaluated against the main
+goal; they do not automatically change the curriculum or platform strategy.
+
+The decision must be recorded as `STRATEGIC FIT: PASS`, `STRATEGIC FIT: PAUSE`,
+or `STRATEGIC FIT: REJECT`. A paused or rejected proposal is not implemented.
+Changing the main goal requires a documented comparison and the user's explicit
+approval, so this rule protects the course from both distraction and inertia.
 
 ## What you will build
 
@@ -76,7 +80,7 @@ fictional comma-separated values (CSV) or spreadsheet-style export
   → schema and data-quality checks
   → deterministic exception rules
   → named workflow state
-  → optional AI summary using verified issue identifiers (IDs)
+  → deterministic offline mock of a future AI summary, limited to verified issue identifiers (IDs)
   → human approve, edit, reject, or expire
   → local draft outbox only
   → audit event and evaluation result
@@ -84,9 +88,18 @@ fictional comma-separated values (CSV) or spreadsheet-style export
 
 The workflow flags problems such as missing owners, overdue work, duplicate
 references, contradictory dates, invalid statuses, and incomplete reviews.
-Ordinary code determines the exceptions. AI may explain or group verified
-exceptions, but it does not decide whether the business is compliant and it
-does not update another system.
+Ordinary code determines the exceptions. A deterministic offline mock lets you
+test the contract and controls for a possible later AI explanation or grouping
+step, but Course 1 makes no live model call. AI would never decide whether the
+business is compliant or create the exception list.
+
+The complete offline reference implementation is in
+[`course1_capstone`](course1_capstone/README.md). Modules 4–6 make you copy it
+safely, run each part, recreate the work with different synthetic data, force
+every failure route, perform every human decision, and export only after a
+valid approval. The
+[requirement-to-practice map](COURSE_1_REQUIREMENTS_TRACEABILITY.md) shows the
+exact lesson and evidence for every final requirement.
 
 The project is deliberately based on structured synthetic data. That gives a
 beginner a safer and more transferable foundation than starting with optical
@@ -144,7 +157,8 @@ You can:
 - define a small **data contract**—the agreed required fields, formats, and
   allowed values—and deterministic business rules;
 - build a reproducible rule-first workflow;
-- add one optional, schema-constrained AI step without making AI authoritative;
+- design one optional, schema-constrained AI contribution and prove its
+  controls with a deterministic offline mock, without making a live model call;
 - design meaningful human review and prevent unapproved actions;
 - run a practical Dutch SME privacy, AI, vendor, and security **pre-screen**, an
   early check for obvious concerns that need a specialist;
@@ -190,7 +204,7 @@ a workflow keeps information. Start here if you have no technical experience.
 2. Select and bound the opportunity.
 3. Understand the data and rules.
 4. Build the non-AI workflow first.
-5. Add one bounded AI step.
+5. Design one bounded AI contribution and test its controls offline.
 6. Keep humans in control.
 7. Apply Dutch SME guardrails and choose the right tool.
 8. Evaluate usefulness and business value.

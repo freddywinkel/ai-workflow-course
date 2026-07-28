@@ -2,33 +2,36 @@
 
 Course: **Controlled Artificial Intelligence (AI) Workflow Foundations**
 
-Course version: `2.3.0`
+Course version: `2.4.0`
 
 Curriculum verified through: `2026-07-28`
 
 Result: **PASS**
 
-Checks: 34; failures: 0; warnings: 0
+Checks: 37; failures: 0; warnings: 0
 
 ## Scope
 
 This report covers the curriculum manifest, configured lesson files, the 9
 foundation and 9 module Course 1 progress lessons, the 11-page non-core
 Course 4 capstone integration, its required runnable package surface, current
-JSON contracts, synthetic practice data, and current internal links.
+JSON contracts, synthetic practice data, the strategic-focus guardrail, and
+current internal links.
 Archived Course 4 source material, `app/dist/`, dependency folders, Git
 metadata, caches, live cloud resources, and external websites are outside
 this deterministic validation.
 
 | Status | Check | Detail |
 |---|---|---|
+| PASS | strategic-focus-guardrail | standing instructions, decision rule, and project overview enforce PASS/PAUSE/REJECT and explicit goal changes |
 | PASS | curriculum-load | curriculum.json parsed as a JSON object |
 | PASS | curriculum-metadata | Course 1 metadata is complete through 2026-07-28 |
 | PASS | curriculum-groups | 7 configured groups have stable IDs and valid structure |
-| PASS | curriculum-stable-ids | 73 unique current IDs and 34 unique legacy IDs |
-| PASS | curriculum-documents | 73 unique configured lesson paths and revisions are valid |
+| PASS | curriculum-stable-ids | 83 unique current IDs and 34 unique legacy IDs |
+| PASS | curriculum-documents | 83 unique configured lesson paths and revisions are valid |
 | PASS | curriculum-core-groups | only foundations and modules are configured as progress groups |
 | PASS | career-metadata | 6 ordered career courses; Course 1 is current and the Course 4 prototype is optional |
+| PASS | release-metadata-sync | Course 1 version 2.4.0, practice revision 3, app metadata, manifest, and release documents agree |
 | PASS | course4-capstone-integration | 11 non-core Course 4 pages, the frozen Course 1 sequence, and the runnable demo package are wired consistently |
 | PASS | progress-foundations | exactly 9 ordered foundation progress lessons |
 | PASS | progress-modules | exactly 9 ordered module progress lessons |
@@ -37,17 +40,18 @@ this deterministic validation.
 | PASS | beginner-practice-structure | all 18 progress lessons use the ordered follow, recreate, inspect, and pass loop |
 | PASS | beginner-practice-codex-check | all 18 progress lessons include bounded read-only Codex inspection prompts |
 | PASS | beginner-practice-pass-criteria | all 18 progress lessons include objective pass checklists |
-| PASS | beginner-first-use-terms | 18 required first-use expansions and product explanations are present in onboarding |
+| PASS | beginner-first-use-terms | 21 required first-use expansions and product explanations are present in onboarding |
 | PASS | integrated-project-repository | all 9 modules use one guarded Git repository, evidence/module-NN, and a pass-only checkpoint |
-| PASS | capstone-artifact-coverage | Modules 1-3 use all four previously missing templates and Module 9 creates the final index and change log |
+| PASS | capstone-artifact-coverage | Modules 1-3 and 7-9 use their required templates; Module 9 creates the final index and change log |
 | PASS | course-final-decisions | all final-decision documents use the same three synthetic-only Course 1 outcomes |
 | PASS | learner-maintainer-and-action-boundaries | beginner start files avoid the mutating maintainer audit and action controls use EXTERNAL_ACTIONS_ENABLED=false |
 | PASS | reproducible-dependency-boundaries | required Python packages and release actions are exactly pinned; optional provider and n8n tools remain outside core setup |
 | PASS | beginner-learning-sequence | the actionable sequence includes every core lesson and inserts the read-only software check plus Windows Setup before Foundation 3 |
-| PASS | current-json-syntax | 8 in-scope JSON files parsed |
-| PASS | schema-set | 5 current schema files include all required Course 1 contracts |
-| PASS | schema-structure | 5 schemas have unique IDs and closed object contracts |
-| PASS | schema-meta-validation | jsonschema accepted all 5 schemas as Draft 2020-12 |
+| PASS | course1-beginner-execution-contract | all 21 practice loops, controlled Python, resume blocks, one score, generated issue paths, provisional/final decisions, executable UAT, assessment gates, time ranges, and completed examples agree |
+| PASS | current-json-syntax | 10 in-scope JSON files parsed |
+| PASS | schema-set | 6 current schema files include all required Course 1 contracts |
+| PASS | schema-structure | 6 schemas have unique IDs and closed object contracts |
+| PASS | schema-meta-validation | jsonschema accepted all 6 schemas as Draft 2020-12 |
 | PASS | yaml-parse | stack-manifest.yaml parsed as a mapping |
 | PASS | practice-files | practice README, work_items.csv, and expected_issues.csv are present |
 | PASS | practice-shape | 12 work-item columns / 15 rows and 6 issue columns / 13 rows |
@@ -55,7 +59,7 @@ this deterministic validation.
 | PASS | practice-rule-register | R001-R011 are documented and covered using fixed date 2026-07-26 |
 | PASS | practice-synthetic-safety | fixed fictional identifiers, role-only ownership, no personal-data columns, and explicit no-real-data guarantees |
 | PASS | practice-rule-oracle | standard-library evaluator reproduces all 13 frozen issues, including both R010 duplicates and fixed-date R011 |
-| PASS | internal-links | 70 current local targets exist; 8 archived/generated targets ignored |
+| PASS | internal-links | 73 current local targets exist; 8 archived/generated targets ignored |
 
 ## Limits
 

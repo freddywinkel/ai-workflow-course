@@ -4,7 +4,10 @@ import { createServer } from "node:http";
 import { extname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const outputRoot = resolve(fileURLToPath(new URL("../dist", import.meta.url)));
+const outputRoot = resolve(
+  process.env.COURSE_DIST_PATH ||
+    fileURLToPath(new URL("../dist", import.meta.url)),
+);
 const port = Number(process.env.PORT || 4173);
 const basePath = `/${String(process.env.BASE_PATH || "/ai-workflow-course/")
   .replace(/^\/+|\/+$/g, "")}/`;

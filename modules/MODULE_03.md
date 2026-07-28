@@ -61,6 +61,24 @@ three-letter currency code for the euro.
 Markdown is a plain-text format for headings, lists, and tables; `.md` is its
 file name ending.
 
+## Start or resume safely
+
+At the start of every study session, rerun Stage 1. A closed PowerShell window
+forgets `$projectRoot` and `$moduleFolder`; it does not remove your evidence.
+Stage 1 restores those paths. The recreation copy step below checks for
+existing destinations and leaves them unchanged, so restarting cannot silently
+replace your work.
+
+Suggested sessions:
+
+1. build and check the four-row worked data contract;
+2. recreate the dictionary, rules, dependencies, and frozen expected results;
+3. run the Codex check, correct the evidence, and make the Git checkpoint.
+
+Before stopping, save every file and record the last completed numbered step.
+Rerun Stage 1 in the next PowerShell window; never rebuild the folder from
+memory.
+
 ## Follow along — I show you exactly how
 
 ### Stage 1 — Open the project evidence folder and create the mini-dataset
@@ -104,7 +122,10 @@ $workedRows[0].PSObject.Properties.Name
 $workedRows | Format-Table
 ```
 
-`Import-Csv` reads each row without editing the file.
+`Import-Csv` reads each row without editing the file. PowerShell represents
+each imported row as an object. `PSObject.Properties.Name` asks that object for
+the names of its fields—in this case, the five CSV headers. You do not need to
+memorise the internal term `PSObject`.
 
 **Expected result:** `4`, then the five headers, then four rows.
 
@@ -272,10 +293,19 @@ $sourceData = Join-Path $courseRoot 'practice_data\work_items.csv'
 $sourceGold = Join-Path $courseRoot 'practice_data\expected_issues.csv'
 $sourceReadme = Join-Path $courseRoot 'practice_data\README.md'
 $qualityTemplate = Join-Path $courseRoot 'templates\data_dictionary_and_quality_check.md'
-Copy-Item -LiteralPath $sourceData -Destination .\recreated_work_items.csv
-Copy-Item -LiteralPath $sourceGold -Destination .\recreated_expected_issues.csv
-Copy-Item -LiteralPath $sourceReadme -Destination .\recreated_requirements.md
-Copy-Item -LiteralPath $qualityTemplate -Destination .\data_dictionary_and_quality_check.md
+function Copy-NewPracticeFile {
+    param([string]$Source, [string]$Destination)
+    if (Test-Path -LiteralPath $Destination) {
+        Write-Host "Resume: $Destination already exists and was left unchanged."
+    } else {
+        Copy-Item -LiteralPath $Source -Destination $Destination
+        Write-Host "Created: $Destination"
+    }
+}
+Copy-NewPracticeFile $sourceData .\recreated_work_items.csv
+Copy-NewPracticeFile $sourceGold .\recreated_expected_issues.csv
+Copy-NewPracticeFile $sourceReadme .\recreated_requirements.md
+Copy-NewPracticeFile $qualityTemplate .\data_dictionary_and_quality_check.md
 Get-FileHash -LiteralPath $sourceData -Algorithm SHA256
 Get-FileHash -LiteralPath .\recreated_work_items.csv -Algorithm SHA256
 Get-Item .\data_dictionary_and_quality_check.md
@@ -295,7 +325,7 @@ The two hashes must match.
   value, rule, severity, message, and assessment date;
 - one valid, failing, blank/not-applicable, and boundary example per applicable
   rule;
-- a manual map of all 13 expected `(work_item_id, rule_code)` pairs;
+- a manual map of all 13 expected `(work_item_id, rule_code, field)` triples;
 - a data-minimisation decision.
 
 4. Reuse the demonstrated `Sort-Object -Unique` pattern and verify counts and

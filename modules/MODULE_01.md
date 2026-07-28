@@ -67,6 +67,25 @@ for this module. Do not add workplace interviews or real files.
 Windows PowerShell is the Windows command application used below. Notepad is
 the Windows plain-text editor used to create practice files.
 
+## Start or resume safely
+
+PowerShell forgets variables such as `$projectRoot` and `$moduleFolder` when
+you close its window. That is normal. At the start of **every** study session,
+rerun Stage 1 below. It rebuilds the paths and returns to the same module
+folder; it does not erase your files. If a later copy step reports that a
+destination already exists, keep that file and continue editing it. Never
+overwrite your own recreation merely to restart a lesson.
+
+Suggested sessions:
+
+1. Stage 1 through the worked observation;
+2. recreate the different 15-row process and complete both worksheets;
+3. run the Codex check, correct your work, and record the Git checkpoint.
+
+At a stopping point, save and close every Notepad file, run `Get-Location`, and
+write the last completed numbered step in a private note. Do not make the Git
+checkpoint until the module's full pass criteria are satisfied.
+
 ## Follow along — I show you exactly how
 
 ### Stage 1 — Open the one controlled project and create this evidence folder
@@ -152,7 +171,11 @@ later line is one row.
 ```powershell
 $workedSource = Join-Path $moduleFolder 'worked_queue.csv'
 $workedCopy = Join-Path $moduleFolder 'worked_queue_copy.csv'
-Copy-Item -LiteralPath $workedSource -Destination $workedCopy
+if (Test-Path -LiteralPath $workedCopy) {
+    Write-Host 'Resume: worked_queue_copy.csv already exists and was left unchanged.'
+} else {
+    Copy-Item -LiteralPath $workedSource -Destination $workedCopy
+}
 $workedSourceHash = Get-FileHash -LiteralPath $workedSource -Algorithm SHA256
 $workedCopyHash = Get-FileHash -LiteralPath $workedCopy -Algorithm SHA256
 $workedSourceHash
@@ -169,9 +192,11 @@ asks whether the two values are equal.
 **Expected result:** PowerShell displays two `SHA256` records with different
 paths but the same 64-character hash, followed by `True`.
 
-**Troubleshooting:** if the final result is `False`, close both CSV files, rerun
-`Copy-Item`, and then rerun the four hash lines. Do not edit either file merely
-to make the hashes match.
+**Troubleshooting:** if the final result is `False`, stop. Do not overwrite
+either file. Compare the two names and confirm that you copied the correct
+source. If you accidentally edited the copy, rename it to
+`worked_queue_copy_my_attempt.csv` so your work is preserved, then rerun the
+whole block to create a fresh guided copy.
 
 ### Stage 3 — Time and map the worked observation
 
@@ -344,9 +369,18 @@ $courseRoot = Read-Host 'Paste the full path to AI_WORKFLOW_DOCUMENT_SYSTEMS_COU
 $sourceCsv = Join-Path $courseRoot 'practice_data\work_items.csv'
 $stakeholderTemplate = Join-Path $courseRoot 'templates\stakeholder_and_user_map.md'
 $baselineTemplate = Join-Path $courseRoot 'templates\baseline_and_value_record.md'
-Copy-Item -LiteralPath $sourceCsv -Destination .\recreated_work_items.csv
-Copy-Item -LiteralPath $stakeholderTemplate -Destination .\stakeholder_and_user_map.md
-Copy-Item -LiteralPath $baselineTemplate -Destination .\baseline_and_value_record.md
+function Copy-NewPracticeFile {
+    param([string]$Source, [string]$Destination)
+    if (Test-Path -LiteralPath $Destination) {
+        Write-Host "Resume: $Destination already exists and was left unchanged."
+    } else {
+        Copy-Item -LiteralPath $Source -Destination $Destination
+        Write-Host "Created: $Destination"
+    }
+}
+Copy-NewPracticeFile $sourceCsv .\recreated_work_items.csv
+Copy-NewPracticeFile $stakeholderTemplate .\stakeholder_and_user_map.md
+Copy-NewPracticeFile $baselineTemplate .\baseline_and_value_record.md
 Get-FileHash -LiteralPath $sourceCsv -Algorithm SHA256
 Get-FileHash -LiteralPath .\recreated_work_items.csv -Algorithm SHA256
 Get-Item .\stakeholder_and_user_map.md,.\baseline_and_value_record.md

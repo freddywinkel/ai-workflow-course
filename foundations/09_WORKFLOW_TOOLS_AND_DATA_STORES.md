@@ -126,34 +126,53 @@ state, audit events, and the documented minimal architecture that owns them.
 - `Documents\controlled-ai-course-practice` exists.
 - No work account, connector, credential, or real dataset is open.
 
+### Start or resume safely — run this at every new PowerShell session
+
+Run this whole block whenever you start or resume Foundation 9:
+
+```powershell
+$documentsPath = [Environment]::GetFolderPath("MyDocuments")
+$practiceRoot = Join-Path $documentsPath "controlled-ai-course-practice"
+$lessonPath = Join-Path $practiceRoot "foundation-09"
+
+if (-not (Test-Path -LiteralPath $practiceRoot -PathType Container)) {
+    throw "STOP: the controlled-ai-course-practice folder is missing. Return to Foundation 1."
+}
+if (Test-Path -LiteralPath $lessonPath -PathType Leaf) {
+    throw "STOP: foundation-09 is a file, not a folder. Do not rename or delete it; ask Codex to inspect read-only."
+}
+if (-not (Test-Path -LiteralPath $lessonPath -PathType Container)) {
+    New-Item -ItemType Directory -Path $lessonPath | Out-Null
+    "Created a new foundation-09 folder."
+}
+else {
+    "Existing foundation-09 folder found; nothing was overwritten."
+}
+
+Set-Location -LiteralPath $lessonPath
+Get-Location
+Get-ChildItem -Force
+```
+
+Expected result: the location ends in `foundation-09`. The block creates that
+folder only when absent and lists existing contents without changing them.
+Resume only your own synthetic lesson attempt. Before opening an existing CSV
+or Markdown file in Notepad, read it with `Get-Content -LiteralPath` and leave
+a completed file unchanged. Stop if an item is unfamiliar or may contain real
+data.
+
 ### Part A — create source input, state, and audit event files
 
-Open PowerShell and run:
-
-```powershell
-Set-Location ([Environment]::GetFolderPath("MyDocuments"))
-```
-
-```powershell
-Set-Location "controlled-ai-course-practice"
-```
-
-```powershell
-New-Item -ItemType Directory -Path "foundation-09"
-```
-
-```powershell
-Set-Location "foundation-09"
-```
-
-What the setup commands do: they enter Documents, enter the existing practice
-root, create only `foundation-09`, and enter it.
-
-Run:
+If `queue_input.csv` was not listed, run:
 
 ```powershell
 notepad "queue_input.csv"
 ```
+
+If it was listed, inspect it first with
+`Get-Content -LiteralPath ".\queue_input.csv"`. If it already contains the
+exact synthetic guided input, skip its creation. Resume only your own
+incomplete synthetic attempt; do not paste over an unfamiliar file.
 
 Enter:
 

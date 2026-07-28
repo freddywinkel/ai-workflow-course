@@ -1,22 +1,31 @@
 # Course 1 Portable Contract Schemas
 
-These JSON Schema Draft 2020-12 files define the capstone boundaries:
+These JavaScript Object Notation (JSON) Schema Draft 2020-12 files define the
+same artifact contract used by `course1_capstone/workflow.py`:
 
 - `work_item.schema.json` — normalized synthetic work item;
 - `issue.schema.json` — deterministic verified exception;
-- `summary.schema.json` — optional AI or offline summary;
-- `approval.schema.json` — human decision bound to an exact draft revision;
-- `audit_event.schema.json` — material workflow event.
+- `summary.schema.json` — source-linked offline-mock or fallback summary;
+- `approval.schema.json` — one human decision bound to one exact draft;
+- `audit_event.schema.json` — one material workflow event;
+- `evaluation.schema.json` — the technical evaluation result.
 
-Validate a schema:
+The canonical identity of an issue is the exact triple
+`(work_item_id, rule_code, field)`. The `issue_id` stores that triple as
+`WI-0001|R001|title`. Never compare only the work-item identifier and rule:
+one rule may correctly flag more than one field.
+
+From the course repository, validate all schemas through the exact project
+interpreter:
 
 ```powershell
-python -c "import json, jsonschema; s=json.load(open('schemas/work_item.schema.json', encoding='utf-8')); jsonschema.Draft202012Validator.check_schema(s); print('schema ok')"
+$pythonExe = Join-Path (Get-Location) '.venv\Scripts\python.exe'
+& $pythonExe -c "import json, pathlib, jsonschema; files=sorted(pathlib.Path('schemas').glob('*.schema.json')); [jsonschema.Draft202012Validator.check_schema(json.loads(p.read_text(encoding='utf-8'))) for p in files]; print(f'{len(files)} schemas OK')"
 ```
 
 JSON Schema constrains representation. It does not prove that a value is true,
-that an issue is correct, or that a workflow is compliant. Deterministic rules,
-cross-record checks, evidence verification, state transitions, authorization,
-and idempotency remain separate responsibilities.
+an issue is correct, or a workflow is compliant. The runner separately checks
+business rules, cross-record conditions, evidence links, state transitions,
+authorization, expiry, and idempotency.
 
-Do not loosen a schema merely to make a failing model response pass.
+Do not loosen a schema merely to make a failing mock or model response pass.

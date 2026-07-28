@@ -13,15 +13,15 @@
     "title": "Controlled Artificial Intelligence (AI) Workflow Foundations",
     "shortTitle": "Course 1",
     "subtitle": "From zero technical knowledge to one safe, evidence-backed small and medium-sized enterprise (SME) workflow",
-    "version": "2.3.0",
-    "practiceRevision": 2,
+    "version": "2.4.0",
+    "practiceRevision": 3,
     "verifiedThrough": "2026-07-28",
     "learnerStartingPoint": "No coding, automation, consulting, or AI implementation knowledge is assumed.",
     "outcome": "You can investigate a small operational workflow, decide what should and should not be automated, and build a small prototype with clear limits, fixed checks, evidence, human approval, testing, and a documented manual way of working.",
     "estimatedHours": {
-      "minimum": 140,
+      "minimum": 137,
       "typical": 160,
-      "maximum": 180
+      "maximum": 181
     },
     "coreGroupIds": [
       "foundations",
@@ -52,7 +52,7 @@
     ],
     "capstone": {
       "title": "Synthetic SME Operations Exception Assistant",
-      "summary": "A local-first demonstration that reads a fictional CSV export, detects operational exceptions with deterministic rules, uses AI only for bounded issue-linked explanation, and produces a review package for a human decision.",
+      "summary": "A local-first demonstration that reads a fictional CSV export, detects operational exceptions with deterministic rules, tests a bounded future AI explanation contract with a deterministic offline mock, and produces a review package for a human decision. Course 1 makes no live AI call.",
       "nonGoals": [
         "It is not a production SaaS product.",
         "It does not take autonomous external action.",
@@ -80,6 +80,10 @@
           "id": "course-1-readiness-check",
           "revision": "2026-07-28",
           "sourcePath": "BEGINNER_READINESS_CHECK.md",
+          "estimatedPracticeHours": {
+            "minimum": 1,
+            "maximum": 2
+          },
           "legacyIds": [
             "beginner-readiness-check"
           ]
@@ -88,6 +92,10 @@
           "id": "course-1-beginner-software-check",
           "revision": "2026-07-28",
           "sourcePath": "BEGINNER_SOFTWARE_CHECK.md",
+          "estimatedPracticeHours": {
+            "minimum": 1,
+            "maximum": 2
+          },
           "legacyIds": []
         },
         {
@@ -102,6 +110,10 @@
           "id": "course-1-windows-setup",
           "revision": "2026-07-28",
           "sourcePath": "SETUP_WINDOWS.md",
+          "estimatedPracticeHours": {
+            "minimum": 4,
+            "maximum": 5
+          },
           "legacyIds": [
             "setup-windows"
           ]
@@ -119,6 +131,10 @@
           "revision": "2026-07-26",
           "sourcePath": "foundations/01_FILES_AND_TEXT.md",
           "title": "Foundation 1 — Files, Folders, Paths, and Plain Text",
+          "estimatedPracticeHours": {
+            "minimum": 5,
+            "maximum": 6
+          },
           "legacyIds": [
             "foundations-01-files-and-text"
           ]
@@ -128,6 +144,10 @@
           "revision": "2026-07-26",
           "sourcePath": "foundations/02_COMMAND_LINE_SURVIVAL.md",
           "title": "Foundation 2 — PowerShell and Command-Line Interface (CLI) Survival",
+          "estimatedPracticeHours": {
+            "minimum": 6,
+            "maximum": 7
+          },
           "legacyIds": [
             "foundations-02-command-line-survival"
           ]
@@ -137,6 +157,10 @@
           "revision": "2026-07-28",
           "sourcePath": "foundations/03_CODE_AND_PYTHON.md",
           "title": "Foundation 3 — Reading Code and the Python Programming Language",
+          "estimatedPracticeHours": {
+            "minimum": 8,
+            "maximum": 9
+          },
           "legacyIds": [
             "foundations-03-code-and-python"
           ]
@@ -146,6 +170,10 @@
           "revision": "2026-07-26",
           "sourcePath": "foundations/04_WEB_APIS_AND_JSON.md",
           "title": "Foundation 4 — Application Programming Interfaces (APIs), Hypertext Transfer Protocol (HTTP), and JavaScript Object Notation (JSON)",
+          "estimatedPracticeHours": {
+            "minimum": 5,
+            "maximum": 6
+          },
           "legacyIds": [
             "foundations-04-web-apis-and-json"
           ]
@@ -155,6 +183,10 @@
           "revision": "2026-07-26",
           "sourcePath": "foundations/05_GIT_AND_SAFE_CHANGES.md",
           "title": "Foundation 5 — Git, a Tool for Recording File Changes Safely",
+          "estimatedPracticeHours": {
+            "minimum": 5,
+            "maximum": 6
+          },
           "legacyIds": [
             "foundations-05-git-and-safe-changes"
           ]
@@ -164,6 +196,10 @@
           "revision": "2026-07-26",
           "sourcePath": "foundations/06_SPREADSHEETS_CSV_AND_DATA_QUALITY.md",
           "title": "Foundation 6 — Spreadsheets, Comma-Separated Values (CSV), and Data Quality",
+          "estimatedPracticeHours": {
+            "minimum": 6,
+            "maximum": 7
+          },
           "legacyIds": []
         },
         {
@@ -171,6 +207,10 @@
           "revision": "2026-07-28",
           "sourcePath": "foundations/07_AI_AND_CONTROLLED_WORKFLOWS.md",
           "title": "Foundation 7 — Artificial Intelligence (AI) and Controlled Workflows",
+          "estimatedPracticeHours": {
+            "minimum": 5,
+            "maximum": 6
+          },
           "legacyIds": []
         },
         {
@@ -178,6 +218,10 @@
           "revision": "2026-07-26",
           "sourcePath": "foundations/08_SAFE_AI_ASSISTED_BUILDING.md",
           "title": "Foundation 8 — Safe Artificial Intelligence (AI)-Assisted Building",
+          "estimatedPracticeHours": {
+            "minimum": 6,
+            "maximum": 7
+          },
           "legacyIds": []
         },
         {
@@ -185,6 +229,10 @@
           "revision": "2026-07-28",
           "sourcePath": "foundations/09_WORKFLOW_TOOLS_AND_DATA_STORES.md",
           "title": "Foundation 9 — Workflow Tools and Data Stores",
+          "estimatedPracticeHours": {
+            "minimum": 5,
+            "maximum": 6
+          },
           "legacyIds": []
         }
       ]
@@ -200,6 +248,10 @@
           "revision": "2026-07-28",
           "sourcePath": "modules/MODULE_01.md",
           "title": "Module 1 — Observe the Work Before You Automate",
+          "estimatedPracticeHours": {
+            "minimum": 6,
+            "maximum": 8
+          },
           "legacyIds": []
         },
         {
@@ -207,6 +259,10 @@
           "revision": "2026-07-28",
           "sourcePath": "modules/MODULE_02.md",
           "title": "Module 2 — Select and Bound a Worthwhile Opportunity",
+          "estimatedPracticeHours": {
+            "minimum": 6,
+            "maximum": 8
+          },
           "legacyIds": []
         },
         {
@@ -214,27 +270,43 @@
           "revision": "2026-07-28",
           "sourcePath": "modules/MODULE_03.md",
           "title": "Module 3 — Understand the Data and Rules",
+          "estimatedPracticeHours": {
+            "minimum": 8,
+            "maximum": 10
+          },
           "legacyIds": []
         },
         {
           "id": "course-1-module-04",
           "revision": "2026-07-28",
           "sourcePath": "modules/MODULE_04.md",
-          "title": "Module 4 — Build the Rule-Based Workflow Before Adding Artificial Intelligence (AI)",
+          "title": "Module 4 — Build and Test the Rule-based Workflow",
+          "estimatedPracticeHours": {
+            "minimum": 12,
+            "maximum": 16
+          },
           "legacyIds": []
         },
         {
           "id": "course-1-module-05",
           "revision": "2026-07-28",
           "sourcePath": "modules/MODULE_05.md",
-          "title": "Module 5 — Add One Bounded Artificial Intelligence (AI) Step",
+          "title": "Module 5 — Design One Bounded, Replaceable Artificial Intelligence (AI) Contribution and Test It Offline",
+          "estimatedPracticeHours": {
+            "minimum": 8,
+            "maximum": 12
+          },
           "legacyIds": []
         },
         {
           "id": "course-1-module-06",
           "revision": "2026-07-28",
           "sourcePath": "modules/MODULE_06.md",
-          "title": "Module 6 — Keep Humans in Control",
+          "title": "Module 6 — Make Human Control Real and Complete the Runnable Workflow",
+          "estimatedPracticeHours": {
+            "minimum": 8,
+            "maximum": 12
+          },
           "legacyIds": []
         },
         {
@@ -242,6 +314,10 @@
           "revision": "2026-07-28",
           "sourcePath": "modules/MODULE_07.md",
           "title": "Module 7 — Apply Dutch Small and Medium-sized Enterprise (SME) Guardrails and Choose the Right Tool",
+          "estimatedPracticeHours": {
+            "minimum": 8,
+            "maximum": 12
+          },
           "legacyIds": []
         },
         {
@@ -249,13 +325,21 @@
           "revision": "2026-07-28",
           "sourcePath": "modules/MODULE_08.md",
           "title": "Module 8 — Evaluate Usefulness and Business Value",
+          "estimatedPracticeHours": {
+            "minimum": 8,
+            "maximum": 12
+          },
           "legacyIds": []
         },
         {
           "id": "course-1-module-09",
           "revision": "2026-07-28",
           "sourcePath": "modules/MODULE_09.md",
-          "title": "Module 9 — Run User Acceptance Testing (UAT), Plan Adoption, and Hand Over",
+          "title": "Module 9 — Run User Acceptance Testing (UAT), Hand Over, and Pass the Course 1 Assessment",
+          "estimatedPracticeHours": {
+            "minimum": 16,
+            "maximum": 22
+          },
           "legacyIds": []
         }
       ]
@@ -387,6 +471,27 @@
           ]
         },
         {
+          "id": "course-1-runnable-capstone-guide",
+          "revision": "2026-07-28",
+          "sourcePath": "course1_capstone/README.md",
+          "title": "Course 1 Runnable Capstone — How the Working Workflow Fits Together",
+          "legacyIds": []
+        },
+        {
+          "id": "course-1-executable-scenario-matrix",
+          "revision": "2026-07-28",
+          "sourcePath": "course1_capstone/tests/SCENARIO_MATRIX.md",
+          "title": "Course 1 Executable Scenario Matrix",
+          "legacyIds": []
+        },
+        {
+          "id": "course-1-requirements-traceability",
+          "revision": "2026-07-28",
+          "sourcePath": "COURSE_1_REQUIREMENTS_TRACEABILITY.md",
+          "title": "Course 1 Requirement-to-Practice Map",
+          "legacyIds": []
+        },
+        {
           "id": "course-1-assessment-rubric",
           "revision": "2026-07-28",
           "sourcePath": "ASSESSMENT_AND_RUBRIC.md",
@@ -449,6 +554,55 @@
           "legacyIds": [
             "templates-index"
           ]
+        },
+        {
+          "id": "course-1-worked-examples-index",
+          "revision": "2026-07-28",
+          "sourcePath": "worked_examples/README.md",
+          "title": "Completed Worksheet Examples — How to Use Them",
+          "legacyIds": []
+        },
+        {
+          "id": "course-1-worked-example-module-07-risk",
+          "revision": "2026-07-28",
+          "sourcePath": "worked_examples/module_07_risk_and_escalation_screen.md",
+          "title": "Completed Module 7 Example — Risk and Escalation Screen",
+          "legacyIds": []
+        },
+        {
+          "id": "course-1-worked-example-module-07-tool-fit",
+          "revision": "2026-07-28",
+          "sourcePath": "worked_examples/module_07_tool_fit_and_ownership_record.md",
+          "title": "Completed Module 7 Example — Tool Fit and Ownership",
+          "legacyIds": []
+        },
+        {
+          "id": "course-1-worked-example-module-09-uat",
+          "revision": "2026-07-28",
+          "sourcePath": "worked_examples/module_09_uat_script.md",
+          "title": "Completed Module 9 Example — User Acceptance Test",
+          "legacyIds": []
+        },
+        {
+          "id": "course-1-worked-example-module-09-adoption",
+          "revision": "2026-07-28",
+          "sourcePath": "worked_examples/module_09_adoption_and_training_plan.md",
+          "title": "Completed Module 9 Example — Adoption and Training",
+          "legacyIds": []
+        },
+        {
+          "id": "course-1-worked-example-module-09-handover",
+          "revision": "2026-07-28",
+          "sourcePath": "worked_examples/module_09_acceptance_and_handover.md",
+          "title": "Completed Module 9 Example — Acceptance and Handover",
+          "legacyIds": []
+        },
+        {
+          "id": "course-1-worked-example-module-09-assessment",
+          "revision": "2026-07-28",
+          "sourcePath": "worked_examples/module_09_assessment_record.md",
+          "title": "Completed Module 9 Example — Course 1 Assessment Record",
+          "legacyIds": []
         },
         {
           "id": "course-1-worksheet-opportunity-scorecard",
@@ -667,7 +821,7 @@
   ],
   "career": {
     "title": "Career sequence",
-    "summary": "This progressive web app (PWA), an installable website that can keep working without an internet connection, teaches Course 1 in full and now includes one optional advanced Course 4 capstone prototype. The rest of Courses 2–6 remain separate future builds so technical foundations, consulting practice, rules and oversight, and commercial development are not confused with one another.",
+    "summary": "This progressive web app (PWA), an installable website that can keep working without an internet connection, teaches Course 1 in full. The Career path keeps Courses 2–6 and the optional later cloud prototype visible as future stages without mixing them into the Course 1 learning sequence or completion result.",
     "targetRole": "Controlled Artificial Intelligence (AI) Workflow Implementation Consultant for Dutch Small and Medium-sized Enterprises (SMEs)",
     "courses": [
       {

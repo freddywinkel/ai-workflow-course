@@ -58,6 +58,15 @@ or commands aimed at a broad user or drive folder.
 - `Documents\controlled-ai-course-practice` exists.
 - No PowerShell window is currently running a server or installation.
 
+### Start or resume safely
+
+At every new PowerShell session, repeat Part A to reach Documents, then run the
+guarded Part B block. It creates `foundation-02` only when absent, enters it,
+and lists existing content. If you see your own synthetic lesson work, resume
+at the first unfinished step. Do not repeat a write command for a file that
+already exists until you inspect it. Stop if a name is unfamiliar, is the
+wrong kind of item, or may contain real data.
+
 ### Part A — open PowerShell and locate Documents
 
 1. Press the Windows key once.
@@ -106,23 +115,30 @@ or commands aimed at a broad user or drive folder.
 
    What this does: it enters the practice root created in Foundation 1.
 
-2. Run:
+2. Run this guarded block exactly as shown. You do not need to memorise `if`
+   yet: it means “perform the indented action only when the condition is true.”
 
    ```powershell
-   New-Item -ItemType Directory -Path "foundation-02"
+   $lessonPath = Join-Path (Get-Location).Path "foundation-02"
+   if (Test-Path -LiteralPath $lessonPath -PathType Leaf) {
+       throw "STOP: foundation-02 is a file, not a folder. Do not rename or delete it; ask Codex to inspect read-only."
+   }
+   if (-not (Test-Path -LiteralPath $lessonPath -PathType Container)) {
+       New-Item -ItemType Directory -Path $lessonPath | Out-Null
+       "Created a new foundation-02 folder."
+   }
+   else {
+       "Existing foundation-02 folder found; nothing was overwritten."
+   }
+   Set-Location -LiteralPath $lessonPath
+   Get-ChildItem -Force
    ```
 
-   What this does: it creates one new folder. `New-Item` creates an item,
-   `-ItemType Directory` says the item is a folder, and `-Path` supplies its
-   name.
+   What this does: `Test-Path` first checks what exists. `New-Item` creates one
+   new folder only when it is missing. `Set-Location` enters the selected
+   folder, and `Get-ChildItem -Force` shows its contents without changing them.
 
 3. Run:
-
-   ```powershell
-   Set-Location "foundation-02"
-   ```
-
-4. Run:
 
    ```powershell
    Get-Location
@@ -138,10 +154,17 @@ its left to the command on its right. `-LiteralPath` tells PowerShell to treat a
 path exactly as written. **Unicode Transformation Format 8-bit (UTF-8)** is a
 common text encoding; `-Encoding utf8` selects it for the saved file.
 
-1. Run:
+1. Run this non-overwriting version:
 
    ```powershell
-   "Synthetic command-line practice" | Set-Content -LiteralPath "terminal-note.txt" -Encoding utf8
+   if (Test-Path -LiteralPath "terminal-note.txt") {
+       "Existing terminal-note.txt found; it was not overwritten."
+       Get-Content -LiteralPath "terminal-note.txt"
+   }
+   else {
+       "Synthetic command-line practice" | Set-Content -LiteralPath "terminal-note.txt" -Encoding utf8
+       "Created terminal-note.txt."
+   }
    ```
 
    What this does: the pipeline sends the text on its left to `Set-Content`.
@@ -213,9 +236,8 @@ common text encoding; `-Encoding utf8` selects it for the saved file.
 
 ### Troubleshooting
 
-- If `foundation-02` already exists, PowerShell reports that it exists. Do not
-  delete it. Enter it with `Set-Location "foundation-02"` and confirm it
-  contains only your synthetic practice.
+- If `foundation-02` already exists, the guarded block reports that nothing was
+  overwritten and lists its contents. Resume only your synthetic practice.
 - If `controlled-ai-course-practice` cannot be found, return to Foundation 1
   and confirm its spelling and Documents location.
 - If a command appears to keep running, hold the Control key (`Ctrl`) and press
@@ -240,6 +262,11 @@ Inside `foundation-02`, use the commands you learned to:
 Do not reuse `terminal-note.txt` or its sentence. Confirm `Get-Location` ends in
 `foundation-02` after you return. This creates a new nested folder and new
 content rather than copying the guided file.
+
+If `recreated-check` already exists, inspect it before entering it. Resume your
+own incomplete synthetic recreation or leave a completed one unchanged. Do
+not overwrite an existing `status-note.txt`; stop if the content is unfamiliar
+or real.
 
 ## Ask Codex to check your work
 

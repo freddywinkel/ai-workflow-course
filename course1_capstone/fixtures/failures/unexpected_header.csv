@@ -1,0 +1,2 @@
+work_item_id,source_reference,title,owner_role,status,priority,received_date,due_date,completed_date,amount,currency,unexpected_column
+WI-9201,REF-9201,Synthetic row,operations,new,low,2026-07-20,2026-08-01,,,,general

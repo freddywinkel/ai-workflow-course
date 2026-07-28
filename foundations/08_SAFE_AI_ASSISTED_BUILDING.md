@@ -92,9 +92,63 @@ nothing and makes no network call.
 ### Prerequisites and start state
 
 - Foundations 1–7 are complete.
-- Python 3, PowerShell, and Notepad are available.
+- Windows Setup is complete, including the project virtual environment at
+  `Documents\AI-workflow-learning\operations-exception-assistant\.venv`.
+- PowerShell and Notepad are available.
 - `Documents\controlled-ai-course-practice` exists.
 - No secret, real dataset, or production repository is open.
+
+### Start or resume safely — run this at every new PowerShell session
+
+PowerShell forgets variables when you close its window. Run this whole block
+whenever you start or resume Foundation 8:
+
+```powershell
+$documentsPath = [Environment]::GetFolderPath("MyDocuments")
+$projectRoot = Join-Path $documentsPath "AI-workflow-learning\operations-exception-assistant"
+$pythonExe = Join-Path $projectRoot ".venv\Scripts\python.exe"
+$practiceRoot = Join-Path $documentsPath "controlled-ai-course-practice"
+$lessonPath = Join-Path $practiceRoot "foundation-08"
+
+if (-not (Test-Path -LiteralPath $pythonExe -PathType Leaf)) {
+    throw "STOP: the exact course Python file is missing. Return to Windows Setup; do not use a bare python command."
+}
+$pythonVersion = & $pythonExe --version
+if ($LASTEXITCODE -ne 0 -or $pythonVersion -notmatch '^Python 3\.14\.\d+$') {
+    throw "STOP: expected a stable Python 3.14 patch from the project virtual environment."
+}
+if (-not (Test-Path -LiteralPath $practiceRoot -PathType Container)) {
+    throw "STOP: the controlled-ai-course-practice folder is missing. Return to Foundation 1."
+}
+if (Test-Path -LiteralPath $lessonPath -PathType Leaf) {
+    throw "STOP: foundation-08 is a file, not a folder. Do not rename or delete it; ask Codex to inspect read-only."
+}
+if (-not (Test-Path -LiteralPath $lessonPath -PathType Container)) {
+    New-Item -ItemType Directory -Path $lessonPath | Out-Null
+    "Created a new foundation-08 folder."
+}
+else {
+    "Existing foundation-08 folder found; nothing was overwritten."
+}
+
+Set-Location -LiteralPath $lessonPath
+Get-Location
+$pythonExe
+$pythonVersion
+Get-ChildItem -Force
+```
+
+This derives the exact project interpreter from your real Documents path,
+checks that it exists, accepts only a stable Python 3.14 patch, creates the
+lesson folder only when absent, and shows existing contents before you edit.
+The displayed executable path must end in
+`AI-workflow-learning\operations-exception-assistant\.venv\Scripts\python.exe`,
+and the current location must end in
+`controlled-ai-course-practice\foundation-08`.
+
+If existing files are listed, inspect them before continuing. Resume only your
+own synthetic lesson attempt. Do not overwrite unfamiliar material and do not
+use a folder containing real data.
 
 ### Part A — define the bounded requirement
 
@@ -114,26 +168,9 @@ Acceptance criteria:
 
 ### Part B — create and run the smallest program
 
-Open PowerShell and run:
-
-```powershell
-Set-Location ([Environment]::GetFolderPath("MyDocuments"))
-```
-
-```powershell
-Set-Location "controlled-ai-course-practice"
-```
-
-```powershell
-New-Item -ItemType Directory -Path "foundation-08"
-```
-
-```powershell
-Set-Location "foundation-08"
-```
-
-What the setup commands do: they enter Documents, enter the existing practice
-root, create only `foundation-08`, and enter it.
+Make sure you ran the complete **Start or resume safely** block in this
+PowerShell window. Confirm that `Get-ChildItem -Force` showed no unfamiliar or
+real-data file.
 
 Run:
 
@@ -173,7 +210,7 @@ What the function does:
 Run:
 
 ```powershell
-python ".\title_check.py"
+& $pythonExe ".\title_check.py"
 ```
 
 Expected output:
@@ -237,8 +274,11 @@ check.
 
 - If an assertion fails, do not delete it. Compare the function and input with
   the stated acceptance criteria.
-- If Python reports a syntax or indentation error, compare punctuation and
-  leading spaces with the sample.
+- If the exact project Python reports a syntax or indentation error, compare
+  punctuation and leading spaces with the sample.
+- If `$pythonExe` is missing, not recognised, or reports the wrong version,
+  rerun the complete **Start or resume safely** block. If it still stops,
+  return to Windows Setup. Do not use a bare `python` command.
 - If an assistant proposes installing a package for this function, reject that
   expansion; built-in Python is sufficient.
 - If `foundation-08` already exists, do not delete it. Inspect its contents
@@ -263,6 +303,12 @@ assessment, and one honest limitation.
 
 Do not copy the title function and merely rename the file. Explain why a list
 membership check is appropriate for this new rule.
+
+Run the recreation with the exact project interpreter:
+
+```powershell
+& $pythonExe ".\priority_check.py"
+```
 
 ## Ask Codex to check your work
 
@@ -290,8 +336,10 @@ Report PASS or NOT YET for each criterion:
 6. Both evidence files state claim, observed evidence, side effects, and a
    limitation.
 
-You may run only the two local Python files to observe their output. Make no
-changes. Explain NOT YET in beginner language.
+You may derive only
+Documents\AI-workflow-learning\operations-exception-assistant\.venv\Scripts\python.exe
+and use that exact executable to run the two local Python files. Do not use a
+bare python command. Make no changes. Explain NOT YET in beginner language.
 This folder must contain synthetic course data only. I must not include
 secrets, personal data, client data, employer data, or other work data. If you
 notice such content, stop, do not repeat it, and tell me to remove it locally.
@@ -302,6 +350,8 @@ work data.
 ## Pass criteria
 
 - [ ] Both programs print their exact expected pass messages.
+- [ ] Both programs were run through the derived project `$pythonExe`, which
+      reports a stable Python 3.14 patch.
 - [ ] I can explain each function's input, output, and absence of side effects.
 - [ ] I can connect every assertion to one acceptance criterion.
 - [ ] Both evidence files distinguish claim, evidence, and limitation.

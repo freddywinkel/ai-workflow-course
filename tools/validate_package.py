@@ -70,6 +70,13 @@ MODULE_TEMPLATE_REFERENCES = {
     1: ("stakeholder_and_user_map.md", "baseline_and_value_record.md"),
     2: ("workflow_opportunity_scorecard.md",),
     3: ("data_dictionary_and_quality_check.md",),
+    7: ("risk_and_escalation_screen.md", "tool_fit_and_ownership_record.md"),
+    8: ("pilot_decision_record.md",),
+    9: (
+        "uat_script.md",
+        "adoption_and_training_plan.md",
+        "acceptance_and_handover.md",
+    ),
 }
 FINAL_DECISIONS = (
     "ACCEPT FOR SYNTHETIC PORTFOLIO",
@@ -166,11 +173,19 @@ REQUIRED_ONBOARDING_PHRASES = {
         "application programming interface (API)",
         "Long-Term Support (LTS)",
     ),
+    "modules/MODULE_03.md": (
+        "PowerShell represents each imported row as an object",
+        "`PSObject.Properties.Name` asks that object for the names of its fields",
+    ),
+    "templates/architecture_decision_record.md": (
+        "Architecture Decision Record (ADR)",
+    ),
 }
 
 EXPECTED_SCHEMA_FILES = {
     "approval.schema.json",
     "audit_event.schema.json",
+    "evaluation.schema.json",
     "issue.schema.json",
     "summary.schema.json",
     "work_item.schema.json",
@@ -228,6 +243,30 @@ IGNORED_TOP_LEVEL_DIRECTORIES = {"future_courses"}
 FENCED_CODE_RE = re.compile(r"```.*?```|~~~.*?~~~", re.DOTALL)
 INLINE_LINK_RE = re.compile(r"!?\[[^\]]*\]\(([^)]+)\)")
 REFERENCE_LINK_RE = re.compile(r"^\s*\[[^\]]+\]:\s*(\S+)", re.MULTILINE)
+
+STRATEGIC_FOCUS_REQUIREMENTS = {
+    "AGENTS.md": (
+        "STRATEGIC_FOCUS.md",
+        "A new tool, artificial intelligence feature, promotional credit",
+        "STRATEGIC FIT: PASS",
+        "does not change the main goal",
+        "explicitly approves a documented goal change",
+    ),
+    "STRATEGIC_FOCUS.md": (
+        "Build the safest, most durable, market-relevant path",
+        "Do not let a temporary opportunity choose the curriculum",
+        "STRATEGIC FIT: PASS",
+        "STRATEGIC FIT: PAUSE",
+        "STRATEGIC FIT: REJECT",
+        "Explicit goal-change procedure",
+        "Promotional Google Cloud credit does not make Google the program-wide default",
+    ),
+    "README.md": (
+        "## Project decision rule",
+        "[Strategic Focus Rule](STRATEGIC_FOCUS.md)",
+        "Changing the main goal requires a documented comparison",
+    ),
+}
 
 
 @dataclass
@@ -301,6 +340,35 @@ def load_json_object(path: Path) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise ValueError("top-level JSON value is not an object")
     return value
+
+
+def validate_strategic_focus_guardrail(root: Path, report: Report) -> None:
+    failures: list[str] = []
+    for relative_path, required_phrases in STRATEGIC_FOCUS_REQUIREMENTS.items():
+        path = root / relative_path
+        if not path.is_file():
+            failures.append(f"{relative_path} is missing")
+            continue
+
+        content = path.read_text(encoding="utf-8")
+        missing_phrases = [
+            phrase for phrase in required_phrases if phrase not in content
+        ]
+        if missing_phrases:
+            failures.append(
+                f"{relative_path} is missing: {', '.join(missing_phrases)}"
+            )
+
+    if failures:
+        report.failed(
+            "strategic-focus-guardrail",
+            compact(failures, limit=12),
+        )
+    else:
+        report.passed(
+            "strategic-focus-guardrail",
+            "standing instructions, decision rule, and project overview enforce PASS/PAUSE/REJECT and explicit goal changes",
+        )
 
 
 def validate_curriculum(root: Path, report: Report) -> dict[str, Any] | None:
@@ -420,6 +488,11 @@ def validate_curriculum(root: Path, report: Report) -> dict[str, Any] | None:
     current_ids: list[str] = []
     legacy_ids: list[str] = []
     source_paths: list[str] = []
+    learning_sequence_ids = {
+        item
+        for item in course.get("learningSequenceIds", [])
+        if isinstance(item, str)
+    }
     career_courses = career.get("courses")
     course_sequence_by_id = (
         {
@@ -497,6 +570,27 @@ def validate_curriculum(root: Path, report: Report) -> dict[str, Any] | None:
                 document_failures.append(
                     f"{document_id}.title is present but empty"
                 )
+
+            if document_id in learning_sequence_ids:
+                practice_hours = document.get("estimatedPracticeHours")
+                if not isinstance(practice_hours, dict):
+                    document_failures.append(
+                        f"{document_id}.estimatedPracticeHours must be an object"
+                    )
+                else:
+                    practice_minimum = practice_hours.get("minimum")
+                    practice_maximum = practice_hours.get("maximum")
+                    if not all(
+                        isinstance(value, int) and value > 0
+                        for value in (practice_minimum, practice_maximum)
+                    ):
+                        document_failures.append(
+                            f"{document_id}.estimatedPracticeHours values must be positive integers"
+                        )
+                    elif practice_minimum > practice_maximum:
+                        document_failures.append(
+                            f"{document_id}.estimatedPracticeHours minimum exceeds maximum"
+                        )
 
             legacy = document.get("legacyIds")
             if not isinstance(legacy, list):
@@ -709,6 +803,90 @@ def validate_career_metadata(career: dict[str, Any], report: Report) -> None:
         )
 
 
+def validate_release_metadata_sync(
+    root: Path,
+    curriculum: dict[str, Any] | None,
+    report: Report,
+) -> None:
+    if not isinstance(curriculum, dict):
+        report.failed(
+            "release-metadata-sync",
+            "cannot compare release metadata without curriculum.json",
+        )
+        return
+
+    course = curriculum.get("course")
+    if not isinstance(course, dict):
+        report.failed(
+            "release-metadata-sync",
+            "curriculum.course is not an object",
+        )
+        return
+
+    version = course.get("version")
+    practice_revision = course.get("practiceRevision")
+    verified_through = course.get("verifiedThrough")
+    course_id = course.get("id")
+    failures: list[str] = []
+
+    stack_path = root / "stack-manifest.yaml"
+    if not stack_path.is_file():
+        failures.append("stack-manifest.yaml is missing")
+    else:
+        stack_text = stack_path.read_text(encoding="utf-8")
+        expected_stack_lines = (
+            f"course_id: {course_id}",
+            f"course_version: {version}",
+            f"practice_revision: {practice_revision}",
+            f'last_verified: "{verified_through}"',
+        )
+        for line in expected_stack_lines:
+            if line not in stack_text:
+                failures.append(f"stack-manifest.yaml lacks {line!r}")
+
+    package_path = root / "app" / "package.json"
+    lock_path = root / "app" / "package-lock.json"
+    for path, label in (
+        (package_path, "app/package.json"),
+        (lock_path, "app/package-lock.json"),
+    ):
+        if not path.is_file():
+            failures.append(f"{label} is missing")
+            continue
+        try:
+            value = load_json_object(path)
+        except Exception as exc:
+            failures.append(f"{label} cannot be read: {exc}")
+            continue
+        if value.get("version") != version:
+            failures.append(f"{label} version is not {version}")
+        if label.endswith("package-lock.json"):
+            root_package = value.get("packages", {}).get("")
+            if not isinstance(root_package, dict) or root_package.get("version") != version:
+                failures.append(f"{label} root package version is not {version}")
+
+    expected_text = {
+        "README.md": f"- Version: {version}",
+        "COURSE_CHANGELOG.md": f"## {version} —",
+        "RELEASE_VALIDATION.md": f"Course 1 version {version}",
+        "PWA_AND_UPDATES.md": f"Course 1 version {version}",
+    }
+    for relative_path, fragment in expected_text.items():
+        path = root / relative_path
+        if not path.is_file():
+            failures.append(f"{relative_path} is missing")
+        elif fragment not in path.read_text(encoding="utf-8"):
+            failures.append(f"{relative_path} lacks current release marker {fragment!r}")
+
+    if failures:
+        report.failed("release-metadata-sync", compact(failures, limit=20))
+    else:
+        report.passed(
+            "release-metadata-sync",
+            f"Course 1 version {version}, practice revision {practice_revision}, app metadata, manifest, and release documents agree",
+        )
+
+
 def validate_course4_capstone_integration(
     root: Path,
     curriculum: dict[str, Any] | None,
@@ -816,6 +994,7 @@ def validate_course4_capstone_integration(
         "Dockerfile",
         "pyproject.toml",
         "requirements.txt",
+        "requirements-ci.txt",
         "src/controlled_intake/main.py",
         "src/controlled_intake/pipeline.py",
         "src/controlled_intake/providers.py",
@@ -1419,6 +1598,19 @@ def validate_integrated_course_contract(
             dependency_failures.append(
                 "the optional OpenAI provider package remains in the required dependency set"
             )
+        if not any(
+            line.casefold().startswith("pytest==") for line in requirement_lines
+        ):
+            dependency_failures.append(
+                "requirements-course.txt lacks an exact pytest pin"
+            )
+        if not any(
+            line.casefold().startswith("jsonschema==")
+            for line in requirement_lines
+        ):
+            dependency_failures.append(
+                "requirements-course.txt lacks an exact jsonschema pin"
+            )
     else:
         dependency_failures.append("requirements-course.txt is missing")
 
@@ -1426,7 +1618,7 @@ def validate_integrated_course_contract(
     if setup_path.is_file():
         setup_text = setup_path.read_text(encoding="utf-8")
         for fragment in (
-            "python -m pip freeze",
+            "& $pythonExe -m pip list --format=freeze",
             r"evidence\setup-dependencies.txt",
             "Do not install Node.js or n8n",
         ):
@@ -1470,7 +1662,7 @@ def validate_integrated_course_contract(
     else:
         report.passed(
             "capstone-artifact-coverage",
-            "Modules 1-3 use all four previously missing templates and Module 9 creates the final index and change log",
+            "Modules 1-3 and 7-9 use their required templates; Module 9 creates the final index and change log",
         )
 
     if decision_failures:
@@ -1515,6 +1707,447 @@ def validate_integrated_course_contract(
         report.passed(
             "beginner-learning-sequence",
             "the actionable sequence includes every core lesson and inserts the read-only software check plus Windows Setup before Foundation 3",
+        )
+
+
+def validate_course1_beginner_execution_contract(
+    root: Path, curriculum: dict[str, Any] | None, report: Report
+) -> None:
+    """Catch learner-facing contradictions that heading checks cannot detect."""
+
+    failures: list[str] = []
+
+    controlled_python_files = (
+        "SETUP_WINDOWS.md",
+        "foundations/03_CODE_AND_PYTHON.md",
+        "foundations/04_WEB_APIS_AND_JSON.md",
+        "foundations/08_SAFE_AI_ASSISTED_BUILDING.md",
+        "modules/MODULE_04.md",
+        "modules/MODULE_05.md",
+        "modules/MODULE_06.md",
+        "modules/MODULE_08.md",
+    )
+    for source_path in controlled_python_files:
+        path = root / source_path
+        if not path.is_file():
+            failures.append(f"{source_path} is missing")
+            continue
+        text = path.read_text(encoding="utf-8")
+        if "Activate.ps1" in text:
+            failures.append(
+                f"{source_path} still depends on PowerShell environment activation"
+            )
+        powershell_blocks = re.findall(
+            r"(?ms)^```(?:powershell|PowerShell|ps1)\s*\n(.*?)^```\s*$",
+            text,
+        )
+        for block_number, block in enumerate(powershell_blocks, 1):
+            if re.search(r"(?m)^\s*(?:python|python3|py|pip)\s+", block):
+                failures.append(
+                    f"{source_path} PowerShell block {block_number} contains a bare Python or pip learner command"
+                )
+        if "$pythonExe" not in text:
+            failures.append(
+                f"{source_path} does not define or use the controlled $pythonExe path"
+            )
+
+    for foundation_number in range(1, 10):
+        candidates = sorted(
+            (root / "foundations").glob(f"{foundation_number:02d}_*.md")
+        )
+        if len(candidates) != 1:
+            failures.append(
+                f"Foundation {foundation_number} does not resolve to exactly one file"
+            )
+            continue
+        foundation_text = candidates[0].read_text(encoding="utf-8")
+        resume_heading_count = len(
+            re.findall(
+                r"(?m)^#{2,4} Start or resume safely(?:\s|$)",
+                foundation_text,
+            )
+        )
+        if resume_heading_count != 1:
+            failures.append(
+                f"{candidates[0].relative_to(root)} must contain exactly one Start or resume safely section"
+            )
+
+    for module_number in range(1, 10):
+        source_path = f"modules/MODULE_{module_number:02d}.md"
+        path = root / source_path
+        if not path.is_file():
+            failures.append(f"{source_path} is missing")
+            continue
+        text = path.read_text(encoding="utf-8")
+        for required in ("## Start or resume safely", "Suggested sessions:"):
+            if required not in text:
+                failures.append(f"{source_path} lacks {required!r}")
+
+    if isinstance(curriculum, dict):
+        course = curriculum.get("course", {})
+        learning_sequence = course.get("learningSequenceIds", [])
+        document_paths = {
+            document.get("id"): document.get("sourcePath")
+            for group in curriculum.get("groups", [])
+            if isinstance(group, dict)
+            for document in group.get("documents", [])
+            if isinstance(document, dict)
+        }
+        if len(learning_sequence) != 21:
+            failures.append(
+                f"Course 1 practical sequence must contain 21 pages; found {len(learning_sequence)}"
+            )
+        sequence_minimum = 0
+        sequence_maximum = 0
+        sequence_hours_complete = True
+        documents_by_id = {
+            document.get("id"): document
+            for group in curriculum.get("groups", [])
+            if isinstance(group, dict)
+            for document in group.get("documents", [])
+            if isinstance(document, dict)
+        }
+        for document_id in learning_sequence:
+            source_path = document_paths.get(document_id)
+            path = root / str(source_path)
+            if not source_path or not path.is_file():
+                failures.append(
+                    f"required practice page {document_id!r} has no readable source"
+                )
+                continue
+            text = path.read_text(encoding="utf-8")
+            for practice_step in (
+                "Follow along",
+                "Now recreate it yourself",
+                "Ask Codex to check your work",
+                "Pass criteria",
+            ):
+                if practice_step not in text:
+                    failures.append(
+                        f"{source_path} lacks required practice step {practice_step!r}"
+                    )
+            estimate = documents_by_id.get(document_id, {}).get(
+                "estimatedPracticeHours"
+            )
+            if not isinstance(estimate, dict) or not all(
+                isinstance(estimate.get(key), int)
+                for key in ("minimum", "maximum")
+            ):
+                sequence_hours_complete = False
+            else:
+                sequence_minimum += estimate["minimum"]
+                sequence_maximum += estimate["maximum"]
+        declared_hours = course.get("estimatedHours", {})
+        if sequence_hours_complete and (
+            declared_hours.get("minimum") != sequence_minimum
+            or declared_hours.get("maximum") != sequence_maximum
+        ):
+            failures.append(
+                "Course total-hour range does not equal the 21 required page "
+                f"ranges: declared {declared_hours.get('minimum')}-"
+                f"{declared_hours.get('maximum')}, calculated "
+                f"{sequence_minimum}-{sequence_maximum}"
+            )
+
+    module_two_path = root / "modules" / "MODULE_02.md"
+    scorecard_path = root / "templates" / "workflow_opportunity_scorecard.md"
+    if module_two_path.is_file() and scorecard_path.is_file():
+        combined = (
+            module_two_path.read_text(encoding="utf-8")
+            + "\n"
+            + scorecard_path.read_text(encoding="utf-8")
+        )
+        required_score_factors = (
+            "Repeated volume or frequency",
+            "Measurable time, waiting, error, or rework",
+            "Stable unit of work and completion condition",
+            "Rules can be stated and tested",
+            "Input data is available and understandable",
+            "Process owner and reviewer are available",
+            "Course evaluation can be synthetic, bounded, and reversible",
+            "Users have a reason and capacity to adopt it",
+            "Manual fallback is practical",
+        )
+        if "maximum 20" in combined or re.search(
+            r"Scale:\s*0\s*=\s*poor.+?2\s*=\s*supported",
+            combined,
+            re.IGNORECASE | re.DOTALL,
+        ):
+            failures.append("Module 2 retains the obsolete 0-2 / maximum-20 score")
+        if combined.count("maximum 27") < 2:
+            failures.append(
+                "Module 2 and its scorecard do not both use the maximum-27 contract"
+            )
+        for factor in required_score_factors:
+            if factor not in combined:
+                failures.append(f"canonical opportunity score lacks {factor!r}")
+
+    assessment_path = root / "ASSESSMENT_AND_RUBRIC.md"
+    if assessment_path.is_file():
+        assessment = assessment_path.read_text(encoding="utf-8")
+        for fragment in (
+            "area points = area weight × level ÷ 4",
+            "total is at least 75 points",
+            "EXTERNAL UAT NOT VERIFIED",
+            "They are independent",
+        ):
+            if fragment not in assessment:
+                failures.append(
+                    f"ASSESSMENT_AND_RUBRIC.md lacks objective rule {fragment!r}"
+                )
+
+    module_eight_path = root / "modules" / "MODULE_08.md"
+    if module_eight_path.is_file():
+        module_eight = module_eight_path.read_text(encoding="utf-8")
+        if (
+            'key = (row["work_item_id"], row["rule_code"], row["field"])'
+            not in module_eight
+        ):
+            failures.append(
+                "Module 8 does not evaluate occurrences by item, rule, and field"
+            )
+        if "templates\\pilot_decision_record.md" not in module_eight:
+            failures.append(
+                "Module 8 does not use the Course 1 final-decision worksheet"
+            )
+        if "found_issues.csv" in module_eight:
+            failures.append("Module 8 still references nonexistent found_issues.csv")
+        for fragment in (
+            r"issues\issues.csv",
+            "PROVISIONAL PRE-UAT",
+            "not the final Course 1 decision",
+        ):
+            if fragment not in module_eight:
+                failures.append(
+                    f"Module 8 lacks current evaluation contract {fragment!r}"
+                )
+
+    module_nine_path = root / "modules" / "MODULE_09.md"
+    if module_nine_path.is_file():
+        module_nine = module_nine_path.read_text(encoding="utf-8")
+        for fragment in (
+            "UAT-01",
+            "UAT-09",
+            "UAT-D01",
+            "FINAL POST-UAT",
+            "recreated_course_assessment.md",
+            "All ten oral questions",
+        ):
+            if fragment not in module_nine:
+                failures.append(
+                    f"Module 9 lacks executable closeout contract {fragment!r}"
+                )
+        for scenario_number in range(1, 10):
+            scenario_id = f"UAT-{scenario_number:02d}"
+            match = re.search(
+                rf"(?ms)^#### {re.escape(scenario_id)}\b.*?(?=^#### |^### )",
+                module_nine,
+            )
+            if not match:
+                failures.append(f"Module 9 lacks a distinct {scenario_id} section")
+                continue
+            scenario = match.group(0)
+            for label in ("**Given:**", "**When:**", "**Then:**"):
+                if label not in scenario:
+                    failures.append(
+                        f"Module 9 {scenario_id} lacks explicit {label.strip('*:')}"
+                    )
+            workspace_token = (
+                f"$uat{scenario_number:02d}Workspace = "
+                f"Join-Path $scenarioRoot '{scenario_id}'"
+            )
+            if workspace_token not in scenario:
+                failures.append(
+                    f"Module 9 {scenario_id} does not create its own isolated workspace"
+                )
+        for required_fragment in (
+            "latest_attempt_state",
+            "last valid `current_state`",
+            "Role,RelativePath,SHA256",
+            "It does not store your Windows username or an absolute computer path",
+        ):
+            if required_fragment not in module_nine:
+                failures.append(
+                    f"Module 9 lacks state/path evidence contract {required_fragment!r}"
+                )
+        if re.search(r"Select-Object\s+Path\s*,\s*Hash", module_nine):
+            failures.append("Module 9 still exports absolute hash paths")
+
+    uat_template_path = root / "templates" / "uat_script.md"
+    uat_example_path = root / "worked_examples" / "module_09_uat_script.md"
+    if uat_template_path.is_file() and uat_example_path.is_file():
+        uat_template = uat_template_path.read_text(encoding="utf-8")
+        uat_example = uat_example_path.read_text(encoding="utf-8")
+        for fragment in ("UAT-[NN]", "**Given**", "**When**", "**Then**"):
+            if fragment not in uat_template:
+                failures.append(f"UAT template lacks {fragment!r}")
+        for scenario_number in range(1, 10):
+            scenario_id = f"UAT-{scenario_number:02d}"
+            if scenario_id not in uat_example:
+                failures.append(f"completed UAT example lacks {scenario_id}")
+        if re.search(r"\bUAT-\d{3}\b", uat_template + "\n" + uat_example):
+            failures.append("UAT template/example still uses three-digit scenario IDs")
+
+    architecture_path = root / "ARCHITECTURE_AND_CONTRACTS.md"
+    capstone_path = root / "CAPSTONE_SPECIFICATION.md"
+    if architecture_path.is_file() and capstone_path.is_file():
+        live_boundary = (
+            architecture_path.read_text(encoding="utf-8")
+            + "\n"
+            + capstone_path.read_text(encoding="utf-8")
+        )
+        for fragment in (
+            "Course 1 uses only the offline mock and deterministic fallback",
+            "No live provider is used in the Course 1 capstone",
+            "PROVISIONAL PRE-UAT",
+            "FINAL POST-UAT",
+        ):
+            if fragment not in live_boundary:
+                failures.append(
+                    f"architecture/capstone boundary lacks {fragment!r}"
+                )
+        for fragment in (
+            "last valid `current_state`",
+            "`latest_attempt_state`",
+            "does **not** overwrite",
+        ):
+            if fragment not in live_boundary:
+                failures.append(
+                    f"architecture/capstone state boundary lacks {fragment!r}"
+                )
+
+    course_boundary_paths = (
+        "README.md",
+        "COURSE_OVERVIEW.md",
+        "ASSESSMENT_AND_RUBRIC.md",
+        "CAREER_SEQUENCE.md",
+        "curriculum.json",
+        "app/src/app.js",
+    )
+    course_boundary_text = "\n".join(
+        (root / source_path).read_text(encoding="utf-8")
+        for source_path in course_boundary_paths
+        if (root / source_path).is_file()
+    )
+    for obsolete_claim in (
+        "Evidence-linked AI summary",
+        "add artificial intelligence (AI) only where it helps",
+        "uses AI only for bounded issue-linked explanation",
+    ):
+        if obsolete_claim in course_boundary_text:
+            failures.append(
+                f"learner overview still implies live Course 1 AI: {obsolete_claim!r}"
+            )
+    if course_boundary_text.count("Course 1 makes no live AI call") < 2:
+        failures.append(
+            "learner overview does not repeat the no-live-AI Course 1 boundary"
+        )
+
+    runner_workflow_path = root / "course1_capstone" / "workflow.py"
+    runner_cli_path = root / "course1_capstone" / "cli.py"
+    module_six_path = root / "modules" / "MODULE_06.md"
+    if (
+        runner_workflow_path.is_file()
+        and runner_cli_path.is_file()
+        and module_six_path.is_file()
+    ):
+        runner_workflow = runner_workflow_path.read_text(encoding="utf-8")
+        runner_cli = runner_cli_path.read_text(encoding="utf-8")
+        module_six = module_six_path.read_text(encoding="utf-8")
+        for fragment in (
+            "def _write_latest_run_locator",
+            '"latest_attempt_state": events[-1]["state"]',
+            "path.name",
+        ):
+            if fragment not in runner_workflow:
+                failures.append(
+                    f"Course 1 runner lacks path/state safeguard {fragment!r}"
+                )
+        if "relative_artifact_locator" not in runner_cli:
+            failures.append("Course 1 CLI lacks neutral artifact locators")
+        for fragment in (
+            "raw_diagnostics_committed = $false",
+            "outside_repository_temporary_file",
+            "path-neutral structured automated",
+        ):
+            if fragment not in module_six:
+                failures.append(
+                    f"Module 6 lacks path-neutral test evidence rule {fragment!r}"
+                )
+
+    software_matrix_path = root / "SOFTWARE_MATRIX.md"
+    stack_manifest_path = root / "stack-manifest.yaml"
+    if software_matrix_path.is_file() and stack_manifest_path.is_file():
+        software_text = software_matrix_path.read_text(encoding="utf-8")
+        stack_text = stack_manifest_path.read_text(encoding="utf-8")
+        software_and_stack = " ".join(f"{software_text}\n{stack_text}".split())
+        for fragment in (
+            "Course 1 contains no provider package, live-model option, API key, or paid call",
+            "live_provider_in_course1: false",
+            "status: deferred",
+        ):
+            if fragment not in software_and_stack:
+                failures.append(
+                    f"software/stack Course 1 provider boundary lacks {fragment!r}"
+                )
+
+    module_time_contracts = {
+        "modules/MODULE_04.md": r"12[–-]16 hours",
+        "modules/MODULE_06.md": r"8[–-]12 hours",
+        "modules/MODULE_09.md": r"16[–-]22 hours",
+    }
+    for source_path, pattern in module_time_contracts.items():
+        path = root / source_path
+        if not path.is_file() or not re.search(
+            pattern, path.read_text(encoding="utf-8")
+        ):
+            failures.append(
+                f"{source_path} does not match its current curriculum time range"
+            )
+
+    template_index_path = root / "templates" / "README.md"
+    if template_index_path.is_file():
+        template_lines = template_index_path.read_text(encoding="utf-8").splitlines()
+        advanced_section = section_text(
+            template_lines, "## Advanced follow-on templates"
+        )
+        if "acceptance_and_handover.md" in advanced_section:
+            failures.append(
+                "acceptance_and_handover.md is still classified as advanced-only"
+            )
+
+    worked_example_paths = (
+        "worked_examples/README.md",
+        "worked_examples/module_07_risk_and_escalation_screen.md",
+        "worked_examples/module_07_tool_fit_and_ownership_record.md",
+        "worked_examples/module_09_uat_script.md",
+        "worked_examples/module_09_adoption_and_training_plan.md",
+        "worked_examples/module_09_acceptance_and_handover.md",
+        "worked_examples/module_09_assessment_record.md",
+    )
+    configured_paths = {
+        document.get("sourcePath")
+        for group in (curriculum or {}).get("groups", [])
+        for document in group.get("documents", [])
+        if isinstance(document, dict)
+    }
+    for source_path in worked_example_paths:
+        if not (root / source_path).is_file():
+            failures.append(f"completed beginner example is missing: {source_path}")
+        if source_path not in configured_paths:
+            failures.append(
+                f"completed beginner example is not bundled in the PWA: {source_path}"
+            )
+
+    if failures:
+        report.failed(
+            "course1-beginner-execution-contract",
+            compact(failures, limit=40),
+        )
+    else:
+        report.passed(
+            "course1-beginner-execution-contract",
+            "all 21 practice loops, controlled Python, resume blocks, one score, generated issue paths, provisional/final decisions, executable UAT, assessment gates, time ranges, and completed examples agree",
         )
 
 
@@ -1931,21 +2564,28 @@ def validate_practice_data(root: Path, report: Report) -> None:
         key_failures.append("work_item_id values are not unique")
 
     issue_ids = [row.get("issue_id", "") for row in expected_rows]
-    expected_issue_ids = [f"ISS-{number:03d}" for number in range(1, 14)]
+    expected_issue_ids = [
+        f"{row.get('work_item_id', '')}|{row.get('rule_code', '')}|{row.get('field', '')}"
+        for row in expected_rows
+    ]
     if issue_ids != expected_issue_ids:
         key_failures.append(
-            f"issue IDs must be ordered ISS-001..ISS-013; found {issue_ids}"
+            "issue_id must equal work_item_id|rule_code|field on every gold row"
         )
     if len(issue_ids) != len(set(issue_ids)):
         key_failures.append("issue_id values are not unique")
 
     comparison_keys = [
-        (row.get("work_item_id", ""), row.get("rule_code", ""))
+        (
+            row.get("work_item_id", ""),
+            row.get("rule_code", ""),
+            row.get("field", ""),
+        )
         for row in expected_rows
     ]
     if len(comparison_keys) != len(set(comparison_keys)):
         key_failures.append(
-            "(work_item_id, rule_code) expected-issue keys are not unique"
+            "(work_item_id, rule_code, field) expected-issue keys are not unique"
         )
 
     known_work_items = set(work_item_ids)
@@ -2232,7 +2872,8 @@ def write_report(
         "This report covers the curriculum manifest, configured lesson files, the 9",
         "foundation and 9 module Course 1 progress lessons, the 11-page non-core",
         "Course 4 capstone integration, its required runnable package surface, current",
-        "JSON contracts, synthetic practice data, and current internal links.",
+        "JSON contracts, synthetic practice data, the strategic-focus guardrail, and",
+        "current internal links.",
         "Archived Course 4 source material, `app/dist/`, dependency folders, Git",
         "metadata, caches, live cloud resources, and external websites are outside",
         "this deterministic validation.",
@@ -2301,13 +2942,16 @@ def main() -> int:
         return 2
 
     report = Report()
+    validate_strategic_focus_guardrail(root, report)
     curriculum = validate_curriculum(root, report)
+    validate_release_metadata_sync(root, curriculum, report)
     validate_course4_capstone_integration(root, curriculum, report)
     validate_progress_lessons(root, curriculum, report)
     validate_module_structure(root, curriculum, report)
     validate_beginner_practice_contract(root, curriculum, report)
     validate_beginner_terminology(root, report)
     validate_integrated_course_contract(root, curriculum, report)
+    validate_course1_beginner_execution_contract(root, curriculum, report)
     validate_current_json(root, report)
     validate_json_schemas(root, report)
     validate_optional_yaml(root, report)

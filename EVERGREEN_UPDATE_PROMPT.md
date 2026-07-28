@@ -100,7 +100,8 @@ F. Optional AI lab
 - verify refusal and error handling;
 - verify provider data-control documentation;
 - do not require a flagship model or live API key to pass;
-- confirm the offline fixture remains the required path.
+- confirm the offline mock and deterministic fallback remain the required
+  Course 1 path.
 
 G. Synthetic data and rules
 - parse practice_data/work_items.csv;
