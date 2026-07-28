@@ -49,9 +49,11 @@ Splitting the path:
 - prevents one large capstone from being mistaken for complete professional
   readiness.
 
-Only Course 1 is built in this progressive web app (PWA), an installable
-website that can keep working without an internet connection. The other
-courses are proposed next builds.
+Course 1 is built in full in this progressive web app (PWA), an installable
+website that can keep working without an internet connection. Course 4 now
+also has one optional advanced capstone prototype. That prototype is useful
+practice and a technical proof, but it is not the complete Course 4. Courses 2,
+3, 5, 6, and the rest of Course 4 remain proposed separate builds.
 
 ## Course 1 — Controlled AI Workflow Foundations
 
@@ -166,10 +168,41 @@ Boundary after completion:
 
 ## Course 4 — Controlled Document AI Systems
 
-Status: **Planned; source material preserved**
+Status: **Planned course; optional advanced capstone prototype available**
 
 Purpose: build workflows whose statements remain tied to source evidence for
 recurring business documents.
+
+The available **Controlled Document Intake** capstone is not the recommended
+next step for a certified beginner immediately after Course 1. First complete
+Course 1 and gain the Course 3-equivalent skills needed to understand cloud
+deployment, permissions, secrets, retries, and rollback. Then the capstone can
+be used to combine those skills in one bounded Google Cloud demonstration.
+
+The prototype:
+
+- uses synthetic documents only;
+- deploys a private scale-to-zero service on Google Cloud Run;
+- uses European Union (EU)-supported Document AI and Vertex AI locations;
+- lets fixed findings narrow the action type, then lets Gemini select bounded
+  candidate identifiers within that boundary;
+- uses fixed application code to render the exact source-linked summary and
+  action wording and reject unrelated action evidence;
+- requires a person to approve the exact output before comma-separated values
+  (CSV) or JavaScript Object Notation (JSON) export;
+- automatically removes uploaded file content;
+- imposes a €60 prototype ceiling and includes teardown evidence;
+- never authorizes activating paid billing or uploading real client, employer,
+  medical, or personal data.
+
+The bundled reference implementation recorded a live `PASS` on 28 July 2026
+and was then torn down to project state `DELETE_REQUESTED`. The service is no
+longer available. The account remained an unactivated Free Trial; the displayed
+€0 cost is retained only as a timestamped value because Billing reports can
+lag.
+
+Open the capstone from the PWA Career Path tab or start with
+[`advanced_capstone/README.md`](advanced_capstone/README.md).
 
 The previous supplier course becomes the foundation for this course:
 
@@ -187,10 +220,11 @@ The previous supplier course becomes the foundation for this course:
 
 Proof:
 
-- controlled synthetic supplier-document review system;
+- controlled synthetic document-intake demonstration;
 - evidence that document reading and extraction still work after changes
   (regression evidence);
-- reviewer demonstration.
+- reviewer demonstration;
+- private deployment, cost-control, live-validation, and teardown evidence.
 
 Boundary after completion:
 

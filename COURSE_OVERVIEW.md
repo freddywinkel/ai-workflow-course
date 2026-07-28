@@ -261,8 +261,15 @@ At 8–10 hours per week, 16–23 weeks is more realistic. Stop when:
 
 ## What moves to later courses
 
-The previous supplier-document material is preserved for a future Controlled
-Document AI course. Course 1 intentionally defers:
+The previous supplier-document material is preserved for the later Controlled
+Document AI course. One optional advanced
+[Controlled Document Intake capstone](advanced_capstone/README.md) is now
+available as a Course 4 prototype, but it is not part of Course 1 and is not
+the complete Course 4. Its private synthetic reference implementation recorded
+a live `PASS` on 28 July 2026 and was then torn down; its dedicated project is
+`DELETE_REQUESTED`. Gemini selected bounded candidate identifiers while fixed
+application code rendered exact source-linked wording. Course 1 intentionally
+defers:
 
 - **parsing**, meaning reading a file's structure with software, for Portable
   Document Format (PDF) and Microsoft Word document (`.docx`) files;

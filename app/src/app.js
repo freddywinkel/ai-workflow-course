@@ -668,6 +668,25 @@ function renderCareer() {
     ? rawCareerSummary
     : rawCareerSummary.replace(/\bPWA\b/, "progressive web app (PWA)");
   const nextLesson = resumeDocument();
+  const careerStatusLabel = (course) => {
+    if (course.status === "current") return "Current · taught here";
+    if (course.status === "prototype-capstone-available") {
+      return "Optional advanced capstone available";
+    }
+    return "Proposed separate course";
+  };
+  const careerActionMarkup = (course) => {
+    if (course.status === "current") {
+      return `<button class="button" type="button" data-career-action="course">${nextLesson ? `Continue ${escapeHtml(learningPositionLabel(nextLesson))}` : "Open Course 1"} ${iconSvg("arrow")}</button>`;
+    }
+    if (
+      course.status === "prototype-capstone-available" &&
+      documentById.has(course.prototypeDocumentId)
+    ) {
+      return `<button class="button" type="button" data-career-action="prototype" data-document-id="${escapeHtml(course.prototypeDocumentId)}">Open the optional capstone ${iconSvg("arrow")}</button>`;
+    }
+    return "";
+  };
 
   views.career.innerHTML = `
     <section class="career-hero">
@@ -688,27 +707,23 @@ function renderCareer() {
           <span class="eyebrow">Courses 1–6</span>
           <h2 id="career-roadmap-title">Build proof in a deliberate order</h2>
         </div>
-        <p>Only Course 1 is taught in this learning app. The later cards are a curriculum plan, not completed qualifications or promises of work.</p>
+        <p>Course 1 is taught in full. Course 4 now includes one optional advanced capstone prototype; the remaining later-course content is still a curriculum plan, not a completed qualification or promise of work.</p>
       </div>
       <ol class="career-course-list">
         ${career.courses
           .map(
             (course) => `
-              <li class="career-course-card${course.status === "current" ? " current" : ""}">
+              <li class="career-course-card${course.status === "current" ? " current" : ""}${course.status === "prototype-capstone-available" ? " prototype" : ""}">
                 <span class="career-sequence">${String(course.sequence).padStart(2, "0")}</span>
                 <div class="career-course-copy">
-                  <span class="career-status">${course.status === "current" ? "Current · taught here" : "Proposed separate course"}</span>
+                  <span class="career-status">${careerStatusLabel(course)}</span>
                   <h3>${escapeHtml(course.title)}</h3>
                   <p>${escapeHtml(course.purpose)}</p>
                   <div class="exit-evidence">
                     <small>Advance when you can show</small>
                     <strong>${escapeHtml(course.exitEvidence)}</strong>
                   </div>
-                  ${
-                    course.status === "current"
-                      ? `<button class="button" type="button" data-career-action="course">${nextLesson ? `Continue ${escapeHtml(learningPositionLabel(nextLesson))}` : "Open Course 1"} ${iconSvg("arrow")}</button>`
-                      : ""
-                  }
+                  ${careerActionMarkup(course)}
                 </div>
               </li>
             `,
@@ -757,6 +772,15 @@ function renderCareer() {
     ?.addEventListener("click", () => {
       if (nextLesson) navigateToDocument(nextLesson.id);
       else navigate("home");
+    });
+  views.career
+    .querySelectorAll('[data-career-action="prototype"]')
+    .forEach((button) => {
+      button.addEventListener("click", () => {
+        if (documentById.has(button.dataset.documentId)) {
+          navigateToDocument(button.dataset.documentId);
+        }
+      });
     });
   document.title = `Career sequence — ${courseBundle.program.title}`;
 }
@@ -867,6 +891,8 @@ function renderDocument(id) {
   document.querySelector("#reader-title").textContent = courseDocument.title;
   const core = coreDocuments();
   const corePosition = core.findIndex((document) => document.id === courseDocument.id);
+  const belongsToCurrentCourse =
+    courseDocument.courseId === courseBundle.course.id;
   const lessonPosition =
     corePosition >= 0
       ? `Core lesson ${corePosition + 1} of ${core.length}`
@@ -875,6 +901,11 @@ function renderDocument(id) {
     <span>${iconSvg("clock")}About ${Math.max(1, Math.ceil(courseDocument.wordCount / 210))} minutes reading · allow extra practice time</span>
     <span>${iconSvg("layers")}${escapeHtml(learningPositionLabel(courseDocument))}</span>
     <span title="${escapeAttribute(lessonPosition)}">${iconSvg("document")}Revision ${escapeHtml(courseDocument.revision)}</span>
+    ${
+      belongsToCurrentCourse
+        ? ""
+        : `<span class="reader-course-boundary">${iconSvg("shield")}Optional Course ${escapeHtml(String(courseBundle.career.courses.find((course) => course.id === courseDocument.courseId)?.sequence || ""))} page · does not affect Course 1 progress</span>`
+    }
   `;
   const content = document.querySelector("#reader-content");
   content.innerHTML = renderCourseMarkdown(courseDocument.markdown);
@@ -885,15 +916,24 @@ function renderDocument(id) {
   const isComplete = isDocumentComplete(courseDocument);
   const revised = needsRevisionReview(courseDocument);
   completeButton.setAttribute("aria-pressed", String(isComplete));
-  completeButton.querySelector("span:last-child").textContent = isComplete
-    ? "Completed"
-    : revised
-      ? "Mark reviewed"
-      : "Mark complete";
+  completeButton.querySelector("span:last-child").textContent =
+    !belongsToCurrentCourse
+      ? isComplete
+        ? "Page completed"
+        : revised
+          ? "Mark page reviewed"
+          : "Mark page complete"
+      : isComplete
+        ? "Completed"
+        : revised
+          ? "Mark reviewed"
+          : "Mark complete";
 
   const practiceContract = document.querySelector("#practice-contract-reader");
-  practiceContract.hidden = !courseDocument.core;
-  if (courseDocument.core) {
+  const showPracticeContract =
+    courseDocument.core || courseDocument.group === "course-4-capstone";
+  practiceContract.hidden = !showPracticeContract;
+  if (showPracticeContract) {
     practiceContract.innerHTML = practiceContractMarkup({ compact: true });
   }
 

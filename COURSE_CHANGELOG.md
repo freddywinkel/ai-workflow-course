@@ -1,5 +1,65 @@
 # Course Changelog
 
+## 2.3.0 — 2026-07-28
+
+### Optional advanced Course 4 capstone
+
+- Added an optional **Controlled Document Intake** capstone to Course 4, while
+  keeping Course 1's 18 core lesson identifiers and learning sequence
+  unchanged.
+- Added a beginner-readable readiness and cost gate followed by nine practical
+  labs: local baseline, European Union (EU)-regional Document AI, evidence-
+  linked extraction, Gemini candidate selection through Vertex AI, fixed
+  source-linked summary/action wording, exact-output human approval,
+  comma-separated values (CSV) and JavaScript Object Notation (JSON) exports,
+  tests, private Cloud Run deployment, live validation, and teardown.
+- Recorded an actual synthetic-only live `PASS` through private Cloud Run in
+  `europe-west4`, with Document AI and Vertex AI in `eu`, followed by teardown
+  to project state `DELETE_REQUESTED`.
+- Recorded that the Free Trial stayed unactivated. The Billing display showed
+  €0 at the checks, explicitly subject to reporting delay.
+- Kept the capstone outside Course 1 completion and Resume. It is an advanced
+  prototype, not a shortcut to production consulting readiness or the complete
+  Course 4.
+
+### Safety, cost, and data boundaries
+
+- Limited the capstone to synthetic documents and explicitly prohibited real
+  client, employer, medical, or personal data.
+- Added a €60 maximum-spend gate, scale-to-zero settings, low quotas, resource
+  labels, automatic uploaded-file deletion, live acceptance evidence, and
+  resource-deletion evidence.
+- Documented the actual budget teardown boundary: the ordinary alerts-only
+  budget was deleted through the public Budget application programming
+  interface, while the two Preview spend caps required Billing
+  user-interface deletion and verification.
+- Kept paid-billing activation outside the course's authority. The learner
+  must stop unless the existing Google Cloud Free Trial and budget controls
+  are independently confirmed; the course never instructs the learner to
+  upgrade to paid billing.
+- Added an explicit deadline gate for the Google Cloud credit expiry on
+  26 October 2026.
+- Made the Google-mode deadline, model, prompt ceiling, output-token ceiling,
+  and signing-secret boundary fail closed, while keeping the offline fake mode
+  usable after the live lab closes.
+- Bound proposed action types to fixed findings and restricted each action's
+  evidence identifiers to relevant source-field types.
+- Strengthened repeatable private-access validation: public Cloud Run Identity
+  and Access Management members are rejected and an unauthenticated health
+  request must return `401` or `403` before a learner token is used.
+
+### Progressive web app integration
+
+- Added document-level `courseId` metadata so the reader can bundle optional
+  material from another career course without changing the Course 1 identity.
+- Added a distinct Course 4 prototype status and an **Open the optional
+  capstone** action in the Career Path tab.
+- Added package and PWA regression checks for the 11-page capstone bundle,
+  frozen Course 1 contract, implementation package, required practice loop,
+  and career-status boundary.
+- Added the complete offline capstone test suite as a required, credential-free
+  GitHub Pages release job.
+
 ## 2.2.0 — 2026-07-28
 
 ### One reproducible learner project

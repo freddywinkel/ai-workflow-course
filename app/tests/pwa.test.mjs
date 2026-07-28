@@ -75,13 +75,17 @@ test("schema-v2 bundle contains nine foundations and nine implementation modules
 test("every bundled course page has stable revisioned metadata and content", () => {
   const ids = new Set();
   const aliases = new Set();
+  const careerCourseIds = new Set(bundle.career.courses.map((course) => course.id));
   for (const document of bundle.documents) {
     assert.match(document.id, /^[a-z0-9]+(?:-[a-z0-9]+)*$/);
     assert.match(document.revision, /^\d{4}-\d{2}-\d{2}$/);
     assert.ok(document.title);
     assert.ok(document.sourcePath);
     assert.ok(document.markdown.length > 20);
-    assert.equal(document.courseId, bundle.course.id);
+    assert.ok(
+      careerCourseIds.has(document.courseId),
+      `unknown courseId ${document.courseId} on ${document.id}`,
+    );
     assert.equal(typeof document.core, "boolean");
     assert.equal(ids.has(document.id), false, `duplicate id ${document.id}`);
     ids.add(document.id);
@@ -94,6 +98,135 @@ test("every bundled course page has stable revisioned metadata and content", () 
   for (const group of bundle.groups) {
     for (const id of group.documents) assert.ok(ids.has(id), `missing grouped id ${id}`);
   }
+});
+
+test("optional Course 4 capstone is bundled without changing the Course 1 contract", () => {
+  const expectedCoreIds = [
+    "course-1-foundation-01",
+    "course-1-foundation-02",
+    "course-1-foundation-03",
+    "course-1-foundation-04",
+    "course-1-foundation-05",
+    "course-1-foundation-06",
+    "course-1-foundation-07",
+    "course-1-foundation-08",
+    "course-1-foundation-09",
+    "course-1-module-01",
+    "course-1-module-02",
+    "course-1-module-03",
+    "course-1-module-04",
+    "course-1-module-05",
+    "course-1-module-06",
+    "course-1-module-07",
+    "course-1-module-08",
+    "course-1-module-09",
+  ];
+  const expectedLearningSequenceIds = [
+    "course-1-readiness-check",
+    "course-1-foundation-01",
+    "course-1-foundation-02",
+    "course-1-beginner-software-check",
+    "course-1-windows-setup",
+    "course-1-foundation-03",
+    "course-1-foundation-04",
+    "course-1-foundation-05",
+    "course-1-foundation-06",
+    "course-1-foundation-07",
+    "course-1-foundation-08",
+    "course-1-foundation-09",
+    "course-1-module-01",
+    "course-1-module-02",
+    "course-1-module-03",
+    "course-1-module-04",
+    "course-1-module-05",
+    "course-1-module-06",
+    "course-1-module-07",
+    "course-1-module-08",
+    "course-1-module-09",
+  ];
+  const expectedCapstoneDocuments = [
+    ["course-4-capstone-overview", "advanced_capstone/README.md"],
+    [
+      "course-4-capstone-readiness-and-cost-gate",
+      "advanced_capstone/00_READINESS_COST_GATE.md",
+    ],
+    ["course-4-capstone-local-baseline", "advanced_capstone/01_LOCAL_BASELINE.md"],
+    [
+      "course-4-capstone-document-ai-eu",
+      "advanced_capstone/02_SOURCE_INTEGRITY_DOCUMENT_AI.md",
+    ],
+    [
+      "course-4-capstone-evidence-linked-extraction",
+      "advanced_capstone/03_EVIDENCE_LINKED_EXTRACTION.md",
+    ],
+    [
+      "course-4-capstone-vertex-gemini-eu",
+      "advanced_capstone/04_GEMINI_SUMMARIES_ACTIONS.md",
+    ],
+    [
+      "course-4-capstone-human-approval-and-exports",
+      "advanced_capstone/05_HUMAN_APPROVAL_EXPORTS.md",
+    ],
+    [
+      "course-4-capstone-tests-and-evaluation",
+      "advanced_capstone/06_TESTS_AND_EVALUATION.md",
+    ],
+    [
+      "course-4-capstone-cloud-run-deployment",
+      "advanced_capstone/07_CLOUD_RUN_DEPLOYMENT.md",
+    ],
+    [
+      "course-4-capstone-live-validation",
+      "advanced_capstone/08_LIVE_VALIDATION.md",
+    ],
+    ["course-4-capstone-teardown", "advanced_capstone/09_TEARDOWN.md"],
+  ];
+  const coreIds = bundle.documents
+    .filter((document) => document.core)
+    .map((document) => document.id);
+  const capstoneGroup = bundle.groups.find(
+    (group) => group.id === "course-4-capstone",
+  );
+  const capstoneDocuments = expectedCapstoneDocuments.map(([id]) => {
+    return bundle.documents.find((document) => document.id === id);
+  });
+
+  assert.equal(bundle.course.coreLessonCount, 18);
+  assert.deepEqual(coreIds, expectedCoreIds);
+  assert.deepEqual(bundle.course.learningSequenceIds, expectedLearningSequenceIds);
+  assert.ok(capstoneGroup);
+  assert.equal(capstoneGroup.core, false);
+  assert.equal(capstoneGroup.kind, "advanced");
+  assert.deepEqual(capstoneGroup.documents, expectedCapstoneDocuments.map(([id]) => id));
+  assert.deepEqual(
+    capstoneDocuments.map((document) => [document?.id, document?.sourcePath]),
+    expectedCapstoneDocuments,
+  );
+  assert.equal(
+    capstoneDocuments.every(
+      (document) =>
+        document?.courseId === "course-4-controlled-document-ai-systems" &&
+        document.core === false,
+    ),
+    true,
+  );
+  assert.equal(
+    expectedCapstoneDocuments.some(([id]) =>
+      bundle.course.learningSequenceIds.includes(id),
+    ),
+    false,
+  );
+  assert.match(
+    appSource,
+    /courseDocument\.courseId === courseBundle\.course\.id/,
+  );
+  assert.match(appSource, /does not affect Course 1 progress/);
+  assert.match(appSource, /Mark page complete/);
+  assert.match(
+    appSource,
+    /courseDocument\.core \|\| courseDocument\.group === "course-4-capstone"/,
+  );
+  assert.match(cssSource, /\.reader-meta \.reader-course-boundary/);
 });
 
 test("content hashes and build ids are stable for identical inputs", async () => {
@@ -151,10 +284,20 @@ test("career metadata separates the current course from the later consultant pat
     [1, 2, 3, 4, 5, 6],
   );
   assert.equal(bundle.career.courses[0].id, bundle.course.id);
-  assert.equal(bundle.career.courses[0].status, "current");
+  assert.deepEqual(
+    bundle.career.courses.map((course) => course.status),
+    [
+      "current",
+      "proposed",
+      "proposed",
+      "prototype-capstone-available",
+      "proposed",
+      "proposed",
+    ],
+  );
   assert.equal(
-    bundle.career.courses.slice(1).every((course) => course.status === "proposed"),
-    true,
+    bundle.career.courses[3].prototypeDocumentId,
+    "course-4-capstone-overview",
   );
   assert.equal(
     bundle.career.optionalSpecializations.some(
@@ -673,7 +816,7 @@ test("visual refresh stays purposeful, offline and theme-safe", () => {
   assert.doesNotMatch(cssSource, /:root\[data-theme="dark"\] \.button\s*\{/);
 });
 
-test("beginner practice contract is visible on home and core lesson readers", () => {
+test("beginner practice contract is visible on home, core lessons, and Course 4 capstone pages", () => {
   for (const phase of [
     "Follow along",
     "Now recreate it",
@@ -697,7 +840,12 @@ test("beginner practice contract is visible on home and core lesson readers", ()
     /class="practice-contract practice-contract-home"[\s\S]+?practiceContractMarkup\(\)/,
   );
   assert.match(htmlSource, /id="practice-contract-reader"/);
-  assert.match(appSource, /practiceContract\.hidden = !courseDocument\.core/);
+  assert.match(
+    appSource,
+    /const showPracticeContract =[\s\S]+?courseDocument\.core \|\| courseDocument\.group === "course-4-capstone"/,
+  );
+  assert.match(appSource, /practiceContract\.hidden = !showPracticeContract/);
+  assert.match(appSource, /if \(showPracticeContract\)/);
   assert.match(appSource, /practiceContractMarkup\(\{ compact: true \}\)/);
   assert.match(cssSource, /\.practice-contract-steps/);
   assert.match(
@@ -706,7 +854,7 @@ test("beginner practice contract is visible on home and core lesson readers", ()
   );
 });
 
-test("career view clearly separates Course 1 from the proposed sequence", () => {
+test("career view separates Course 1, the optional prototype, and proposed courses", () => {
   assert.match(htmlSource, /id="career-view"/);
   assert.match(
     htmlSource,
@@ -715,14 +863,18 @@ test("career view clearly separates Course 1 from the proposed sequence", () => 
   assert.match(appSource, /function renderCareer\(\)/);
   assert.match(appSource, /career\.courses/);
   assert.match(appSource, /career\.optionalSpecializations/);
-  assert.match(appSource, /Only Course 1 is taught in this learning app/);
+  assert.match(appSource, /Course 1 is taught in full/);
+  assert.match(appSource, /one optional advanced capstone prototype/);
   assert.match(appSource, /progressive web app \(PWA\)/);
   assert.match(
     appSource,
     /progressive web app \\\(PWA\\\)\/i\.test\(rawCareerSummary\)/,
   );
   assert.match(appSource, /data-career-action="course"/);
+  assert.match(appSource, /data-career-action="prototype"/);
+  assert.match(appSource, /Open the optional capstone/);
   assert.match(cssSource, /\.career-course-card\.current/);
+  assert.match(cssSource, /\.career-course-card\.prototype/);
   assert.match(cssSource, /\.career-detail-grid/);
 });
 

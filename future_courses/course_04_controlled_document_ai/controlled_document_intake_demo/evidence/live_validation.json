@@ -1,0 +1,87 @@
+{
+  "approved_export_evidence": {
+    "approved_for_export": true,
+    "csv_bytes": 4147,
+    "csv_sha256": "67b561cc29287210c5923a4f1a0b67aff53154f403598c297759eb3101f2d7c9",
+    "json_bytes": 11827,
+    "json_sha256": "2a550448e07f557afdf4c3d3db8f70857a08592593805312fa3c2e2fe1dbe3b1",
+    "proposal_hash": "5b4e07689c194ed5076dfcfaa7a71ba09c46c31907969512eda7eb7fed135f27"
+  },
+  "cases": [
+    {
+      "case_id": "C001",
+      "evidence_count": 14,
+      "field_count": 14,
+      "finding_codes": [],
+      "model_id": "gemini-3.5-flash-lite",
+      "page_count": 1,
+      "provider_mode": "google",
+      "raw_file_persisted": false,
+      "state": "pending_approval",
+      "temporary_file_deleted": true
+    },
+    {
+      "case_id": "C004",
+      "evidence_count": 14,
+      "field_count": 14,
+      "finding_codes": [],
+      "model_id": "gemini-3.5-flash-lite",
+      "page_count": 1,
+      "provider_mode": "google",
+      "raw_file_persisted": false,
+      "state": "pending_approval",
+      "temporary_file_deleted": true
+    },
+    {
+      "case_id": "C008",
+      "evidence_count": 14,
+      "field_count": 14,
+      "finding_codes": [
+        "TOTAL_DISCREPANCY"
+      ],
+      "model_id": "gemini-3.5-flash-lite",
+      "page_count": 1,
+      "provider_mode": "google",
+      "raw_file_persisted": false,
+      "state": "needs_review",
+      "temporary_file_deleted": true
+    },
+    {
+      "case_id": "C012",
+      "evidence_count": 14,
+      "field_count": 14,
+      "finding_codes": [
+        "UNTRUSTED_INSTRUCTION_DETECTED"
+      ],
+      "model_id": "gemini-3.5-flash-lite",
+      "page_count": 1,
+      "provider_mode": "google",
+      "raw_file_persisted": false,
+      "state": "needs_review",
+      "temporary_file_deleted": true
+    }
+  ],
+  "contains_credentials": false,
+  "contains_document_text": false,
+  "contains_model_output": false,
+  "data_boundary": "frozen synthetic PDF fixtures only",
+  "decision_controls": {
+    "changed_package": "PACKAGE_CHANGED_AFTER_REVIEW",
+    "findings_approval": "PACKAGE_NOT_APPROVABLE",
+    "needs_correction_export": false
+  },
+  "negative_tests": {
+    "corrupt_fixture": "PARSER_CORRUPT_FILE",
+    "unknown_hash": "SYNTHETIC_ALLOWLIST_REJECTED"
+  },
+  "observed_at": "2026-07-28T10:03:20.499425+00:00",
+  "result": "PASS",
+  "schema_version": 1,
+  "service": {
+    "document_ai_location": "eu",
+    "model": "gemini-3.5-flash-lite",
+    "provider_mode": "google",
+    "raw_document_storage": false,
+    "vertex_location": "eu"
+  }
+}

@@ -13,7 +13,7 @@
     "title": "Controlled Artificial Intelligence (AI) Workflow Foundations",
     "shortTitle": "Course 1",
     "subtitle": "From zero technical knowledge to one safe, evidence-backed small and medium-sized enterprise (SME) workflow",
-    "version": "2.2.0",
+    "version": "2.3.0",
     "practiceRevision": 2,
     "verifiedThrough": "2026-07-28",
     "learnerStartingPoint": "No coding, automation, consulting, or AI implementation knowledge is assumed.",
@@ -256,6 +256,102 @@
           "revision": "2026-07-28",
           "sourcePath": "modules/MODULE_09.md",
           "title": "Module 9 — Run User Acceptance Testing (UAT), Plan Adoption, and Hand Over",
+          "legacyIds": []
+        }
+      ]
+    },
+    {
+      "id": "course-4-capstone",
+      "title": "Optional advanced capstone — Controlled Document Intake",
+      "kind": "advanced",
+      "core": false,
+      "documents": [
+        {
+          "id": "course-4-capstone-overview",
+          "courseId": "course-4-controlled-document-ai-systems",
+          "revision": "2026-07-28",
+          "sourcePath": "advanced_capstone/README.md",
+          "title": "Advanced Capstone — Controlled Document Intake on Google Cloud",
+          "legacyIds": []
+        },
+        {
+          "id": "course-4-capstone-readiness-and-cost-gate",
+          "courseId": "course-4-controlled-document-ai-systems",
+          "revision": "2026-07-28",
+          "sourcePath": "advanced_capstone/00_READINESS_COST_GATE.md",
+          "title": "Capstone Gate 0 — Readiness, Data Boundary, and the €60 Maximum",
+          "legacyIds": []
+        },
+        {
+          "id": "course-4-capstone-local-baseline",
+          "courseId": "course-4-controlled-document-ai-systems",
+          "revision": "2026-07-28",
+          "sourcePath": "advanced_capstone/01_LOCAL_BASELINE.md",
+          "title": "Capstone Lab 1 — Run the Complete Workflow Locally First",
+          "legacyIds": []
+        },
+        {
+          "id": "course-4-capstone-document-ai-eu",
+          "courseId": "course-4-controlled-document-ai-systems",
+          "revision": "2026-07-28",
+          "sourcePath": "advanced_capstone/02_SOURCE_INTEGRITY_DOCUMENT_AI.md",
+          "title": "Capstone Lab 2 — Protect the Source and Bound Document AI",
+          "legacyIds": []
+        },
+        {
+          "id": "course-4-capstone-evidence-linked-extraction",
+          "courseId": "course-4-controlled-document-ai-systems",
+          "revision": "2026-07-28",
+          "sourcePath": "advanced_capstone/03_EVIDENCE_LINKED_EXTRACTION.md",
+          "title": "Capstone Lab 3 — Turn OCR Text into Exact Evidence-Linked Fields",
+          "legacyIds": []
+        },
+        {
+          "id": "course-4-capstone-vertex-gemini-eu",
+          "courseId": "course-4-controlled-document-ai-systems",
+          "revision": "2026-07-28",
+          "sourcePath": "advanced_capstone/04_GEMINI_SUMMARIES_ACTIONS.md",
+          "title": "Capstone Lab 4 — Use Gemini for Bounded Summaries and Actions",
+          "legacyIds": []
+        },
+        {
+          "id": "course-4-capstone-human-approval-and-exports",
+          "courseId": "course-4-controlled-document-ai-systems",
+          "revision": "2026-07-28",
+          "sourcePath": "advanced_capstone/05_HUMAN_APPROVAL_EXPORTS.md",
+          "title": "Capstone Lab 5 — Require Exact-Output Human Approval and Exports",
+          "legacyIds": []
+        },
+        {
+          "id": "course-4-capstone-tests-and-evaluation",
+          "courseId": "course-4-controlled-document-ai-systems",
+          "revision": "2026-07-28",
+          "sourcePath": "advanced_capstone/06_TESTS_AND_EVALUATION.md",
+          "title": "Capstone Lab 6 — Test and Attack the Whole Workflow",
+          "legacyIds": []
+        },
+        {
+          "id": "course-4-capstone-cloud-run-deployment",
+          "courseId": "course-4-controlled-document-ai-systems",
+          "revision": "2026-07-28",
+          "sourcePath": "advanced_capstone/07_CLOUD_RUN_DEPLOYMENT.md",
+          "title": "Capstone Lab 7 — Deploy Privately with Cost Controls",
+          "legacyIds": []
+        },
+        {
+          "id": "course-4-capstone-live-validation",
+          "courseId": "course-4-controlled-document-ai-systems",
+          "revision": "2026-07-28",
+          "sourcePath": "advanced_capstone/08_LIVE_VALIDATION.md",
+          "title": "Capstone Lab 8 — Run the Live Acceptance Proof",
+          "legacyIds": []
+        },
+        {
+          "id": "course-4-capstone-teardown",
+          "courseId": "course-4-controlled-document-ai-systems",
+          "revision": "2026-07-28",
+          "sourcePath": "advanced_capstone/09_TEARDOWN.md",
+          "title": "Capstone Lab 9 — Delete Resources and Prove Teardown",
           "legacyIds": []
         }
       ]
@@ -571,7 +667,7 @@
   ],
   "career": {
     "title": "Career sequence",
-    "summary": "This progressive web app (PWA), an installable website that can keep working without an internet connection, teaches Course 1 in full. The remaining courses are separate future builds so technical foundations, consulting practice, rules and oversight, and commercial development are not confused with one another.",
+    "summary": "This progressive web app (PWA), an installable website that can keep working without an internet connection, teaches Course 1 in full and now includes one optional advanced Course 4 capstone prototype. The rest of Courses 2–6 remain separate future builds so technical foundations, consulting practice, rules and oversight, and commercial development are not confused with one another.",
     "targetRole": "Controlled Artificial Intelligence (AI) Workflow Implementation Consultant for Dutch Small and Medium-sized Enterprises (SMEs)",
     "courses": [
       {
@@ -602,9 +698,10 @@
         "id": "course-4-controlled-document-ai-systems",
         "sequence": 4,
         "title": "Controlled Document AI Systems",
-        "status": "proposed",
-        "purpose": "Build document workflows that keep original source files unchanged, read Portable Document Format (PDF) and Microsoft Word (.docx) files, use optical character recognition (OCR) for scans, cite exact source locations, extract fixed fields, retrieve approved policy text, draft from cited evidence, require exact-output approval, and evaluate results.",
-        "exitEvidence": "A controlled made-up supplier-document review system with tests proving that document reading, field extraction, evidence links, and human review still work."
+        "status": "prototype-capstone-available",
+        "prototypeDocumentId": "course-4-capstone-overview",
+        "purpose": "Use the optional Controlled Document Intake capstone to build and tear down one private Google Cloud demonstration with synthetic documents. The prototype uses Cloud Run, Document AI, and Gemini through Vertex AI while preserving source links, fixed checks, exact-output human approval, approved-only exports, deletion evidence, and a strict €60 learning boundary. The complete Course 4 curriculum remains a later build.",
+        "exitEvidence": "A tested synthetic Controlled Document Intake demonstration, source-linked extraction plus bounded selection and fixed-output evidence, exact-output approval, CSV and JSON exports, observed live-provider evidence, cost records, and a verified teardown. This is advanced prototype evidence, not production readiness."
       },
       {
         "id": "course-5-production-governance-security-reliability",
@@ -636,6 +733,8 @@
       "Use made-up (synthetic) or expressly authorised data until privacy, security, confidentiality, and client controls are understood.",
       "Complete Course 1 before presenting implementation as a paid capability.",
       "Complete Course 2 discovery practice before selling a build.",
+      "Treat the Google Cloud capstone as optional advanced practice. Run its cloud steps only after Course 1 and after you understand the Course 3 application programming interface (API), identity, deployment, rollback, and client-owned-environment skills.",
+      "Never upgrade a Google Cloud Free Trial to paid billing or use real client, employer, medical, personal, or confidential data for this capstone without explicit approval.",
       "Validate demand with interviews and paid problem assessments before building a reusable product."
     ],
     "suggestedPace": {

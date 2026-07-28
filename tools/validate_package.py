@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Deterministically validate the current Course 1 package.
+"""Deterministically validate Course 1 and its optional Course 4 capstone.
 
-The curriculum manifest is the source of truth for the current course. Archived
-future-course material and generated/dependency directories are intentionally
-outside this validator's scope.
+The curriculum manifest is the source of truth for the bundled learning
+material. Archived future-course source material and generated/dependency
+directories are intentionally outside this validator's scope; the runnable
+Course 4 demo's required package surface is checked explicitly.
 
 Only the Python standard library is required. When jsonschema or PyYAML is not
 installed, the related optional checks are reported as warnings rather than
@@ -29,6 +30,7 @@ from urllib.parse import unquote
 
 EXPECTED_PROGRAM_ID = "controlled-ai-workflow-consultant-path"
 EXPECTED_COURSE_ID = "course-1-controlled-ai-workflow-foundations"
+EXPECTED_COURSE4_ID = "course-4-controlled-document-ai-systems"
 EXPECTED_SCHEMA_VERSION = 2
 FIXED_ASSESSMENT_DATE_TEXT = "2026-07-26"
 FIXED_ASSESSMENT_DATE = date.fromisoformat(FIXED_ASSESSMENT_DATE_TEXT)
@@ -82,6 +84,52 @@ FINAL_DECISION_FILES = (
     "modules/MODULE_08.md",
     "modules/MODULE_09.md",
     "templates/pilot_decision_record.md",
+)
+COURSE4_CAPSTONE_DOCUMENTS = (
+    (
+        "course-4-capstone-overview",
+        "advanced_capstone/README.md",
+    ),
+    (
+        "course-4-capstone-readiness-and-cost-gate",
+        "advanced_capstone/00_READINESS_COST_GATE.md",
+    ),
+    (
+        "course-4-capstone-local-baseline",
+        "advanced_capstone/01_LOCAL_BASELINE.md",
+    ),
+    (
+        "course-4-capstone-document-ai-eu",
+        "advanced_capstone/02_SOURCE_INTEGRITY_DOCUMENT_AI.md",
+    ),
+    (
+        "course-4-capstone-evidence-linked-extraction",
+        "advanced_capstone/03_EVIDENCE_LINKED_EXTRACTION.md",
+    ),
+    (
+        "course-4-capstone-vertex-gemini-eu",
+        "advanced_capstone/04_GEMINI_SUMMARIES_ACTIONS.md",
+    ),
+    (
+        "course-4-capstone-human-approval-and-exports",
+        "advanced_capstone/05_HUMAN_APPROVAL_EXPORTS.md",
+    ),
+    (
+        "course-4-capstone-tests-and-evaluation",
+        "advanced_capstone/06_TESTS_AND_EVALUATION.md",
+    ),
+    (
+        "course-4-capstone-cloud-run-deployment",
+        "advanced_capstone/07_CLOUD_RUN_DEPLOYMENT.md",
+    ),
+    (
+        "course-4-capstone-live-validation",
+        "advanced_capstone/08_LIVE_VALIDATION.md",
+    ),
+    (
+        "course-4-capstone-teardown",
+        "advanced_capstone/09_TEARDOWN.md",
+    ),
 )
 FORBIDDEN_FINAL_DECISION_PHRASES = (
     "`PILOT`",
@@ -372,6 +420,18 @@ def validate_curriculum(root: Path, report: Report) -> dict[str, Any] | None:
     current_ids: list[str] = []
     legacy_ids: list[str] = []
     source_paths: list[str] = []
+    career_courses = career.get("courses")
+    course_sequence_by_id = (
+        {
+            item["id"]: item["sequence"]
+            for item in career_courses
+            if isinstance(item, dict)
+            and isinstance(item.get("id"), str)
+            and isinstance(item.get("sequence"), int)
+        }
+        if isinstance(career_courses, list)
+        else {}
+    )
 
     for group_index, group in enumerate(groups):
         location = f"groups[{group_index}]"
@@ -412,9 +472,15 @@ def validate_curriculum(root: Path, report: Report) -> dict[str, Any] | None:
                 document_id = document_location
             else:
                 current_ids.append(document_id)
-                if not document_id.startswith("course-1-"):
+                document_course_id = document.get("courseId", EXPECTED_COURSE_ID)
+                course_sequence = course_sequence_by_id.get(document_course_id)
+                if course_sequence is None:
                     identity_failures.append(
-                        f"{document_id} must start with course-1-"
+                        f"{document_id} references unknown course {document_course_id!r}"
+                    )
+                elif not document_id.startswith(f"course-{course_sequence}-"):
+                    identity_failures.append(
+                        f"{document_id} must start with course-{course_sequence}-"
                     )
 
             revision = document.get("revision")
@@ -466,7 +532,7 @@ def validate_curriculum(root: Path, report: Report) -> dict[str, Any] | None:
             relative = Path(*pure_path.parts)
             if path_is_ignored(relative):
                 document_failures.append(
-                    f"{document_id}.sourcePath points outside the current-course scope"
+                    f"{document_id}.sourcePath points outside the bundled-course scope"
                 )
                 continue
             resolved = (root / relative).resolve()
@@ -546,6 +612,9 @@ def validate_curriculum(root: Path, report: Report) -> dict[str, Any] | None:
             core_failures.append(f"missing {group_id} group")
         elif group.get("core") is not True:
             core_failures.append(f"{group_id} group must be core")
+    for group_id, group in groups_by_id.items():
+        if group_id not in {"foundations", "modules"} and group.get("core") is not False:
+            core_failures.append(f"{group_id} group must remain non-core")
     if core_failures:
         report.failed("curriculum-core-groups", compact(core_failures))
     else:
@@ -573,6 +642,7 @@ def validate_career_metadata(career: dict[str, Any], report: Report) -> None:
     course_ids: list[str] = []
     sequences: list[int] = []
     current_ids: list[str] = []
+    course4: dict[str, Any] | None = None
     for index, course in enumerate(courses):
         if not isinstance(course, dict):
             failures.append(f"career.courses[{index}] is not an object")
@@ -594,6 +664,8 @@ def validate_career_metadata(career: dict[str, Any], report: Report) -> None:
             failures.append(f"{course_id} is missing descriptive metadata")
         if course.get("status") == "current" and isinstance(course_id, str):
             current_ids.append(course_id)
+        if course_id == EXPECTED_COURSE4_ID:
+            course4 = course
 
     if len(course_ids) != len(set(course_ids)):
         failures.append("career course IDs are not unique")
@@ -601,13 +673,176 @@ def validate_career_metadata(career: dict[str, Any], report: Report) -> None:
         failures.append("career course sequences must be ordered 1..N")
     if current_ids != [EXPECTED_COURSE_ID]:
         failures.append("the Course 1 ID must be the only current career course")
+    if not isinstance(course4, dict):
+        failures.append(f"career is missing {EXPECTED_COURSE4_ID}")
+    else:
+        if course4.get("status") != "prototype-capstone-available":
+            failures.append(
+                f"{EXPECTED_COURSE4_ID}.status must be prototype-capstone-available"
+            )
+        if course4.get("prototypeDocumentId") != "course-4-capstone-overview":
+            failures.append(
+                f"{EXPECTED_COURSE4_ID}.prototypeDocumentId must open the capstone overview"
+            )
+    for course in courses:
+        if not isinstance(course, dict):
+            continue
+        sequence = course.get("sequence")
+        expected_status = (
+            "current"
+            if sequence == 1
+            else "prototype-capstone-available"
+            if sequence == 4
+            else "proposed"
+        )
+        if course.get("status") != expected_status:
+            failures.append(
+                f"{course.get('id', '<unknown>')}.status must be {expected_status}"
+            )
 
     if failures:
         report.failed("career-metadata", compact(failures))
     else:
         report.passed(
             "career-metadata",
-            f"{len(courses)} ordered career courses; Course 1 is the only current course",
+            f"{len(courses)} ordered career courses; Course 1 is current and the Course 4 prototype is optional",
+        )
+
+
+def validate_course4_capstone_integration(
+    root: Path,
+    curriculum: dict[str, Any] | None,
+    report: Report,
+) -> None:
+    if not isinstance(curriculum, dict):
+        report.failed(
+            "course4-capstone-integration",
+            "cannot validate the optional capstone without curriculum.json",
+        )
+        return
+
+    groups = curriculum.get("groups")
+    group = (
+        next(
+            (
+                item
+                for item in groups
+                if isinstance(item, dict) and item.get("id") == "course-4-capstone"
+            ),
+            None,
+        )
+        if isinstance(groups, list)
+        else None
+    )
+    failures: list[str] = []
+    expected_ids = [document_id for document_id, _path in COURSE4_CAPSTONE_DOCUMENTS]
+    expected_paths = [path for _document_id, path in COURSE4_CAPSTONE_DOCUMENTS]
+
+    if not isinstance(group, dict):
+        failures.append("missing non-core course-4-capstone group")
+        documents: list[dict[str, Any]] = []
+    else:
+        if group.get("core") is not False:
+            failures.append("course-4-capstone must be non-core")
+        if group.get("kind") != "advanced":
+            failures.append("course-4-capstone.kind must be advanced")
+        documents = [
+            item for item in group.get("documents", []) if isinstance(item, dict)
+        ]
+        actual_ids = [item.get("id") for item in documents]
+        actual_paths = [item.get("sourcePath") for item in documents]
+        if actual_ids != expected_ids:
+            failures.append(
+                f"course-4-capstone IDs must be {expected_ids}; found {actual_ids}"
+            )
+        if actual_paths != expected_paths:
+            failures.append(
+                f"course-4-capstone paths must be {expected_paths}; found {actual_paths}"
+            )
+        for document in documents:
+            if document.get("courseId") != EXPECTED_COURSE4_ID:
+                failures.append(
+                    f"{document.get('id', '<unknown>')}.courseId must be {EXPECTED_COURSE4_ID}"
+                )
+            if document.get("legacyIds") != []:
+                failures.append(
+                    f"{document.get('id', '<unknown>')}.legacyIds must be an empty array"
+                )
+
+    learning_sequence = curriculum.get("course", {}).get("learningSequenceIds", [])
+    leaked_ids = sorted(set(expected_ids) & set(learning_sequence))
+    if leaked_ids:
+        failures.append(
+            f"Course 4 capstone IDs must not enter the Course 1 learning sequence: {leaked_ids}"
+        )
+
+    combined_text: list[str] = []
+    for document_id, source_path in COURSE4_CAPSTONE_DOCUMENTS:
+        path = root / Path(*PurePosixPath(source_path).parts)
+        if not path.is_file():
+            failures.append(f"{source_path} is missing")
+            continue
+        text = path.read_text(encoding="utf-8")
+        combined_text.append(text)
+        if source_path != "advanced_capstone/README.md":
+            for heading in REQUIRED_PRACTICE_HEADINGS:
+                if heading not in text:
+                    failures.append(f"{source_path} is missing {heading}")
+
+    joined = "\n".join(combined_text)
+    required_boundary_phrases = (
+        "synthetic",
+        "€60",
+        "Google Cloud Run",
+        "Document AI",
+        "Vertex AI",
+        "human approval",
+        "CSV",
+        "JSON",
+        "teardown",
+        "26 October 2026",
+    )
+    for phrase in required_boundary_phrases:
+        if phrase.casefold() not in joined.casefold():
+            failures.append(f"advanced capstone lessons omit required boundary: {phrase}")
+
+    implementation_root = (
+        root
+        / "future_courses"
+        / "course_04_controlled_document_ai"
+        / "controlled_document_intake_demo"
+    )
+    required_implementation_files = (
+        "Dockerfile",
+        "pyproject.toml",
+        "requirements.txt",
+        "src/controlled_intake/main.py",
+        "src/controlled_intake/pipeline.py",
+        "src/controlled_intake/providers.py",
+        "tests/test_contracts.py",
+        "tests/test_http.py",
+        "tests/test_pipeline.py",
+        "scripts/preflight.ps1",
+        "scripts/deploy.ps1",
+        "scripts/verify_live.ps1",
+        "scripts/teardown.ps1",
+    )
+    missing_implementation = [
+        relative
+        for relative in required_implementation_files
+        if not (implementation_root / Path(*PurePosixPath(relative).parts)).is_file()
+    ]
+    if missing_implementation:
+        failures.append(
+            f"controlled intake implementation is incomplete: {missing_implementation}"
+        )
+
+    if failures:
+        report.failed("course4-capstone-integration", compact(failures, limit=20))
+    else:
+        report.passed(
+            "course4-capstone-integration",
+            "11 non-core Course 4 pages, the frozen Course 1 sequence, and the runnable demo package are wired consistently",
         )
 
 
@@ -1994,11 +2229,13 @@ def write_report(
         "",
         "## Scope",
         "",
-        "This report covers the current curriculum manifest, configured lesson files,",
-        "the 9 foundation and 9 module progress lessons, module structure, current",
+        "This report covers the curriculum manifest, configured lesson files, the 9",
+        "foundation and 9 module Course 1 progress lessons, the 11-page non-core",
+        "Course 4 capstone integration, its required runnable package surface, current",
         "JSON contracts, synthetic practice data, and current internal links.",
-        "`future_courses/`, `app/dist/`, dependency folders, Git metadata, caches, and",
-        "external websites are outside this deterministic validation.",
+        "Archived Course 4 source material, `app/dist/`, dependency folders, Git",
+        "metadata, caches, live cloud resources, and external websites are outside",
+        "this deterministic validation.",
         "",
         "| Status | Check | Detail |",
         "|---|---|---|",
@@ -2033,7 +2270,7 @@ def write_report(
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Validate the current Course 1 package"
+        description="Validate Course 1 and its optional Course 4 capstone"
     )
     parser.add_argument(
         "--root",
@@ -2065,6 +2302,7 @@ def main() -> int:
 
     report = Report()
     curriculum = validate_curriculum(root, report)
+    validate_course4_capstone_integration(root, curriculum, report)
     validate_progress_lessons(root, curriculum, report)
     validate_module_structure(root, curriculum, report)
     validate_beginner_practice_contract(root, curriculum, report)

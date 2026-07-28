@@ -2,31 +2,34 @@
 
 Course: **Controlled Artificial Intelligence (AI) Workflow Foundations**
 
-Course version: `2.2.0`
+Course version: `2.3.0`
 
 Curriculum verified through: `2026-07-28`
 
 Result: **PASS**
 
-Checks: 33; failures: 0; warnings: 0
+Checks: 34; failures: 0; warnings: 0
 
 ## Scope
 
-This report covers the current curriculum manifest, configured lesson files,
-the 9 foundation and 9 module progress lessons, module structure, current
+This report covers the curriculum manifest, configured lesson files, the 9
+foundation and 9 module Course 1 progress lessons, the 11-page non-core
+Course 4 capstone integration, its required runnable package surface, current
 JSON contracts, synthetic practice data, and current internal links.
-`future_courses/`, `app/dist/`, dependency folders, Git metadata, caches, and
-external websites are outside this deterministic validation.
+Archived Course 4 source material, `app/dist/`, dependency folders, Git
+metadata, caches, live cloud resources, and external websites are outside
+this deterministic validation.
 
 | Status | Check | Detail |
 |---|---|---|
 | PASS | curriculum-load | curriculum.json parsed as a JSON object |
 | PASS | curriculum-metadata | Course 1 metadata is complete through 2026-07-28 |
-| PASS | curriculum-groups | 6 configured groups have stable IDs and valid structure |
-| PASS | curriculum-stable-ids | 62 unique current IDs and 34 unique legacy IDs |
-| PASS | curriculum-documents | 62 unique configured lesson paths and revisions are valid |
+| PASS | curriculum-groups | 7 configured groups have stable IDs and valid structure |
+| PASS | curriculum-stable-ids | 73 unique current IDs and 34 unique legacy IDs |
+| PASS | curriculum-documents | 73 unique configured lesson paths and revisions are valid |
 | PASS | curriculum-core-groups | only foundations and modules are configured as progress groups |
-| PASS | career-metadata | 6 ordered career courses; Course 1 is the only current course |
+| PASS | career-metadata | 6 ordered career courses; Course 1 is current and the Course 4 prototype is optional |
+| PASS | course4-capstone-integration | 11 non-core Course 4 pages, the frozen Course 1 sequence, and the runnable demo package are wired consistently |
 | PASS | progress-foundations | exactly 9 ordered foundation progress lessons |
 | PASS | progress-modules | exactly 9 ordered module progress lessons |
 | PASS | progress-total | 18 progress lessons: 9 foundations plus 9 modules |
@@ -52,7 +55,7 @@ external websites are outside this deterministic validation.
 | PASS | practice-rule-register | R001-R011 are documented and covered using fixed date 2026-07-26 |
 | PASS | practice-synthetic-safety | fixed fictional identifiers, role-only ownership, no personal-data columns, and explicit no-real-data guarantees |
 | PASS | practice-rule-oracle | standard-library evaluator reproduces all 13 frozen issues, including both R010 duplicates and fixed-date R011 |
-| PASS | internal-links | 57 current local targets exist; 0 archived/generated targets ignored |
+| PASS | internal-links | 70 current local targets exist; 8 archived/generated targets ignored |
 
 ## Limits
 

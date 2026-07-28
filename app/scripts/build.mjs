@@ -99,6 +99,20 @@ async function readCurriculum() {
   const sourcePaths = new Set();
   const careerCourseIds = new Set();
 
+  for (const course of curriculum.career.courses) {
+    assertMetadata(course?.id && course?.title, "each career course needs an id and title");
+    assertMetadata(
+      Number.isInteger(course.sequence) && course.sequence > 0,
+      `career course "${course.id}" needs a positive integer sequence`,
+    );
+    assertMetadata(!careerCourseIds.has(course.id), `duplicate career course "${course.id}"`);
+    careerCourseIds.add(course.id);
+  }
+  assertMetadata(
+    careerCourseIds.has(curriculum.course.id),
+    "the current course must appear in career.courses",
+  );
+
   for (const group of curriculum.groups) {
     assertMetadata(group?.id && group?.title, "every group needs an id and title");
     assertMetadata(!groupIds.has(group.id), `duplicate group id "${group.id}"`);
@@ -118,6 +132,11 @@ async function readCurriculum() {
         `document id "${document.id}" is duplicated or conflicts with a legacy id`,
       );
       documentIds.add(document.id);
+      const documentCourseId = document.courseId || curriculum.course.id;
+      assertMetadata(
+        careerCourseIds.has(documentCourseId),
+        `document "${document.id}" references unknown course "${documentCourseId}"`,
+      );
       assertMetadata(
         /^\d{4}-\d{2}-\d{2}$/.test(document.revision || ""),
         `document "${document.id}" needs an ISO revision date`,
@@ -149,20 +168,6 @@ async function readCurriculum() {
   for (const coreGroupId of curriculum.course.coreGroupIds) {
     assertMetadata(groupIds.has(coreGroupId), `unknown core group "${coreGroupId}"`);
   }
-
-  for (const course of curriculum.career.courses) {
-    assertMetadata(course?.id && course?.title, "each career course needs an id and title");
-    assertMetadata(
-      Number.isInteger(course.sequence) && course.sequence > 0,
-      `career course "${course.id}" needs a positive integer sequence`,
-    );
-    assertMetadata(!careerCourseIds.has(course.id), `duplicate career course "${course.id}"`);
-    careerCourseIds.add(course.id);
-  }
-  assertMetadata(
-    careerCourseIds.has(curriculum.course.id),
-    "the current course must appear in career.courses",
-  );
 
   return curriculum;
 }
@@ -210,7 +215,7 @@ async function createCourseBundle() {
         group: group.id,
         kind: group.kind,
         core: group.core,
-        courseId: curriculum.course.id,
+        courseId: documentMetadata.courseId || curriculum.course.id,
         order: documents.length,
         sourcePath,
         description:

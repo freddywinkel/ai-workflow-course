@@ -1540,6 +1540,13 @@ a {
     linear-gradient(145deg, var(--mint-soft), var(--paper));
 }
 
+.career-course-card.prototype {
+  border-color: color-mix(in srgb, var(--gold) 62%, var(--line));
+  background:
+    radial-gradient(circle at 100% 0, rgb(222 178 87 / 16%), transparent 14rem),
+    linear-gradient(145deg, var(--gold-soft), var(--paper));
+}
+
 .career-sequence {
   display: grid;
   width: 3.4rem;
@@ -1740,6 +1747,13 @@ a {
   width: 0.86rem;
   height: 0.86rem;
   color: var(--forest-soft);
+}
+
+.reader-meta .reader-course-boundary {
+  border-color: color-mix(in srgb, var(--gold) 58%, var(--line));
+  background: var(--gold-soft);
+  color: var(--ink);
+  font-weight: 700;
 }
 
 .complete-button[aria-pressed="true"] {

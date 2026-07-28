@@ -6,9 +6,10 @@ The PWA is an offline course reader and local progress tracker.
 
 It:
 
-- bundles the current Course 1 Markdown;
+- bundles the complete Course 1 Markdown and the optional Course 4 Controlled
+  Document Intake capstone lessons;
 - shows a separate Career Path tab;
-- tracks completion only for current foundations and modules;
+- counts only the current foundations and modules toward Course 1 progress;
 - stores notes, appearance, and progress in local browser storage;
 - searches the bundled reading material;
 - installs on supported desktop and mobile browsers;
@@ -16,12 +17,14 @@ It:
 
 It does not:
 
-- run the capstone;
+- run either capstone or deploy cloud resources;
 - contain an AI model;
-- store an API key;
+- store an application programming interface (API) key, Google Cloud
+  credential, or billing permission;
 - connect to GitHub after installation except for static course updates;
 - synchronize progress;
-- include unfinished future-course lessons.
+- present the optional Course 4 prototype as the complete Course 4 or as
+  production readiness.
 
 ## Canonical structure
 
@@ -29,6 +32,8 @@ It does not:
 
 - stable lesson IDs;
 - lesson revisions;
+- an optional document-level `courseId` for material that belongs to a later
+  career course;
 - ordered groups and reading sequence;
 - progress eligibility;
 - current-course promise and boundary;
@@ -42,12 +47,18 @@ invalid source.
 
 ## Progress model
 
-Course 2.2 uses stable lesson identifiers (IDs) plus revision dates. This
+Course 2.3 uses stable lesson identifiers (IDs) plus revision dates. This
 prevents:
 
 - a renamed file from losing progress unnecessarily;
 - a substantially rewritten lesson from remaining falsely completed;
 - future course cards from inflating Course 1 progress.
+
+The Course 4 capstone pages are deliberately non-core. They can be read,
+searched, and marked page-by-page in the PWA, but those reading marks do not
+count toward Course 1 completion, appear in Course 1 Resume, or alter Course
+1's 18 progress lessons. A page mark is not evidence that the practical gate
+or the deployed capstone passed.
 
 The app migrates the old schema-v1 local state:
 
@@ -122,6 +133,7 @@ an installation step because it can authorize edits and a new course release.
 Maintainers run it:
 
 - before revising the optional live artificial intelligence (AI) lab;
+- before running or revising the optional Google Cloud capstone;
 - before publishing guidance intended for a real client pilot in a later
   course;
 - after a material AI Act, AVG, or AP guidance change;

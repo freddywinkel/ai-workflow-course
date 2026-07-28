@@ -1,6 +1,6 @@
 # Course 1 — Controlled Artificial Intelligence (AI) Workflow Foundations for Dutch Small and Medium-sized Enterprises (SMEs)
 
-- Version: 2.2.0
+- Version: 2.3.0
 - Verified through: 2026-07-28
 - Language: English, with Dutch and European Union (EU) terms where useful
 - Format: self-paced, gate-based learning—you continue after proving a skill,
@@ -41,8 +41,18 @@ The PWA's separate **Career Path** tab and the
 diagnostics (structured problem assessments), integrations (connections between
 systems), production engineering (building for real daily use), governance
 (rules, ownership, and oversight), adoption (helping people use the change), and
-consulting delivery. Those later courses are a roadmap, not part of this
-course's completion percentage.
+consulting delivery. Course 4 includes one optional advanced
+[Controlled Document Intake capstone](advanced_capstone/README.md); it is not
+the complete Course 4 and it is not part of this course's completion
+percentage. The remaining later-course material is a roadmap.
+
+The capstone is not merely a paper design: its synthetic-only private Google
+Cloud reference implementation recorded a live `PASS` on 28 July 2026 and was
+then torn down. Gemini selected bounded candidate identifiers while fixed code
+rendered the exact wording. The dedicated project is `DELETE_REQUESTED`, so
+there is intentionally no live service to try. The recorded Billing screen
+showed an unactivated Free Trial and €0, with the explicit warning that Billing
+data can lag.
 
 ## What you will build
 
@@ -246,9 +256,9 @@ authorizes a client pilot, real data, production use, or external action.
 ## PWA versus the workflow you build
 
 The PWA is an offline course reader and progress tracker. It contains no AI and
-does not run the capstone. You build the capstone separately while following
-the lessons. Progress and private notes remain in the browser or installed
-app.
+does not run either the Course 1 workflow or the optional Course 4 cloud
+capstone. You build and run those separately while following their lessons.
+Progress and private notes remain in the browser or installed app.
 
 ## Design rule for a fast-changing AI market
 

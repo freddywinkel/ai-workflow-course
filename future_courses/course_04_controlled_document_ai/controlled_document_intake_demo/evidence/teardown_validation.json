@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "result": "PASS",
+  "observed_at": "2026-07-28T10:15:31.5931545+00:00",
+  "project": {
+    "scope": "dedicated synthetic-only lab",
+    "lifecycle_state": "DELETE_REQUESTED"
+  },
+  "removed_before_project_deletion": {
+    "cloud_run_services": true,
+    "document_ai_processor": true,
+    "artifact_registry_repositories": true,
+    "cloud_storage_staging_buckets": true,
+    "runtime_project_roles": true,
+    "runtime_service_account": true,
+    "firestore_counter_database": true,
+    "alerts_only_budget": true,
+    "cloud_run_spend_cap": true,
+    "vertex_ai_spend_cap": true
+  },
+  "read_only_checks": {
+    "cloud_run_service_count": 0,
+    "cloud_storage_bucket_count": 0,
+    "deleted_service_http_status": 404,
+    "billing_page_course_budget_rows": 0,
+    "secret_manager_direct_check": "unavailable after project deletion disabled billing; project deletion is the final cleanup boundary"
+  },
+  "billing": {
+    "free_trial_account_visible": true,
+    "activate_button_visible": true,
+    "paid_activation_performed": false,
+    "days_remaining": 89,
+    "free_trial_end_date": "2026-10-26",
+    "displayed_post_validation_cost_eur": 0.0,
+    "billing_display_may_lag": true
+  },
+  "contains_document_text": false,
+  "contains_model_output": false,
+  "contains_credentials": false,
+  "contains_billing_account_identifier": false
+}

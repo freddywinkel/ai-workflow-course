@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <title>Controlled Document Intake</title>
+    <link rel="stylesheet" href="/assets/styles.css">
+    <script src="/assets/app.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to the demo</a>
+    <header class="site-header">
+      <div>
+        <p class="eyebrow">Advanced synthetic cloud capstone</p>
+        <h1>Controlled Document Intake</h1>
+        <p>
+          Document AI reads. Gemini selects from allowed evidence. Fixed code
+          writes the source-linked lines. A human decides. Nothing is sent.
+        </p>
+      </div>
+      <div class="boundary-badge">
+        <strong>Synthetic fixtures only</strong>
+        <span>Private · European Union regions · no raw storage</span>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="notice" aria-labelledby="boundary-title">
+        <div class="step-number">0</div>
+        <div>
+          <h2 id="boundary-title">Non-negotiable boundary</h2>
+          <p>
+            Upload only an unchanged PDF from the bundled course fixture
+            manifest. An unknown hash is rejected before Google Document AI or
+            Gemini is called. Never use client, employer, medical, personal, or
+            confidential data here.
+          </p>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="intake-title">
+        <div class="section-heading">
+          <div class="step-number">1</div>
+          <div>
+            <p class="eyebrow">Intake</p>
+            <h2 id="intake-title">Choose one frozen synthetic PDF</h2>
+          </div>
+        </div>
+        <label class="file-picker" for="document-file">
+          <span>Select a Portable Document Format (PDF) fixture</span>
+          <input id="document-file" type="file" accept="application/pdf,.pdf">
+        </label>
+        <label class="check-row">
+          <input id="synthetic-check" type="checkbox">
+          <span>
+            I confirm this is an unchanged synthetic course fixture and
+            contains no real client, work, medical, or personal data.
+          </span>
+        </label>
+        <button id="process-button" type="button" disabled>Process synthetic document</button>
+        <p id="process-status" class="status" role="status" aria-live="polite"></p>
+      </section>
+
+      <section id="review-panel" class="panel" aria-labelledby="review-title" hidden>
+        <div class="section-heading">
+          <div class="step-number">2</div>
+          <div>
+            <p class="eyebrow">Evidence-linked output</p>
+            <h2 id="review-title">Inspect every claim before deciding</h2>
+          </div>
+        </div>
+
+        <dl class="run-facts">
+          <div><dt>Case</dt><dd id="case-id"></dd></div>
+          <div><dt>State</dt><dd id="run-state"></dd></div>
+          <div><dt>Pages</dt><dd id="page-count"></dd></div>
+          <div><dt>Provider</dt><dd id="provider-mode"></dd></div>
+        </dl>
+
+        <h3>Structured fields</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Field</th><th>Value</th><th>Status</th><th>Source</th></tr>
+            </thead>
+            <tbody id="field-rows"></tbody>
+          </table>
+        </div>
+
+        <h3>Source links</h3>
+        <ol id="evidence-list" class="evidence-list"></ol>
+
+        <h3>Gemini selection, fixed wording</h3>
+        <div class="draft-grid">
+          <article>
+            <h4>Summary</h4>
+            <ul id="summary-list"></ul>
+          </article>
+          <article>
+            <h4>Proposed review actions</h4>
+            <ul id="action-list"></ul>
+          </article>
+        </div>
+
+        <div id="finding-box" class="finding-box" hidden>
+          <h3>Manual-review findings</h3>
+          <ul id="finding-list"></ul>
+        </div>
+      </section>
+
+      <section id="decision-panel" class="panel" aria-labelledby="decision-title" hidden>
+        <div class="section-heading">
+          <div class="step-number">3</div>
+          <div>
+            <p class="eyebrow">Human control point</p>
+            <h2 id="decision-title">Record your decision on this exact output</h2>
+          </div>
+        </div>
+        <p>
+          Approval means only “allow CSV and JSON export of this reviewed
+          synthetic result.” It does not approve a supplier or take an external
+          action.
+        </p>
+        <label>
+          Fictional reviewer alias
+          <input id="reviewer-alias" value="reviewer-demo-01" maxlength="16">
+        </label>
+        <label>
+          Decision
+          <select id="decision">
+            <option value="needs_correction">Needs correction</option>
+            <option value="rejected">Reject draft</option>
+            <option value="approved">Approve exact export</option>
+          </select>
+        </label>
+        <label>
+          Comment (synthetic context only)
+          <textarea id="decision-comment" maxlength="500" rows="3"></textarea>
+        </label>
+        <label class="check-row">
+          <input id="source-review-check" type="checkbox">
+          <span>I inspected the source quotes and their page references.</span>
+        </label>
+        <button id="decision-button" type="button">Record human decision</button>
+        <p id="decision-status" class="status" role="status" aria-live="polite"></p>
+      </section>
+
+      <section id="export-panel" class="panel export-panel" aria-labelledby="export-title" hidden>
+        <div class="section-heading">
+          <div class="step-number">4</div>
+          <div>
+            <p class="eyebrow">Approved local output</p>
+            <h2 id="export-title">Download the traceable exports</h2>
+          </div>
+        </div>
+        <p>The downloads are created in this browser. The service does not store them.</p>
+        <div class="button-row">
+          <button id="json-button" type="button">Download JSON</button>
+          <button id="csv-button" type="button">Download CSV</button>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>
+        Prototype boundary: no real data, no public endpoint, no autonomous
+        decision, no external action, and no production-readiness claim.
+      </p>
+    </footer>
+  </body>
+</html>

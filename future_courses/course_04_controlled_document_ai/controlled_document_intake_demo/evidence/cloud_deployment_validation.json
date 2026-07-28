@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "result": "PASS",
+  "observed_at": "2026-07-28T10:04:35.1478304+00:00",
+  "scope": "dedicated synthetic-only Google Cloud Free Trial lab",
+  "billing": {
+    "free_trial_visible": true,
+    "activate_button_visible": true,
+    "paid_activation_performed": false,
+    "displayed_current_cost_eur": 0.0,
+    "billing_display_may_lag": true,
+    "project_alert_eur": 40,
+    "cloud_run_spend_cap_eur": 5,
+    "vertex_ai_spend_cap_eur": 5
+  },
+  "cloud_run": {
+    "private_iam_only": true,
+    "region": "europe-west4",
+    "minimum_instances": 0,
+    "maximum_instances": 1,
+    "concurrency": 1,
+    "timeout_seconds": 120,
+    "ready": true,
+    "traffic_percent": 100
+  },
+  "providers": {
+    "document_ai_location": "eu",
+    "vertex_location": "eu",
+    "gemini_model": "gemini-3.5-flash-lite"
+  },
+  "retention": {
+    "raw_document_storage": false,
+    "temporary_file_deletion_proved": true,
+    "default_application_log_retention_days": 1,
+    "application_logs_are_metadata_only": true
+  },
+  "live_report": "live_validation.json",
+  "contains_document_text": false,
+  "contains_model_output": false,
+  "contains_credentials": false,
+  "contains_billing_account_identifier": false
+}

@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "classification": "synthetic, non-personal training data",
+  "source": "../source_material/corpus/manifest.jsonl",
+  "allowed_documents": [
+    {
+      "case_id": "C001",
+      "relative_path": "cases/C001/quotation.pdf",
+      "sha256": "1d01263b852a9746c554a7ea9ae82e512a1d39dabc1b4b6cc0c448e59b5303c3",
+      "byte_length": 4516,
+      "page_count": 1,
+      "expected_path": "pending_approval"
+    },
+    {
+      "case_id": "C004",
+      "relative_path": "cases/C004/quotation_scan.pdf",
+      "sha256": "6d20fdb942c337539653fe0710468c064eebf21d6e52ccf0ad7e54164ae149a9",
+      "byte_length": 82446,
+      "page_count": 1,
+      "expected_path": "pending_approval"
+    },
+    {
+      "case_id": "C006",
+      "relative_path": "cases/C006/quotation.pdf",
+      "sha256": "1ac2dac17424681cd65ffe0a301cbb53400e8a350b961516a1dcdaf804191306",
+      "byte_length": 4523,
+      "page_count": 1,
+      "expected_path": "needs_review"
+    },
+    {
+      "case_id": "C008",
+      "relative_path": "cases/C008/quotation.pdf",
+      "sha256": "a6233b2174f35e2e31276323d913308f7d339efb4ebb822f6d63316d6e36a4a6",
+      "byte_length": 4521,
+      "page_count": 1,
+      "expected_path": "needs_review"
+    },
+    {
+      "case_id": "C010",
+      "relative_path": "cases/C010/quotation_corrupt.pdf",
+      "sha256": "8a1597c4cdf54602dedc3c1bfb515877891afefb7cfdeb1cd2f7a68124a51b42",
+      "byte_length": 30,
+      "page_count": null,
+      "expected_path": "failed_manual"
+    },
+    {
+      "case_id": "C012",
+      "relative_path": "cases/C012/quotation.pdf",
+      "sha256": "0baaf3d81fe4dc1627c87491442af545bb39f505615cbff29f861667c3566955",
+      "byte_length": 4713,
+      "page_count": 1,
+      "expected_path": "needs_review"
+    }
+  ]
+}
