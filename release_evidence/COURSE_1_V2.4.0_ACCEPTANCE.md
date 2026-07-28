@@ -2,7 +2,7 @@
 
 - Verified: 2026-07-28
 - Reviewer: Codex, with two independent read-only acceptance passes
-- Decision: RELEASE CANDIDATE — public installed-client verification pending
+- Decision: PASS — released and verified at the public PWA scope
 
 ## Release identity
 
@@ -15,8 +15,8 @@
   `5e03c79d2b9f0be80f512acadcbd2f209b747cce3452e26dd1052e488070a36b`
 - Verified-through date: 2026-07-28
 
-The build ID and content hash are derived from the final bundled source. The
-deployed commit and public asset identity will be recorded after publishing.
+The build ID and content hash are derived from the final bundled source and
+match the public assets.
 
 ## Course and execution acceptance
 
@@ -47,6 +47,13 @@ deployed commit and public asset identity will be recorded after publishing.
   build; **Update now** activated the candidate; reading state, practical
   state, notes, and an unrelated cache survived; the obsolete course cache
   was removed.
+- Real public version 2.3.0-to-2.4.0 update: PASS. The preserved client began
+  on build `87610cbdd2b6`. **Later** left the old interface usable with its
+  saved completion and note. **Update now** activated build `9c8e758aefbb`;
+  the note remained, the materially revised lesson correctly reopened for
+  review, the new practical self-check stayed empty, the old course cache was
+  removed, and an unrelated proof cache remained. No browser dialogue
+  appeared.
 - Responsive viewports:
   - 320 by 568
   - 390 by 844
@@ -56,10 +63,19 @@ deployed commit and public asset identity will be recorded after publishing.
   - 844 by 390 landscape
 - At 320 pixels and 125% reader text, all 21 required Course 1 pages passed
   overflow and control-visibility checks.
+- All 21 pages were also opened from the public deployment at 320 by 568;
+  horizontal overflow remained zero, every practical panel appeared, and all
+  five bottom tabs were at least 59 pixels high.
 - Keyboard focus, skip link, two-way sidebar focus wrapping and restoration,
   reduced motion, forced colours, light and dark contrast, table containment,
   backup/import/reset, blocked-storage reporting, migration, offline reload,
   and offline search passed.
+- The public Career tab contained six ordered course stages. Its Google Cloud
+  page opened as an optional Course 4 prototype and explicitly did not affect
+  Course 1 reading or practice records.
+- A fresh browser cached the public build, closed its online page, went
+  offline, cold-opened a new page, and returned Course 1 search results with
+  no Course 4 result.
 
 ## Source audit
 
@@ -102,11 +118,8 @@ continuing.
 - Course 1 does not claim production readiness, legal compliance, or
   permission to run a client pilot.
 
-## Known limitations before publication
+## Known limitations
 
-- The real public version 2.3.0-to-2.4.0 installed-client update still has to
-  be verified at the GitHub Pages scope. Until that check passes, this record
-  remains `RELEASE CANDIDATE`, not final `PASS`.
 - Automated browser accessibility checks do not replace a future manual audit
   with multiple assistive technologies.
 - Python still needs to be installed by the learner through the official
@@ -115,11 +128,14 @@ continuing.
 
 ## Post-deployment fields
 
-- Public URL: pending
-- Deployed commit: pending
-- Public build ID: pending
-- Public content hash: pending
-- GitHub Actions release gate: pending
-- Real preserved-client update: pending
-- Offline cold reopen at the public scope: pending
-- Final decision: pending
+- Public URL:
+  `https://freddywinkel.github.io/ai-workflow-course/`
+- Accepted bundled-source commit:
+  `ee1c2322a3cd1c2e9a9f55b57b3cd1ab9488e0ff`
+- Public build ID: `9c8e758aefbb`
+- Public content hash:
+  `5e03c79d2b9f0be80f512acadcbd2f209b747cce3452e26dd1052e488070a36b`
+- GitHub Actions release gate: PASS, run `30375498967`.
+- Real preserved-client update: PASS.
+- Offline cold reopen at the public scope: PASS.
+- Final decision: PASS.
