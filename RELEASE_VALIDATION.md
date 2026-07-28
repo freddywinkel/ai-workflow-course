@@ -1,11 +1,11 @@
-# Release Validation — Course 1 version 2.4.0 and Progressive Web App (PWA)
+# Release Validation — Course 1 version 2.5.0 and Progressive Web App (PWA)
 
 ## How release status is recorded
 
 This bundled page is the reusable execution protocol. Its empty checkboxes are
 instructions for a release reviewer, not the authoritative status of version
-2.4.0. The dated result is stored outside the PWA bundle in
-`release_evidence/COURSE_1_V2.4.0_ACCEPTANCE.md`.
+2.5.0. The dated result is stored outside the PWA bundle in
+`release_evidence/COURSE_1_V2.5.0_ACCEPTANCE.md`.
 
 Do not write a derived build ID or content hash into this page: this page is
 part of that hash, so doing so would change the value being recorded. The
@@ -195,12 +195,12 @@ Verify:
 ## 6. Learner-state migration
 
 Create both a schema-v1 state and a Course 1 version 2.3.0 state before loading
-Course 1 version 2.4.0.
+Course 1 version 2.5.0.
 
 - [ ] Theme and font size survive.
 - [ ] Notes survive or are retained for export.
 - [ ] Equivalent retained foundations preserve completion.
-- [ ] Version 2.4.0's practice revision reopens materially rewritten page-read
+- [ ] Version 2.5.0's practice revision reopens materially rewritten page-read
       and practical checks for review without changing stable lesson IDs.
 - [ ] unknown old IDs are not misapplied.
 - [ ] old JSON backup import works.
@@ -248,13 +248,13 @@ Use an installed or controlled Course 1 version 2.3.0 client:
 
 1. load and record old build/version;
 2. save representative progress and notes;
-3. publish or serve Course 1 version 2.4.0 at the same scope;
+3. publish or serve Course 1 version 2.5.0 at the same scope;
 4. foreground or focus the old client;
 5. verify the update prompt appears;
 6. choose **Later** and confirm the old version remains usable;
 7. choose **Update now**;
 8. confirm the new service worker activates;
-9. verify the version 2.4.0 Overview, 21-page practice loop, Course 4 link, and
+9. verify the version 2.5.0 Overview, 21-page practice loop, Course 4 link, and
    Career tab;
 10. verify state migration;
 11. cold reload and reopen the installed PWA.
@@ -262,12 +262,12 @@ Use an installed or controlled Course 1 version 2.3.0 client:
 - [ ] new precache resources were fetched with `cache: "reload"`;
 - [ ] no broad cache deletion occurred;
 - [ ] local state was not erased;
-- [ ] Course 1 version 2.4.0 is still present after cold reopen.
+- [ ] Course 1 version 2.5.0 is still present after cold reopen.
 
 ## 10. Final release record
 
 Record the following in
-`release_evidence/COURSE_1_V2.4.0_ACCEPTANCE.md`:
+`release_evidence/COURSE_1_V2.5.0_ACCEPTANCE.md`:
 
 - course version;
 - curriculum version;

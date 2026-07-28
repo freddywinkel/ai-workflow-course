@@ -48,9 +48,9 @@ The National Cyber Security Centre (NCSC) publishes Dutch cyber-resilience
 guidance.
 
 1. [Autoriteit Persoonsgegevens: AI and algorithms](https://autoriteitpersoonsgegevens.nl/themas/algoritmes-ai)
-2. [European Commission: GDPR principles](https://commission.europa.eu/law/law-topic/data-protection/rules-business-and-organisations/principles-gdpr/overview-principles/what-data-can-we-process-and-under-which-conditions_en)
+2. [European Commission: GDPR principles](https://commission.europa.eu/law/law-topic/data-protection/information-business-and-organisations/principles-gdpr/overview-principles/what-data-can-we-process-and-under-which-conditions_en)
 3. [European Commission: AI Act](https://digital-strategy.ec.europa.eu/en/policies/regulatory-framework-ai)
-4. [NCSC Netherlands: basic cyber-resilience measures](https://www.ncsc.nl/onderwerpen/basismaatregelen)
+4. [NCSC Netherlands: basic cyber-resilience measures](https://www.ncsc.nl/basisprincipes/resultaten)
 
 These sources support screening; they do not replace legal, security, labour,
 procurement, or sector advice.
@@ -90,16 +90,75 @@ Open Windows PowerShell and run:
 
 ```powershell
 $projectRoot = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'AI-workflow-learning\operations-exception-assistant'
-if (-not (Test-Path (Join-Path $projectRoot '.git'))) {
-    throw 'Project repository not found. Complete Windows Setup before Module 7.'
+$projectMarker = Join-Path $projectRoot 'COURSE_PROJECT.md'
+$expectedMarker = @'
+# Course 1 synthetic learner project
+
+This folder is only for the fictional Course 1 practice project.
+Never place real client, employer, medical, or personal data here.
+'@
+if (-not (Test-Path -LiteralPath $projectMarker -PathType Leaf)) {
+    throw 'Course project marker missing. Do not enter or change this folder.'
+}
+$actualMarker = (Get-Content -Raw -LiteralPath $projectMarker) -replace "`r`n", "`n"
+if ($actualMarker -ne ($expectedMarker -replace "`r`n", "`n")) {
+    throw 'Course project marker is unfamiliar. Do not enter or change this folder.'
+}
+$savedGitRoot = git -C $projectRoot rev-parse --show-toplevel 2>$null
+if ($LASTEXITCODE -ne 0 -or
+    (Resolve-Path -LiteralPath $savedGitRoot).Path -ne
+    (Resolve-Path -LiteralPath $projectRoot).Path) {
+    throw 'The marked Course 1 Git repository is missing or belongs to another folder.'
 }
 $moduleFolder = Join-Path $projectRoot 'evidence\module-07'
 New-Item -ItemType Directory -Force -Path $moduleFolder
 Set-Location -LiteralPath $moduleFolder
-notepad .\worked_guardrail_and_tool_decision.md
+function Open-CreateOnceCourseFile {
+    param(
+        [string]$Path,
+        [string]$RecognizedStart,
+        [string[]]$RequiredPatterns
+    )
+    if (Test-Path -LiteralPath $Path) {
+        if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+            throw "Expected a lesson file but found another path type: $Path"
+        }
+        $content = Get-Content -Raw -LiteralPath $Path
+        if ($null -eq $content) { $content = '' }
+        $firstLine = Get-Content -LiteralPath $Path -TotalCount 1
+        if (-not [string]::IsNullOrEmpty($content) -and
+            $firstLine -cne $RecognizedStart) {
+            throw "Existing file is unfamiliar. It was not opened or changed: $Path"
+        }
+        $complete = -not [string]::IsNullOrWhiteSpace($content)
+        foreach ($pattern in $RequiredPatterns) {
+            if (-not $content.Contains($pattern)) { $complete = $false }
+        }
+        if ($complete) {
+            Write-Host "COMPLETE: keeping $Path unchanged."
+            return
+        }
+        Write-Host 'INCOMPLETE: continue the recognised synthetic file without duplicating lines.'
+    } else {
+        New-Item -ItemType File -Path $Path | Out-Null
+        Write-Host 'NEW: paste the supplied lesson content once.'
+    }
+    & notepad.exe $Path
+}
+Open-CreateOnceCourseFile `
+    -Path (Join-Path $moduleFolder 'worked_guardrail_and_tool_decision.md') `
+    -RecognizedStart '# Worked guardrail and tool decision' `
+    -RequiredPatterns @('## Minimum security and ownership','CONFIGURE EXISTING SPREADSHEET','Reassess only if')
 ```
 
-Click **Yes**, paste the completed example, save, and close:
+The create-once helper never overwrites. Before each call, confirm the named
+file is synthetic lesson work. It creates a missing file, reopens an empty or
+recognised incomplete one, skips a complete one, and stops without opening a
+wrong-type or unfamiliar file. Preserve an unfamiliar file and ask Codex for
+read-only diagnosis before a clearly numbered retry.
+
+For `NEW`, paste the completed example, save, and close. For `INCOMPLETE`,
+continue without duplicating sections. For `COMPLETE`, move to the checks:
 
 ```markdown
 # Worked guardrail and tool decision
@@ -198,7 +257,17 @@ solution operable.
 
 ### Stage 2 — Test one scope change
 
-Create `worked_scope_change.md`:
+Run:
+
+```powershell
+Open-CreateOnceCourseFile `
+    -Path (Join-Path $moduleFolder 'worked_scope_change.md') `
+    -RecognizedStart '# Worked scope-change decision' `
+    -RequiredPatterns @('Decision: DO NOT CONTINUE','Do not bolt the request')
+```
+
+For `NEW`, paste the example. For `INCOMPLETE`, add only the missing part. For
+`COMPLETE`, do not paste again:
 
 ```markdown
 # Worked scope-change decision
@@ -238,17 +307,29 @@ Assess the different Synthetic SME Operations Exception Assistant.
 ```powershell
 $courseRoot = Read-Host 'Paste the full path to AI_WORKFLOW_DOCUMENT_SYSTEMS_COURSE'
 function Copy-NewPracticeFile {
-    param([string]$Source, [string]$Destination)
+    param([string]$Source, [string]$Destination, [string]$ExpectedHeading)
+    if (-not (Test-Path -LiteralPath $Source -PathType Leaf)) {
+        throw "Controlled course worksheet is missing or is not a file: $Source"
+    }
     if (Test-Path -LiteralPath $Destination) {
+        if (-not (Test-Path -LiteralPath $Destination -PathType Leaf) -or
+            (Get-Content -LiteralPath $Destination -TotalCount 1) -cne $ExpectedHeading) {
+            throw "Existing worksheet is the wrong type or is unfamiliar. Preserve it and ask for read-only diagnosis: $Destination"
+        }
         Write-Host "Resume: $Destination already exists and was left unchanged."
     } else {
         Copy-Item -LiteralPath $Source -Destination $Destination
+        if ((Get-FileHash -LiteralPath $Source -Algorithm SHA256).Hash -ne
+            (Get-FileHash -LiteralPath $Destination -Algorithm SHA256).Hash) {
+            throw "New worksheet copy did not match its controlled source: $Destination"
+        }
         Write-Host "Created: $Destination"
     }
 }
-Copy-NewPracticeFile (Join-Path $courseRoot 'templates\risk_and_escalation_screen.md') .\recreated_risk_screen.md
-Copy-NewPracticeFile (Join-Path $courseRoot 'templates\tool_fit_and_ownership_record.md') .\recreated_tool_fit.md
-notepad .\recreated_risk_screen.md
+Copy-NewPracticeFile (Join-Path $courseRoot 'templates\risk_and_escalation_screen.md') .\recreated_risk_screen.md '# Risk and Escalation Screen'
+Copy-NewPracticeFile (Join-Path $courseRoot 'templates\tool_fit_and_ownership_record.md') .\recreated_tool_fit.md '# Tool Fit and Ownership Record'
+notepad.exe .\recreated_risk_screen.md
+notepad.exe .\recreated_tool_fit.md
 ```
 
 2. Complete every field yourself using evidence from Modules 1–6. Then complete
@@ -297,9 +378,16 @@ READ-ONLY COURSE REVIEW.
 I authorize inspection of only this full path:
 [PASTE FULL PATH HERE]
 
-Do not create, edit, delete, rename, move, format, or execute anything. Do not
-inspect the parent or another path. Stop if there are secrets, credentials,
-real client data, workplace data, personal data, or health data.
+Learner attestation: I created these files for this fictional exercise and
+have not knowingly put real client, employer, personal, medical, credential,
+or secret data in them. This statement is an attestation, not proof.
+
+You may only list names, read files, and calculate hashes inside the authorised
+path. Do not create, edit, delete, rename, move, or format any file. Do not
+execute lesson scripts, use a network, or inspect a parent
+or other location. If apparent sensitive data is noticed, do not quote or
+repeat it: return NOT YET with only the filename and general category, then
+stop. If none is noticed, say that non-detection is not proof that none exists.
 
 Return:
 1. PASS or NOT YET;
@@ -332,20 +420,21 @@ Remain read-only. Do not make a legal conclusion or replacement recommendation.
 
 ### Record your Module 7 PASS in Git
 
-Do this only after Codex returns `PASS`.
+Do this only after Codex returns `PASS`. Rerun Stage 1 in this same PowerShell
+window so the exact marker and Git-root checks pass again.
 
 ```powershell
-$projectRoot = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'AI-workflow-learning\operations-exception-assistant'
 Set-Location -LiteralPath $projectRoot
 git status --short
 git add -- "evidence/module-07"
-git commit -m "complete module 7 evidence"
+git commit --only -m "complete module 7 evidence" -- "evidence/module-07"
 git status --short
 ```
 
-If Git reports `nothing to commit`, confirm that the module evidence was
-already recorded and unchanged. Never add secrets, real data, or unrelated
-files.
+`git commit --only` restricts this checkpoint to the repeated module path,
+even if a different file had already been staged. If Git reports
+`nothing to commit`, confirm that the module evidence was already recorded and
+unchanged. Never add secrets, real data, or unrelated files.
 
 ## Consultant lens
 

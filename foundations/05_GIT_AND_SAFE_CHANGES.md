@@ -66,20 +66,36 @@ Run this whole block whenever you start or resume Foundation 5:
 ```powershell
 $documentsPath = [Environment]::GetFolderPath("MyDocuments")
 $practiceRoot = Join-Path $documentsPath "controlled-ai-course-practice"
-$lessonPath = Join-Path $practiceRoot "foundation-05"
+$lessonFolderName = "foundation-05"
+if ($lessonFolderName -notmatch '^foundation-05(?:-retry-\d{2,})?$') {
+    throw "STOP: use foundation-05 or a retry name created by this lesson."
+}
+$lessonPath = Join-Path $practiceRoot $lessonFolderName
+
+function New-FoundationRetryAttempt {
+    param([string]$BaseName, [string]$PracticeRoot)
+    $retryNumber = 1
+    do {
+        $retryName = "$BaseName-retry-{0:D2}" -f $retryNumber
+        $retryPath = Join-Path $PracticeRoot $retryName
+        $retryNumber += 1
+    } while (Test-Path -LiteralPath $retryPath)
+    New-Item -ItemType Directory -Path $retryPath -ErrorAction Stop | Out-Null
+    $retryPath
+}
 
 if (-not (Test-Path -LiteralPath $practiceRoot -PathType Container)) {
     throw "STOP: the controlled-ai-course-practice folder is missing. Return to Foundation 1."
 }
 if (Test-Path -LiteralPath $lessonPath -PathType Leaf) {
-    throw "STOP: foundation-05 is a file, not a folder. Do not rename or delete it; ask Codex to inspect read-only."
+    throw "STOP: the selected Foundation 5 attempt is a file, not a folder. Do not change it."
 }
 if (-not (Test-Path -LiteralPath $lessonPath -PathType Container)) {
     New-Item -ItemType Directory -Path $lessonPath | Out-Null
-    "Created a new foundation-05 folder."
+    "Created a new Foundation 5 attempt: $lessonFolderName"
 }
 else {
-    "Existing foundation-05 folder found; nothing was overwritten."
+    "Existing Foundation 5 attempt found; nothing was overwritten: $lessonFolderName"
 }
 
 Set-Location -LiteralPath $lessonPath
@@ -88,13 +104,78 @@ Get-ChildItem -Force
 git --version
 ```
 
-Expected result: the location ends in `foundation-05` and the final line begins
-with `git version`. If existing items are listed, do not initialise, edit,
-stage, or commit yet. Inspect the names and continue only when they are your
-synthetic work from this lesson. At a resumed repository, run
-`git status --short`, `git log --oneline -3`, and `git remote -v` before the
-next unfinished step. This inspection does not change the repository. A remote
-should not exist in this local-only lesson.
+Expected result: the location ends in `foundation-05` or the selected numbered
+retry name, and the final line begins with `git version`. If items are listed,
+do not initialise, edit, stage, configure, or commit yet.
+
+`New-FoundationRetryAttempt` is a helper: it checks retry numbers from `01`
+upward, creates only the first absent folder, and returns that new path. It does
+not alter an older attempt.
+
+### Decide the exact Git attempt state before continuing
+
+Foundation 5 deliberately accepts only complete, clean checkpoints. This avoids
+guessing which Git action was interrupted.
+
+1. If the attempt is empty and has no `.git` folder, continue to Part A.
+2. If files exist but `.git` does not, or if an unexpected item exists, do not
+   initialise or inspect its content. Use a fresh retry.
+3. If `.git` exists, first run:
+
+   ```powershell
+   git status --short
+   git remote -v
+   if (git rev-parse --verify HEAD 2>$null) {
+       git log --reverse --format="%s"
+   }
+   else {
+       "NO COMMITS"
+   }
+   ```
+
+4. If a remote is printed, the status is not empty, or a commit message differs
+   from the checkpoints below, do not change the repository. Use a fresh retry.
+5. Only when the item names are `.git`, `README.md`, or `DECISIONS.md`, you
+   recognise them as this synthetic lesson, and step 4 passed, inspect an
+   existing expected file with:
+
+   ```powershell
+   if (Test-Path -LiteralPath ".\README.md" -PathType Leaf) {
+       Get-Content -LiteralPath ".\README.md"
+   }
+   if (Test-Path -LiteralPath ".\DECISIONS.md" -PathType Leaf) {
+       Get-Content -LiteralPath ".\DECISIONS.md"
+   }
+   ```
+
+6. Resume only at one exact checkpoint:
+
+   | Clean checkpoint | Required exact state | Continue at |
+   |---|---|---|
+   | 0 | `NO COMMITS`; no `README.md` or `DECISIONS.md` | Part B |
+   | 1 | one commit `Add synthetic queue note`; `README.md` says `Status: new`; no `DECISIONS.md` | Part D |
+   | 2 | the first two expected commits; `README.md` says `Status: waiting`; no `DECISIONS.md` | Recreation |
+   | 3 | all three expected commits; both files contain the completed lesson values | Codex check |
+
+   Any other content or state—including an existing uncommitted `README.md`,
+   a partial file, a staged change, unfamiliar content, or apparent real or
+   sensitive data—must remain unchanged and routes to a fresh retry.
+7. Create the next unused retry with:
+
+   ```powershell
+   $lessonPath = New-FoundationRetryAttempt -BaseName "foundation-05" -PracticeRoot $practiceRoot
+   $lessonFolderName = Split-Path -Leaf $lessonPath
+   Set-Location -LiteralPath $lessonPath
+   "Selected fresh attempt: $lessonFolderName"
+   ```
+
+8. Record the retry name. In a new PowerShell session, replace only
+   `"foundation-05"` in `$lessonFolderName` with that exact name. A retry starts
+   with Part A in a new empty folder; it never alters the old repository.
+
+Never rerun an earlier Git part on an accepted checkpoint. Resume at the table's
+named next part. If you want to repeat the exercise from the beginning, create
+a fresh retry repository first.
 
 ### Part A — create a local repository
 
@@ -102,43 +183,41 @@ Run this non-overwriting repository check:
 
 ```powershell
 if (Test-Path -LiteralPath ".git" -PathType Container) {
-    "Existing local Git repository found; git init was skipped."
-    git status --short
-    if (git rev-parse --verify HEAD 2>$null) {
-        git log --oneline -3
-    }
-    else {
-        "No commits recorded yet."
-    }
-    git remote -v
+    throw "STOP: an existing Git repository must be handled by the checkpoint decision above. Do not run git init again."
 }
 elseif (@(Get-ChildItem -Force).Count -eq 0) {
     git init
 }
 else {
-    throw "STOP: this folder has files but no .git folder. Do not initialise or change it; ask Codex to inspect read-only."
+    throw "STOP: this folder has files but no .git folder. Do not initialise or change it; use the next unused retry."
 }
 ```
 
 What this does: for a new empty attempt, it creates hidden Git tracking
-information inside this one folder. For a resumed attempt, it inspects the
-existing repository instead. It does not upload anything or overwrite a file.
+information inside this one folder. It does not upload or overwrite a file.
 
-Expected result for a new attempt: output includes
-`Initialized empty Git repository`. For a resumed attempt, Git shows the
-current local status and history. If `git remote -v` prints a remote, stop and
-ask Codex for read-only help; do not push.
+Expected result: output includes `Initialized empty Git repository`. Existing
+repositories are never reinitialised by this step.
 
 ### Part B — set a fictional identity for this practice repository
 
-Run:
+Run this guarded identity block:
 
 ```powershell
-git config user.name "Course Learner"
-```
-
-```powershell
-git config user.email "course-learner@example.invalid"
+$currentName = git config --local user.name
+$currentEmail = git config --local user.email
+if ($currentName -and $currentName -ne "Course Learner") {
+    throw "STOP: a different local Git name exists. Leave this repository unchanged and use a fresh retry."
+}
+if ($currentEmail -and $currentEmail -ne "course-learner@example.invalid") {
+    throw "STOP: a different local Git email exists. Leave this repository unchanged and use a fresh retry."
+}
+if (-not $currentName) {
+    git config --local user.name "Course Learner"
+}
+if (-not $currentEmail) {
+    git config --local user.email "course-learner@example.invalid"
+}
 ```
 
 What this does: it records a deliberately fictional commit identity only in
@@ -154,10 +233,15 @@ Expected result: the output includes the two fictional values.
 
 ### Part C — create, inspect, stage, and commit one file
 
-1. Run:
+1. Run this create-once guard:
 
    ```powershell
-   notepad "README.md"
+   if (Test-Path -LiteralPath ".\README.md") {
+       throw "STOP: README.md already exists. Do not edit or overwrite it; use the checkpoint decision and, if needed, a fresh retry."
+   }
+   New-Item -ItemType File -Path ".\README.md" -ErrorAction Stop | Out-Null
+   "CREATED ONCE — enter the guided README.md content."
+   notepad ".\README.md"
    ```
 
 2. Enter:
@@ -217,16 +301,35 @@ Expected result: the output includes the two fictional values.
 8. Run:
 
    ```powershell
-   git commit -m "Add synthetic queue note"
+   git commit --only -m "Add synthetic queue note" -- "README.md"
+   if ($LASTEXITCODE -ne 0) {
+       throw "STOP: the expected commit was not created. Do not add random changes; leave this attempt unchanged and use a fresh retry."
+   }
    ```
 
-   What this does: it creates one local snapshot.
+   What this does: it creates one local snapshot containing only `README.md`.
+   `--only` prevents an unrelated file staged by mistake from entering this
+   commit.
 
 ### Part D — inspect and commit a modification
 
-1. Run:
+1. Run this exact checkpoint guard:
 
    ```powershell
+   $readmeLines = @(Get-Content -LiteralPath ".\README.md")
+   $workingChanges = @(git status --short)
+   $latestMessage = git log -1 --format="%s"
+   if (
+       $workingChanges.Count -ne 0 -or
+       $latestMessage -ne "Add synthetic queue note" -or
+       $readmeLines.Count -ne 4 -or
+       $readmeLines[0] -ne "# Synthetic queue" -or
+       $readmeLines[1] -ne "" -or
+       $readmeLines[2] -ne "Status: new" -or
+       $readmeLines[3] -ne "Contains real data: no"
+   ) {
+       throw "STOP: this is not clean checkpoint 1. Do not edit README.md; use a fresh retry."
+   }
    notepad "README.md"
    ```
 
@@ -267,7 +370,10 @@ Expected result: the output includes the two fictional values.
 7. Run:
 
    ```powershell
-   git commit -m "Update synthetic queue status"
+   git commit --only -m "Update synthetic queue status" -- "README.md"
+   if ($LASTEXITCODE -ne 0) {
+       throw "STOP: the expected commit was not created. Do not add random changes; leave this attempt unchanged and use a fresh retry."
+   }
    ```
 
 8. Run:
@@ -305,30 +411,89 @@ Expected result: the output includes the two fictional values.
 
 - If `git` is not recognised, stop and return to the course setup. Do not
   download Git from an advertisement or unverified package site.
-- If `foundation-05` already exists, do not delete it. Enter it and run
-  `git status --short` before doing anything else.
-- If a commit says there is nothing to commit, inspect `git status --short` and
-  the file content rather than adding random changes.
+- If a selected attempt exists, do not delete it. Apply the exact checkpoint
+  decision before any changing command.
+- If a commit says there is nothing to commit, do not add a random change and
+  do not rerun earlier edits. Leave that attempt unchanged, create the next
+  unused Foundation 5 retry, and repeat the exercise there.
 - Git may print a hint about the default branch name after `git init`. That is
   information, not a failure.
 
 ## Now recreate it yourself
 
-In the same repository:
+Continue only from clean checkpoint 2. Run this create-once and checkpoint
+guard:
 
-1. create `DECISIONS.md`;
-2. give it the heading `Synthetic decision`;
-3. add `Decision ID: DEC-204`;
-4. add `Outcome: test again`;
-5. inspect status;
-6. stage only `DECISIONS.md`;
-7. inspect the staged diff;
-8. commit it with message `Add synthetic decision record`;
-9. confirm `git status --short` prints nothing;
-10. confirm `git log --oneline -3` shows three commits.
+```powershell
+$workingChanges = @(git status --short)
+$messages = @(git log --reverse --format="%s")
+if (
+    $workingChanges.Count -ne 0 -or
+    $messages.Count -ne 2 -or
+    $messages[0] -ne "Add synthetic queue note" -or
+    $messages[1] -ne "Update synthetic queue status" -or
+    (Test-Path -LiteralPath ".\DECISIONS.md")
+) {
+    throw "STOP: this is not clean checkpoint 2. Do not create or overwrite DECISIONS.md; use a fresh retry."
+}
+New-Item -ItemType File -Path ".\DECISIONS.md" -ErrorAction Stop | Out-Null
+"CREATED ONCE — complete DECISIONS.md, then continue the steps below."
+notepad ".\DECISIONS.md"
+```
+
+In the newly created `DECISIONS.md`:
+
+1. type the heading `Synthetic decision`;
+2. add `Decision ID: DEC-204`;
+3. add `Outcome: test again`;
+4. save and close Notepad;
+5. inspect status:
+
+   ```powershell
+   git status --short
+   ```
+
+   Expected output: `?? DECISIONS.md`.
+6. stage only that file:
+
+   ```powershell
+   git add -- "DECISIONS.md"
+   ```
+
+7. inspect exactly what is staged:
+
+   ```powershell
+   git diff --staged -- "DECISIONS.md"
+   ```
+
+8. commit it and stop visibly if the expected commit was not created:
+
+   ```powershell
+   git commit --only -m "Add synthetic decision record" -- "DECISIONS.md"
+   if ($LASTEXITCODE -ne 0) {
+       throw "STOP: the recreation commit was not created. Leave this attempt unchanged and use a fresh retry."
+   }
+   ```
+
+9. confirm the working tree is clean:
+
+   ```powershell
+   git status --short
+   ```
+
+   Expected output: nothing.
+10. confirm the three commits:
+
+    ```powershell
+    git log --oneline -3
+    ```
 
 This uses a different file, record type, and commit message from the guided
 example.
+
+If the recreation commit reports nothing to commit or otherwise fails, leave
+the attempt unchanged and use a fresh retry. Do not create another file or
+invent a different commit merely to make the count reach three.
 
 ## Ask Codex to check your work
 
@@ -353,11 +518,14 @@ Report PASS or NOT YET for each criterion:
 6. No remote push or credential is required for this exercise.
 
 Explain NOT YET in beginner language and make no changes.
-This folder must contain synthetic course data only. I must not include
-secrets, personal data, client data, employer data, or other work data. If you
-notice such content, stop, do not repeat it, and tell me to remove it locally.
-Confirm that the folder contains no secrets and no real employer, client, or
-work data.
+I attest that I created this attempt with synthetic course data only and did
+not intentionally add secrets, personal data, client data, employer data, or
+other real work data. If you notice content that appears sensitive, stop the
+inspection,
+do not quote or repeat it, report only the file name and general category, and
+report NOT YET. If you notice none, say: "No apparent sensitive content noticed
+in this bounded inspection; this is not proof that none exists." Do not claim
+that an inspection proves the folder is free of secrets or real data.
 ```
 
 ## Pass criteria
@@ -368,7 +536,8 @@ work data.
 - [ ] I inspected status and the staged diff before every commit.
 - [ ] The repository contains exactly the three intended local commits.
 - [ ] `git status --short` prints nothing at the end.
-- [ ] I did not use a destructive Git command, remote, credential, or real
-      business data.
+- [ ] I did not use a destructive Git command or remote. I attest that all
+      information I entered was synthetic and that I did not intentionally use
+      a credential or real business data.
 - [ ] Codex reported PASS for every read-only criterion, or I corrected each
       NOT YET item myself.

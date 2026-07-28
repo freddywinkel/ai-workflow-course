@@ -61,25 +61,46 @@ commands at random.
 
 ## Follow along — I show you exactly how
 
-This first rehearsal creates a harmless practice folder. It does not install
-anything and does not touch the final capstone.
+This first rehearsal uses the harmless practice root that Foundation 1 already
+created. It creates or resumes one setup-attempt folder inside that root. It
+does not install anything and does not touch the final capstone.
 
-### A. Create the rehearsal folder with File Explorer
+### A. Select or create the rehearsal attempt with File Explorer
 
 1. Press `Windows key + E`. This opens **File Explorer**, the Windows
    application for viewing files and folders.
 2. In the left side of File Explorer, select **Documents**.
-3. Select **New → Folder**.
-4. Type `controlled-ai-course-practice`, then press `Enter`.
-5. Open `controlled-ai-course-practice`.
-6. Select **New → Folder** again.
-7. Type `setup-follow-along`, then press `Enter`.
-8. Open `setup-follow-along`.
-9. Select **View → Show → File name extensions**. A check mark should appear.
-10. Right-click an empty area and select **New → Text Document**.
-11. Rename the file to `setup-check.txt`.
-12. Open the file in **Notepad**, the plain-text editor included with Windows,
-    and type:
+3. Find `controlled-ai-course-practice`. Foundation 1 created this folder, so
+   **do not select New Folder and try to create it again**. If it is missing,
+   stop and return to Foundation 1.
+4. Confirm it is a folder, then open it. If it is a file, or if the location or
+   existing contents appear unfamiliar or may contain real data, do not open,
+   rename, or change it. Ask Codex to inspect only that exact item in read-only
+   mode.
+5. Look for a folder named `setup-follow-along`.
+   - If it does not exist, select **New → Folder**, type
+     `setup-follow-along`, press `Enter`, and use that new folder.
+   - If it is your own incomplete or completed synthetic setup rehearsal, use
+     that existing folder without recreating it.
+   - If it is a file, is unfamiliar, or may contain real data, do not open or
+     change it. Select **New → Folder** and use the first unused numbered name:
+     `setup-follow-along-retry-01`, then `setup-follow-along-retry-02`, and so
+     on.
+6. Write down the exact attempt-folder name you selected, then open that one
+   folder.
+7. Select **View → Show → File name extensions**. A check mark should appear.
+8. Look for `setup-check.txt`.
+   - If it does not exist, right-click an empty area, select
+     **New → Text Document**, and rename the new file to `setup-check.txt`.
+   - If it is your own incomplete synthetic file, open it and continue only
+     the missing work.
+   - If it already contains the exact three lines below, leave it unchanged
+     and continue at step 11.
+   - If it is a folder, is unfamiliar, or may contain real data, do not open,
+     rename, or change it. Return to step 5 and create the next unused retry
+     folder.
+9. Open the new or deliberately resumed incomplete file in **Notepad**, the
+   plain-text editor included with Windows, and type:
 
     ```text
     This is a fictional Course 1 setup rehearsal.
@@ -87,20 +108,22 @@ anything and does not touch the final capstone.
     I will not put secrets or real work data here.
     ```
 
-13. Press `Ctrl+S`—hold the Control key and tap S—to save, then close Notepad.
-14. Reopen `setup-check.txt` and confirm the three lines remain.
+10. Press `Ctrl+S`—hold the Control key and tap S—to save, then close Notepad.
+11. Reopen `setup-check.txt` and confirm the three lines remain. Do not change a
+    file that was already complete.
 
 Expected result:
 
 ```text
 Documents
 └── controlled-ai-course-practice
-    └── setup-follow-along
+    └── setup-follow-along or setup-follow-along-retry-XX
         └── setup-check.txt
 ```
 
 If you see `setup-check.txt.txt`, remove only the extra final `.txt`. Do not
-delete the entire file.
+delete the entire file. If correcting that name would collide with another
+existing item, stop and use a fresh retry folder instead.
 
 ### B. Inspect the same folder with PowerShell
 
@@ -111,13 +134,25 @@ delete the entire file.
 4. The first command asks Windows for your real Documents location. This is
    safer than assuming it is always directly under your user folder; Windows
    may redirect Documents. The answer is stored temporarily as
-   `$documentsPath`. The second command uses `Set-Location` to change the
-   folder affected by later commands. Copy both lines, paste them into
-   PowerShell, and press `Enter`:
+   `$documentsPath`. `Read-Host` then asks for the exact attempt-folder name you
+   wrote down. The name check accepts only `setup-follow-along` or a numbered
+   retry name. `Test-Path` confirms that exact folder exists before
+   `Set-Location` enters it. Copy the whole block, paste it into PowerShell,
+   press `Enter`, type the selected attempt-folder name without quotation
+   marks, and press `Enter` again:
 
     ```powershell
     $documentsPath = [Environment]::GetFolderPath("MyDocuments")
-    Set-Location -LiteralPath (Join-Path $documentsPath "controlled-ai-course-practice\setup-follow-along")
+    $practiceRoot = Join-Path $documentsPath "controlled-ai-course-practice"
+    $setupAttemptName = Read-Host "Type the selected setup attempt folder name"
+    if ($setupAttemptName -notmatch '^setup-follow-along(?:-retry-\d{2,})?$') {
+        throw "STOP: use setup-follow-along or the exact numbered retry name you selected."
+    }
+    $setupAttemptPath = Join-Path $practiceRoot $setupAttemptName
+    if (-not (Test-Path -LiteralPath $setupAttemptPath -PathType Container)) {
+        throw "STOP: the selected setup attempt folder was not found. Do not create a guessed path."
+    }
+    Set-Location -LiteralPath $setupAttemptPath
     ```
 
 5. `Get-Location` prints the current folder without changing it. Run:
@@ -127,8 +162,8 @@ delete the entire file.
     ```
 
    Expected result: the printed path ends with
-   `controlled-ai-course-practice\setup-follow-along`. The part before that may
-   differ if Windows redirects Documents.
+   `controlled-ai-course-practice\setup-follow-along` or your selected numbered
+   retry name. The part before that may differ if Windows redirects Documents.
 
 6. `Get-ChildItem` lists the items inside the current folder without changing
    them. Run:
@@ -320,7 +355,11 @@ to edit files, install software, or rewrite this course. The separate evergreen
 audit is for course maintainers, not a learner setup step.
 
 Record the checked date and answers in a Notepad file named
-`setup-version-check.txt` inside `setup-follow-along`.
+`setup-version-check.txt` inside the setup attempt selected in Part A. If that
+file already exists, inspect it first: continue only your own incomplete
+synthetic record, leave a complete record unchanged, and use a fresh setup
+retry folder if the item is unfamiliar, the wrong item type, or may contain
+real data.
 
 ### 1. Install Visual Studio Code
 
@@ -344,8 +383,8 @@ Record the checked date and answers in a Notepad file named
 6. **PATH** is the list of folders Windows searches when you type a command. If
    offered, enable **Add to PATH** and **Add “Open with Code” action**.
 7. Finish the installation and open Visual Studio Code.
-8. Select **File → Open Folder** and open
-   `Documents\controlled-ai-course-practice\setup-follow-along`.
+8. Select **File → Open Folder** and open the exact setup-attempt path printed
+   by `Get-Location` in Part B.
 9. Confirm `setup-check.txt` is visible in the Explorer panel on the left.
 
 ### 2. Install Git for Windows
@@ -483,24 +522,130 @@ stated result.
 
 ### 1. Create and enter the project folder
 
-Open a new PowerShell window. In the commands below, `New-Item` creates
-something; `-ItemType Directory` says that the new item is a folder; `-Path`
-provides its location; and `-Force` prevents an error if the folder already
-exists without erasing its contents. `Join-Path` safely combines folder names.
-`Set-Location` enters the project folder, and `Get-Location` prints the current
-folder. Run:
+Open a new PowerShell window. The block below creates only a missing or empty
+course folder and places a visible `COURSE_PROJECT.md` identity marker inside
+it. If the destination already contains unfamiliar files without that exact
+marker, it stops before changing the folder. `Join-Path` safely combines folder
+names. `Set-Location` enters the project folder, and `Get-Location` prints the
+current folder.
+
+Before running it, read the safety checks in plain language: the length check
+prevents an overlong project path; `git -C ... rev-parse --show-toplevel` asks
+Git whether the destination would sit inside another repository;
+`Get-ChildItem -Force` reveals hidden items before an empty folder is claimed;
+the exact marker distinguishes this synthetic course project from an
+unfamiliar folder; `WriteAllText` writes that marker only for a new or confirmed
+empty folder; and `throw` stops immediately without authorising a cleanup.
+
+Now run:
 
 ```powershell
 $documentsPath = [Environment]::GetFolderPath("MyDocuments")
 $learningRoot = Join-Path $documentsPath "AI-workflow-learning"
 $projectRoot = Join-Path $learningRoot "operations-exception-assistant"
-New-Item -ItemType Directory -Path $learningRoot -Force | Out-Null
-New-Item -ItemType Directory -Path $projectRoot -Force | Out-Null
+if ($projectRoot.Length -gt 140) {
+    throw 'The prescribed project path is too long for the deepest Course 1 evidence. Stop and ask Codex for a read-only path review; do not create or move the project yourself.'
+}
+$gitProbePath = if (Test-Path -LiteralPath $projectRoot -PathType Container) {
+    $projectRoot
+}
+elseif (Test-Path -LiteralPath $learningRoot -PathType Container) {
+    $learningRoot
+}
+else {
+    $documentsPath
+}
+$enclosingGitRoot = git -C $gitProbePath rev-parse --show-toplevel 2>$null
+if ($LASTEXITCODE -eq 0) {
+    $resolvedEnclosingGitRoot = (Resolve-Path -LiteralPath $enclosingGitRoot).Path
+    $isExactExistingProjectRepo = (
+        (Test-Path -LiteralPath $projectRoot -PathType Container) -and
+        $resolvedEnclosingGitRoot -eq (Resolve-Path -LiteralPath $projectRoot).Path
+    )
+    if (-not $isExactExistingProjectRepo) {
+        throw 'The prescribed project would sit inside a different Git repository. Nothing was created; do not make a nested course project here.'
+    }
+}
+if (Test-Path -LiteralPath $learningRoot) {
+    if (-not (Test-Path -LiteralPath $learningRoot -PathType Container)) {
+        throw 'AI-workflow-learning exists but is not a folder. Nothing was changed.'
+    }
+}
+else {
+    New-Item -ItemType Directory -Path $learningRoot | Out-Null
+}
+$projectMarker = Join-Path $projectRoot 'COURSE_PROJECT.md'
+$markerHeading = '# Course 1 synthetic learner project'
+$markerBody = @"
+$markerHeading
+
+This folder is only for the fictional Course 1 practice project.
+Never place real client, employer, medical, or personal data here.
+"@
+if (Test-Path -LiteralPath $projectRoot) {
+    if (-not (Test-Path -LiteralPath $projectRoot -PathType Container)) {
+        throw 'The project path exists but is not a folder. Nothing was changed.'
+    }
+    $existingEntries = @(Get-ChildItem -LiteralPath $projectRoot -Force)
+    if (Test-Path -LiteralPath $projectMarker -PathType Leaf) {
+        $existingMarker = Get-Content -Raw -LiteralPath $projectMarker
+        $normalizedExistingMarker = $existingMarker -replace "`r`n", "`n"
+        $normalizedExpectedMarker = $markerBody -replace "`r`n", "`n"
+        if ($normalizedExistingMarker -ne $normalizedExpectedMarker) {
+            throw 'The existing project marker is unfamiliar. Nothing was changed.'
+        }
+        Write-Host 'RESUME: the exact Course 1 project marker already exists.'
+    }
+    elseif ($existingEntries.Count -eq 0) {
+        [System.IO.File]::WriteAllText(
+            $projectMarker,
+            $markerBody,
+            (New-Object System.Text.UTF8Encoding($false))
+        )
+        Write-Host 'CREATED: claimed the empty folder for Course 1.'
+    }
+    else {
+        throw 'The destination already contains files but has no Course 1 marker. Nothing was changed. Ask Codex to inspect this exact folder in read-only mode.'
+    }
+}
+else {
+    New-Item -ItemType Directory -Path $projectRoot | Out-Null
+    [System.IO.File]::WriteAllText(
+        $projectMarker,
+        $markerBody,
+        (New-Object System.Text.UTF8Encoding($false))
+    )
+    Write-Host 'CREATED: new marked Course 1 project folder.'
+}
 Set-Location -LiteralPath $projectRoot
 Get-Location
+Get-Content -LiteralPath $projectMarker
 ```
 
-The final output must end with:
+What the unfamiliar safety lines do:
+
+- `$projectRoot.Length -gt 140` stops before creating a path that may make the
+  later evidence paths too long for this Windows setup.
+- `git -C ... rev-parse --show-toplevel` checks the nearest existing Git
+  repository before creating the course folder. An existing repository is
+  accepted only when its resolved root is already the exact marked Course 1
+  project; otherwise the block stops before creating a nested project.
+- `Test-Path` checks whether an exact item exists and whether it is a file or a
+  folder. It does not change the item.
+- `Get-ChildItem -Force` lists even hidden items so an apparently empty folder
+  is not claimed when it already contains something.
+- `COURSE_PROJECT.md` is an identity marker with one exact synthetic-only
+  message. The comparison normalises only Windows versus Unix line endings; it
+  does not accept different words.
+- `[System.IO.File]::WriteAllText` writes that exact marker only in a new or
+  confirmed-empty folder. `System.IO` means the built-in system
+  **input/output** file helper. `UTF8Encoding($false)` selects
+  **Unicode Transformation Format 8-bit (UTF-8)** without adding an invisible
+  byte-order marker.
+- `throw` stops the block immediately. A stop message is not permission to
+  remove, rename, or overwrite the item that caused it.
+
+The location output must end with:
 
 ```text
 AI-workflow-learning\operations-exception-assistant
@@ -508,35 +653,92 @@ AI-workflow-learning\operations-exception-assistant
 
 Do not place this project in an **employer-synchronized folder**, meaning a
 folder that is automatically copied into an employer cloud or server account.
+The marker heading must also print. On a later run, `RESUME` means the block
+recognized the same marked Course 1 folder and did not replace anything.
 
 ### 2. Start Git and create a Python virtual environment
 
-The commands below do five things:
+The commands below do six things:
 
-1. `git init` makes the current folder a Git repository.
-2. The two `git config --local` commands give this practice repository a
+1. The marker check proves this is the course folder selected in step 1.
+2. `git init` makes a new Git repository only when this marked folder does not
+   already contain one. An existing repository must have this exact folder as
+   its root.
+3. The two `git config --local` commands give this practice repository a
    clearly fictional author name and email address. `--local` means the
    settings apply only inside this repository.
-3. `$pythonExe` stores the exact future virtual-environment Python path.
-4. `pymanager exec -V:3.14 -m venv .venv` asks the manager to use stable
+4. `$pythonExe` stores the exact future virtual-environment Python path.
+5. `pymanager exec -V:3.14 -m venv .venv` asks the manager to use stable
    Python 3.14 and run `venv`—short for virtual environment—to create the
    isolated `.venv` folder. The `if` condition prevents overwriting an
    environment that already exists.
-5. The direct `.venv\Scripts\python.exe` command prints the selected Python
+6. The direct `.venv\Scripts\python.exe` command prints the selected Python
    version. It works even when PowerShell scripts are restricted.
 
 Run:
 
 ```powershell
-git init
+$documentsPath = [Environment]::GetFolderPath("MyDocuments")
+$projectRoot = Join-Path $documentsPath "AI-workflow-learning\operations-exception-assistant"
+$projectMarker = Join-Path $projectRoot 'COURSE_PROJECT.md'
+$markerHeading = '# Course 1 synthetic learner project'
+$markerBody = @"
+$markerHeading
+
+This folder is only for the fictional Course 1 practice project.
+Never place real client, employer, medical, or personal data here.
+"@
+Set-Location -LiteralPath $projectRoot
+if (-not (Test-Path -LiteralPath $projectMarker -PathType Leaf)) {
+    throw 'Course project marker missing. Return to setup step 1; do not run git init.'
+}
+$normalizedExistingMarker = (
+    Get-Content -Raw -LiteralPath $projectMarker
+) -replace "`r`n", "`n"
+$normalizedExpectedMarker = $markerBody -replace "`r`n", "`n"
+if ($normalizedExistingMarker -ne $normalizedExpectedMarker) {
+    throw 'Course project marker is unfamiliar. Nothing was changed.'
+}
+if (Test-Path -LiteralPath (Join-Path $projectRoot '.git')) {
+    $existingGitRoot = (git rev-parse --show-toplevel 2>$null)
+    if ($LASTEXITCODE -ne 0) {
+        throw 'The existing .git entry is not a readable repository. Nothing was changed.'
+    }
+    $resolvedGitRoot = (Resolve-Path -LiteralPath $existingGitRoot).Path
+    if ($resolvedGitRoot -ne (Resolve-Path -LiteralPath $projectRoot).Path) {
+        throw 'The existing Git repository belongs to a different root. Nothing was changed.'
+    }
+    Write-Host 'RESUME: existing Course 1 Git repository kept.'
+}
+else {
+    $enclosingGitRoot = git -C $projectRoot rev-parse --show-toplevel 2>$null
+    if ($LASTEXITCODE -eq 0) {
+        $resolvedEnclosingRoot = (
+            Resolve-Path -LiteralPath $enclosingGitRoot
+        ).Path
+        if ($resolvedEnclosingRoot -ne (Resolve-Path -LiteralPath $projectRoot).Path) {
+            throw 'The marked course folder is inside a different Git repository. Nothing was changed; do not create a nested repository.'
+        }
+    }
+    git init
+    if ($LASTEXITCODE -ne 0) {
+        throw 'Git could not initialize the marked Course 1 folder.'
+    }
+}
 git config --local user.name "Course Learner"
 git config --local user.email "course-learner@example.invalid"
 $pythonExe = Join-Path $projectRoot ".venv\Scripts\python.exe"
 if (Test-Path -LiteralPath $pythonExe -PathType Leaf) {
     "Existing virtual environment found; creation skipped."
 }
+elseif (Test-Path -LiteralPath (Join-Path $projectRoot '.venv')) {
+    throw 'A .venv item exists but its Python executable is missing. Nothing was overwritten. Ask Codex to inspect only this course folder in read-only mode.'
+}
 else {
     pymanager exec -V:3.14 -m venv .venv
+    if ($LASTEXITCODE -ne 0) {
+        throw 'Virtual-environment creation failed. Keep the partial evidence and ask for diagnosis; do not rerun into it.'
+    }
 }
 & $pythonExe --version
 git status --short
@@ -567,6 +769,31 @@ window and run this same block:
 ```powershell
 $documentsPath = [Environment]::GetFolderPath("MyDocuments")
 $projectRoot = Join-Path $documentsPath "AI-workflow-learning\operations-exception-assistant"
+$projectMarker = Join-Path $projectRoot 'COURSE_PROJECT.md'
+$expectedMarker = @'
+# Course 1 synthetic learner project
+
+This folder is only for the fictional Course 1 practice project.
+Never place real client, employer, medical, or personal data here.
+'@
+if (-not (Test-Path -LiteralPath $projectMarker -PathType Leaf)) {
+    throw 'Course project marker missing. Do not enter or execute this folder.'
+}
+$actualMarker = (Get-Content -Raw -LiteralPath $projectMarker) -replace "`r`n", "`n"
+$normalizedExpectedMarker = $expectedMarker -replace "`r`n", "`n"
+if ($actualMarker -ne $normalizedExpectedMarker) {
+    throw 'Course project marker is unfamiliar. Do not enter or execute this folder.'
+}
+$savedGitRoot = git -C $projectRoot rev-parse --show-toplevel 2>$null
+if ($LASTEXITCODE -ne 0) {
+    throw 'The marked Course 1 Git repository is missing or unreadable.'
+}
+if (
+    (Resolve-Path -LiteralPath $savedGitRoot).Path -ne
+    (Resolve-Path -LiteralPath $projectRoot).Path
+) {
+    throw 'Git resolves to a different repository root. Do not continue.'
+}
 $pythonExe = Join-Path $projectRoot ".venv\Scripts\python.exe"
 Set-Location -LiteralPath $projectRoot
 Get-Location
@@ -684,8 +911,48 @@ Use File Explorer. Do not edit the originals.
 
 If any destination file already exists, select **Cancel** when Windows asks
 whether to replace it. Do not overwrite learner work during a resumed setup.
-Ask Codex to compare the source and destination files in read-only mode and
-explain whether the existing file is already correct.
+Ask Codex to compare only that source-and-destination pair by replacing both
+placeholders in this prompt:
+
+```text
+READ-ONLY SETUP COPY CHECK.
+
+Authorised source file:
+[PASTE THE EXACT COURSE-SOURCE FILE PATH]
+
+Authorised destination file:
+[PASTE THE EXACT LEARNER-PROJECT FILE PATH]
+
+Do not inspect either parent folder or any other path. Do not create, edit,
+move, rename, replace, or delete anything. Do not print file contents. Confirm
+that both items are files, compare their Secure Hash Algorithm 256-bit
+(SHA-256) values, and return exactly BYTE-IDENTICAL, DIFFERENT, or NOT A FILE
+with a beginner-language explanation. If you notice apparent sensitive
+content, stop, do not quote or repeat it, and name only the file and general
+category.
+```
+
+Continue when Codex reports `BYTE-IDENTICAL`. If it reports `DIFFERENT`, use
+this recovery only when you recognise the destination as your own synthetic
+Course 1 copy:
+
+1. In the selected setup-attempt folder from Part A, create a folder named
+   `preserved-setup-copies`. If that name exists but is unfamiliar, use the next
+   unused numbered setup retry instead.
+2. In File Explorer, **move**, rather than delete, the different learner-project
+   destination into `preserved-setup-copies`. Give it a clear name such as
+   `work_items-preserved-01.csv`; use the next unused number if needed.
+3. Copy the authoritative course-source file again to the exact required
+   destination shown in steps 2–4 above.
+4. Run the read-only comparison prompt again and continue only on
+   `BYTE-IDENTICAL`.
+
+If the different file is unfamiliar or may contain real data, do not open or
+move it. Stop and ask for a read-only diagnosis. If the required destination is
+missing because you copied a file to the wrong folder, leave the misplaced file
+unchanged and repeat the copy from the authoritative course source to the exact
+required destination; then ask Codex to locate the synthetic stray copy in
+read-only mode before you decide what to do with it.
 
 If you cannot locate the Course 1 source folder, ask Codex:
 
@@ -820,29 +1087,92 @@ First create `evidence\setup-check.txt` in Notepad. Record the date, the exact
 Git, Python, pytest, and jsonschema version output, `2 passed`, and the
 sentence `External actions remain disabled.` Do not record a username,
 computer name, folder path, key, or other secret. If the file already exists,
-open and continue it without deleting earlier evidence.
+inspect it first. Continue only your own incomplete synthetic setup record and
+leave a complete record unchanged. Stop if it is unfamiliar, is a folder, or
+may contain real data.
 
-Then run:
+First run the complete **Start or resume** block if this is a new PowerShell
+window. The dependency block below first asks the exact project Python for the
+package list in memory. A complete existing record is kept. If an earlier
+interrupted run left a blank, partial, or stale record that you recognise as
+generated by this course, the block moves that old record into the ignored
+`output\setup-recovery` folder before creating the current canonical record. It
+never overwrites the prior file. If the existing record is unfamiliar or may
+contain real information, stop before running the block and ask Codex to
+inspect only that file in read-only mode.
+
+Then run the whole block:
 
 ```powershell
 $dependencyEvidencePath = ".\evidence\setup-dependencies.txt"
+$currentDependencyLines = @(& $pythonExe -m pip list --format=freeze)
+if ($LASTEXITCODE -ne 0) {
+    throw "STOP: Python could not produce the dependency list."
+}
+if (
+    $currentDependencyLines -notcontains "pytest==9.0.2" -or
+    $currentDependencyLines -notcontains "jsonschema==4.26.0"
+) {
+    throw "STOP: the current environment does not contain the two required exact versions."
+}
+if (Test-Path -LiteralPath $dependencyEvidencePath -PathType Container) {
+    throw "STOP: setup-dependencies.txt is a folder. Nothing was changed."
+}
 if (Test-Path -LiteralPath $dependencyEvidencePath -PathType Leaf) {
-    "Existing dependency evidence found; it was not overwritten."
+    $existingDependencyLines = @(Get-Content -LiteralPath $dependencyEvidencePath)
+    $dependencyDifferences = @(
+        Compare-Object `
+            -ReferenceObject @($currentDependencyLines | Sort-Object) `
+            -DifferenceObject @($existingDependencyLines | Sort-Object)
+    )
+    if ($dependencyDifferences.Count -eq 0) {
+        "Existing complete dependency evidence matched and was kept."
+    }
+    else {
+        $dependencyRecoveryRoot = Join-Path $projectRoot "output\setup-recovery"
+        New-Item -ItemType Directory -Path $dependencyRecoveryRoot -Force | Out-Null
+        $preservedNumber = 1
+        do {
+            $preservedDependencyPath = Join-Path $dependencyRecoveryRoot (
+                "setup-dependencies-preserved-{0:D2}.txt" -f $preservedNumber
+            )
+            $preservedNumber += 1
+        } while (Test-Path -LiteralPath $preservedDependencyPath)
+        Move-Item -LiteralPath $dependencyEvidencePath -Destination $preservedDependencyPath
+        $currentDependencyLines |
+            Set-Content -LiteralPath $dependencyEvidencePath -Encoding utf8
+        "Preserved the partial or stale record at: $preservedDependencyPath"
+        "Created current dependency evidence."
+    }
 }
 else {
-    & $pythonExe -m pip list --format=freeze | Set-Content -LiteralPath $dependencyEvidencePath
+    $currentDependencyLines |
+        Set-Content -LiteralPath $dependencyEvidencePath -Encoding utf8
+    "Created dependency evidence."
 }
-Get-Content .\evidence\setup-dependencies.txt
+$recordedDependencyLines = @(Get-Content -LiteralPath $dependencyEvidencePath)
+if (
+    $recordedDependencyLines -notcontains "pytest==9.0.2" -or
+    $recordedDependencyLines -notcontains "jsonschema==4.26.0"
+) {
+    throw "STOP: the saved dependency evidence is incomplete."
+}
+Get-Content -LiteralPath $dependencyEvidencePath
 git status --short
-git add -- ".gitignore" ".env.example" "requirements-course.txt" "data/input/work_items.csv" "tests/expected_issues.csv" "tests/test_smoke.py" "evidence/setup-check.txt" "evidence/setup-dependencies.txt"
-git commit -m "initialize Course 1 project"
+git add -- "COURSE_PROJECT.md" ".gitignore" ".env.example" "requirements-course.txt" "data/input/work_items.csv" "tests/expected_issues.csv" "tests/test_smoke.py" "evidence/setup-check.txt" "evidence/setup-dependencies.txt"
+git commit --only -m "initialize Course 1 project" -- `
+    "COURSE_PROJECT.md" ".gitignore" ".env.example" `
+    "requirements-course.txt" "data/input/work_items.csv" `
+    "tests/expected_issues.csv" "tests/test_smoke.py" `
+    "evidence/setup-check.txt" "evidence/setup-dependencies.txt"
 git status --short
 ```
 
 Expected result: the dependency file includes the exact pytest and jsonschema
 versions, Git creates one commit, and the final status does not list any of
-those setup files. A **commit** is a recorded local snapshot. No remote service
-or GitHub account is needed.
+those setup files. `git commit --only` restricts this checkpoint to the named
+setup paths even if a different file had already been staged. A **commit** is a
+recorded local snapshot. No remote service or GitHub account is needed.
 
 If Git reports `nothing to commit`, run `git status --short`. Continue only
 when the named setup files were already recorded in an earlier commit. If Git
@@ -860,7 +1190,7 @@ Please inspect this Course 1 setup folder in READ-ONLY mode:
 Do not create, edit, rename, move, delete, install, or download anything. Do
 not reveal or print secret values. Inspect only this folder, plus run
 non-mutating Git, Python-version, and PowerShell-policy checks for this setup.
-Verify the eight required subfolders, .gitignore rules,
+Verify COURSE_PROJECT.md, the eight required subfolders, .gitignore rules,
 requirements-course.txt with exact version pins,
 data/input/work_items.csv, tests/expected_issues.csv, .env.example with
 EVALUATION_DATE=2026-07-26, AI_MODE=offline, and
@@ -874,6 +1204,15 @@ Do not rerun tests because that could create cache files; inspect the recorded
 2-passed evidence instead. Report PASS or NOT YET against the setup pass
 criteria. If it is NOT YET, explain the exact smallest correction and let me
 perform it.
+
+I attest that I created this setup with synthetic Course 1 information only
+and did not intentionally add secrets, personal data, client data, employer
+data, medical data, or other real work data. If you notice content that appears
+sensitive, stop the inspection, do not quote or repeat it, report only the file
+name and general category, and report NOT YET. If you notice none, say: "No
+apparent sensitive content noticed in this bounded inspection; this is not
+proof that none exists." Do not claim that an inspection proves the folder is
+free of secrets or real data.
 ```
 
 Codex cannot prove from files alone that an installer was trustworthy. Your
@@ -881,9 +1220,14 @@ recorded command outputs remain part of the evidence.
 
 ## Pass criteria
 
+- [ ] I opened the existing Foundation 1 practice root without trying to
+      recreate it, selected one guarded setup-attempt folder, and confirmed its
+      `setup-check.txt` contains the exact three synthetic rehearsal lines.
 - [ ] The preflight reports at least 2 GB free, a writable practice folder, a
       working internet check and browser, and no missing required course file.
 - [ ] `Get-Location` shows the exact capstone folder.
+- [ ] The path is at most 140 characters and `COURSE_PROJECT.md` identifies
+      the synthetic-only learner folder before Git is created or resumed.
 - [ ] Python Install Manager and a stable, non-prerelease Python 3.14 runtime
       were installed manually.
 - [ ] The effective PowerShell policy was not weakened and activation was not
@@ -900,8 +1244,10 @@ recorded command outputs remain part of the evidence.
       tree.
 - [ ] The safe setup files and fictional inputs are recorded in the first
       local Git commit.
-- [ ] No real data, **credential** (username, password, or access token), or
-      employer/client connection was introduced.
+- [ ] I attest that I intentionally introduced no real data, **credential**
+      (username, password, or access token), or employer/client connection.
+      Any Codex non-detection is recorded only as a bounded observation, not
+      proof that none exists.
 - [ ] Codex reports `PASS` after read-only inspection.
 
 ## Clean removal

@@ -150,7 +150,11 @@ It must contain:
 
 Schema-valid output is not enough. Every referenced issue ID must exist in the
 verified issue register, and every factual sentence must be supportable from
-those issues.
+those issues. Course 1 additionally permits only two controlled count
+headlines; renders each group label and sentence from verified severity, issue
+ID, and rule message; and renders every review instruction from a fixed
+source-row/field template that explicitly forbids external action. A free-text
+instruction cannot make itself safe by setting `external_action` to `false`.
 
 ### Approval decision
 
@@ -163,11 +167,24 @@ A decision records:
 - reviewer role suitable for synthetic use;
 - decision: `approve`, `edit`, `reject`, or `expire`;
 - exact draft revision and content hash;
+- exact protected review-manifest hash;
 - decision and expiry timestamps;
 - confirmation that the source-linked evidence was reviewed;
 - a reason.
 
 Editing creates a new draft revision and invalidates prior approval.
+`decision_id` is derived from every other decision field and recomputed at
+every use. This is local tamper detection, not reviewer authentication or a
+digital signature.
+
+### Protected review manifest
+
+The manifest binds the exact bytes of the synthetic source, issue JSON,
+spreadsheet-safe issue CSV, summary, external-action control, canonical run
+configuration, and review package. It also repeats the relevant rule,
+pipeline, prompt, generator, fallback, adapter-mode, date, and expected-oracle
+configuration. Decision and export recompute the manifest from actual files;
+they never trust a mutable saved manifest alone.
 
 ### Audit event
 
@@ -205,8 +222,15 @@ no_action_needed
 ```
 
 `failed_manual` is different: it is the named outcome of a command attempt that
-stopped safely. It is written to `failures\safe-stop-<reason>.json` and to the
-audit trail. It does **not** overwrite the run's last valid `current_state`.
+stopped safely. Its latest occurrence is written to
+`failures\latest.json`, every occurrence is preserved as the short numbered
+file `failures\a0001.json`, `a0002.json`, and so on, and a valid audit is
+appended when available. The code remains inside the JSON. The deliberately
+short filenames and atomic temporary names preserve headroom under traditional
+Windows path limits. A damaged state or audit file cannot prevent the
+independent failure record. It does
+**not** overwrite the run's last valid `current_state`.
+In short, a failed attempt does **not** overwrite the last valid state.
 Overwriting that state after a malformed candidate, edited draft, or tampered
 control would hide what had previously been valid.
 
@@ -230,7 +254,7 @@ Rules:
 - only a reviewed exact draft can become `approved_for_local_export`;
 - only a valid, unexpired approval can create the local outbox and become
   `approved_draft`;
-- approval is bound to an exact draft revision and hash;
+- approval is bound to an exact revision and protected review-manifest hash;
 - no course state represents “sent”, “paid”, or “updated externally”;
 - retries must not create duplicate outbox entries;
 - unexpected command attempts record `failed_manual`, never silent success,
@@ -285,10 +309,28 @@ Derive a run key from:
 - rule-set version;
 - fixed evaluation date;
 - prompt version;
-- offline generator mode and mock/fallback version.
+- offline generator mode and mock/fallback version;
+- expected-oracle presence and exact file hash.
 
 Reprocessing the same key must reuse or safely replace the same logical run. It
 must not duplicate audit or outbox effects.
+
+Every workspace/run operation first acquires an exclusive local lock. A
+simultaneous second process safely stops instead of racing the first process.
+If a process crashes, the visible fail-closed lock requires a human to verify
+that no process is still running before removing it; never delete it merely to
+bypass the stop.
+
+Before export, both JSON and spreadsheet-safe CSV bytes are computed and both
+existing targets are checked. New files are staged as a pair and a failed
+second promotion removes the first. JSON preserves exact evidence. CSV text
+that could start a spreadsheet formula is prefixed with an apostrophe.
+After pair promotion, state, evaluation, and audit persistence is one controlled
+finalization transaction. The runner snapshots those files, keeps a visible
+`outbox/INCOMPLETE.txt` marker during the transaction, and removes the pair plus
+restores the snapshots if finalization fails. If rollback cannot finish, the
+marker remains and all run operations stop. A successful or idempotently retried
+export must verify exactly one matching `local_export_created` audit effect.
 
 ## Minimum failure matrix
 
@@ -302,6 +344,12 @@ must not duplicate audit or outbox effects.
 | Simulated AI refusal | record refusal, continue without AI |
 | Simulated unknown issue reference | reject candidate; preserve last valid workflow state and issue register |
 | Draft edited after approval | block export; preserve approval evidence plus a named failed attempt |
+| Source, issue register, control, configuration, review package, or manifest edited after approval | recompute protected hashes and block export |
+| Decision field edited, including expiry | recompute `decision_id` and block export |
+| One conflicting export file already exists | write neither member of the pair |
+| State, audit, or evaluation persistence fails after pair promotion | remove both export files, restore prior controlled files, and allow a clean retry with one export audit effect |
+| Export rollback cannot finish | retain `outbox/INCOMPLETE.txt` and block use pending human resolution |
+| State or audit file is damaged | named independent `failed_manual` evidence; no traceback-only failure |
 | Reviewer unavailable | item remains pending or expires |
 | Safe-stop condition active | skip AI and any outbox creation |
 

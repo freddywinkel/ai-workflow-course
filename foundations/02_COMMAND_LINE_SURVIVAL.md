@@ -61,11 +61,11 @@ or commands aimed at a broad user or drive folder.
 ### Start or resume safely
 
 At every new PowerShell session, repeat Part A to reach Documents, then run the
-guarded Part B block. It creates `foundation-02` only when absent, enters it,
-and lists existing content. If you see your own synthetic lesson work, resume
-at the first unfinished step. Do not repeat a write command for a file that
-already exists until you inspect it. Stop if a name is unfamiliar, is the
-wrong kind of item, or may contain real data.
+guarded Part B block. On the first attempt, leave `$lessonFolderName` as
+`foundation-02`. If the recovery instructions below created a numbered retry,
+replace only that quoted value with the exact retry name PowerShell displayed.
+The block creates only an absent selected attempt, enters it, and lists its
+contents before any lesson file can be written.
 
 ### Part A — open PowerShell and locate Documents
 
@@ -117,26 +117,50 @@ wrong kind of item, or may contain real data.
 
 2. Run this guarded block exactly as shown. You do not need to memorise `if`
    yet: it means “perform the indented action only when the condition is true.”
+   `function` gives a reusable name to a group of commands. The helper below
+   finds and creates only the next unused retry folder when the recovery
+   decision tells you to use it.
 
    ```powershell
-   $lessonPath = Join-Path (Get-Location).Path "foundation-02"
+   $practiceRoot = (Get-Location).Path
+   $lessonFolderName = "foundation-02"
+   if ($lessonFolderName -notmatch '^foundation-02(?:-retry-\d{2,})?$') {
+       throw "STOP: use foundation-02 or a retry name created by this lesson."
+   }
+   $lessonPath = Join-Path $practiceRoot $lessonFolderName
+
+   function New-FoundationRetryAttempt {
+       param([string]$BaseName, [string]$PracticeRoot)
+       $retryNumber = 1
+       do {
+           $retryName = "$BaseName-retry-{0:D2}" -f $retryNumber
+           $retryPath = Join-Path $PracticeRoot $retryName
+           $retryNumber += 1
+       } while (Test-Path -LiteralPath $retryPath)
+       New-Item -ItemType Directory -Path $retryPath -ErrorAction Stop | Out-Null
+       $retryPath
+   }
+
    if (Test-Path -LiteralPath $lessonPath -PathType Leaf) {
-       throw "STOP: foundation-02 is a file, not a folder. Do not rename or delete it; ask Codex to inspect read-only."
+       throw "STOP: the selected Foundation 2 attempt is a file, not a folder. Do not change it; use a fresh retry attempt."
    }
    if (-not (Test-Path -LiteralPath $lessonPath -PathType Container)) {
        New-Item -ItemType Directory -Path $lessonPath | Out-Null
-       "Created a new foundation-02 folder."
+       "Created a new Foundation 2 attempt: $lessonFolderName"
    }
    else {
-       "Existing foundation-02 folder found; nothing was overwritten."
+       "Existing Foundation 2 attempt found; nothing was overwritten: $lessonFolderName"
    }
    Set-Location -LiteralPath $lessonPath
+   Get-Location
    Get-ChildItem -Force
    ```
 
    What this does: `Test-Path` first checks what exists. `New-Item` creates one
-   new folder only when it is missing. `Set-Location` enters the selected
-   folder, and `Get-ChildItem -Force` shows its contents without changing them.
+   new selected attempt only when it is missing. `Set-Location` enters it,
+   `Get-Location` prints its path, and `Get-ChildItem -Force` shows its contents
+   without changing them. `New-FoundationRetryAttempt` is defined but does
+   nothing until you deliberately call it after the decision below.
 
 3. Run:
 
@@ -145,7 +169,39 @@ wrong kind of item, or may contain real data.
    ```
 
    Expected output: the path ends in
-   `controlled-ai-course-practice\foundation-02`.
+   `controlled-ai-course-practice\foundation-02` or in the selected numbered
+   retry name.
+
+### Decide whether to resume or use a fresh attempt
+
+Apply this decision before Part C and again after every interruption:
+
+1. An empty selected attempt continues at Part C.
+2. The only expected items are `terminal-note.txt` and the
+   `recreated-check` folder. Inside `recreated-check`, the only expected item is
+   `status-note.txt`.
+3. For an attempt containing only those expected items:
+   - an existing file with exactly the complete synthetic lesson content stays
+     unchanged and its creation step is skipped;
+   - an absent expected item may be created by its guarded step;
+   - an incomplete, different, unfamiliar, wrong-kind, or apparently
+     real/sensitive item must not be edited, renamed, deleted, or overwritten.
+4. An unexpected item also requires a fresh attempt.
+5. For either stop condition, run:
+
+   ```powershell
+   $lessonPath = New-FoundationRetryAttempt -BaseName "foundation-02" -PracticeRoot $practiceRoot
+   $lessonFolderName = Split-Path -Leaf $lessonPath
+   Set-Location -LiteralPath $lessonPath
+   "Selected fresh attempt: $lessonFolderName"
+   ```
+
+   `Split-Path -Leaf` reads only the final folder name from the complete retry
+   path; it does not move or change the folder.
+
+6. Write down the displayed retry name. In a new PowerShell session, replace
+   only `"foundation-02"` in `$lessonFolderName` with that exact name. Restart
+   at Part C in the new empty attempt.
 
 ### Part C — create, read, and list one synthetic file
 
@@ -154,22 +210,29 @@ its left to the command on its right. `-LiteralPath` tells PowerShell to treat a
 path exactly as written. **Unicode Transformation Format 8-bit (UTF-8)** is a
 common text encoding; `-Encoding utf8` selects it for the saved file.
 
-1. Run this non-overwriting version:
+1. Run this create-once version:
 
    ```powershell
-   if (Test-Path -LiteralPath "terminal-note.txt") {
-       "Existing terminal-note.txt found; it was not overwritten."
-       Get-Content -LiteralPath "terminal-note.txt"
+   $terminalNotePath = Join-Path $lessonPath "terminal-note.txt"
+   if (Test-Path -LiteralPath $terminalNotePath -PathType Container) {
+       throw "STOP: terminal-note.txt is a folder. Do not change it; use a fresh retry attempt."
+   }
+   if (Test-Path -LiteralPath $terminalNotePath -PathType Leaf) {
+       "EXISTING — DO NOT EDIT OR OVERWRITE: terminal-note.txt"
+       Get-Content -LiteralPath $terminalNotePath
    }
    else {
-       "Synthetic command-line practice" | Set-Content -LiteralPath "terminal-note.txt" -Encoding utf8
-       "Created terminal-note.txt."
+       "Synthetic command-line practice" | Set-Content -LiteralPath $terminalNotePath -Encoding utf8
+       "CREATED ONCE: terminal-note.txt"
    }
    ```
 
    What this does: the pipeline sends the text on its left to `Set-Content`.
    `Set-Content` writes the named practice file, using the exact literal path
-   and UTF-8 encoding declared in the command.
+   and UTF-8 encoding declared in the command. If the file already exists, the
+   block displays it without changing it. Leave it unchanged only if it exactly
+   matches the complete guided sentence. Any other existing content requires a
+   fresh retry attempt.
 
 2. Run:
 
@@ -215,8 +278,8 @@ common text encoding; `-Encoding utf8` selects it for the saved file.
    Get-Location
    ```
 
-   Expected result: PowerShell still works and the location is still
-   `foundation-02`.
+   Expected result: PowerShell still works and the location is still the exact
+   selected Foundation 2 attempt.
 
 5. Run:
 
@@ -229,15 +292,18 @@ common text encoding; `-Encoding utf8` selects it for the saved file.
 
 ### Expected result — exact
 
-- The current location ends with `foundation-02`.
+- The current location ends with `foundation-02` or the selected numbered retry
+  name.
 - `Get-Content` prints `Synthetic command-line practice`.
 - `Get-ChildItem` lists `terminal-note.txt`.
 - Reading `missing-file.txt` produces an error, then returns to a prompt.
 
 ### Troubleshooting
 
-- If `foundation-02` already exists, the guarded block reports that nothing was
-  overwritten and lists its contents. Resume only your synthetic practice.
+- If the selected attempt already exists, the guarded block reports that
+  nothing was overwritten and lists its contents. Apply the attempt decision;
+  incomplete, different, unfamiliar, wrong-kind, or apparently real content
+  requires the next unused retry.
 - If `controlled-ai-course-practice` cannot be found, return to Foundation 1
   and confirm its spelling and Documents location.
 - If a command appears to keep running, hold the Control key (`Ctrl`) and press
@@ -246,27 +312,44 @@ common text encoding; `-Encoding utf8` selects it for the saved file.
 
 ## Now recreate it yourself
 
-Inside `foundation-02`, use the commands you learned to:
+Inside the selected Foundation 2 attempt, first set and inspect the exact nested
+path before creating anything:
+
+```powershell
+$recreatedPath = Join-Path $lessonPath "recreated-check"
+if (Test-Path -LiteralPath $recreatedPath -PathType Leaf) {
+    throw "STOP: recreated-check is a file, not a folder. Do not change it; use a fresh retry attempt."
+}
+if (Test-Path -LiteralPath $recreatedPath -PathType Container) {
+    "EXISTING — inspect before entering recreated-check."
+    Get-ChildItem -LiteralPath $recreatedPath -Force
+}
+else {
+    "ABSENT — it is safe to create recreated-check with New-Item."
+}
+```
+
+An absent folder is the case in which you perform the six recreation actions.
+If the folder exists, leave a complete `status-note.txt` unchanged. Any
+incomplete, different, unfamiliar, wrong-kind, or apparently real content
+requires a fresh retry attempt; do not overwrite it.
+
+For an absent folder, use the commands you learned to:
 
 1. create a subfolder named `recreated-check`;
 2. enter it;
 3. create `status-note.txt` containing exactly `Recreated safely`;
 4. read the file;
 5. list the folder;
-6. return to `foundation-02` using:
+6. return to the selected attempt using:
 
    ```powershell
    Set-Location ..
    ```
 
 Do not reuse `terminal-note.txt` or its sentence. Confirm `Get-Location` ends in
-`foundation-02` after you return. This creates a new nested folder and new
-content rather than copying the guided file.
-
-If `recreated-check` already exists, inspect it before entering it. Resume your
-own incomplete synthetic recreation or leave a completed one unchanged. Do
-not overwrite an existing `status-note.txt`; stop if the content is unfamiliar
-or real.
+the exact selected attempt name after you return. This creates a new nested
+folder and new content rather than copying the guided file.
 
 ## Ask Codex to check your work
 
@@ -289,22 +372,29 @@ Report PASS or NOT YET for each criterion:
 5. No file named missing-file.txt was created.
 
 Explain NOT YET in beginner language and make no changes.
-This folder must contain synthetic course data only. I must not include
-secrets, personal data, client data, employer data, or other work data. If you
-notice such content, stop, do not repeat it, and tell me to remove it locally.
-Confirm that the folder contains no secrets and no real employer, client, or
-work data.
+I attest that I created this attempt with synthetic course data only and did
+not intentionally add secrets, personal data, client data, employer data, or
+other real work data. If you notice content that appears sensitive, stop the
+inspection,
+do not quote or repeat it, report only the file name and general category, and
+report NOT YET. If you notice none, say: "No apparent sensitive content noticed
+in this bounded inspection; this is not proof that none exists." Do not claim
+that an inspection proves the folder is free of secrets or real data.
 ```
 
 ## Pass criteria
 
 - [ ] I can point to the prompt, command, output, and error.
 - [ ] I ran one command at a time and read its complete result.
-- [ ] `Get-Location` ends in `foundation-02`.
+- [ ] `Get-Location` ends in `foundation-02` or the exact numbered
+      `foundation-02-retry-XX` attempt whose full path I gave to Codex.
 - [ ] Both expected text files exist with the exact synthetic contents.
 - [ ] I can explain what `Get-Location`, `Set-Location`, `Get-ChildItem`,
       `Set-Content`, and `Get-Content` do.
 - [ ] I know that an error is evidence and not permission to run destructive
       cleanup.
+- [ ] I attest that all information I entered was synthetic practice
+      information and that I did not intentionally add secrets or real
+      personal, employer, or client data.
 - [ ] Codex reported PASS for every read-only criterion, or I corrected each
       NOT YET item myself.

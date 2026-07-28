@@ -21,9 +21,13 @@ You do not need prior experience with:
   workflow tools;
 - artificial intelligence (AI) services reached through an API.
 
-Start with the [Beginner Foundations](foundations/README.md). Do not skip them
-because an AI assistant can generate code. The professional skill is being able
-to explain, test, stop, and repair what was generated.
+Read the practical, health, and data-safety boundaries on this page now. Before
+opening Foundation 1, complete the required recreation exercise and Codex check
+below. The separate **Module 1 entry gate** is checked later, after all nine
+foundations. Continue to the [Beginner Foundations](foundations/README.md) only
+after the readiness recreation meets every pass criterion. Do not skip the
+foundations because an AI assistant can generate code. The professional skill
+is being able to explain, test, stop, and repair what was generated.
 
 ## Practical prerequisites
 
@@ -117,7 +121,7 @@ Do not begin Module 1 until you can demonstrate all of the following:
 
 If one item is unclear, return to the matching foundation. This is normal.
 
-## Module 1 entry exercise
+## Required readiness exercise — complete before Foundation 1
 
 This is a rehearsal for the practice method used throughout the course. Do not
 automate the process. The skill is observing it clearly.
@@ -127,13 +131,51 @@ the Windows application for viewing files and folders. **Codex** is the course
 workspace assistant you are using now; when asked to work in **read-only** mode,
 it may inspect and explain files but may not change them.
 
+### Select or resume one attempt safely
+
+Keep the demonstration and recreation together in one selected attempt folder.
+Use this literal decision:
+
+1. Open **Documents** in File Explorer.
+2. If `controlled-ai-course-practice` is absent, create it. If it exists, open
+   it; do not create a duplicate.
+3. Look for `readiness-attempt`.
+   - If it is absent, create it and select it for this attempt.
+   - If it exists, open it and inspect the item names. The only expected
+     subfolders are `follow-along` and `recreate`.
+4. Open any existing expected text file in Notepad before deciding:
+   - if its content is your own, fictional, and exactly complete for the step
+     below, close it without saving and skip that file's creation;
+   - if a required file or subfolder is absent, it may be created by its step;
+   - if an existing file is incomplete, different, unfamiliar, or appears to
+     contain real or sensitive information, close it without saving. Do not
+     edit, rename, delete, or overwrite anything in that attempt.
+5. When step 4 requires a fresh attempt, return to
+   `controlled-ai-course-practice` and select the next unused name:
+   `readiness-attempt-retry-01`, then `readiness-attempt-retry-02`, and so on.
+   Create the first name that is absent and use it for both parts below.
+
+Write down the selected attempt-folder name. A later restart means reopening
+that exact folder and applying the same decision again; it does not mean
+starting over inside an existing incomplete file.
+
 ### Follow along — I show you exactly how
 
 Use the harmless example **preparing a three-item shopping list**.
 
-1. Open **Notepad** from the Windows Start menu.
-2. Type the heading `Shopping-list process`.
-3. On the next lines, type exactly:
+1. In the selected attempt folder, look for `follow-along`.
+   - If absent, create and open it.
+   - If present, open it and inspect the item names.
+2. Look for `shopping-process.txt`.
+   - If it exists and contains the exact completed demonstration below, close
+     it without saving and skip to the expected result.
+   - If it exists but is incomplete, different, unfamiliar, or appears
+     sensitive, close it without saving, choose the next unused readiness retry
+     folder above, and restart this part there.
+   - Only if it is absent should you continue to step 3.
+3. Open **Notepad** from the Windows Start menu.
+4. Type the heading `Shopping-list process`.
+5. On the next lines, type exactly:
 
    ```text
    Start: I notice that household supplies are running low.
@@ -144,32 +186,39 @@ Use the harmless example **preparing a three-item shopping list**.
    Manual fallback: look through each cupboard again with paper and a pen.
    ```
 
-4. Select **File → Save As**.
-5. In the Save As window, select **Documents** in the left side.
-6. Select **New folder**, type `controlled-ai-course-practice`, and press
-   `Enter`. If that folder already exists, open it instead of creating a
-   duplicate.
-7. Open `controlled-ai-course-practice`.
-8. Select **New folder**, type `readiness-follow-along`, and press `Enter`.
-9. Open `readiness-follow-along`.
-10. In **File name**, enter `shopping-process.txt`.
-11. Select **Save**.
-12. Close Notepad, reopen the file from File Explorer, and confirm all six
+6. Select **File → Save As**.
+7. In the Save As window, browse to the `follow-along` subfolder inside your
+   selected readiness attempt.
+8. In **File name**, enter `shopping-process.txt`.
+9. Select **Save**.
+10. Close Notepad, reopen the file from File Explorer, and confirm all six
     labelled lines remain.
 
 Expected result: the folder contains one readable text file with a start,
 input, fixed steps, judgment, possible failure, and manual fallback.
 
 If the file appears as `shopping-process.txt.txt`, turn on
-**File Explorer → View → Show → File name extensions**, then remove only the
-extra final `.txt`.
+**File Explorer → View → Show → File name extensions**. Do not rename, delete,
+or overwrite the incorrectly saved file. Preserve that attempt, choose the next
+unused readiness retry folder, and repeat the exercise there using the correct
+file name.
 
 ### Now recreate it yourself
 
-Repeat the same Save As method, but create the different folder
-`Documents\controlled-ai-course-practice\readiness-recreate` and save
-`household-task-process.txt` inside it. Use a different harmless process:
-checking whether fictional household tasks are overdue.
+In the same selected readiness attempt, look for the subfolder `recreate`.
+Create it only if it is absent, then open it. Look for
+`household-task-process.txt`:
+
+- if it exists and already meets every recreation requirement below, close it
+  without saving and skip its creation;
+- if it is incomplete, different, unfamiliar, or appears sensitive, close it
+  without saving, choose the next unused readiness retry folder, and repeat the
+  complete demonstration and recreation there;
+- only if it is absent should you use the same Notepad **Save As** method to
+  create it.
+
+Use a different harmless process: checking whether fictional household tasks
+are overdue.
 
 Write the same six labels, but create your own content. Include at least three
 fictional tasks. Do not copy the shopping-list answers and do not use work,
@@ -177,19 +226,28 @@ client, patient, or other real personal information.
 
 ### Ask Codex to check your work
 
-Replace the placeholder below with the full path shown in File Explorer's
-address bar, then send the prompt to Codex:
+Open the `recreate` subfolder inside your selected attempt. Replace the
+placeholder below with its full path shown in File Explorer's address bar,
+then send the prompt to Codex:
 
 ```text
 Please inspect this practice folder in READ-ONLY mode:
-[PASTE THE FULL PATH TO readiness-recreate HERE]
+[PASTE THE FULL PATH TO THE recreate SUBFOLDER IN YOUR SELECTED ATTEMPT HERE]
 
 Do not create, edit, rename, move, or delete anything. Check only this folder.
 Confirm that household-task-process.txt exists and contains: a clear start,
 input, fixed steps, a human judgment, one possible failure, a manual fallback,
-and at least three fictional tasks. Check that it contains no secrets or real
-employer, client, patient, employee, or personal data. Report PASS or NOT YET.
-If it is NOT YET, explain the exact smallest correction and let me make it.
+and at least three fictional tasks. Report PASS or NOT YET. If it is NOT YET,
+explain the exact smallest correction and let me make it.
+
+I attest that I created this attempt with fictional course information only and
+did not intentionally add secrets or real employer, client, patient, employee,
+or personal data. If you notice content that appears sensitive, stop
+the inspection, do not quote or repeat it, report only the file name and general
+category, and report NOT YET. If you notice none, say:
+"No apparent sensitive content noticed in this bounded inspection; this is not proof that none exists."
+Do not claim that an inspection proves the folder is free of secrets or real
+data.
 ```
 
 ### Pass criteria
@@ -199,7 +257,14 @@ If it is NOT YET, explain the exact smallest correction and let me make it.
 - [ ] At least three tasks are fictional.
 - [ ] A person still owns the judgment.
 - [ ] The fallback can be performed without AI or automation.
+- [ ] I attest that all information I entered was fictional course information
+      and that I did not intentionally add secrets or real personal, employer,
+      or client data.
 - [ ] Codex reports `PASS` after read-only inspection.
+
+Do not begin Foundation 1 while any box above remains unchecked. After all
+boxes are checked, continue to the
+[Beginner Foundations](foundations/README.md) and start Foundation 1.
 
 ## Not ready is useful information
 

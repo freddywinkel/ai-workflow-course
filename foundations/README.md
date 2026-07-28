@@ -86,7 +86,12 @@ Every foundation uses the same four-stage practice loop:
    new names or values. This tests transfer rather than copying.
 3. **Ask Codex to check your work.** Codex is the AI assistant used in this
    course. Give it one explicit full practice-folder path and authorise
-   read-only inspection. Codex must not change the work.
+   read-only inspection. In a lesson that requires local validation, also give
+   it the one exact project `python.exe` path printed by that lesson and
+   authorise only read-only execution of the named local files. Codex must not
+   access another location or change the work. Codex reports apparent sensitive
+   content without repeating it; not noticing any is not proof that none
+   exists. The learner supplies the synthetic-only attestation.
 4. **Pass criteria.** Mark only objective checkboxes supported by observed
    files, output, and the read-only review.
 
@@ -114,14 +119,17 @@ marks around or above and below that example; they are not command text.
 
 - [ ] Every lesson's guided example matches its exact expected result.
 - [ ] Every recreation uses meaningfully different names or data.
-- [ ] Every Codex review was limited to one explicit folder and read-only.
+- [ ] Every Codex review limited file inspection to one explicit practice
+      folder. When a lesson required local validation, only its pasted project
+      `python.exe` path executed the named local files, without changing them.
 - [ ] Every pass criterion is supported by observed evidence.
 - [ ] I can explain the difference between exact rules, AI candidates, and
       human authority.
 - [ ] I can explain source input, workflow state, issue evidence, and audit
       events.
-- [ ] I used only synthetic course data and no **secrets**, meaning passwords,
-      keys, tokens, or other values that grant access.
+- [ ] I attest that I used only synthetic course data and intentionally added
+      no **secrets**, meaning passwords, keys, tokens, or other values that
+      grant access.
 - [ ] I know that foundation completion is preparation for Course 1, not
       production readiness.
 

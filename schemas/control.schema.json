@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://course.invalid/schemas/control.schema.json",
+  "title": "Course 1 External Action Control",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "EXTERNAL_ACTIONS_ENABLED",
+    "allowed_output",
+    "dataset_kind"
+  ],
+  "properties": {
+    "EXTERNAL_ACTIONS_ENABLED": {
+      "const": false
+    },
+    "allowed_output": {
+      "const": "local_draft_only"
+    },
+    "dataset_kind": {
+      "const": "synthetic"
+    }
+  }
+}

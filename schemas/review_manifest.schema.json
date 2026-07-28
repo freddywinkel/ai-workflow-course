@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://course.invalid/schemas/review_manifest.schema.json",
+  "title": "Course 1 Protected Review Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "draft_revision",
+    "run_config_sha256",
+    "configuration",
+    "artifact_sha256"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "course1-review-manifest-v1"
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^RUN-[A-F0-9]{12}$"
+    },
+    "draft_revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "run_config_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "configuration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "assessment_date",
+        "pipeline_version",
+        "rules_version",
+        "prompt_version",
+        "requested_adapter_mode",
+        "mock_generator_version",
+        "fallback_generator_version",
+        "expected_oracle_present",
+        "expected_oracle_sha256"
+      ],
+      "properties": {
+        "assessment_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "pipeline_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rules_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "prompt_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "requested_adapter_mode": {
+          "enum": [
+            "mock",
+            "disabled",
+            "timeout",
+            "refusal",
+            "malformed_json",
+            "unknown_issue_id"
+          ]
+        },
+        "mock_generator_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "fallback_generator_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expected_oracle_present": {
+          "type": "boolean"
+        },
+        "expected_oracle_sha256": {
+          "type": ["string", "null"],
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "artifact_sha256": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source/work_items.csv",
+        "source/expected_issues.evidence",
+        "issues/issues.json",
+        "issues/issues.csv",
+        "draft/summary.json",
+        "control.json",
+        "run_config.json",
+        "review/review_package.json"
+      ],
+      "properties": {
+        "source/work_items.csv": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "source/expected_issues.evidence": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "issues/issues.json": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "issues/issues.csv": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "draft/summary.json": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "control.json": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "run_config.json": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "review/review_package.json": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    }
+  }
+}

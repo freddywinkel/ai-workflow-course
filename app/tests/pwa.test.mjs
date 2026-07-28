@@ -5,7 +5,10 @@ import { readFile, stat } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { before, test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { renderMarkdown } from "../src/markdown.js";
+import {
+  renderMarkdown,
+  stripLeadingDocumentTitle,
+} from "../src/markdown.js";
 
 const appRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const courseRoot = resolve(appRoot, "..");
@@ -634,6 +637,10 @@ test("mobile and accessibility essentials are present", () => {
     /querySelector\("\.brand"\)[\s\S]+?preventDefault\(\)[\s\S]+?navigate\("home"\)/,
   );
   assert.match(appSource, /focus\(\{ preventScroll: true \}\)/);
+  assert.match(
+    appSource,
+    /addEventListener\("hashchange",\s*\(\) => \{\s*pendingRouteFocus = true;\s*renderRoute\(\);\s*}\)/,
+  );
   assert.match(cssSource, /min-height: 44px/);
   assert.match(cssSource, /\.brand\s*\{[\s\S]+?min-height: 44px/);
   assert.match(cssSource, /\.copy-code[\s\S]+?min-height: 44px/);
@@ -785,11 +792,12 @@ test("actionable sequence includes onboarding pages and ignores arbitrary refere
     { id: "software-check", core: false, group: "start" },
     { id: "windows-setup", core: false, group: "start" },
     { id: "foundation-three", core: true },
+    { id: "module-nine", core: true },
     { id: "reference-page", core: false, group: "reference" },
   ];
   const byId = new Map(documents.map((document) => [document.id, document]));
-  const sequence = documents.slice(0, 6);
-  const makeResume = (lastDocument, completedIds) =>
+  const sequence = documents.slice(0, 7);
+  const makeResume = (lastDocument, completedIds, practicalPassedIds = completedIds) =>
     Function(
       "learningSequenceDocuments",
       "documentById",
@@ -803,8 +811,8 @@ test("actionable sequence includes onboarding pages and ignores arbitrary refere
       byId,
       { lastDocument },
       (document) => completedIds.has(document.id),
-      () => false,
-      () => false,
+      (document) => sequence.some((candidate) => candidate.id === document.id),
+      (document) => practicalPassedIds.has(document.id),
     );
   const completedThroughFoundationTwo = new Set([
     "readiness",
@@ -821,7 +829,35 @@ test("actionable sequence includes onboarding pages and ignores arbitrary refere
   );
   assert.equal(
     makeResume("windows-setup", completedThroughFoundationTwo)().id,
+    "software-check",
+  );
+  assert.equal(
+    makeResume("module-nine", new Set())().id,
+    "readiness",
+  );
+  assert.equal(
+    makeResume(
+      "windows-setup",
+      new Set([...completedThroughFoundationTwo, "software-check"]),
+    )().id,
     "windows-setup",
+  );
+  assert.equal(
+    makeResume(
+      "foundation-three",
+      new Set([
+        ...completedThroughFoundationTwo,
+        "software-check",
+        "windows-setup",
+        "foundation-three",
+      ]),
+      new Set([
+        ...completedThroughFoundationTwo,
+        "software-check",
+        "windows-setup",
+      ]),
+    )().id,
+    "foundation-three",
   );
 
   const pagerSource = appSource.match(
@@ -884,7 +920,38 @@ test("course navigation waits for content and announces state and route focus", 
     /const activeView = Object\.values\(views\)\.find[\s\S]+?querySelector\("h1"\)/,
   );
   assert.match(appSource, /heading\.setAttribute\("tabindex", "-1"\)/);
-  assert.doesNotMatch(appSource, /querySelector\("#main-content"\)\.focus/);
+  const renderRouteSource = appSource.match(
+    /function renderRoute\(\) \{[\s\S]+?^}/m,
+  )?.[0];
+  assert.ok(renderRouteSource);
+  assert.doesNotMatch(renderRouteSource, /querySelector\("#main-content"\)/);
+  assert.match(
+    appSource,
+    /querySelector\("\.skip-link"\)\.addEventListener\("click"[\s\S]+?preventDefault\(\)[\s\S]+?querySelector\("#main-content"\)[\s\S]+?focus\(\{ preventScroll: true }\)[\s\S]+?scrollIntoView/,
+  );
+});
+
+test("reader keeps one page title and removes only the source document title", () => {
+  assert.match(htmlSource, /<h1 id="reader-title"><\/h1>/);
+  assert.equal(
+    stripLeadingDocumentTitle("# Page title\n\n## First section\n\nBody"),
+    "## First section\n\nBody",
+  );
+  assert.equal(
+    stripLeadingDocumentTitle("## No source title\n\nBody"),
+    "## No source title\n\nBody",
+  );
+  for (const courseDocument of bundle.documents) {
+    const rendered = renderMarkdown(
+      stripLeadingDocumentTitle(courseDocument.markdown),
+    );
+    assert.equal(
+      (rendered.match(/<h1(?:\s|>)/g) || []).length,
+      0,
+      `${courseDocument.id} must rely on the reader's single visible h1`,
+    );
+  }
+  assert.match(appSource, /stripLeadingDocumentTitle\(courseDocument\.markdown\)/);
 });
 
 test("effort and installation language reflect real practice and all devices", () => {

@@ -111,18 +111,33 @@ Required characteristics:
 - every run has a traceable run ID;
 - every run keeps a named last valid `current_state`;
 - every stopped command records a visible `failed_manual` attempt outcome
-  without disguising or overwriting that last valid workflow state;
+  without disguising or overwriting that last valid workflow state, while
+  preserving every repeated attempt separately;
 - duplicate retries are safe;
 - output folders are separated from source data;
 - tests run without paid API calls;
 - input is refused without the exact synthetic-data acknowledgement;
 - summary actions are limited to source-linked `human_review` actions with
   `external_action=false`;
+- summary headlines, group prose, and review instructions are rendered from
+  controlled allow-listed templates rather than trusted because of a
+  self-declared boolean;
+- one exclusive local workspace/run lock prevents simultaneous processes from
+  racing; an abandoned visible lock is removed only after human verification;
 - only an approved, evidence-reviewed, unexpired exact revision can create
   local CSV and JSON;
+- run identity includes the exact input, expected-oracle presence/hash, fixed
+  date, rules, pipeline, prompt, requested adapter mode, and mock/fallback
+  versions;
+- approval binds a recomputed manifest of the source, issue JSON/CSV, summary,
+  control, run configuration, and review package;
+- the JSON/CSV export pair is checked and staged before publication, and CSV
+  formula prefixes are made spreadsheet-safe without changing JSON/source
+  evidence;
 - approve, edit, reject, and expire cause separate enforced states;
-- every generated issue, summary, decision, audit event, and evaluation matches
-  the canonical schema in `schemas/`.
+- every generated issue, summary, run configuration, control, state, review
+  package, review manifest, decision, audit event, and evaluation matches the
+  canonical schema in `schemas/`.
 
 The runnable artifact flow is:
 
@@ -131,9 +146,9 @@ synthetic CSV
   -> input validation
   -> deterministic R001-R011 issues
   -> offline mock or deterministic fallback
-  -> source-linked review package
+  -> source-linked review package and protected manifest
   -> explicit human decision
-  -> exact hash/revision/expiry recheck
+  -> exact artifact/decision/revision/expiry recheck
   -> approved local CSV and JSON only
 ```
 
@@ -190,6 +205,10 @@ regulatory compliance.
 - stale update;
 - malformed input;
 - untrusted instructions in free text.
+- a dangerous free-text review instruction paired with
+  `external_action=false`;
+- schema-valid evaluation, state, or export evidence edited after creation;
+- two simultaneous operations targeting the same workspace or run.
 
 ### Operational failures
 
@@ -208,6 +227,11 @@ regulatory compliance.
 - expired review;
 - `EXTERNAL_ACTIONS_ENABLED=false` safety control;
 - tampering that changes `EXTERNAL_ACTIONS_ENABLED` to true.
+- schema-valid issue or review-package tampering;
+- a changed reviewer, reason, or prior expiry in a saved decision;
+- damaged state or audit JSON;
+- an existing conflicting half-export or simulated second-file write failure;
+- spreadsheet-formula prefixes after optional whitespace/control characters.
 
 ### Invariants
 
@@ -216,7 +240,10 @@ regulatory compliance.
 - no external action occurs;
 - one run key creates at most one logical CSV-and-JSON export pair per approved
   revision;
-- a changed draft cannot reuse an old approval;
+- changed protected review evidence cannot reuse an old approval;
+- changing any material decision field invalidates its local decision
+  fingerprint (which is tamper detection, not reviewer authentication);
+- no failed export leaves one newly approved JSON/CSV filename without its pair;
 - manual fallback produces a usable report;
 - a failed run never appears successful.
 

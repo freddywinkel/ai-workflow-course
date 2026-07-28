@@ -75,6 +75,38 @@
     "trigger": "set EXTERNAL_ACTIONS_ENABLED true and try export",
     "expected": "SAFE STOP external_action_blocked"
   },
+  "protected_review_artifact_tampered": {
+    "trigger": "change a source, issue, summary, control, configuration, or review-package byte after approval",
+    "expected": "SAFE STOP from strict validation or review_manifest_mismatch"
+  },
+  "decision_field_tampered": {
+    "trigger": "change reviewer, reason, expiry, or manifest hash without recomputing decision_id",
+    "expected": "SAFE STOP decision_integrity_mismatch"
+  },
+  "partial_export_conflict": {
+    "trigger": "place only one conflicting approved JSON/CSV target before export",
+    "expected": "SAFE STOP idempotency_conflict and no second approved artifact"
+  },
+  "export_pair_promotion_failure": {
+    "trigger": "simulate failure while publishing the second staged export file",
+    "expected": "SAFE STOP export_write_error and first promoted file removed"
+  },
+  "spreadsheet_formula_prefix": {
+    "trigger": "synthetic issue evidence begins with =, +, -, or @ after optional whitespace",
+    "expected": "CSV apostrophe prefix; exact JSON and source evidence retained"
+  },
+  "damaged_state_or_audit": {
+    "trigger": "malform state.json or an audit JSONL line before a command",
+    "expected": "named failed_manual evidence preserved independently"
+  },
+  "repeated_safe_stop": {
+    "trigger": "repeat the same invalid command twice",
+    "expected": "two unique immutable attempt records and unchanged last valid state"
+  },
+  "windows_path_budget": {
+    "trigger": "record a safe stop from a long documented learner run path",
+    "expected": "short failures/latest.json and failures/a0001.json evidence remains writable"
+  },
   "untrusted_free_text": {
     "trigger": "fixtures/failures/untrusted_instruction.csv",
     "expected": "instruction is treated as inert data and causes no external action"

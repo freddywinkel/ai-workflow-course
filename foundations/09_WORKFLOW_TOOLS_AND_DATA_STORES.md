@@ -133,20 +133,52 @@ Run this whole block whenever you start or resume Foundation 9:
 ```powershell
 $documentsPath = [Environment]::GetFolderPath("MyDocuments")
 $practiceRoot = Join-Path $documentsPath "controlled-ai-course-practice"
-$lessonPath = Join-Path $practiceRoot "foundation-09"
+$lessonFolderName = "foundation-09"
+if ($lessonFolderName -notmatch '^foundation-09(?:-retry-\d{2,})?$') {
+    throw "STOP: use foundation-09 or a retry name created by this lesson."
+}
+$lessonPath = Join-Path $practiceRoot $lessonFolderName
+
+function New-FoundationRetryAttempt {
+    param([string]$BaseName, [string]$PracticeRoot)
+    $retryNumber = 1
+    do {
+        $retryName = "$BaseName-retry-{0:D2}" -f $retryNumber
+        $retryPath = Join-Path $PracticeRoot $retryName
+        $retryNumber += 1
+    } while (Test-Path -LiteralPath $retryPath)
+    New-Item -ItemType Directory -Path $retryPath -ErrorAction Stop | Out-Null
+    $retryPath
+}
+
+function Open-GuardedPracticeFile {
+    param([string]$AttemptPath, [string]$FileName)
+    $filePath = Join-Path $AttemptPath $FileName
+    if (Test-Path -LiteralPath $filePath -PathType Container) {
+        throw "STOP: $FileName is a folder. Do not change it; use a fresh retry attempt."
+    }
+    if (Test-Path -LiteralPath $filePath -PathType Leaf) {
+        "EXISTING — DO NOT EDIT OR OVERWRITE: $FileName"
+        Get-Content -LiteralPath $filePath
+        return
+    }
+    New-Item -ItemType File -Path $filePath -ErrorAction Stop | Out-Null
+    "CREATED ONCE — enter the requested content: $FileName"
+    notepad $filePath
+}
 
 if (-not (Test-Path -LiteralPath $practiceRoot -PathType Container)) {
     throw "STOP: the controlled-ai-course-practice folder is missing. Return to Foundation 1."
 }
 if (Test-Path -LiteralPath $lessonPath -PathType Leaf) {
-    throw "STOP: foundation-09 is a file, not a folder. Do not rename or delete it; ask Codex to inspect read-only."
+    throw "STOP: the selected Foundation 9 attempt is a file, not a folder. Do not change it."
 }
 if (-not (Test-Path -LiteralPath $lessonPath -PathType Container)) {
     New-Item -ItemType Directory -Path $lessonPath | Out-Null
-    "Created a new foundation-09 folder."
+    "Created a new Foundation 9 attempt: $lessonFolderName"
 }
 else {
-    "Existing foundation-09 folder found; nothing was overwritten."
+    "Existing Foundation 9 attempt found; nothing was overwritten: $lessonFolderName"
 }
 
 Set-Location -LiteralPath $lessonPath
@@ -154,27 +186,54 @@ Get-Location
 Get-ChildItem -Force
 ```
 
-Expected result: the location ends in `foundation-09`. The block creates that
-folder only when absent and lists existing contents without changing them.
-Resume only your own synthetic lesson attempt. Before opening an existing CSV
-or Markdown file in Notepad, read it with `Get-Content -LiteralPath` and leave
-a completed file unchanged. Stop if an item is unfamiliar or may contain real
-data.
+Expected result: the location ends in `foundation-09` or the selected numbered
+retry name. The block creates an absent attempt and lists existing contents
+without changing them.
+
+### Decide whether to resume or use a fresh attempt
+
+The two helper functions have narrow jobs:
+`New-FoundationRetryAttempt` creates the next unused retry folder;
+`Open-GuardedPracticeFile` creates a named file only when absent, or displays an
+existing file without opening it for editing.
+
+Apply this decision before Part A and after every interruption:
+
+1. An empty attempt continues at Part A.
+2. The only expected names are `queue_input.csv`, `work_state.csv`,
+   `audit_events.csv`, `architecture.md`, `service_input.csv`,
+   `service_state.csv`, `service_audit.csv`, and `service_architecture.md`. For
+   an attempt containing only those names, use each guarded step:
+   - `EXISTING` plus exactly complete synthetic content means leave the file
+     unchanged and skip its creation;
+   - an absent expected file may be created;
+   - incomplete, different, unfamiliar, or apparently real/sensitive content
+     means do not edit, rename, delete, or overwrite anything.
+3. An unexpected item also requires a fresh attempt.
+4. For either stop condition, run:
+
+   ```powershell
+   $lessonPath = New-FoundationRetryAttempt -BaseName "foundation-09" -PracticeRoot $practiceRoot
+   $lessonFolderName = Split-Path -Leaf $lessonPath
+   Set-Location -LiteralPath $lessonPath
+   "Selected fresh attempt: $lessonFolderName"
+   ```
+
+5. Record the retry name. In a new PowerShell session, replace only
+   `"foundation-09"` in `$lessonFolderName` with that exact name. Restart at
+   Part A in the new empty folder.
 
 ### Part A — create source input, state, and audit event files
 
-If `queue_input.csv` was not listed, run:
+Run the create-once guard:
 
 ```powershell
-notepad "queue_input.csv"
+Open-GuardedPracticeFile -AttemptPath $lessonPath -FileName "queue_input.csv"
 ```
 
-If it was listed, inspect it first with
-`Get-Content -LiteralPath ".\queue_input.csv"`. If it already contains the
-exact synthetic guided input, skip its creation. Resume only your own
-incomplete synthetic attempt; do not paste over an unfamiliar file.
-
-Enter:
+If it reports `EXISTING`, leave the file unchanged only when it exactly matches
+the complete source below; otherwise use a fresh retry attempt. Only after
+`CREATED ONCE` should you enter:
 
 ```csv
 work_item_id,title,owner_role
@@ -186,13 +245,15 @@ Save and close Notepad.
 What this is: the unchanged fictional source input. The blank owner is
 deliberate.
 
-Run:
+Run the create-once guard:
 
 ```powershell
-notepad "work_state.csv"
+Open-GuardedPracticeFile -AttemptPath $lessonPath -FileName "work_state.csv"
 ```
 
-Enter:
+If it reports `EXISTING`, leave the file unchanged only when it exactly matches
+the complete state below; otherwise use a fresh retry attempt. Only after
+`CREATED ONCE` should you enter:
 
 ```csv
 work_item_id,state,review_owner_role,last_reason_code
@@ -204,13 +265,15 @@ Save and close Notepad.
 What this is: the workflow's current state and review ownership. It does not
 alter `queue_input.csv`.
 
-Run:
+Run the create-once guard:
 
 ```powershell
-notepad "audit_events.csv"
+Open-GuardedPracticeFile -AttemptPath $lessonPath -FileName "audit_events.csv"
 ```
 
-Enter:
+If it reports `EXISTING`, leave the file unchanged only when it exactly matches
+the complete events below; otherwise use a fresh retry attempt. Only after
+`CREATED ONCE` should you enter:
 
 ```csv
 event_id,work_item_id,event_type,occurred_on,actor_role,result
@@ -224,13 +287,15 @@ What this is: two business-relevant events. The dates are fictional.
 
 ### Part B — document the minimal architecture and ownership
 
-Run:
+Run the create-once guard:
 
 ```powershell
-notepad "architecture.md"
+Open-GuardedPracticeFile -AttemptPath $lessonPath -FileName "architecture.md"
 ```
 
-Enter:
+If it reports `EXISTING`, leave the file unchanged only when it exactly matches
+the complete architecture below; otherwise use a fresh retry attempt. Only
+after `CREATED ONCE` should you enter:
 
 ```markdown
 # Synthetic queue architecture
@@ -318,19 +383,40 @@ the exact full folder path. None changes the stored data.
 
 ### Troubleshooting
 
-- If a CSV displays as one column, verify the commas and final `.csv`
-  extension.
-- If IDs do not match across files, correct the synthetic recreation files
-  before claiming traceability.
+- If a CSV displays as one column, preserve that attempt and use a fresh retry
+  with commas and the correct `.csv` extension.
+- If IDs do not match across files, do not correct or overwrite that attempt.
+  Preserve it and use a fresh retry before claiming traceability.
 - If a tool suggestion requires credentials or a public connection, stop. It
   is outside this foundation.
-- If `foundation-09` already exists, do not delete it. Inspect it before
-  continuing.
+- If the selected attempt already exists, do not delete or overwrite it. Apply
+  the attempt decision and use a fresh retry for any non-complete file.
 
 ## Now recreate it yourself
 
-Create a separate fictional service-notice architecture using these four new
-files:
+Create a separate fictional service-notice architecture using four new files.
+Before entering each file, run its create-once guard:
+
+```powershell
+Open-GuardedPracticeFile -AttemptPath $lessonPath -FileName "service_input.csv"
+```
+
+```powershell
+Open-GuardedPracticeFile -AttemptPath $lessonPath -FileName "service_state.csv"
+```
+
+```powershell
+Open-GuardedPracticeFile -AttemptPath $lessonPath -FileName "service_audit.csv"
+```
+
+```powershell
+Open-GuardedPracticeFile -AttemptPath $lessonPath -FileName "service_architecture.md"
+```
+
+Run and finish one guard before moving to the next. Leave an `EXISTING` file
+unchanged only when it already meets its complete requirement below. Any other
+existing content requires a fresh retry attempt; do not edit or overwrite it.
+After `CREATED ONCE`, use these requirements:
 
 1. `service_input.csv` — one source row with notice ID `SN-81`, category
    `maintenance`, and blank `assigned_role`;
@@ -368,14 +454,18 @@ Report PASS or NOT YET for each criterion:
 5. service_architecture.md includes trigger, exact rule, human review, manual
    fallback, boundaries, owners, and one future requirement that could justify
    a larger tool.
-6. All files contain synthetic practice data only.
+6. The expected fictional identifiers and roles are present; report any
+   apparent sensitive content only under the non-disclosure rule below.
 
 Explain NOT YET in beginner language and make no changes.
-This folder must contain synthetic course data only. I must not include
-secrets, personal data, client data, employer data, or other work data. If you
-notice such content, stop, do not repeat it, and tell me to remove it locally.
-Confirm that the folder contains no secrets and no real employer, client, or
-work data.
+I attest that I created this attempt with synthetic course data only and did
+not intentionally add secrets, personal data, client data, employer data, or
+other real work data. If you notice content that appears sensitive, stop the
+inspection,
+do not quote or repeat it, report only the file name and general category, and
+report NOT YET. If you notice none, say: "No apparent sensitive content noticed
+in this bounded inspection; this is not proof that none exists." Do not claim
+that an inspection proves the folder is free of secrets or real data.
 ```
 
 ## Pass criteria
@@ -388,7 +478,8 @@ work data.
 - [ ] I selected the smallest sufficient tool and named what might justify a
       larger one.
 - [ ] Ownership, manual fallback, and no-write-back boundaries are documented.
-- [ ] No account, connector, container, network service, secret, or real data
-      was used.
+- [ ] No account, connector, container, or network service was used. I attest
+      that all information I entered was synthetic and that I did not
+      intentionally add secrets or real data.
 - [ ] Codex reported PASS for every read-only criterion, or I corrected each
       NOT YET item myself.

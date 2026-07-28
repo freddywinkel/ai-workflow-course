@@ -6,7 +6,14 @@ same artifact contract used by `course1_capstone/workflow.py`:
 - `work_item.schema.json` — normalized synthetic work item;
 - `issue.schema.json` — deterministic verified exception;
 - `summary.schema.json` — source-linked offline-mock or fallback summary;
-- `approval.schema.json` — one human decision bound to one exact draft;
+- `run_config.schema.json` — every input, oracle, version, and requested-mode
+  value that determines run identity;
+- `control.schema.json` — the synthetic/local-only external-action boundary;
+- `state.schema.json` — the last valid persistent workflow state;
+- `review_package.schema.json` — the exact human checklist and artifact paths;
+- `review_manifest.schema.json` — hashes of every artifact protected by review,
+  including the copied expected-issue oracle or explicit no-oracle evidence;
+- `approval.schema.json` — one human decision bound to one exact manifest;
 - `audit_event.schema.json` — one material workflow event;
 - `evaluation.schema.json` — the technical evaluation result.
 
@@ -26,6 +33,8 @@ $pythonExe = Join-Path (Get-Location) '.venv\Scripts\python.exe'
 JSON Schema constrains representation. It does not prove that a value is true,
 an issue is correct, or a workflow is compliant. The runner separately checks
 business rules, cross-record conditions, evidence links, state transitions,
-authorization, expiry, and idempotency.
+decision integrity, expiry, and idempotency. The local decision and event
+fingerprints detect editing but do not authenticate a person and are not
+digital signatures.
 
 Do not loosen a schema merely to make a failing mock or model response pass.

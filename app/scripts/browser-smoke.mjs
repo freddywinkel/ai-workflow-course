@@ -263,8 +263,15 @@ async function main() {
       "Stable course home",
     );
 
+    await evaluate(`location.hash = "#home"`);
+    await waitFor(
+      () =>
+        evaluate(`location.hash === "#home" &&
+          document.querySelector("#home-view")?.hidden === false &&
+          document.activeElement === document.querySelector("#home-view h1")`),
+      "Home route heading focus",
+    );
     await evaluate(`(() => {
-      location.hash = "#home";
       const body = document.body;
       body.setAttribute("tabindex", "-1");
       body.focus();
@@ -302,9 +309,9 @@ async function main() {
     });
     await waitFor(
       () =>
-        evaluate(`location.hash === "#main-content" &&
+        evaluate(`location.hash === "#home" &&
           document.activeElement === document.querySelector("#main-content")`),
-      "Skip-link keyboard target",
+      "Skip-link keyboard target without route change",
     );
 
     const viewportCases = [
@@ -678,6 +685,7 @@ async function main() {
         viewport: innerWidth,
         page: document.documentElement.scrollWidth,
         reader: document.querySelector("#reader-view").scrollWidth,
+        h1Count: document.querySelector("#reader-view").querySelectorAll("h1").length,
       }))()`);
       assert.ok(
         readerLayout.page <= readerLayout.viewport,
@@ -686,6 +694,11 @@ async function main() {
       assert.ok(
         readerLayout.reader <= readerLayout.viewport,
         `${documentId} reader overflowed its viewport`,
+      );
+      assert.equal(
+        readerLayout.h1Count,
+        1,
+        `${documentId} must expose exactly one reader h1`,
       );
     }
 
@@ -696,6 +709,14 @@ async function main() {
           `document.querySelector("#reader-title")?.textContent.includes("Files")`,
         ),
       "Foundation 1 reader",
+    );
+    await evaluate(`document.querySelector(".skip-link").click()`);
+    await waitFor(
+      () =>
+        evaluate(`location.hash === "#doc=course-1-foundation-01" &&
+          document.querySelector("#reader-view")?.hidden === false &&
+          document.activeElement === document.querySelector("#main-content")`),
+      "Skip link preserves the active lesson route",
     );
     const reader = await evaluate(`(() => ({
       text: document.querySelector("#reader-content").textContent,
@@ -864,6 +885,26 @@ async function main() {
         ),
       "Route heading focus",
     );
+    await evaluate(`history.back()`);
+    await waitFor(
+      () =>
+        evaluate(
+          `location.hash === "#career" &&
+            document.querySelector("#career-view")?.hidden === false &&
+            document.activeElement === document.querySelector("#career-view h1")`,
+        ),
+      "Browser Back route heading focus",
+    );
+    await evaluate(`history.forward()`);
+    await waitFor(
+      () =>
+        evaluate(
+          `location.hash === "#settings" &&
+            document.querySelector("#settings-view")?.hidden === false &&
+            document.activeElement === document.querySelector("#settings-view h1")`,
+        ),
+      "Browser Forward route heading focus",
+    );
     await evaluate(`document.querySelector("#menu-button").focus()`);
     await client.call("Input.dispatchKeyEvent", {
       type: "rawKeyDown",
@@ -1029,7 +1070,12 @@ async function main() {
         ));
         input.files = transfer.files;
         input.dispatchEvent(new Event("change", { bubbles: true }));
-        await new Promise((resolve) => setTimeout(resolve, 250));
+        for (let attempt = 0; attempt < 60; attempt += 1) {
+          if (/backup was not imported/i.test(
+            document.querySelector("#toast").textContent
+          )) break;
+          await new Promise((resolve) => setTimeout(resolve, 25));
+        }
         return document.querySelector("#toast").textContent;
       } finally {
         Storage.prototype.setItem = originalSetItem;
@@ -1165,7 +1211,7 @@ async function main() {
     });
 
     process.stdout.write(
-      "Browser smoke passed: six responsive viewports, visible 44px five-tab navigation where applicable, unobscured primary controls, all 21 pages at 320px/125% text, table containment, skip-link and route focus, two-way sidebar focus wrapping and restoration, reduced motion, light/dark contrast, forced colours, Course 1 isolation, exact wildcard rendering, separate reading/practice state, backup/import/reset, blocked-storage honesty, one-time schema-v1 migration, and offline reload/search.\n",
+      "Browser smoke passed: six responsive viewports, visible 44px five-tab navigation where applicable, unobscured primary controls, all 21 pages at 320px/125% text, table containment, skip-link plus app/Back/Forward route focus, two-way sidebar focus wrapping and restoration, reduced motion, light/dark contrast, forced colours, Course 1 isolation, exact wildcard rendering, separate reading/practice state, backup/import/reset, blocked-storage honesty, one-time schema-v1 migration, and offline reload/search.\n",
     );
   } finally {
     client?.close();

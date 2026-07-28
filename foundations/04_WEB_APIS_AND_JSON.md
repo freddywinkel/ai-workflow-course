@@ -49,7 +49,9 @@ correct work.
   software access to a service.
 - A **private address** is a URL intended only for authorised, non-public use.
 - **Codex** is the artificial intelligence (AI) assistant used for the final
-  read-only check. The check prompt limits it to one practice folder.
+  read-only check. The check prompt limits file inspection to one practice
+  folder and permits only the exact project Python file to validate the named
+  local JSON files without making a change.
 
 `202 Accepted` means a request was accepted for processing. It does not prove
 processing finished or that the result is factually correct.
@@ -73,15 +75,49 @@ address, or business record.
 ### Start or resume safely — run this at every new PowerShell session
 
 PowerShell forgets variables when you close its window. Run this whole block
-whenever you start or resume Foundation 4:
+whenever you start or resume Foundation 4. On the first attempt, leave
+`$lessonFolderName` as `foundation-04`. If the recovery instructions below
+created a numbered retry folder, replace only that quoted value with the retry
+folder name that PowerShell displayed:
 
 ```powershell
 $documentsPath = [Environment]::GetFolderPath("MyDocuments")
 $projectRoot = Join-Path $documentsPath "AI-workflow-learning\operations-exception-assistant"
+$projectMarker = Join-Path $projectRoot "COURSE_PROJECT.md"
 $pythonExe = Join-Path $projectRoot ".venv\Scripts\python.exe"
 $practiceRoot = Join-Path $documentsPath "controlled-ai-course-practice"
-$lessonPath = Join-Path $practiceRoot "foundation-04"
+$lessonFolderName = "foundation-04"
+if ($lessonFolderName -notmatch '^foundation-04(?:-retry-\d{2,})?$') {
+    throw "STOP: use foundation-04 or a displayed foundation-04-retry-XX name."
+}
+$lessonPath = Join-Path $practiceRoot $lessonFolderName
 
+$expectedProjectMarker = @'
+# Course 1 synthetic learner project
+
+This folder is only for the fictional Course 1 practice project.
+Never place real client, employer, medical, or personal data here.
+'@
+if (-not (Test-Path -LiteralPath $projectMarker -PathType Leaf)) {
+    throw "STOP: the exact Course 1 project marker is missing. Return to Windows Setup."
+}
+$actualProjectMarker = (
+    Get-Content -Raw -LiteralPath $projectMarker
+) -replace "`r`n", "`n"
+$normalizedExpectedProjectMarker = $expectedProjectMarker -replace "`r`n", "`n"
+if ($actualProjectMarker -ne $normalizedExpectedProjectMarker) {
+    throw "STOP: the Course 1 project marker is unfamiliar. Do not execute this folder."
+}
+$projectGitRoot = git -C $projectRoot rev-parse --show-toplevel 2>$null
+if ($LASTEXITCODE -ne 0) {
+    throw "STOP: the marked Course 1 Git repository is missing or unreadable."
+}
+if (
+    (Resolve-Path -LiteralPath $projectGitRoot).Path -ne
+    (Resolve-Path -LiteralPath $projectRoot).Path
+) {
+    throw "STOP: Git resolves to a different repository root. Do not continue."
+}
 if (-not (Test-Path -LiteralPath $pythonExe -PathType Leaf)) {
     throw "STOP: the exact course Python file is missing. Return to Windows Setup; do not use a bare python command."
 }
@@ -93,14 +129,14 @@ if (-not (Test-Path -LiteralPath $practiceRoot -PathType Container)) {
     throw "STOP: the controlled-ai-course-practice folder is missing. Return to Foundation 1."
 }
 if (Test-Path -LiteralPath $lessonPath -PathType Leaf) {
-    throw "STOP: foundation-04 is a file, not a folder. Do not rename or delete it; ask Codex to inspect read-only."
+    throw "STOP: the selected Foundation 4 attempt is a file, not a folder. Do not rename or delete it; ask Codex to inspect read-only."
 }
 if (-not (Test-Path -LiteralPath $lessonPath -PathType Container)) {
     New-Item -ItemType Directory -Path $lessonPath | Out-Null
-    "Created a new foundation-04 folder."
+    "Created a new Foundation 4 attempt folder: $lessonFolderName"
 }
 else {
-    "Existing foundation-04 folder found; nothing was overwritten."
+    "Existing Foundation 4 attempt folder found; nothing was overwritten: $lessonFolderName"
 }
 
 Set-Location -LiteralPath $lessonPath
@@ -111,27 +147,76 @@ Get-ChildItem -Force
 ```
 
 This derives the exact project interpreter from your real Documents path,
-checks that it exists, accepts only a stable Python 3.14 patch, creates the
-lesson folder only when it is absent, and shows any existing content before
-you edit. The displayed executable path must end in
+requires the exact synthetic Course 1 identity marker, confirms Git resolves
+to that project rather than a parent or different repository, checks that the
+interpreter exists, accepts only a stable Python 3.14 patch, creates the lesson
+folder only when it is absent, and shows any existing content before you edit.
+The displayed executable path must end in
 `AI-workflow-learning\operations-exception-assistant\.venv\Scripts\python.exe`,
 and the current location must end in
-`controlled-ai-course-practice\foundation-04`.
+`controlled-ai-course-practice\foundation-04` or end in the selected numbered
+retry folder.
 
-If existing files are listed, inspect them before continuing. Resume only your
-own synthetic lesson attempt. Do not overwrite unfamiliar material and do not
-use a folder containing real data.
+If existing files are listed, inspect them before continuing. Resume only an
+attempt whose existing files are your own complete synthetic lesson files;
+files that are still absent may be created by the guarded steps below. Never
+paste or save lesson content over an existing file. If an existing file is
+incomplete, unfamiliar, or may contain real data, use
+**Create a safe retry attempt** below.
+
+### Create a safe retry attempt — only when an existing file is not complete
+
+Do not edit, rename, delete, or overwrite the existing file. Close Notepad
+without saving, then run this whole block:
+
+```powershell
+$retryNumber = 1
+do {
+    $lessonFolderName = "foundation-04-retry-{0:D2}" -f $retryNumber
+    $lessonPath = Join-Path $practiceRoot $lessonFolderName
+    $retryNumber += 1
+} while (Test-Path -LiteralPath $lessonPath)
+
+New-Item -ItemType Directory -Path $lessonPath -ErrorAction Stop | Out-Null
+Set-Location -LiteralPath $lessonPath
+"Created safe retry folder: $lessonFolderName"
+(Get-Location).Path
+```
+
+Expected result: PowerShell displays a new name such as
+`foundation-04-retry-01` and its full path. Write down that displayed folder
+name. Use this new empty folder for all remaining guided and recreation files.
+Whenever you resume in a new PowerShell window, put that exact displayed name
+in the `$lessonFolderName` line of the **Start or resume safely** block.
 
 ### Part B — create a fictional request
 
-1. Run:
+1. Run this create-once check:
 
    ```powershell
-   notepad "request.json"
+   $requestPath = Join-Path $lessonPath "request.json"
+   if (Test-Path -LiteralPath $requestPath -PathType Container) {
+       throw "STOP: request.json is a folder. Do not rename or delete it; use a safe retry attempt."
+   }
+   if (Test-Path -LiteralPath $requestPath -PathType Leaf) {
+       "Existing request.json found. It was not opened for editing or overwritten."
+       Get-Content -LiteralPath $requestPath
+   }
+   else {
+       New-Item -ItemType File -Path $requestPath -ErrorAction Stop | Out-Null
+       "Created request.json once. Enter the guided content, then save it."
+       notepad $requestPath
+   }
    ```
 
-2. If Notepad asks whether to create the file, click **Yes**.
-3. Type or paste:
+2. Read the output:
+   - If PowerShell displayed the existing file, compare it with the exact JSON
+     below. If it matches, do not open or save it; skip to Part C.
+   - If the existing file is incomplete, different, unfamiliar, or may contain
+     real data, do not edit it. Follow **Create a safe retry attempt**, then
+     repeat this create-once check in the new empty attempt folder.
+   - Only if PowerShell displayed `Created request.json once` should you type or
+     paste the following content into the Notepad window:
 
    ```json
    {
@@ -144,7 +229,7 @@ use a folder containing real data.
    }
    ```
 
-4. Click **File > Save**, then close Notepad.
+3. Click **File > Save**, then close Notepad.
 
 What this represents: a fictional client asks the endpoint
 `POST /work-items/check` to accept metadata for one synthetic work item.
@@ -152,13 +237,31 @@ Nothing is sent to a server.
 
 ### Part C — create a fictional response
 
-1. Run:
+1. Run this create-once check:
 
    ```powershell
-   notepad "response.json"
+   $responsePath = Join-Path $lessonPath "response.json"
+   if (Test-Path -LiteralPath $responsePath -PathType Container) {
+       throw "STOP: response.json is a folder. Do not rename or delete it; use a safe retry attempt."
+   }
+   if (Test-Path -LiteralPath $responsePath -PathType Leaf) {
+       "Existing response.json found. It was not opened for editing or overwritten."
+       Get-Content -LiteralPath $responsePath
+   }
+   else {
+       New-Item -ItemType File -Path $responsePath -ErrorAction Stop | Out-Null
+       "Created response.json once. Enter the guided content, then save it."
+       notepad $responsePath
+   }
    ```
 
-2. Enter:
+2. Read the output:
+   - If PowerShell displayed the existing file, compare it with the exact JSON
+     below. If it matches, do not open or save it; skip to Part D.
+   - If the existing file is incomplete, different, unfamiliar, or may contain
+     real data, do not edit it. Follow **Create a safe retry attempt**, then
+     repeat Parts B and C in the new empty attempt folder.
+   - Only if PowerShell displayed `Created response.json once` should you enter:
 
    ```json
    {
@@ -230,12 +333,15 @@ What the last two commands do: `Get-ChildItem` lists the saved files, and
   rerun the complete **Start or resume safely** block. If it still stops,
   return to Windows Setup. Do not use a bare `python` command and do not
   install an unverified package with a similar name.
-- If `foundation-04` already exists, do not delete it. Enter it and confirm it
-  contains only synthetic practice.
+- If a selected Foundation 4 attempt already exists, do not delete it or save
+  guided content over any file. Inspect existing files with the create-once
+  checks. Skip an exact completed file; use a safe retry attempt for any file
+  that is incomplete, different, unfamiliar, or may contain real data.
 
 ## Now recreate it yourself
 
-Create two different valid JSON files in `foundation-04`:
+In the same selected Foundation 4 attempt folder, create two different valid
+JSON files:
 
 1. `get-request.json` representing:
    - method `GET`;
@@ -247,8 +353,41 @@ Create two different valid JSON files in `foundation-04`:
    - state `waiting`;
    - Boolean field `contains_real_data` set to `false`.
 
-Choose a clear JSON object shape yourself. Validate both files with the exact
-project interpreter:
+Before creating either file, run these create-once checks:
+
+```powershell
+$getRequestPath = Join-Path $lessonPath "get-request.json"
+$getResponsePath = Join-Path $lessonPath "get-response.json"
+
+foreach ($path in @($getRequestPath, $getResponsePath)) {
+    if (Test-Path -LiteralPath $path -PathType Container) {
+        throw "STOP: an expected JSON file name is a folder. Do not change it; use a safe retry attempt."
+    }
+    if (Test-Path -LiteralPath $path -PathType Leaf) {
+        "Existing file found; it was not opened or overwritten: $path"
+        Get-Content -LiteralPath $path
+    }
+    else {
+        New-Item -ItemType File -Path $path -ErrorAction Stop | Out-Null
+        "Created once: $path"
+    }
+}
+```
+
+If either file existed, inspect the displayed content. If both are already
+complete, skip creation and continue to validation. If either is incomplete,
+different, unfamiliar, or may contain real data, do not edit or overwrite it;
+use a safe retry attempt and repeat Parts B–D first.
+
+Only for files for which PowerShell displayed `Created once`, open the path in
+Notepad, create a clear JSON object shape yourself, then save and close it:
+
+```powershell
+notepad $getRequestPath
+notepad $getResponsePath
+```
+
+Validate both files with the exact project interpreter:
 
 ```powershell
 & $pythonExe -m json.tool ".\get-request.json"
@@ -259,15 +398,20 @@ Do not reuse `WI-DEMO-21`, `POST`, or state `received`.
 
 ## Ask Codex to check your work
 
-Replace `[PASTE THE EXACT PATH]` with the full path output from
-`(Get-Location).Path`.
+Replace `[PASTE THE EXACT PRACTICE-FOLDER PATH]` with the full path output from
+`(Get-Location).Path`. Replace `[PASTE THE EXACT PROJECT PYTHON PATH]` with the
+full path printed for `$pythonExe` by the **Start or resume safely** block.
 
 ```text
-You may inspect READ-ONLY this one practice folder and no other location:
-[PASTE THE EXACT PATH]
+You may access exactly these two locations, for only these purposes:
+1. Inspect READ-ONLY this one practice folder:
+   [PASTE THE EXACT PRACTICE-FOLDER PATH]
+2. Execute, but do not edit or replace, this one project Python file:
+   [PASTE THE EXACT PROJECT PYTHON PATH]
 
-Do not create, edit, move, rename, or delete anything. Do not contact an
-external service or run any command that changes files or settings.
+Do not browse, list, read, or inspect any other folder or file. Do not create,
+edit, move, rename, or delete anything. Do not contact an external service,
+install a package, or change settings.
 
 Report PASS or NOT YET for each criterion:
 1. request.json is valid JSON and represents POST /work-items/check for
@@ -278,29 +422,38 @@ Report PASS or NOT YET for each criterion:
    a request body.
 4. get-response.json is valid JSON and contains status code 200, ticket
    TICKET-77, state waiting, and contains_real_data false.
-5. None of the files contains a credential, real URL, or real business data.
+5. Report NOT YET if any file shows an apparent credential, a non-fictional
+   URL, or apparent real business data. Otherwise report only that none was
+   apparent in this bounded inspection, not that none exists.
 
-You may derive only
-Documents\AI-workflow-learning\operations-exception-assistant\.venv\Scripts\python.exe
-and use that exact executable with its built-in json.tool module as a
-read-only JSON validator. Do not use a bare python command. Explain NOT YET in
-beginner language and make no changes.
-This folder must contain synthetic course data only. I must not include
-secrets, personal data, client data, employer data, or other work data. If you
-notice such content, stop, do not repeat it, and tell me to remove it locally.
-Confirm that the folder contains no secrets and no real employer, client, or
-work data.
+You may use only the authorised project Python file with its built-in json.tool
+module to validate request.json, response.json, get-request.json, and
+get-response.json in the authorised practice folder. This execution is part of
+the read-only check: it may print validated JSON but must not change anything.
+Do not use a bare python command. Explain NOT YET in beginner language.
+I attest that I created this attempt with synthetic course data only and did
+not intentionally add secrets, personal data, client data, employer data, or
+other real work data. If you notice content that appears sensitive, stop the
+inspection,
+do not quote or repeat it, report only the file name and general category, and
+report NOT YET. If you notice none, say: "No apparent sensitive content noticed
+in this bounded inspection; this is not proof that none exists." Do not claim
+that an inspection proves the folder is free of secrets or real data.
 ```
 
 ## Pass criteria
 
 - [ ] All four files pass local JSON validation.
+- [ ] The exact Course 1 project marker and resolved Git root matched before
+      project Python ran.
 - [ ] Every validation used the derived project `$pythonExe`, which reports a
       stable Python 3.14 patch.
 - [ ] I can identify method, path, body, response, and status code.
 - [ ] I can explain why `202 Accepted` does not mean completed or correct.
 - [ ] I can explain authentication versus authorisation.
 - [ ] I know an API contract defines data shape and behaviour, not truth.
-- [ ] No network request, credential, or real data was used.
+- [ ] No network request was made. I attest that all information I entered was
+      synthetic and that I did not intentionally use a credential or real
+      data.
 - [ ] Codex reported PASS for every read-only criterion, or I corrected each
       NOT YET item myself.

@@ -30,11 +30,11 @@ a controlled implementation. Later courses add deeper independent engineering.
 | Observe real work without tool-first guessing | Module 1 | map the different 15-row fictional process | observation, stakeholder map, baseline, read-only Codex pass |
 | Select or stop a worthwhile opportunity | Module 2 | score three different fictional candidates | one nine-factor 0–3 scorecard, hard-stop result, intended purpose |
 | Define data and deterministic rules | Module 3 | predict all 13 frozen issue triples | dictionary, rule register, expected result, source hashes |
-| Validate input and run deterministic checks | Module 4 Stages 1–5 | run a different six-row fixture with five expected issues | exact 13/13 and 5/5 issue triples; schemas and source links |
-| Make retries and failures visible | Module 4 Stages 6–7 | predict, run, preserve, and correct a different attempt | duplicate retry; path-neutral missing-file, duplicate-ID, malformed-input, and header safe stops; last valid workflow state kept separate from `failed_manual` attempt evidence |
-| Design a bounded, replaceable future AI contribution and test it without a live provider | Module 5 Stages 1–3 | write a different structured offline-mock summary | known issue IDs only, sentence-level human support review, and no live model call |
+| Validate input and run deterministic checks | Module 4 Stages 1–5 | run a different six-row fixture with five expected issues | reference runner copied and verified by SHA-256 before execution; exact 13/13 and 5/5 issue triples; schemas and source links |
+| Make retries and failures visible | Module 4 Stages 6–7 | predict, run, preserve, and correct a different attempt | duplicate retry; path-neutral missing-file, duplicate-ID, malformed-input, and header safe stops; every repeated attempt preserved; last valid workflow state kept separate from `failed_manual` attempt evidence even when state/audit JSON is damaged |
+| Design a bounded, replaceable future AI contribution and test it without a live provider | Module 5 Stages 1–3 | select the alternate controlled headline for the different five-issue offline mock and validate the complete structure | known issue IDs only; trusted code renders group/action wording; sentence-level human support review; no live model call |
 | Keep working when AI fails or is unsafe | Module 5 Stages 4–5 | validate the different mock and fallback | disabled, timeout, refusal, malformed JSON, unknown ID, and untrusted-text tests |
-| Make approval meaningful | Module 6 Stages 1–4 | edit revision 1, review revision 2, then approve it | exact revision/hash, completed evidence check, two local export files |
+| Make approval meaningful | Module 6 Stages 1–4 | edit revision 1, review revision 2, then approve it | exact revision and protected-manifest hash; source, JSON/CSV issues, summary, control, configuration, and review package bound; all decision fields locally fingerprinted; completed evidence check; atomic logical export pair |
 | Prove non-approval paths | Module 6 failure lab and recreation | separately edit, reject, and expire | no export after missing evidence, stale revision, edit, reject, or expiry |
 | Prove no external action exists | Module 6 external-action drill | inspect the different run's control and audit | `EXTERNAL_ACTIONS_ENABLED=false`, tamper safe-stop, `external_actions=0` |
 | Choose a proportionate tool and owners | Module 7 | complete different risk and tool-fit worksheets | scope-change stop, manual fallback, lifecycle roles, exit plan |
@@ -57,13 +57,19 @@ also in `course1_capstone/tests/SCENARIO_MATRIX.md`.
 | stale revision | Module 6 | decision blocked |
 | malformed input, missing file, unexpected header | Module 4 | visible safe stop |
 | duplicate retry/export retry | Modules 4 and 6 | one run and one logical local effect |
+| simultaneous operation on one workspace/run | Module 6 automated suite | exclusive lock safely stops the second process; no duplicate or partial effect |
 | AI disabled, timeout, refusal, malformed JSON, unknown issue ID | Module 5 | deterministic fallback remains usable |
 | untrusted instructions in source text | Module 5 | text remains inert and absent from summary |
+| dangerous free-text review instruction with `external_action=false` | Modules 5–6 automated suite | fixed safe instruction template rejects the candidate |
 | edited approved draft | Module 6 | old approval invalid |
+| schema-valid issue, review package, run configuration, or manifest edited after approval | Module 6 automated suite | recomputed protected evidence blocks export |
+| reviewer, reason, or expiry edited in saved decision | Module 6 automated suite | recomputed decision ID blocks export |
+| CSV formula prefix, including after whitespace/control | Module 6 automated suite | spreadsheet-safe CSV; exact JSON/source evidence |
+| conflicting half-export or second-file promotion failure | Module 6 automated suite | no newly published lone approved artifact |
 | edit, reject, and expire decisions | Module 6 | named non-export states |
 | external-action control false or tampered | Module 6 | zero external actions; tampering blocks export |
 | forged “evidence reviewed” value | Module 6 automated suite | export blocked |
-| actual generated JSON contracts | Module 6 automated suite | work items, issues, summary, approval, evaluation, and audit events validate |
+| actual generated JSON contracts | Module 6 automated suite | work items, issues, summary, run configuration, control, state, review package, review manifest, approval, evaluation, and audit events validate |
 
 ## What passing does and does not mean
 

@@ -98,9 +98,16 @@ design, and ownership are the durable implementation.
 
 ## Safety boundary
 
-Use only the fictional records below. Do not paste employer documents,
-spreadsheet exports, emails, personal data, credentials, or confidential
-instructions into any AI service.
+The required Course 1 exercise is fully local. Type only the supplied fictional
+records and the explicitly requested recreation values below into local files.
+Do not call a live model to generate or rewrite either draft, and do not call,
+connect, or integrate one as a workflow step or application programming
+interface (API). The only permitted model interaction is the final bounded
+Codex inspection after you finish the files. Codex may inspect and report; it
+must not create or rewrite exercise content or operate the workflow.
+
+Do not use employer documents, spreadsheet exports, emails, personal data,
+credentials, confidential instructions, or any other real information.
 
 ## Follow along — I show you exactly how
 
@@ -112,7 +119,8 @@ responsibility, and a reviewed draft whose claims cite existing issue IDs.
 - Foundations 1–6 are complete.
 - PowerShell and Notepad are available.
 - `Documents\controlled-ai-course-practice` exists.
-- No live model, network service, or real data is required.
+- No model may create or rewrite content or be called by the workflow. Only the
+  final bounded Codex inspection is allowed.
 
 ### Start or resume safely — run this at every new PowerShell session
 
@@ -121,20 +129,52 @@ Run this whole block whenever you start or resume Foundation 7:
 ```powershell
 $documentsPath = [Environment]::GetFolderPath("MyDocuments")
 $practiceRoot = Join-Path $documentsPath "controlled-ai-course-practice"
-$lessonPath = Join-Path $practiceRoot "foundation-07"
+$lessonFolderName = "foundation-07"
+if ($lessonFolderName -notmatch '^foundation-07(?:-retry-\d{2,})?$') {
+    throw "STOP: use foundation-07 or a retry name created by this lesson."
+}
+$lessonPath = Join-Path $practiceRoot $lessonFolderName
+
+function New-FoundationRetryAttempt {
+    param([string]$BaseName, [string]$PracticeRoot)
+    $retryNumber = 1
+    do {
+        $retryName = "$BaseName-retry-{0:D2}" -f $retryNumber
+        $retryPath = Join-Path $PracticeRoot $retryName
+        $retryNumber += 1
+    } while (Test-Path -LiteralPath $retryPath)
+    New-Item -ItemType Directory -Path $retryPath -ErrorAction Stop | Out-Null
+    $retryPath
+}
+
+function Open-GuardedPracticeFile {
+    param([string]$AttemptPath, [string]$FileName)
+    $filePath = Join-Path $AttemptPath $FileName
+    if (Test-Path -LiteralPath $filePath -PathType Container) {
+        throw "STOP: $FileName is a folder. Do not change it; use a fresh retry attempt."
+    }
+    if (Test-Path -LiteralPath $filePath -PathType Leaf) {
+        "EXISTING — DO NOT EDIT OR OVERWRITE: $FileName"
+        Get-Content -LiteralPath $filePath
+        return
+    }
+    New-Item -ItemType File -Path $filePath -ErrorAction Stop | Out-Null
+    "CREATED ONCE — enter the requested content: $FileName"
+    notepad $filePath
+}
 
 if (-not (Test-Path -LiteralPath $practiceRoot -PathType Container)) {
     throw "STOP: the controlled-ai-course-practice folder is missing. Return to Foundation 1."
 }
 if (Test-Path -LiteralPath $lessonPath -PathType Leaf) {
-    throw "STOP: foundation-07 is a file, not a folder. Do not rename or delete it; ask Codex to inspect read-only."
+    throw "STOP: the selected Foundation 7 attempt is a file, not a folder. Do not change it."
 }
 if (-not (Test-Path -LiteralPath $lessonPath -PathType Container)) {
     New-Item -ItemType Directory -Path $lessonPath | Out-Null
-    "Created a new foundation-07 folder."
+    "Created a new Foundation 7 attempt: $lessonFolderName"
 }
 else {
-    "Existing foundation-07 folder found; nothing was overwritten."
+    "Existing Foundation 7 attempt found; nothing was overwritten: $lessonFolderName"
 }
 
 Set-Location -LiteralPath $lessonPath
@@ -142,27 +182,53 @@ Get-Location
 Get-ChildItem -Force
 ```
 
-Expected result: the location ends in `foundation-07`. The block creates that
-folder only when absent and lists existing contents without changing them.
-Resume only your own synthetic lesson attempt. Before opening an existing
-practice file in Notepad, read it with `Get-Content -LiteralPath` and leave a
-completed file unchanged. Stop if an item is unfamiliar or may contain real
-data.
+Expected result: the location ends in `foundation-07` or the selected numbered
+retry name. The block creates an absent attempt and lists existing contents
+without changing them.
+
+### Decide whether to resume or use a fresh attempt
+
+The two helper functions have narrow jobs:
+`New-FoundationRetryAttempt` creates the next unused retry folder;
+`Open-GuardedPracticeFile` creates a named file only when absent, or displays an
+existing file without opening it for editing.
+
+Apply this decision before Part A and after every interruption:
+
+1. An empty attempt continues at Part A.
+2. The only expected names are `issue_records.csv`, `controlled_workflow.md`,
+   `draft_summary.md`, `recreated_issues.csv`, and `recreated_draft.md`. For an
+   attempt containing only those names, run each guarded step:
+   - `EXISTING` plus exactly complete synthetic content means leave the file
+     unchanged and skip its creation;
+   - an absent expected file may be created;
+   - incomplete, different, unfamiliar, or apparently real/sensitive content
+     means do not edit, rename, delete, or overwrite anything.
+3. An unexpected item also requires a fresh attempt.
+4. For either stop condition, run:
+
+   ```powershell
+   $lessonPath = New-FoundationRetryAttempt -BaseName "foundation-07" -PracticeRoot $practiceRoot
+   $lessonFolderName = Split-Path -Leaf $lessonPath
+   Set-Location -LiteralPath $lessonPath
+   "Selected fresh attempt: $lessonFolderName"
+   ```
+
+5. Record the displayed retry name. In a new PowerShell session, replace only
+   `"foundation-07"` in `$lessonFolderName` with that exact name. Restart at
+   Part A in the new empty folder.
 
 ### Part A — create the issue evidence
 
-If `issue_records.csv` was not listed, run:
+Run the create-once guard:
 
 ```powershell
-notepad "issue_records.csv"
+Open-GuardedPracticeFile -AttemptPath $lessonPath -FileName "issue_records.csv"
 ```
 
-If it was listed, inspect it first with
-`Get-Content -LiteralPath ".\issue_records.csv"`. If it already contains the
-exact synthetic guided records, skip its creation. Resume only your own
-incomplete synthetic attempt; do not paste over an unfamiliar file.
-
-Enter:
+If it reports `EXISTING`, leave the file unchanged only when it exactly matches
+the supplied records below; otherwise use a fresh retry attempt. Only after
+`CREATED ONCE` should you enter:
 
 ```csv
 issue_id,request_id,rule_code,severity,message
@@ -177,13 +243,15 @@ and rule code let a later statement point back to exact evidence.
 
 ### Part B — record the intended purpose and responsibility
 
-Run:
+Run the create-once guard:
 
 ```powershell
-notepad "controlled_workflow.md"
+Open-GuardedPracticeFile -AttemptPath $lessonPath -FileName "controlled_workflow.md"
 ```
 
-Enter:
+If it reports `EXISTING`, leave the file unchanged only when it exactly matches
+the complete guided record below; otherwise use a fresh retry attempt. Only
+after `CREATED ONCE` should you enter:
 
 ```markdown
 # Synthetic request-triage workflow
@@ -214,13 +282,15 @@ Save and close Notepad.
 
 ### Part C — create and review an evidence-linked draft
 
-Run:
+Run the create-once guard:
 
 ```powershell
-notepad "draft_summary.md"
+Open-GuardedPracticeFile -AttemptPath $lessonPath -FileName "draft_summary.md"
 ```
 
-Enter:
+If it reports `EXISTING`, leave the file unchanged only when it exactly matches
+the complete guided draft below; otherwise use a fresh retry attempt. Only
+after `CREATED ONCE` should you enter:
 
 ```markdown
 # Internal synthetic draft
@@ -278,17 +348,39 @@ the evidence.
 
 ### Troubleshooting
 
-- If a draft sentence has no supporting issue ID, label it unsupported and
-  remove or reject it; do not invent evidence.
-- If a CSV row becomes one long column, check commas and the `.csv` extension.
-- If `foundation-07` already exists, do not delete it. Confirm it contains only
-  synthetic practice before continuing.
-- A model is optional here. If you use one, provide only the two fictional issue
-  rows and keep the human review steps unchanged.
+- If an unintended draft sentence has no supporting issue ID, do not invent
+  evidence or overwrite the attempt. Preserve it and use a fresh retry. In the
+  recreation, keep the deliberately unsupported sentence and explicitly reject
+  it in the reviewer section.
+- If a CSV row becomes one long column, preserve that attempt and use a fresh
+  retry with commas and the correct `.csv` extension.
+- If the selected attempt already exists, do not delete or overwrite it. Apply
+  the attempt decision and use a fresh retry for any non-complete file.
+- Do not call a model to create or rewrite content and do not connect one to
+  this workflow. Type the supplied fictional draft yourself. The only model
+  interaction allowed is the bounded final Codex inspection.
 
 ## Now recreate it yourself
 
-Create a different synthetic inventory-request example in the same folder:
+Create a different synthetic inventory-request example in the same attempt,
+using only the fictional values supplied below. First run:
+
+```powershell
+Open-GuardedPracticeFile -AttemptPath $lessonPath -FileName "recreated_issues.csv"
+```
+
+Leave an `EXISTING` file unchanged only if it is complete for item 1 below;
+otherwise use a fresh retry attempt. After `CREATED ONCE`, enter item 1. Then
+run:
+
+```powershell
+Open-GuardedPracticeFile -AttemptPath $lessonPath -FileName "recreated_draft.md"
+```
+
+Leave an `EXISTING` file unchanged only if it is complete for items 2–4;
+otherwise use a fresh retry attempt. After `CREATED ONCE`, type the recreated
+draft yourself. Do not ask a model to draft or rewrite a sentence and do not
+connect the exercise to an API or network service:
 
 1. `recreated_issues.csv` with:
    - issue `II-71` for request `INV-71`, rule `R010`, severity `high`, message
@@ -317,8 +409,9 @@ Replace `[PASTE THE EXACT PATH]` with the full path output from
 You may inspect READ-ONLY this one practice folder and no other location:
 [PASTE THE EXACT PATH]
 
-Do not create, edit, move, rename, or delete anything. Do not call a model or
-external service. Do not change any review decision.
+This is the one permitted bounded model inspection. Do not create, edit,
+rewrite, move, rename, or delete anything. Do not operate the workflow, call
+another model or external service, or change a review decision.
 
 Report PASS or NOT YET for each criterion:
 1. issue_records.csv contains exactly ISS-31/R001 and ISS-32/R004 with the
@@ -333,11 +426,14 @@ Report PASS or NOT YET for each criterion:
 6. Both examples include a visible manual or failure route.
 
 Explain NOT YET in beginner language and make no changes.
-This folder must contain synthetic course data only. I must not include
-secrets, personal data, client data, employer data, or other work data. If you
-notice such content, stop, do not repeat it, and tell me to remove it locally.
-Confirm that the folder contains no secrets and no real employer, client, or
-work data.
+I attest that I created this attempt with synthetic course data only and did
+not intentionally add secrets, personal data, client data, employer data, or
+other real work data. If you notice content that appears sensitive, stop the
+inspection,
+do not quote or repeat it, report only the file name and general category, and
+report NOT YET. If you notice none, say: "No apparent sensitive content noticed
+in this bounded inspection; this is not proof that none exists." Do not claim
+that an inspection proves the folder is free of secrets or real data.
 ```
 
 ## Pass criteria
@@ -348,6 +444,10 @@ work data.
 - [ ] I can explain hallucination, grounding, prompt injection, provenance, and
       meaningful human review.
 - [ ] Both examples state negative scope and a manual or failure route.
-- [ ] No external action, live model, secret, or real data was used.
+- [ ] No external action occurred. No model created or rewrote content or was
+      integrated into the workflow; the only model use was the bounded final
+      Codex inspection.
+- [ ] I attest that all information I entered was synthetic and that I did not
+      intentionally add secrets or real data.
 - [ ] Codex reported PASS for every read-only criterion, or I corrected each
       NOT YET item myself.

@@ -1,6 +1,6 @@
 # Course 1 — Controlled Artificial Intelligence (AI) Workflow Foundations for Dutch Small and Medium-sized Enterprises (SMEs)
 
-- Version: 2.4.0
+- Version: 2.5.0
 - Verified through: 2026-07-28
 - Language: English, with Dutch and European Union (EU) terms where useful
 - Format: self-paced, gate-based learning—you continue after proving a skill,

@@ -305,22 +305,29 @@ Check and report PASS or NOT YET for each criterion:
 5. No extra extension is hidden in any of those four names.
 
 Explain a NOT YET result in beginner language, but make no changes.
-This folder must contain synthetic course data only. I must not include
-secrets, personal data, client data, employer data, or other work data. If you
-notice such content, stop, do not repeat it, and tell me to remove it locally.
-Confirm that the folder contains no secrets and no real employer, client, or
-work data.
+I attest that I created this attempt with synthetic course data only and did
+not intentionally add secrets, personal data, client data, employer data, or
+other real work data. If you notice content that appears sensitive, stop the
+inspection,
+do not quote or repeat it, report only the file name and general category, and
+report NOT YET. If you notice none, say: "No apparent sensitive content noticed
+in this bounded inspection; this is not proof that none exists." Do not claim
+that an inspection proves the folder is free of secrets or real data.
 ```
 
 ## Pass criteria
 
-- [ ] I created and opened the exact `foundation-01` folder myself.
+- [ ] I created or safely resumed the selected lesson-attempt folder myself:
+      either `foundation-01` or the numbered `foundation-01-retry-XX` folder
+      whose full path I gave to Codex.
 - [ ] File Explorer visibly shows file-name extensions.
 - [ ] `process-notes.md` and `case-card.md` do not end in `.txt`.
 - [ ] Both JSON files reopen with straight quotation marks and the intended
       values.
 - [ ] I can explain file, folder, path, extension, plain text, Markdown, JSON,
       and UTF-8 in my own words.
-- [ ] The folder contains only synthetic practice information.
+- [ ] I attest that all information I entered was synthetic practice
+      information and that I did not intentionally add secrets or real
+      personal, employer, or client data.
 - [ ] Codex reported PASS for every read-only check, or I corrected each
       NOT YET item myself and requested another read-only check.

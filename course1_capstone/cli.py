@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from pathlib import Path
 
 try:
@@ -12,6 +13,7 @@ try:
         DECISIONS,
         SYNTHETIC_CONFIRMATION,
         SafeStop,
+        _exclusive_operation_lock,
         append_audit_event,
         export_approved,
         inspect_run,
@@ -30,6 +32,7 @@ except ImportError:
         DECISIONS,
         SYNTHETIC_CONFIRMATION,
         SafeStop,
+        _exclusive_operation_lock,
         append_audit_event,
         export_approved,
         inspect_run,
@@ -47,8 +50,7 @@ except ImportError:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
-            "Offline synthetic Course 1 workflow. It has no external-action "
-            "capability."
+            "Offline synthetic Course 1 workflow. It has no external-action capability."
         )
     )
     commands = parser.add_subparsers(dest="command", required=True)
@@ -125,44 +127,94 @@ def relative_artifact_locator(path: Path, base: Path) -> str:
         ) from error
 
 
-def record_safe_stop(args: argparse.Namespace, error: SafeStop) -> Path | None:
+def _record_safe_stop_unlocked(
+    args: argparse.Namespace,
+    error: SafeStop,
+) -> Path | None:
+    if error.code == "concurrent_operation":
+        # Do not write failure evidence into a scope another process currently
+        # owns. The named console SafeStop is the complete safe outcome.
+        return None
     base = command_artifact_base(args)
     if base is None:
         return None
-    failure_path = base / "failures" / f"safe-stop-{error.code}.json"
-    write_json(
-        failure_path,
-        {
-            "state": "failed_manual",
-            "error_code": error.code,
-            "message": str(error),
-            "command": args.command,
-            "occurred_at": utc_now().isoformat().replace("+00:00", "Z"),
-            "external_actions": 0,
-        },
-    )
+    occurred = utc_now()
+    occurred_text = occurred.isoformat().replace("+00:00", "Z")
+    failure_directory = base / "failures"
+    existing_numbers = [
+        int(match.group(1))
+        for path in failure_directory.glob("a*.json")
+        if (match := re.fullmatch(r"a([0-9]{4,})\.json", path.name))
+    ]
+    attempt_number = max(existing_numbers, default=0) + 1
+    attempt_id = f"A{attempt_number:04d}"
+    history_relative = Path("failures") / f"a{attempt_number:04d}.json"
+    failure_path = failure_directory / "latest.json"
+    history_path = base / history_relative
+    record = {
+        "attempt_id": attempt_id,
+        "state": "failed_manual",
+        "error_code": error.code,
+        "message": str(error),
+        "command": args.command,
+        "occurred_at": occurred_text,
+        "external_actions": 0,
+        "history_path": history_relative.as_posix(),
+        "audit_recorded": False,
+        "audit_error": None,
+    }
+    try:
+        write_json(history_path, record)
+        write_json(failure_path, record)
+    except Exception:
+        return None
     state_path = base / "state.json"
     if state_path.exists():
-        state = read_json(state_path)
-        if state.get("run_id"):
-            append_audit_event(
-                base,
-                state["run_id"],
-                "safe_stop_recorded",
-                "failed_manual",
-                "system",
-                {
-                    "error_code": error.code,
-                    "command": args.command,
-                    "external_actions": 0,
-                },
-            )
+        try:
+            state = read_json(state_path)
+            if isinstance(state, dict) and state.get("run_id"):
+                append_audit_event(
+                    base,
+                    state["run_id"],
+                    "safe_stop_recorded",
+                    "failed_manual",
+                    "system",
+                    {
+                        "attempt_id": attempt_id,
+                        "error_code": error.code,
+                        "command": args.command,
+                        "external_actions": 0,
+                    },
+                    occurred,
+                )
+                record["audit_recorded"] = True
+        except Exception as audit_error:
+            if isinstance(audit_error, SafeStop):
+                record["audit_error"] = audit_error.code
+            else:
+                record["audit_error"] = type(audit_error).__name__
+        try:
+            write_json(history_path, record)
+            write_json(failure_path, record)
+        except Exception:
+            pass
     return failure_path
 
 
-def main() -> int:
-    parser = build_parser()
-    args = parser.parse_args()
+def record_safe_stop(args: argparse.Namespace, error: SafeStop) -> Path | None:
+    if error.code == "concurrent_operation":
+        return None
+    base = command_artifact_base(args)
+    if base is None:
+        return None
+    try:
+        with _exclusive_operation_lock(base):
+            return _record_safe_stop_unlocked(args, error)
+    except SafeStop:
+        return None
+
+
+def _main_with_args(args: argparse.Namespace) -> int:
     try:
         if args.command == "prepare":
             run_dir = prepare_run(
@@ -247,9 +299,25 @@ def main() -> int:
                 print("FAILURE_EVIDENCE=unavailable")
             else:
                 print(
-                    "FAILURE_EVIDENCE="
-                    f"{relative_artifact_locator(failure_path, base)}"
+                    f"FAILURE_EVIDENCE={relative_artifact_locator(failure_path, base)}"
                 )
+        else:
+            print("FAILURE_EVIDENCE=unavailable")
+        return 1
+
+
+def main() -> int:
+    parser = build_parser()
+    args = parser.parse_args()
+    base = command_artifact_base(args)
+    if base is None:
+        return _main_with_args(args)
+    try:
+        with _exclusive_operation_lock(base):
+            return _main_with_args(args)
+    except SafeStop as error:
+        print(f"SAFE STOP: {error}")
+        print("FAILURE_EVIDENCE=unavailable")
         return 1
 
 

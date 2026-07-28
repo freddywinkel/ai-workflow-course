@@ -16,7 +16,7 @@ vendor-specific statements through `EVERGREEN_UPDATE_PROMPT.md`.
 
 | Topic | Official source | Course boundary |
 |---|---|---|
-| AVG accountability | [Autoriteit Persoonsgegevens — Verantwoordingsplicht](https://autoriteitpersoonsgegevens.nl/nl/onderwerpen/algemene-informatie-avg/verantwoordingsplicht) | Basic accountability questions; no legal conclusion |
+| AVG accountability | [Autoriteit Persoonsgegevens — Verantwoordingsplicht](https://autoriteitpersoonsgegevens.nl/themas/basis-avg/avg-algemeen/verantwoordingsplicht) | Basic accountability questions; no legal conclusion |
 | Generative AI conditions under the AVG | [Autoriteit Persoonsgegevens — AVG-randvoorwaarden voor generatieve AI](https://autoriteitpersoonsgegevens.nl/system/files?file=2025-05%2FAVG-Randvoorwaarden+voor+generatieve+AI.pdf) | Data minimisation, roles, risks, and escalation |
 | AI Act roles and obligations | [European Commission — Navigating the AI Act](https://digital-strategy.ec.europa.eu/en/faqs/navigating-ai-act) | Provider/deployer literacy and escalation |
 | AI literacy | [European Commission — AI literacy questions and answers](https://digital-strategy.ec.europa.eu/en/faqs/ai-literacy-questions-answers) | Training appropriate to role, context, and risk |
@@ -48,8 +48,8 @@ fallback.
 
 | Topic | Official source | Course use |
 |---|---|---|
-| n8n installation with Node Package Manager (npm) | [n8n documentation](https://docs.n8n.io/hosting/installation/npm/) | Optional visual-platform crosswalk; not required for Course 1 |
-| n8n human fallback and errors | [n8n workflow documentation](https://docs.n8n.io/workflows/) | Orchestration concepts; verify current nodes in live audit |
+| n8n installation with Node Package Manager (npm) | [n8n documentation](https://docs.n8n.io/deploy/host-n8n/install-options/install-with-npm) | Optional visual-platform crosswalk; not required for Course 1 |
+| n8n human fallback and errors | [n8n workflow documentation](https://docs.n8n.io/build/understand-workflows) | Orchestration concepts; verify current nodes in live audit |
 | Microsoft agent flows | [Microsoft Copilot Studio — Agent flows](https://learn.microsoft.com/en-us/microsoft-copilot-studio/flows-overview) | Platform crosswalk and build-versus-buy |
 | Google Workspace Studio | [Google Workspace — Workspace Studio](https://workspace.google.com/blog/product-announcements/introducing-google-workspace-studio-agents-for-everyday-work) | Platform crosswalk and natural-language workflow creation |
 

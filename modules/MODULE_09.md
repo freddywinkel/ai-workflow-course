@@ -74,8 +74,10 @@ observable expected result.
 
 At the start of every study session, rerun Stage 1. Closing PowerShell removes
 temporary path variables, not your saved work. Stage 1 restores the paths and
-returns to the same folder. Template copies below are create-once and will
-leave an existing learner file untouched.
+returns to the same folder. Before any lesson write or runner execution, it
+checks the safe path length, requires the exact synthetic-course marker, and
+proves that the marked folder is the Git repository root. Template copies below
+are create-once and will leave an existing learner file untouched.
 
 Suggested sessions:
 
@@ -103,8 +105,28 @@ Open Windows PowerShell and run:
 
 ```powershell
 $projectRoot = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'AI-workflow-learning\operations-exception-assistant'
-if (-not (Test-Path (Join-Path $projectRoot '.git'))) {
-    throw 'Project repository not found. Complete Windows Setup before Module 9.'
+if ($projectRoot.Length -gt 140) {
+    throw 'The prescribed Course 1 project path is too long for the deepest UAT evidence. Stop and ask Codex for a read-only path review; do not move or recreate the project yourself.'
+}
+$projectMarker = Join-Path $projectRoot 'COURSE_PROJECT.md'
+$expectedMarker = @'
+# Course 1 synthetic learner project
+
+This folder is only for the fictional Course 1 practice project.
+Never place real client, employer, medical, or personal data here.
+'@
+if (-not (Test-Path -LiteralPath $projectMarker -PathType Leaf)) {
+    throw 'Course project marker missing. Do not enter or execute this folder.'
+}
+$actualMarker = (Get-Content -Raw -LiteralPath $projectMarker) -replace "`r`n", "`n"
+if ($actualMarker -ne ($expectedMarker -replace "`r`n", "`n")) {
+    throw 'Course project marker is unfamiliar. Do not enter or execute this folder.'
+}
+$savedGitRoot = git -C $projectRoot rev-parse --show-toplevel 2>$null
+if ($LASTEXITCODE -ne 0 -or
+    (Resolve-Path -LiteralPath $savedGitRoot).Path -ne
+    (Resolve-Path -LiteralPath $projectRoot).Path) {
+    throw 'The marked Course 1 Git repository is missing or belongs to another folder.'
 }
 $moduleFolder = Join-Path $projectRoot 'evidence\module-09'
 $pythonExe = Join-Path $projectRoot '.venv\Scripts\python.exe'
@@ -115,9 +137,64 @@ if (-not (Test-Path -LiteralPath $pythonExe)) {
 if (-not (Test-Path -LiteralPath $runner)) {
     throw 'Course 1 runner not found. Return to Module 4 Stage 1.'
 }
+$runnerFolder = Join-Path $projectRoot 'src\course1_capstone'
+$runnerHashRecord = Join-Path $projectRoot 'evidence\module-04\reference_runner_hashes.json'
+if (-not (Test-Path -LiteralPath $runnerHashRecord -PathType Leaf)) {
+    throw 'Module 4 runner-hash record is missing. Return to Module 4 Stage 1.'
+}
+try {
+    $savedRunnerHashes = Get-Content -Raw -LiteralPath $runnerHashRecord |
+        ConvertFrom-Json
+} catch {
+    throw 'Module 4 runner-hash record is damaged. Stop for read-only diagnosis.'
+}
+$expectedRunnerNames = @('__init__.py','workflow.py','cli.py')
+if (-not (Test-Path -LiteralPath $runnerFolder -PathType Container)) {
+    throw 'Controlled runner folder is missing or is not a folder. Return to Module 4 Stage 1.'
+}
+$unexpectedRunnerEntries = @(
+    Get-ChildItem -LiteralPath $runnerFolder -Force |
+        Where-Object {
+            $expectedRunnerNames -cnotcontains $_.Name -and
+            -not ($_.PSIsContainer -and $_.Name -ceq '__pycache__')
+        }
+)
+if ($unexpectedRunnerEntries.Count -gt 0) {
+    throw 'The controlled runner folder contains an unexpected entry. Nothing was executed; preserve it and ask for read-only diagnosis.'
+}
+$savedRunnerNames = @($savedRunnerHashes | ForEach-Object { [string]$_.name })
+if (@($savedRunnerHashes).Count -ne $expectedRunnerNames.Count -or
+    @(Compare-Object $expectedRunnerNames $savedRunnerNames -CaseSensitive).Count -ne 0) {
+    throw 'Module 4 runner-hash record does not contain each exact controlled filename once.'
+}
+foreach ($expectedRunnerName in $expectedRunnerNames) {
+    $savedRunnerHash = @($savedRunnerHashes | Where-Object {
+        $_.name -ceq $expectedRunnerName
+    })
+    $runnerFile = Join-Path $runnerFolder $expectedRunnerName
+    if ($savedRunnerHash.Count -ne 1 -or
+        $savedRunnerHash[0].source_sha256 -ne
+        $savedRunnerHash[0].destination_sha256 -or
+        -not (Test-Path -LiteralPath $runnerFile -PathType Leaf) -or
+        (Get-FileHash -LiteralPath $runnerFile -Algorithm SHA256).Hash -ne
+        $savedRunnerHash[0].destination_sha256) {
+        throw "Controlled runner differs from the verified Module 4 copy: $expectedRunnerName"
+    }
+}
 $courseRoot = Read-Host 'Paste the full path to AI_WORKFLOW_DOCUMENT_SYSTEMS_COURSE'
 if (-not (Test-Path -LiteralPath (Join-Path $courseRoot 'course1_capstone\fixtures'))) {
     throw 'That course folder does not contain the Course 1 synthetic fixtures.'
+}
+foreach ($expectedRunnerName in $expectedRunnerNames) {
+    $savedRunnerHash = @($savedRunnerHashes | Where-Object {
+        $_.name -ceq $expectedRunnerName
+    })[0]
+    $currentCourseSource = Join-Path (Join-Path $courseRoot 'course1_capstone') $expectedRunnerName
+    if (-not (Test-Path -LiteralPath $currentCourseSource -PathType Leaf) -or
+        (Get-FileHash -LiteralPath $currentCourseSource -Algorithm SHA256).Hash -ne
+        $savedRunnerHash.source_sha256) {
+        throw "The current course source differs from the verified Module 4 runner: $expectedRunnerName. Preserve everything and ask for read-only diagnosis before any upgrade."
+    }
 }
 New-Item -ItemType Directory -Force -Path $moduleFolder | Out-Null
 Set-Location -LiteralPath $moduleFolder
@@ -131,13 +208,163 @@ function Copy-NewPracticeFile {
         Write-Host "Created: $Destination"
     }
 }
+function Move-ToNumberedPreservedFile {
+    param([Parameter(Mandatory)][string]$Path)
+    if (-not (Test-Path -LiteralPath $Path)) { return }
+    $parent = Split-Path -Parent $Path
+    $stem = [System.IO.Path]::GetFileNameWithoutExtension($Path)
+    $extension = [System.IO.Path]::GetExtension($Path)
+    $number = 1
+    do {
+        $candidate = Join-Path $parent (
+            '{0}-preserved-{1:D2}{2}' -f $stem, $number, $extension
+        )
+        $number++
+    } while (Test-Path -LiteralPath $candidate)
+    Move-Item -LiteralPath $Path -Destination $candidate
+    Write-Host "PRESERVED INCOMPLETE ATTEMPT: $candidate"
+}
+function Start-NewPracticeTextFile {
+    param(
+        [Parameter(Mandatory)][string]$Path,
+        [string[]]$RequiredPatterns = @()
+    )
+    if (Test-Path -LiteralPath $Path) {
+        if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+            throw "Expected a text file but found another item: $Path"
+        }
+        $existingText = Get-Content -Raw -LiteralPath $Path
+        if ($null -eq $existingText) { $existingText = '' }
+        $hasContent = -not [string]::IsNullOrWhiteSpace($existingText)
+        $missingPatterns = @($RequiredPatterns | Where-Object {
+            -not $existingText.Contains($_)
+        })
+        $isComplete = (
+            $hasContent -and
+            ($RequiredPatterns.Count -eq 0 -or $missingPatterns.Count -eq 0)
+        )
+        if ($isComplete) {
+            Write-Host "SKIP CREATE: $Path was left unchanged."
+            return $false
+        }
+        Move-ToNumberedPreservedFile -Path $Path
+    }
+    [System.IO.File]::WriteAllText($Path, '', $utf8NoBom)
+    Write-Host "CREATED: $Path. Any empty or incomplete prior attempt was preserved."
+    return $true
+}
+function Confirm-SafeStopEvidence {
+    param(
+        [Parameter(Mandatory)][string]$BasePath,
+        [Parameter(Mandatory)][string]$EvidenceBaseRelative,
+        [Parameter(Mandatory)][string]$ExpectedErrorCode
+    )
+    $latestPath = Join-Path $BasePath 'failures\latest.json'
+    if (-not (Test-Path -LiteralPath $latestPath)) {
+        throw "Expected safe-stop pointer missing: $latestPath"
+    }
+    try {
+        $latest = Get-Content -Raw -LiteralPath $latestPath | ConvertFrom-Json
+    } catch {
+        throw "Safe-stop pointer is not valid JSON: $latestPath"
+    }
+    if ($latest.error_code -ne $ExpectedErrorCode) {
+        throw "Expected error_code $ExpectedErrorCode; observed $($latest.error_code)."
+    }
+    $historyRelative = [string]$latest.history_path
+    if (
+        $historyRelative -notmatch '^failures/a[0-9]{4,}\.json$' -or
+        [System.IO.Path]::IsPathRooted($historyRelative) -or
+        @($historyRelative -split '[\\/]' | Where-Object { $_ -eq '..' }).Count -ne 0
+    ) {
+        throw "Unsafe or unexpected history_path: $historyRelative"
+    }
+    $historyPath = Join-Path $BasePath $historyRelative
+    if (-not (Test-Path -LiteralPath $historyPath)) {
+        throw "Immutable safe-stop history file missing: $historyPath"
+    }
+    try {
+        $history = Get-Content -Raw -LiteralPath $historyPath | ConvertFrom-Json
+    } catch {
+        throw "Immutable safe-stop history is not valid JSON: $historyPath"
+    }
+    if (
+        $history.error_code -ne $ExpectedErrorCode -or
+        $history.attempt_id -ne $latest.attempt_id
+    ) {
+        throw 'The latest safe-stop pointer and immutable history record do not match.'
+    }
+    $latestHash = (Get-FileHash -LiteralPath $latestPath -Algorithm SHA256).Hash
+    $historyHash = (Get-FileHash -LiteralPath $historyPath -Algorithm SHA256).Hash
+    if ($latestHash -ne $historyHash) {
+        throw 'The latest safe-stop pointer and immutable history bytes do not match.'
+    }
+    [PSCustomObject]@{
+        expected_error_code = $ExpectedErrorCode
+        observed_error_code = $latest.error_code
+        attempt_id = $latest.attempt_id
+        latest_locator = (
+            Join-Path $EvidenceBaseRelative 'failures\latest.json'
+        ).Replace('\', '/')
+        history_locator = (
+            Join-Path $EvidenceBaseRelative $historyRelative
+        ).Replace('\', '/')
+        latest_sha256 = $latestHash
+        history_sha256 = $historyHash
+        immutable_history_verified = $true
+    }
+}
+function Resolve-SavedCourseRun {
+    param([string]$Workspace)
+    $latest = Join-Path $Workspace 'latest_run.txt'
+    if (-not (Test-Path -LiteralPath $latest -PathType Leaf)) {
+        throw "Saved run locator is missing or is not a file: $latest"
+    }
+    $locatorLines = @(Get-Content -LiteralPath $latest)
+    if ($locatorLines.Count -ne 1) {
+        throw "Saved run locator must contain exactly one line: $latest"
+    }
+    $locator = [string]$locatorLines[0]
+    if ([string]::IsNullOrWhiteSpace($locator) -or
+        $locator -cne $locator.Trim() -or
+        [System.IO.Path]::IsPathRooted($locator) -or
+        $locator -cnotmatch '^runs[\\/]RUN-[A-F0-9]{12}$') {
+        throw "Saved run locator is empty or unsafe: $latest"
+    }
+    $runDir = Join-Path $Workspace $locator
+    if (-not (Test-Path -LiteralPath $runDir -PathType Container)) {
+        throw "Saved run folder is missing: $runDir"
+    }
+    $runsRoot = (Resolve-Path -LiteralPath (Join-Path $Workspace 'runs')).Path
+    $resolvedRunDir = (Resolve-Path -LiteralPath $runDir).Path
+    if ((Split-Path -Parent $resolvedRunDir) -ne $runsRoot) {
+        throw "Saved run resolves outside its exact runs folder: $latest"
+    }
+    return [PSCustomObject]@{
+        Locator = $locator
+        Path = $resolvedRunDir
+    }
+}
 & $pythonExe --version
-notepad .\worked_uat_and_handover.md
+$workedPackCreated = Start-NewPracticeTextFile `
+    -Path .\worked_uat_and_handover.md `
+    -RequiredPatterns `
+        '# Worked UAT and handover', `
+        'Limitations: no client, real data, production deployment, or proven cash saving.'
+if ($workedPackCreated) {
+    notepad .\worked_uat_and_handover.md
+} else {
+    Write-Host 'The complete worked pack already exists; Stage 1 left it closed.'
+}
 ```
 
 ### Stage 2 — Read and recreate a complete worked pack
 
-Click **Yes**, paste, save, and close:
+If Stage 1 printed `CREATED`, paste the complete worked pack below from the
+beginning, save, and close. Any empty or incomplete prior attempt was preserved
+under a numbered `-preserved-` name. If it printed `SKIP CREATE`, both required
+completion markers already exist; the completed file stayed closed and you
+must not paste the pack again.
 
 ```markdown
 # Worked UAT and handover — fictional low-stock list
@@ -282,6 +509,17 @@ Read UAT-04 aloud and perform a tabletop rehearsal:
 Record the answers in `worked_uat_rehearsal.md`. This demonstrates that the
 runbook can be followed rather than merely filed.
 
+Create or safely resume that record:
+
+```powershell
+$workedRehearsalCreated = Start-NewPracticeTextFile -Path .\worked_uat_rehearsal.md
+notepad .\worked_uat_rehearsal.md
+```
+
+If the helper printed `CREATED`, record all five answers. If it printed
+`SKIP CREATE`, continue only missing answers; do not replace a completed
+rehearsal.
+
 ### Stage 4 — Inspect the completed worksheet-shaped examples
 
 The combined worked pack shows how the records connect. Now inspect the three
@@ -337,35 +575,81 @@ In status evidence, `current_state` is the last valid persistent workflow
 state. `latest_attempt_state` is the newest audit-event state; it becomes
 `failed_manual` after a safe stop without overwriting that last valid state.
 
-Create the parent folder once:
+Create the parent folder and the safe retry helper. Run this block again after
+opening a new PowerShell window. The helper uses `UAT-01` for the first attempt
+and then `UAT-01-retry-02`, `UAT-01-retry-03`, and so on. It never deletes,
+resumes inside, or overwrites an interrupted attempt.
 
 ```powershell
 $scenarioRoot = Join-Path $moduleFolder 'uat-scenarios'
 New-Item -ItemType Directory -Force -Path $scenarioRoot | Out-Null
+function New-UatAttemptFolder {
+    param(
+        [Parameter(Mandatory)]
+        [ValidatePattern('^UAT-(0[1-9]|D01)$')]
+        [string]$ScenarioId
+    )
+    $attemptNumber = 1
+    $folderName = $ScenarioId
+    $candidate = Join-Path $scenarioRoot $folderName
+    while (Test-Path -LiteralPath $candidate) {
+        $attemptNumber++
+        $folderName = '{0}-retry-{1:D2}' -f $ScenarioId, $attemptNumber
+        $candidate = Join-Path $scenarioRoot $folderName
+    }
+    New-Item -ItemType Directory -Path $candidate | Out-Null
+    $attemptRecord = [ordered]@{
+        scenario_id = $ScenarioId
+        attempt_number = $attemptNumber
+        attempt_folder = $folderName
+        relative_path = (Join-Path 'uat-scenarios' $folderName)
+        prior_attempts_preserved = ($attemptNumber -gt 1)
+    }
+    [System.IO.File]::WriteAllText(
+        (Join-Path $candidate 'attempt-info.json'),
+        ($attemptRecord | ConvertTo-Json),
+        $utf8NoBom
+    )
+    Write-Host "Using fresh attempt: $($attemptRecord.relative_path)"
+    return $candidate
+}
 ```
 
-If a named `UAT-##` folder already exists from a completed attempt, do not
-delete or overwrite it. Inspect it and resume the written record. Ask Codex for
-read-only help if a prior attempt stopped halfway.
+If a scenario is interrupted or fails unexpectedly:
+
+1. stop and leave its folder unchanged;
+2. note the last visible error in `recreated_uat.md`;
+3. correct only the cause outside that attempt folder;
+4. rerun the **entire matching UAT block from its first line**;
+5. use the new numbered retry printed by the helper;
+6. compare and record the new result, while retaining the prior attempt as
+   defect or interruption evidence.
+
+Do not run only the remaining lines inside a partial attempt. Do not rename,
+delete, or reuse it. Each `attempt-info.json` gives the exact relative path to
+record.
+
+A planned `SAFE STOP` that matches the scenario's stated exit code and
+`error_code` is a completed passing test, not an unexpected failure. It does
+not require a retry. When every scenario block completes as written on its
+first attempt, no numbered retry folder is required.
 
 #### UAT-01 — Clean input ends with no action needed
 
 ```powershell
-$uat01Workspace = Join-Path $scenarioRoot 'UAT-01'
-if (Test-Path -LiteralPath $uat01Workspace) {
-    throw 'UAT-01 already exists. Inspect it; do not overwrite evidence.'
-}
+$uat01Workspace = New-UatAttemptFolder -ScenarioId 'UAT-01'
 & $pythonExe $runner prepare `
     --input (Join-Path $courseRoot 'course1_capstone\fixtures\failures\valid_no_issue.csv') `
     --workspace $uat01Workspace `
     --ai-mode disabled `
     --synthetic-confirmation I_CONFIRM_SYNTHETIC_DATA_ONLY
 if ($LASTEXITCODE -ne 0) { throw 'UAT-01 unexpectedly failed.' }
-$uat01RunLocator = (Get-Content -LiteralPath `
-    (Join-Path $uat01Workspace 'latest_run.txt')).Trim()
-$uat01Run = Join-Path $uat01Workspace $uat01RunLocator
+$uat01SavedRun = Resolve-SavedCourseRun $uat01Workspace
+$uat01RunLocator = $uat01SavedRun.Locator
+$uat01Run = $uat01SavedRun.Path
 & $pythonExe $runner status --run-dir $uat01Run |
     Tee-Object -FilePath (Join-Path $uat01Workspace 'observed-status.txt')
+if ($LASTEXITCODE -ne 0) { throw 'UAT-01 status validation unexpectedly failed.' }
 $uat01FixtureHash = (Get-FileHash -Algorithm SHA256 -LiteralPath `
     (Join-Path $courseRoot 'course1_capstone\fixtures\failures\valid_no_issue.csv')).Hash
 $uat01CopiedHash = (Get-FileHash -Algorithm SHA256 -LiteralPath `
@@ -395,19 +679,17 @@ $uat01Hashes | Export-Csv -NoTypeInformation `
 **Given:** the supplied clean fixture. **When:** the workflow prepares a run.
 **Then:** `current_state` is `no_action_needed`, `issue_count` is `0`,
 `external_actions` is `0`, the two hashes match, and neither `draft` nor
-`outbox` exists. Evidence: `UAT-01\observed-status.txt`,
-`UAT-01\observed-source-hashes.csv`,
-`UAT-01\observed-absent-folders.txt`, and the named run's `state.json`.
+`outbox` exists. Evidence in the fresh attempt folder:
+`observed-status.txt`, `observed-source-hashes.csv`,
+`observed-absent-folders.txt`, `attempt-info.json`, and the named run's
+`state.json`.
 The hash evidence deliberately uses neutral role names and repository-relative
 paths. It does not store your Windows username or an absolute computer path.
 
 #### UAT-02 — The frozen set produces exactly all 13 issue triples
 
 ```powershell
-$uat02Workspace = Join-Path $scenarioRoot 'UAT-02'
-if (Test-Path -LiteralPath $uat02Workspace) {
-    throw 'UAT-02 already exists. Inspect it; do not overwrite evidence.'
-}
+$uat02Workspace = New-UatAttemptFolder -ScenarioId 'UAT-02'
 & $pythonExe $runner prepare `
     --input (Join-Path $projectRoot 'data\input\work_items.csv') `
     --expected (Join-Path $projectRoot 'tests\expected_issues.csv') `
@@ -415,9 +697,9 @@ if (Test-Path -LiteralPath $uat02Workspace) {
     --ai-mode mock `
     --synthetic-confirmation I_CONFIRM_SYNTHETIC_DATA_ONLY
 if ($LASTEXITCODE -ne 0) { throw 'UAT-02 unexpectedly failed.' }
-$uat02RunLocator = (Get-Content -LiteralPath `
-    (Join-Path $uat02Workspace 'latest_run.txt')).Trim()
-$uat02Run = Join-Path $uat02Workspace $uat02RunLocator
+$uat02SavedRun = Resolve-SavedCourseRun $uat02Workspace
+$uat02RunLocator = $uat02SavedRun.Locator
+$uat02Run = $uat02SavedRun.Path
 Copy-Item -LiteralPath (Join-Path $uat02Run 'evaluation.json') `
     -Destination (Join-Path $uat02Workspace 'observed-evaluation.json')
 (Import-Csv -LiteralPath (Join-Path $uat02Run 'issues\issues.csv')).Count
@@ -429,15 +711,13 @@ identities. **When:** the workflow prepares UAT-02 with the offline mock and
 compares the generated issues with the expected file. **Then:** count `13`;
 true positives `13`; false positives `0`; false
 negatives `0`; state `needs_review`; and external actions `0`. Evidence:
-`UAT-02\observed-evaluation.json` and the named run's `issues\issues.csv`.
+the fresh attempt's `attempt-info.json`, `observed-evaluation.json`, and the
+named run's `issues\issues.csv`.
 
 #### UAT-03 — An invalid header safely stops
 
 ```powershell
-$uat03Workspace = Join-Path $scenarioRoot 'UAT-03'
-if (Test-Path -LiteralPath $uat03Workspace) {
-    throw 'UAT-03 already exists. Inspect it; do not overwrite evidence.'
-}
+$uat03Workspace = New-UatAttemptFolder -ScenarioId 'UAT-03'
 $uat03Output = & $pythonExe $runner prepare `
     --input (Join-Path $courseRoot 'course1_capstone\fixtures\failures\unexpected_header.csv') `
     --workspace $uat03Workspace `
@@ -446,7 +726,16 @@ $uat03Output = & $pythonExe $runner prepare `
 $uat03Exit = $LASTEXITCODE
 $uat03Output | Tee-Object -FilePath (Join-Path $uat03Workspace 'observed-command.txt')
 if ($uat03Exit -ne 1) { throw "UAT-03 expected exit code 1; observed $uat03Exit." }
-Get-Content -LiteralPath (Join-Path $uat03Workspace 'failures\safe-stop-header_mismatch.json')
+$uat03FailureEvidence = Confirm-SafeStopEvidence `
+    -BasePath $uat03Workspace `
+    -EvidenceBaseRelative '.' `
+    -ExpectedErrorCode 'header_mismatch'
+[System.IO.File]::WriteAllText(
+    (Join-Path $uat03Workspace 'observed-failure-evidence.json'),
+    ($uat03FailureEvidence | ConvertTo-Json),
+    $utf8NoBom
+)
+Get-Content -LiteralPath (Join-Path $uat03Workspace 'observed-failure-evidence.json')
 ```
 
 **Given:** the supplied synthetic file with an unexpected column header.
@@ -454,8 +743,11 @@ Get-Content -LiteralPath (Join-Path $uat03Workspace 'failures\safe-stop-header_m
 command says `SAFE STOP`, exit code is `1`, error code is
 `header_mismatch`, the command-attempt record state is `failed_manual`,
 external actions are `0`, no run is invented, and no review draft or outbox
-exists. Evidence: `UAT-03\observed-command.txt` and
-`UAT-03\failures\safe-stop-header_mismatch.json`.
+exists. Evidence in the fresh attempt folder: `attempt-info.json`,
+`observed-command.txt`, `failures\latest.json`, the immutable
+`failures/aNNNN.json` named by its `history_path`, and
+`observed-failure-evidence.json`, which must show the expected and observed
+error code `header_mismatch` and matching SHA-256 values.
 
 #### UAT-04 — The invalid date dependency is source-linked
 
@@ -463,10 +755,7 @@ Create a fresh scenario run so its audit and failure evidence cannot change
 another UAT scenario:
 
 ```powershell
-$uat04Workspace = Join-Path $scenarioRoot 'UAT-04'
-if (Test-Path -LiteralPath $uat04Workspace) {
-    throw 'UAT-04 already exists. Inspect it; do not overwrite evidence.'
-}
+$uat04Workspace = New-UatAttemptFolder -ScenarioId 'UAT-04'
 & $pythonExe $runner prepare `
     --input (Join-Path $projectRoot 'data\input\work_items.csv') `
     --expected (Join-Path $projectRoot 'tests\expected_issues.csv') `
@@ -474,9 +763,9 @@ if (Test-Path -LiteralPath $uat04Workspace) {
     --ai-mode mock `
     --synthetic-confirmation I_CONFIRM_SYNTHETIC_DATA_ONLY
 if ($LASTEXITCODE -ne 0) { throw 'UAT-04 prepare unexpectedly failed.' }
-$uat04RunLocator = (Get-Content -LiteralPath `
-    (Join-Path $uat04Workspace 'latest_run.txt')).Trim()
-$uat04Run = Join-Path $uat04Workspace $uat04RunLocator
+$uat04SavedRun = Resolve-SavedCourseRun $uat04Workspace
+$uat04RunLocator = $uat04SavedRun.Locator
+$uat04Run = $uat04SavedRun.Path
 $uat04Observed = Import-Csv -LiteralPath (Join-Path $uat04Run 'issues\issues.csv') |
     Where-Object {
         $_.work_item_id -eq 'WI-0003' -and
@@ -497,15 +786,12 @@ its R005 due-date issue from the generated issue file. **Then:** exactly one
 issue has identity
 `WI-0003|R005|due_date`, severity
 `high`, the raw due date, source row, and message. Evidence:
-`UAT-04\observed-r005.csv`.
+the fresh attempt's `attempt-info.json` and `observed-r005.csv`.
 
 #### UAT-05 — A duplicate reference reports both source rows
 
 ```powershell
-$uat05Workspace = Join-Path $scenarioRoot 'UAT-05'
-if (Test-Path -LiteralPath $uat05Workspace) {
-    throw 'UAT-05 already exists. Inspect it; do not overwrite evidence.'
-}
+$uat05Workspace = New-UatAttemptFolder -ScenarioId 'UAT-05'
 & $pythonExe $runner prepare `
     --input (Join-Path $projectRoot 'data\input\work_items.csv') `
     --expected (Join-Path $projectRoot 'tests\expected_issues.csv') `
@@ -513,9 +799,9 @@ if (Test-Path -LiteralPath $uat05Workspace) {
     --ai-mode mock `
     --synthetic-confirmation I_CONFIRM_SYNTHETIC_DATA_ONLY
 if ($LASTEXITCODE -ne 0) { throw 'UAT-05 prepare unexpectedly failed.' }
-$uat05RunLocator = (Get-Content -LiteralPath `
-    (Join-Path $uat05Workspace 'latest_run.txt')).Trim()
-$uat05Run = Join-Path $uat05Workspace $uat05RunLocator
+$uat05SavedRun = Resolve-SavedCourseRun $uat05Workspace
+$uat05RunLocator = $uat05SavedRun.Locator
+$uat05Run = $uat05SavedRun.Path
 $uat05Observed = Import-Csv -LiteralPath (Join-Path $uat05Run 'issues\issues.csv') |
     Where-Object {
         $_.rule_code -eq 'R010' -and
@@ -535,15 +821,13 @@ Get-Content -LiteralPath (Join-Path $uat05Workspace 'observed-r010-both-rows.csv
 reference. **Then:** exactly two separate issue identities exist, one for
 `WI-0006` and
 one for `WI-0007`; neither row is lost. Evidence:
-`UAT-05\observed-r010-both-rows.csv`.
+the fresh attempt's `attempt-info.json` and
+`observed-r010-both-rows.csv`.
 
 #### UAT-06 — An unknown summary reference is refused
 
 ```powershell
-$uat06Workspace = Join-Path $scenarioRoot 'UAT-06'
-if (Test-Path -LiteralPath $uat06Workspace) {
-    throw 'UAT-06 already exists. Inspect it; do not overwrite evidence.'
-}
+$uat06Workspace = New-UatAttemptFolder -ScenarioId 'UAT-06'
 & $pythonExe $runner prepare `
     --input (Join-Path $projectRoot 'data\input\work_items.csv') `
     --expected (Join-Path $projectRoot 'tests\expected_issues.csv') `
@@ -551,9 +835,9 @@ if (Test-Path -LiteralPath $uat06Workspace) {
     --ai-mode mock `
     --synthetic-confirmation I_CONFIRM_SYNTHETIC_DATA_ONLY
 if ($LASTEXITCODE -ne 0) { throw 'UAT-06 prepare unexpectedly failed.' }
-$uat06RunLocator = (Get-Content -LiteralPath `
-    (Join-Path $uat06Workspace 'latest_run.txt')).Trim()
-$uat06Run = Join-Path $uat06Workspace $uat06RunLocator
+$uat06SavedRun = Resolve-SavedCourseRun $uat06Workspace
+$uat06RunLocator = $uat06SavedRun.Locator
+$uat06Run = $uat06SavedRun.Path
 $uat06CandidatePath = Join-Path $uat06Workspace 'candidate-with-unknown-id.json'
 $uat06Candidate = Get-Content -Raw -LiteralPath (Join-Path $uat06Run 'draft\summary.json') |
     ConvertFrom-Json
@@ -569,9 +853,19 @@ $uat06Output = & $pythonExe $runner validate-summary `
 $uat06Exit = $LASTEXITCODE
 $uat06Output | Tee-Object -FilePath (Join-Path $uat06Workspace 'observed-command.txt')
 if ($uat06Exit -ne 1) { throw "UAT-06 expected exit code 1; observed $uat06Exit." }
-Get-Content -LiteralPath (Join-Path $uat06Run 'failures\safe-stop-unknown_ai_issue_reference.json')
+$uat06FailureEvidence = Confirm-SafeStopEvidence `
+    -BasePath $uat06Run `
+    -EvidenceBaseRelative $uat06RunLocator `
+    -ExpectedErrorCode 'unknown_ai_issue_reference'
+[System.IO.File]::WriteAllText(
+    (Join-Path $uat06Workspace 'observed-failure-evidence.json'),
+    ($uat06FailureEvidence | ConvertTo-Json),
+    $utf8NoBom
+)
+Get-Content -LiteralPath (Join-Path $uat06Workspace 'observed-failure-evidence.json')
 & $pythonExe $runner status --run-dir $uat06Run |
     Tee-Object -FilePath (Join-Path $uat06Workspace 'observed-status-after-safe-stop.txt')
+if ($LASTEXITCODE -ne 0) { throw 'UAT-06 status validation unexpectedly failed.' }
 ```
 
 **Given:** a fresh valid mock summary changed to cite the nonexistent
@@ -581,16 +875,22 @@ candidate against the generated issue file. **Then:** `SAFE STOP`, exit code
 `unknown_ai_issue_reference`, latest attempt state `failed_manual`, last valid
 `current_state` still `needs_review`, external actions `0`, and the
 deterministic `issues\issues.csv` remains usable. Evidence:
-`UAT-06\observed-command.txt`, `UAT-06\observed-status-after-safe-stop.txt`, the
-candidate, and the named failure record.
+the fresh attempt's `attempt-info.json`, `observed-command.txt`,
+`observed-status-after-safe-stop.txt`, candidate, `failures\latest.json`, the
+immutable `failures/aNNNN.json` followed from `history_path`, and
+`observed-failure-evidence.json` showing
+`unknown_ai_issue_reference` and matching SHA-256 values.
 
 #### UAT-07 — Exact-draft approval permits two local draft exports
 
+UAT-07 through UAT-09 use a **fixed synthetic test clock**:
+`2026-07-28T10:00:00Z` for the fictional decision and
+`2026-07-28T11:00:00Z` for the fictional export check. These values make the
+test repeatable; they are not the date or time when you perform the course.
+Keep them unchanged in these three test scenarios.
+
 ```powershell
-$uat07Workspace = Join-Path $scenarioRoot 'UAT-07'
-if (Test-Path -LiteralPath $uat07Workspace) {
-    throw 'UAT-07 already exists. Inspect it; do not overwrite evidence.'
-}
+$uat07Workspace = New-UatAttemptFolder -ScenarioId 'UAT-07'
 & $pythonExe $runner prepare `
     --input (Join-Path $projectRoot 'data\input\work_items.csv') `
     --expected (Join-Path $projectRoot 'tests\expected_issues.csv') `
@@ -598,9 +898,9 @@ if (Test-Path -LiteralPath $uat07Workspace) {
     --ai-mode mock `
     --synthetic-confirmation I_CONFIRM_SYNTHETIC_DATA_ONLY
 if ($LASTEXITCODE -ne 0) { throw 'UAT-07 prepare unexpectedly failed.' }
-$uat07RunLocator = (Get-Content -LiteralPath `
-    (Join-Path $uat07Workspace 'latest_run.txt')).Trim()
-$uat07Run = Join-Path $uat07Workspace $uat07RunLocator
+$uat07SavedRun = Resolve-SavedCourseRun $uat07Workspace
+$uat07RunLocator = $uat07SavedRun.Locator
+$uat07Run = $uat07SavedRun.Path
 $uat07SourceHashBefore = (Get-FileHash -Algorithm SHA256 `
     -LiteralPath (Join-Path $uat07Run 'source\work_items.csv')).Hash
 & $pythonExe $runner decide `
@@ -619,6 +919,7 @@ if ($LASTEXITCODE -ne 0) { throw 'UAT-07 approval unexpectedly failed.' }
 if ($LASTEXITCODE -ne 0) { throw 'UAT-07 local export unexpectedly failed.' }
 & $pythonExe $runner status --run-dir $uat07Run |
     Tee-Object -FilePath (Join-Path $uat07Workspace 'observed-status.txt')
+if ($LASTEXITCODE -ne 0) { throw 'UAT-07 status validation unexpectedly failed.' }
 $uat07SourceHashAfter = (Get-FileHash -Algorithm SHA256 `
     -LiteralPath (Join-Path $uat07Run 'source\work_items.csv')).Hash
 $uat07HashCheck = [PSCustomObject]@{
@@ -639,16 +940,13 @@ revision `1` and its exact Secure Hash Algorithm
 256-bit (SHA-256) value; state is `approved_draft`; exactly two local files
 exist (`approved-r1.json` and `approved-r1.csv`); source hashes match; and
 external actions are `0`. Evidence: the decision JSON, outbox files,
-`UAT-07\observed-status.txt`, and
-`UAT-07\observed-source-hash-check.json` with `source_unchanged: true`.
+the fresh attempt's `attempt-info.json`, `observed-status.txt`, and
+`observed-source-hash-check.json` with `source_unchanged: true`.
 
 #### UAT-08 — Editing an approved draft invalidates approval
 
 ```powershell
-$uat08Workspace = Join-Path $scenarioRoot 'UAT-08'
-if (Test-Path -LiteralPath $uat08Workspace) {
-    throw 'UAT-08 already exists. Inspect it; do not overwrite evidence.'
-}
+$uat08Workspace = New-UatAttemptFolder -ScenarioId 'UAT-08'
 & $pythonExe $runner prepare `
     --input (Join-Path $projectRoot 'data\input\work_items.csv') `
     --expected (Join-Path $projectRoot 'tests\expected_issues.csv') `
@@ -656,9 +954,9 @@ if (Test-Path -LiteralPath $uat08Workspace) {
     --ai-mode mock `
     --synthetic-confirmation I_CONFIRM_SYNTHETIC_DATA_ONLY
 if ($LASTEXITCODE -ne 0) { throw 'UAT-08 prepare unexpectedly failed.' }
-$uat08RunLocator = (Get-Content -LiteralPath `
-    (Join-Path $uat08Workspace 'latest_run.txt')).Trim()
-$uat08Run = Join-Path $uat08Workspace $uat08RunLocator
+$uat08SavedRun = Resolve-SavedCourseRun $uat08Workspace
+$uat08RunLocator = $uat08SavedRun.Locator
+$uat08Run = $uat08SavedRun.Path
 & $pythonExe $runner decide `
     --run-dir $uat08Run `
     --decision approve `
@@ -676,9 +974,36 @@ $uat08Output = & $pythonExe $runner export `
 $uat08Exit = $LASTEXITCODE
 $uat08Output | Tee-Object -FilePath (Join-Path $uat08Workspace 'observed-command.txt')
 if ($uat08Exit -ne 1) { throw "UAT-08 expected exit code 1; observed $uat08Exit." }
-Get-Content -LiteralPath (Join-Path $uat08Run 'failures\safe-stop-edited_draft_after_approval.json')
-& $pythonExe $runner status --run-dir $uat08Run |
-    Tee-Object -FilePath (Join-Path $uat08Workspace 'observed-status-after-safe-stop.txt')
+$uat08StateAfter = Get-Content -Raw -LiteralPath `
+    (Join-Path $uat08Run 'state.json') | ConvertFrom-Json
+$uat08LastAudit = Get-Content -LiteralPath `
+    (Join-Path $uat08Run 'audit\events.jsonl') |
+    Where-Object { $_.Trim() } |
+    Select-Object -Last 1 |
+    ConvertFrom-Json
+$uat08ObservedState = [ordered]@{
+    current_state = $uat08StateAfter.current_state
+    latest_attempt_state = $uat08LastAudit.state
+    latest_event_type = $uat08LastAudit.event_type
+    external_actions = $uat08StateAfter.external_actions
+    local_export_count = $uat08StateAfter.local_export_count
+}
+[System.IO.File]::WriteAllText(
+    (Join-Path $uat08Workspace 'observed-state-after-safe-stop.json'),
+    ($uat08ObservedState | ConvertTo-Json),
+    $utf8NoBom
+)
+$uat08FailureEvidence = Confirm-SafeStopEvidence `
+    -BasePath $uat08Run `
+    -EvidenceBaseRelative $uat08RunLocator `
+    -ExpectedErrorCode 'edited_draft_after_approval'
+[System.IO.File]::WriteAllText(
+    (Join-Path $uat08Workspace 'observed-failure-evidence.json'),
+    ($uat08FailureEvidence | ConvertTo-Json),
+    $utf8NoBom
+)
+Get-Content -LiteralPath (Join-Path $uat08Workspace 'observed-failure-evidence.json')
+Get-Content -LiteralPath (Join-Path $uat08Workspace 'observed-state-after-safe-stop.json')
 Test-Path -LiteralPath (Join-Path $uat08Run 'outbox')
 ```
 
@@ -687,17 +1012,16 @@ Test-Path -LiteralPath (Join-Path $uat08Run 'outbox')
 **Then:** `SAFE STOP`, exit code `1`, error code
 `edited_draft_after_approval`, latest attempt state `failed_manual`, last valid
 `current_state` still `approved_for_local_export`, external actions `0`, and no
-outbox exists. Evidence: `UAT-08\observed-command.txt`,
-`UAT-08\observed-status-after-safe-stop.txt`, the original decision, and the
-named failure record.
+outbox exists. Evidence: the fresh attempt's `attempt-info.json`,
+`observed-command.txt`, `observed-state-after-safe-stop.json`, original
+decision, `failures\latest.json`, the immutable `failures/aNNNN.json` followed
+from `history_path`, and `observed-failure-evidence.json` showing
+`edited_draft_after_approval` and matching SHA-256 values.
 
 #### UAT-09 — External actions stay false and fallback stays usable
 
 ```powershell
-$uat09Workspace = Join-Path $scenarioRoot 'UAT-09'
-if (Test-Path -LiteralPath $uat09Workspace) {
-    throw 'UAT-09 already exists. Inspect it; do not overwrite evidence.'
-}
+$uat09Workspace = New-UatAttemptFolder -ScenarioId 'UAT-09'
 & $pythonExe $runner prepare `
     --input (Join-Path $projectRoot 'data\input\work_items.csv') `
     --expected (Join-Path $projectRoot 'tests\expected_issues.csv') `
@@ -705,9 +1029,9 @@ if (Test-Path -LiteralPath $uat09Workspace) {
     --ai-mode timeout `
     --synthetic-confirmation I_CONFIRM_SYNTHETIC_DATA_ONLY
 if ($LASTEXITCODE -ne 0) { throw 'UAT-09 prepare unexpectedly failed.' }
-$uat09RunLocator = (Get-Content -LiteralPath `
-    (Join-Path $uat09Workspace 'latest_run.txt')).Trim()
-$uat09Run = Join-Path $uat09Workspace $uat09RunLocator
+$uat09SavedRun = Resolve-SavedCourseRun $uat09Workspace
+$uat09RunLocator = $uat09SavedRun.Locator
+$uat09Run = $uat09SavedRun.Path
 Copy-Item -LiteralPath (Join-Path $uat09Run 'control.json') `
     -Destination (Join-Path $uat09Workspace 'observed-control-before.json')
 Copy-Item -LiteralPath (Join-Path $uat09Run 'state.json') `
@@ -741,9 +1065,36 @@ if ($uat09Exit -ne 1) { throw "UAT-09 expected exit code 1; observed $uat09Exit.
 Get-Content -LiteralPath (Join-Path $uat09Workspace 'observed-control-before.json')
 Get-Content -LiteralPath (Join-Path $uat09Workspace 'observed-state-before.json')
 Get-Content -LiteralPath (Join-Path $uat09Workspace 'observed-manual-fallback.md')
-Get-Content -LiteralPath (Join-Path $uat09Run 'failures\safe-stop-external_action_blocked.json')
-& $pythonExe $runner status --run-dir $uat09Run |
-    Tee-Object -FilePath (Join-Path $uat09Workspace 'observed-status-after-safe-stop.txt')
+$uat09StateAfter = Get-Content -Raw -LiteralPath `
+    (Join-Path $uat09Run 'state.json') | ConvertFrom-Json
+$uat09LastAudit = Get-Content -LiteralPath `
+    (Join-Path $uat09Run 'audit\events.jsonl') |
+    Where-Object { $_.Trim() } |
+    Select-Object -Last 1 |
+    ConvertFrom-Json
+$uat09ObservedState = [ordered]@{
+    current_state = $uat09StateAfter.current_state
+    latest_attempt_state = $uat09LastAudit.state
+    latest_event_type = $uat09LastAudit.event_type
+    external_actions = $uat09StateAfter.external_actions
+    local_export_count = $uat09StateAfter.local_export_count
+}
+[System.IO.File]::WriteAllText(
+    (Join-Path $uat09Workspace 'observed-state-after-safe-stop.json'),
+    ($uat09ObservedState | ConvertTo-Json),
+    $utf8NoBom
+)
+$uat09FailureEvidence = Confirm-SafeStopEvidence `
+    -BasePath $uat09Run `
+    -EvidenceBaseRelative $uat09RunLocator `
+    -ExpectedErrorCode 'external_action_blocked'
+[System.IO.File]::WriteAllText(
+    (Join-Path $uat09Workspace 'observed-failure-evidence.json'),
+    ($uat09FailureEvidence | ConvertTo-Json),
+    $utf8NoBom
+)
+Get-Content -LiteralPath (Join-Path $uat09Workspace 'observed-failure-evidence.json')
+Get-Content -LiteralPath (Join-Path $uat09Workspace 'observed-state-after-safe-stop.json')
 Test-Path -LiteralPath (Join-Path $uat09Run 'outbox')
 ```
 
@@ -757,9 +1108,23 @@ timeout uses the deterministic fallback; the fallback names an owner,
 exit code `1`, error code `external_action_blocked`, latest attempt state
 `failed_manual`, last valid `current_state` still
 `approved_for_local_export`, external actions `0`, and no outbox. Evidence:
-the `observed-*` and failure files named above.
+the fresh attempt's `attempt-info.json`, `observed-*` files,
+`failures\latest.json`, and the immutable `failures/aNNNN.json` followed from
+`history_path`. `observed-failure-evidence.json` must show
+`external_action_blocked` and matching SHA-256 values.
 
 ### Recreation 3 — Record the nine observations and one defect/retest
+
+List the exact attempt records before writing your results:
+
+```powershell
+Get-ChildItem -LiteralPath $scenarioRoot -Filter 'attempt-info.json' -Recurse |
+    Sort-Object FullName |
+    ForEach-Object {
+        Get-Content -Raw -LiteralPath $_.FullName | ConvertFrom-Json
+    } |
+    Format-Table scenario_id,attempt_number,relative_path,prior_attempts_preserved
+```
 
 In `recreated_uat.md`, make one scenario record for UAT-01 through UAT-09.
 For each record, write:
@@ -772,6 +1137,12 @@ For each record, write:
 - `PASS`, `FAIL`, or `BLOCKED`;
 - any defect identifier and retest result.
 
+Use the exact `relative_path` from `attempt-info.json`. If an **unexpected**
+interruption or failure caused numbered retries, record every affected attempt
+and identify the fresh attempt used for the final result. A later pass does not
+erase the earlier evidence. A clean first-attempt completion—including a
+planned, correctly evidenced `SAFE STOP`—needs no numbered retry.
+
 Do not copy “pass” before checking the files. A red `SAFE STOP` is a passing
 result when it is the stated safe behaviour.
 
@@ -779,10 +1150,7 @@ Now create one deliberate draft defect so that you practise rejection and
 retest instead of submitting an empty defect process:
 
 ```powershell
-$defectFolder = Join-Path $scenarioRoot 'UAT-D01'
-if (Test-Path -LiteralPath $defectFolder) {
-    throw 'UAT-D01 already exists. Inspect it; do not overwrite evidence.'
-}
+$defectFolder = New-UatAttemptFolder -ScenarioId 'UAT-D01'
 & $pythonExe $runner prepare `
     --input (Join-Path $projectRoot 'data\input\work_items.csv') `
     --expected (Join-Path $projectRoot 'tests\expected_issues.csv') `
@@ -790,9 +1158,9 @@ if (Test-Path -LiteralPath $defectFolder) {
     --ai-mode mock `
     --synthetic-confirmation I_CONFIRM_SYNTHETIC_DATA_ONLY
 if ($LASTEXITCODE -ne 0) { throw 'UAT-D01 prepare unexpectedly failed.' }
-$defectRunLocator = (Get-Content -LiteralPath `
-    (Join-Path $defectFolder 'latest_run.txt')).Trim()
-$defectRun = Join-Path $defectFolder $defectRunLocator
+$defectSavedRun = Resolve-SavedCourseRun $defectFolder
+$defectRunLocator = $defectSavedRun.Locator
+$defectRun = $defectSavedRun.Path
 $unsafeDraftPath = Join-Path $defectFolder 'unsafe-wording-draft.json'
 $correctedDraftPath = Join-Path $defectFolder 'corrected-draft.json'
 $defectDraft = Get-Content -Raw -LiteralPath (Join-Path $defectRun 'draft\summary.json') |
@@ -822,7 +1190,9 @@ Open both drafts. Record `UAT-D01` as a high-severity wording defect because
 the first headline is unsupported and implies a forbidden external action.
 Record the human decision `REJECT`, owner `course learner`, the corrected
 headline, the successful structural/reference retest, and the remaining need
-for statement-level human support review. Neither file sends anything.
+for statement-level human support review. Record the exact UAT-D01
+`attempt-info.json` relative path and any numbered retry. Neither file sends
+anything.
 
 ### Recreation 4 — Complete adoption and handover evidence
 
@@ -898,10 +1268,12 @@ Read it from top to bottom. Notice that it:
 Now recreate that method for your different capstone:
 
 ```powershell
+$courseAssessmentCreated = Start-NewPracticeTextFile -Path .\recreated_course_assessment.md
 notepad .\recreated_course_assessment.md
 ```
 
-Create these exact sections:
+If the helper printed `CREATED`, create these exact sections. If it printed
+`SKIP CREATE`, keep all existing work and continue only missing sections:
 
 1. `Assessment identity and boundary`;
 2. `Pass prerequisites`;
@@ -994,6 +1366,19 @@ Create `recreated_demo_script.md` for a five-minute demonstration:
 
 Do not claim this exercise saved a client's time or money.
 
+Create or safely resume both files:
+
+```powershell
+$portfolioCreated = Start-NewPracticeTextFile -Path .\recreated_portfolio_case.md
+$demoCreated = Start-NewPracticeTextFile -Path .\recreated_demo_script.md
+notepad .\recreated_portfolio_case.md
+notepad .\recreated_demo_script.md
+```
+
+For each file, write the instructed content only when the helper printed
+`CREATED`. When it printed `SKIP CREATE`, continue only genuinely incomplete
+content and never paste a fresh replacement over a completed file.
+
 Verify:
 
 ```powershell
@@ -1018,11 +1403,14 @@ Run:
 ```powershell
 $projectRoot = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'AI-workflow-learning\operations-exception-assistant'
 Set-Location -LiteralPath $projectRoot
+$capstoneIndexCreated = Start-NewPracticeTextFile -Path .\CAPSTONE_INDEX.md
 notepad .\CAPSTONE_INDEX.md
 ```
 
-Create an `Artifact map` table with one row for setup and one row for each
-Module 1 through Module 9. For each row record:
+If the helper printed `CREATED`, create an `Artifact map` table with one row
+for setup and one row for each Module 1 through Module 9. If it printed
+`SKIP CREATE`, keep the existing index and continue only missing rows. For each
+row record:
 
 - the folder, such as `evidence/module-04`;
 - the main worked and recreated artifacts;
@@ -1043,15 +1431,18 @@ paths. Do not paste files into the index.
 Then create the repository change history:
 
 ```powershell
+$changeLogCreated = Start-NewPracticeTextFile -Path .\CHANGELOG.md
 notepad .\CHANGELOG.md
 ```
 
-Start it with:
+If the helper printed `CREATED`, start it with the block below. If it printed
+`SKIP CREATE`, do not paste a second heading; continue only the missing
+closeout fields.
 
 ```markdown
 # Project change log
 
-## Course 1 closeout — 2026-07-28
+## Course 1 closeout — REPLACE WITH ACTUAL LOCAL DATE (YYYY-MM-DD)
 
 - Assembled setup and Modules 1–9 in one local Git repository.
 - Final decision: REPLACE WITH ONE EXACT PERMITTED DECISION.
@@ -1060,8 +1451,9 @@ Start it with:
 - Known limitations: REPLACE WITH YOUR EVIDENCE.
 ```
 
-Replace both placeholders with your own evidence. `CHANGELOG.md` records what
-changed; `CAPSTONE_INDEX.md` records where the evidence is.
+Replace the date, decision, and limitation placeholders with your actual local
+completion date and your own evidence. `CHANGELOG.md` records what changed;
+`CAPSTONE_INDEX.md` records where the evidence is.
 
 ## Ask Codex to check your work
 
@@ -1074,15 +1466,31 @@ READ-ONLY COURSE REVIEW.
 I authorize inspection of only this full Course 1 project repository:
 [PASTE FULL PATH HERE]
 
-Do not create, edit, delete, rename, move, format, or execute anything. Do not
-inspect the parent or another path. Stop if there are secrets, credentials,
-real client data, workplace data, personal data, or health data.
+Learner attestation: I created these files for this fictional exercise and
+have not knowingly put real client, employer, personal, medical, credential,
+or secret data in them. This statement is an attestation, not proof.
+
+You may use only read-only directory-listing, file-reading, and SHA-256 hashing
+commands inside this repository. Do not create, edit, delete, rename, move, or
+format anything. Do not run project scripts, workflows, or tests, and do not
+use network or cloud commands. Do not inspect the parent or another path. If
+apparent sensitive data is noticed, do not quote or repeat it: return NOT YET
+with only the filename and general category, then stop. If none is noticed,
+say that non-detection is not proof that none exists.
 
 Return:
 1. PASS or NOT YET;
 2. checks for: nine distinct Given/When/Then UAT scenarios UAT-01 through
 UAT-09; actual isolated command evidence and exact expected state/error for
-each; UAT-D01 rejection, correction, and retest; exact-draft and
+each; Stage 1 checks the safe path length, exact `COURSE_PROJECT.md` marker,
+and resolved Git root before any lesson write or runner execution; every
+attempt has `attempt-info.json`; only when an unexpected
+interruption or unexpected failure occurred, that attempt is preserved and its
+rerun uses the next numbered retry; a clean first-attempt completion requires
+no retry; UAT-03, UAT-06, UAT-08, and UAT-09 each check
+`failures/latest.json`, the exact expected `error_code`, the `history_path`
+immutable `failures/aNNNN.json`, and matching hashes; UAT-D01 rejection,
+correction, and retest; exact-draft and
 EXTERNAL_ACTIONS_ENABLED=false drills; role-specific
 training with demonstrated tasks; feedback/support; complete normal and
 safe-failure runbook; manual fallback; rollback; backup/restore; monitoring;
@@ -1102,20 +1510,29 @@ consultant certification. Allow only the Module 9 commit cell to say PENDING
 UNTIL FINAL PASS because this review must happen before that commit;
 3. the smallest corrections for me to make if NOT YET.
 
-Remain read-only. Do not execute anything, change scores, supply missing oral
-answers, or complete the handover/UAT for me. A PASS is allowed only when every
-objective gate above is already evidenced.
+Remain read-only. Do not run project code, workflows, or tests, change scores,
+supply missing oral answers, or complete the handover/UAT for me. A PASS is
+allowed only when every objective gate above is already evidenced.
 ```
 
 ## Pass criteria
 
 - [ ] Worked UAT/handover and tabletop rehearsal are complete.
+- [ ] Stage 1 checks the safe path length, exact `COURSE_PROJECT.md` marker,
+      and resolved Git root before any lesson write or runner execution.
 - [ ] UAT-01 through UAT-09 were actually executed in isolated folders and
       each record has Given/When/Then, expected state/error, observed evidence,
       result, and exact relative path.
+- [ ] Every scenario and UAT-D01 has `attempt-info.json`; any unexpectedly
+      interrupted or unexpectedly failed attempt remains unchanged, and its
+      rerun uses and records the next numbered retry folder. Clean first
+      attempts require no numbered retry.
 - [ ] Solo testing says `EXTERNAL UAT NOT VERIFIED`; no real-user claim is
       made unless another consenting person actually tested synthetic data.
 - [ ] Failures, review choices, hash invalidation, and fallback are tested.
+- [ ] UAT-03, UAT-06, UAT-08, and UAT-09 each verify
+      `failures/latest.json`, the expected `error_code`, the immutable
+      `failures/aNNNN.json` followed from `history_path`, and matching hashes.
 - [ ] UAT-D01 records the unsafe wording rejection, correction, and retest;
       any other defects are recorded and retested rather than hidden.
 - [ ] Training is role-specific and demonstrated.
@@ -1138,20 +1555,25 @@ objective gate above is already evidenced.
 - [ ] The rubric result and final prototype decision remain separate.
 - [ ] Root `CAPSTONE_INDEX.md` maps setup and all nine modules.
 - [ ] Root `CHANGELOG.md` records the dated decision and limitations.
+- [ ] The read-only review records the learner's synthetic-data statement as
+      an attestation rather than proof and says non-detection is not proof of
+      absence.
 - [ ] Codex returns `PASS` read-only.
 
 ### Record the final Course 1 PASS in Git
 
-Do this only after Codex returns `PASS`. The first commit records Module 9 just
+Do this only after Codex returns `PASS`. Rerun the complete Stage 1 block first,
+even if this PowerShell window is still open. Stop if its project-marker,
+Git-root, or path-length guard fails. The first commit records Module 9 just
 like every earlier module. The second commit records the two root assembly
-files.
+files. Then run:
 
 ```powershell
 $projectRoot = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'AI-workflow-learning\operations-exception-assistant'
 Set-Location -LiteralPath $projectRoot
 git status --short
 git add -- "evidence/module-09"
-git commit -m "complete module 9 evidence"
+git commit --only -m "complete module 9 evidence" -- "evidence/module-09"
 git log --oneline --max-count=10
 ```
 
@@ -1160,16 +1582,18 @@ new Module 9 identifier shown by `git log`, save, and close Notepad. Then run:
 
 ```powershell
 git add -- "CAPSTONE_INDEX.md" "CHANGELOG.md"
-git commit -m "assemble Course 1 synthetic capstone"
+git commit --only -m "assemble Course 1 synthetic capstone" -- `
+    "CAPSTONE_INDEX.md" "CHANGELOG.md"
 git status --short
 git log --oneline --max-count=10
 ```
 
 Expected result: the newest commit assembles the Course 1 closeout, the next
 commit records Module 9, and earlier module checkpoints are visible below it.
-If Git reports `nothing to commit`, confirm that the relevant named paths were
-already recorded and unchanged. Never add a secret, real data, or unrelated
-file.
+Both `git commit --only` commands restrict their checkpoint to the repeated
+paths, even if a different file had already been staged. If Git reports
+`nothing to commit`, confirm that the relevant named paths were already
+recorded and unchanged. Never add a secret, real data, or unrelated file.
 
 ## Consultant lens
 

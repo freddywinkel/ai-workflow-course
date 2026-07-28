@@ -45,7 +45,7 @@ Regulation (GDPR), called the Algemene verordening gegevensbescherming (AVG) in
 Dutch, governs personal-data processing.
 
 1. [Python documentation: CSV file reading and writing](https://docs.python.org/3/library/csv.html)
-2. [European Commission: GDPR processing principles](https://commission.europa.eu/law/law-topic/data-protection/rules-business-and-organisations/principles-gdpr/overview-principles/what-data-can-we-process-and-under-which-conditions_en)
+2. [European Commission: GDPR processing principles](https://commission.europa.eu/law/law-topic/data-protection/information-business-and-organisations/principles-gdpr/overview-principles/what-data-can-we-process-and-under-which-conditions_en)
 3. [European Commission: data protection by design and by default](https://commission.europa.eu/law/law-topic/data-protection/information-business-and-organisations/obligations/what-does-data-protection-design-and-default-mean_en)
 
 ## Guided build
@@ -87,23 +87,83 @@ Open Windows PowerShell and run:
 
 ```powershell
 $projectRoot = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'AI-workflow-learning\operations-exception-assistant'
-if (-not (Test-Path (Join-Path $projectRoot '.git'))) { throw 'Project Git repository not found. Complete Windows Setup before Module 3.' }
+$projectMarker = Join-Path $projectRoot 'COURSE_PROJECT.md'
+$expectedMarker = @'
+# Course 1 synthetic learner project
+
+This folder is only for the fictional Course 1 practice project.
+Never place real client, employer, medical, or personal data here.
+'@
+if (-not (Test-Path -LiteralPath $projectMarker -PathType Leaf)) {
+    throw 'Course project marker missing. Do not enter or change this folder.'
+}
+$actualMarker = (Get-Content -Raw -LiteralPath $projectMarker) -replace "`r`n", "`n"
+if ($actualMarker -ne ($expectedMarker -replace "`r`n", "`n")) {
+    throw 'Course project marker is unfamiliar. Do not enter or change this folder.'
+}
+$savedGitRoot = git -C $projectRoot rev-parse --show-toplevel 2>$null
+if ($LASTEXITCODE -ne 0 -or
+    (Resolve-Path -LiteralPath $savedGitRoot).Path -ne
+    (Resolve-Path -LiteralPath $projectRoot).Path) {
+    throw 'The marked Course 1 Git repository is missing or belongs to another folder.'
+}
 $moduleFolder = Join-Path $projectRoot 'evidence\module-03'
 New-Item -ItemType Directory -Force -Path $moduleFolder
 Set-Location -LiteralPath $moduleFolder
 (Get-Location).Path
-notepad .\worked_jobs.csv
+function Open-CreateOnceCourseFile {
+    param(
+        [string]$Path,
+        [string]$RecognizedStart,
+        [string[]]$RequiredPatterns
+    )
+    if (Test-Path -LiteralPath $Path) {
+        if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+            throw "Expected a lesson file but found another path type: $Path"
+        }
+        $content = Get-Content -Raw -LiteralPath $Path
+        if ($null -eq $content) { $content = '' }
+        $firstLine = Get-Content -LiteralPath $Path -TotalCount 1
+        if (-not [string]::IsNullOrEmpty($content) -and
+            $firstLine -cne $RecognizedStart) {
+            throw "Existing file is unfamiliar. It was not opened or changed: $Path"
+        }
+        $complete = -not [string]::IsNullOrWhiteSpace($content)
+        foreach ($pattern in $RequiredPatterns) {
+            if (-not $content.Contains($pattern)) { $complete = $false }
+        }
+        if ($complete) {
+            Write-Host "COMPLETE: keeping $Path unchanged."
+            return
+        }
+        Write-Host 'INCOMPLETE: continue the recognised synthetic file without duplicating lines.'
+    } else {
+        New-Item -ItemType File -Path $Path | Out-Null
+        Write-Host 'NEW: paste the supplied lesson content once.'
+    }
+    & notepad.exe $Path
+}
+Open-CreateOnceCourseFile `
+    -Path (Join-Path $moduleFolder 'worked_jobs.csv') `
+    -RecognizedStart 'job_id,status,due_date,amount,currency' `
+    -RequiredPatterns @('J-204,in_progress,2026-07-24,90.00,')
 ```
 
-The `if` line prevents an accidental second untracked project. **Expected
-path:** it ends in
+The marker and Git-root checks are read-only and stop before any module file is
+created unless this is the exact synthetic Course 1 project. The create-once
+helper creates a missing worked file, reopens an empty or recognised incomplete
+one, skips a complete one, and stops without opening a wrong-type or unfamiliar
+file. Before every use, confirm the named file is synthetic lesson work.
+Preserve an unfamiliar file and ask Codex for read-only diagnosis before a
+clearly numbered retry. **Expected path:** it ends in
 `\AI-workflow-learning\operations-exception-assistant\evidence\module-03`.
 If the repository error appears, stop and complete Windows Setup; do not remove
 the check.
 
 International Organization for Standardization (ISO) date format uses
-`YYYY-MM-DD`: year, month, then day. Click **Yes**, paste, save, and close
-Notepad:
+`YYYY-MM-DD`: year, month, then day. For `NEW`, paste, save, and close Notepad.
+For `INCOMPLETE`, continue without duplicating existing rows. For `COMPLETE`,
+move to the inspection:
 
 ```csv
 job_id,status,due_date,amount,currency
@@ -137,7 +197,17 @@ memorise the internal term `PSObject`.
 
 ### Stage 2 — Follow the complete contract
 
-Run `notepad .\worked_data_and_rules.md`, click **Yes**, paste, and save:
+Run:
+
+```powershell
+Open-CreateOnceCourseFile `
+    -Path (Join-Path $moduleFolder 'worked_data_and_rules.md') `
+    -RecognizedStart '# Worked data and rules' `
+    -RequiredPatterns @('## Frozen expected result','Expected total: 4','J-204')
+```
+
+For `NEW`, paste and save. For `INCOMPLETE`, add only the missing content. For
+`COMPLETE`, do not paste the example again:
 
 ```markdown
 # Worked data and rules
@@ -216,7 +286,17 @@ not a language model.
 
 ### Stage 3 — Make and check one boundary case
 
-Create `worked_boundary.csv` in Notepad:
+Open the boundary file through the same guard:
+
+```powershell
+Open-CreateOnceCourseFile `
+    -Path (Join-Path $moduleFolder 'worked_boundary.csv') `
+    -RecognizedStart 'job_id,status,due_date,amount,currency' `
+    -RequiredPatterns @('J-205,completed,2026-07-26,0,EUR')
+```
+
+For `NEW`, paste the row below. For `INCOMPLETE`, complete the recognised file
+without duplicating the header. For `COMPLETE`, continue:
 
 ```csv
 job_id,status,due_date,amount,currency
@@ -242,8 +322,17 @@ number; blank is no supplied value.
 consistent consulting format. Follow this smaller completed version before you
 copy the blank template for the capstone.
 
-Run `notepad .\worked_data_dictionary_and_quality_check.md`, click **Yes**,
-paste, save, and close:
+Run:
+
+```powershell
+Open-CreateOnceCourseFile `
+    -Path (Join-Path $moduleFolder 'worked_data_dictionary_and_quality_check.md') `
+    -RecognizedStart '# Worked data dictionary and quality check' `
+    -RequiredPatterns @('Expected issue count: 4','Known blind spot:')
+```
+
+For `NEW`, paste, save, and close. For `INCOMPLETE`, continue without
+duplicating sections. For `COMPLETE`, move to the checks:
 
 ```markdown
 # Worked data dictionary and quality check
@@ -294,27 +383,71 @@ $sourceGold = Join-Path $courseRoot 'practice_data\expected_issues.csv'
 $sourceReadme = Join-Path $courseRoot 'practice_data\README.md'
 $qualityTemplate = Join-Path $courseRoot 'templates\data_dictionary_and_quality_check.md'
 function Copy-NewPracticeFile {
-    param([string]$Source, [string]$Destination)
+    param(
+        [string]$Source,
+        [string]$Destination,
+        [string]$ExpectedHeading,
+        [switch]$MustRemainExact
+    )
+    if (-not (Test-Path -LiteralPath $Source -PathType Leaf)) {
+        throw "Controlled course source is missing or is not a file: $Source"
+    }
     if (Test-Path -LiteralPath $Destination) {
+        if (-not (Test-Path -LiteralPath $Destination -PathType Leaf)) {
+            throw "Practice path exists but is not a file. Preserve it and stop: $Destination"
+        }
+        if ($MustRemainExact) {
+            $sourceHash = (Get-FileHash -LiteralPath $Source -Algorithm SHA256).Hash
+            $destinationHash = (Get-FileHash -LiteralPath $Destination -Algorithm SHA256).Hash
+            if ($sourceHash -ne $destinationHash) {
+                throw "Controlled working copy changed. Preserve it and ask for read-only diagnosis: $Destination"
+            }
+        } elseif ((Get-Content -LiteralPath $Destination -TotalCount 1) -cne $ExpectedHeading) {
+            throw "Existing learner file is unfamiliar. Preserve it and ask for read-only diagnosis: $Destination"
+        }
         Write-Host "Resume: $Destination already exists and was left unchanged."
     } else {
         Copy-Item -LiteralPath $Source -Destination $Destination
+        $sourceHash = (Get-FileHash -LiteralPath $Source -Algorithm SHA256).Hash
+        $destinationHash = (Get-FileHash -LiteralPath $Destination -Algorithm SHA256).Hash
+        if ($sourceHash -ne $destinationHash) {
+            throw "New practice copy did not match its source: $Destination"
+        }
         Write-Host "Created: $Destination"
     }
 }
-Copy-NewPracticeFile $sourceData .\recreated_work_items.csv
-Copy-NewPracticeFile $sourceGold .\recreated_expected_issues.csv
-Copy-NewPracticeFile $sourceReadme .\recreated_requirements.md
-Copy-NewPracticeFile $qualityTemplate .\data_dictionary_and_quality_check.md
+Copy-NewPracticeFile $sourceData .\recreated_work_items.csv '' -MustRemainExact
+Copy-NewPracticeFile $sourceGold .\recreated_expected_issues.csv '' -MustRemainExact
+Copy-NewPracticeFile $sourceReadme .\recreated_requirements.md '' -MustRemainExact
+Copy-NewPracticeFile $qualityTemplate .\data_dictionary_and_quality_check.md '# Data Dictionary and Quality Check'
 Get-FileHash -LiteralPath $sourceData -Algorithm SHA256
 Get-FileHash -LiteralPath .\recreated_work_items.csv -Algorithm SHA256
 Get-Item .\data_dictionary_and_quality_check.md
+notepad.exe .\data_dictionary_and_quality_check.md
 ```
 
 The two hashes must match.
 
 2. Read `recreated_requirements.md`.
-3. Create `recreated_data_and_rules.md` yourself. Include:
+3. Create or reopen `recreated_data_and_rules.md` with this safe-restart block:
+
+```powershell
+$rulesPath = Join-Path $moduleFolder 'recreated_data_and_rules.md'
+if (Test-Path -LiteralPath $rulesPath) {
+    if (-not (Test-Path -LiteralPath $rulesPath -PathType Leaf) -or
+        (Get-Content -LiteralPath $rulesPath -TotalCount 1) -cne '# Recreated data and rules') {
+        throw 'Existing data-and-rules file is the wrong type or is unfamiliar. Preserve it and ask for read-only diagnosis.'
+    }
+    Write-Host "Resume: $rulesPath already exists and was left unchanged."
+} else {
+    "# Recreated data and rules`r`n" |
+        Set-Content -LiteralPath $rulesPath -Encoding utf8
+    Write-Host "Created: $rulesPath"
+}
+notepad.exe $rulesPath
+```
+
+   Complete it yourself. Include:
 
 - all 12 fields and their blank meanings;
 - R001 through R011 with exact condition, field, severity, dependency, evidence,
@@ -343,7 +476,26 @@ Select-String -Path .\recreated_data_and_rules.md -Pattern 'R001','R011','2026-0
 **Expected output:** 15 rows, 13 issues, R001 through R011, and four text
 matches.
 
-5. Re-run the source and copy hashes. They must still match.
+5. Re-run this self-contained comparison. It deliberately rebuilds
+   `$sourceData`, so it still works after PowerShell has been closed:
+
+```powershell
+$courseRoot = Read-Host 'Paste the full path to AI_WORKFLOW_DOCUMENT_SYSTEMS_COURSE'
+$sourceData = Join-Path $courseRoot 'practice_data\work_items.csv'
+$recreatedData = Join-Path $moduleFolder 'recreated_work_items.csv'
+if (-not (Test-Path -LiteralPath $sourceData -PathType Leaf) -or
+    -not (Test-Path -LiteralPath $recreatedData -PathType Leaf)) {
+    throw 'A named source or recreated CSV is missing. Stop and inspect the paths.'
+}
+$sourceHash = (Get-FileHash -LiteralPath $sourceData -Algorithm SHA256).Hash
+$recreatedHash = (Get-FileHash -LiteralPath $recreatedData -Algorithm SHA256).Hash
+$sourceHash
+$recreatedHash
+$sourceHash -eq $recreatedHash
+```
+
+   The final line must be `True`. A `False` result is a safe stop; preserve
+   both files and request read-only diagnosis.
 
 6. Open `data_dictionary_and_quality_check.md` in Notepad and recreate the
    demonstrated quality record for the different 15-row fixture. Complete the
@@ -368,10 +520,16 @@ READ-ONLY COURSE REVIEW.
 I authorize inspection of only this full path:
 [PASTE FULL PATH HERE]
 
-Do not create, edit, delete, rename, move, or format anything. Do not inspect
-the parent folder or another location. This folder must contain no secrets and
-no real client or workplace data. Stop if you find credentials, personal data,
-or health data.
+Learner attestation: I created these files for this fictional exercise and
+have not knowingly put real client, employer, personal, medical, credential,
+or secret data in them. This statement is an attestation, not proof.
+
+You may only list names, read files, and calculate hashes inside the authorised
+path. Do not create, edit, delete, rename, move, or format any file. Do not
+execute lesson scripts, use a network, or inspect a parent
+or other location. If apparent sensitive data is noticed, do not quote or
+repeat it: return NOT YET with only the filename and general category, then
+stop. If none is noticed, say that non-detection is not proof that none exists.
 
 Inspect the worked and recreated comma-separated values (CSV) and Markdown
 files, including worked_data_dictionary_and_quality_check.md and
@@ -435,21 +593,22 @@ The **Pass criteria** are the complete gate.
 Do this only after Codex returns `PASS`. Inspect the module folder yourself and
 confirm it contains only synthetic course evidence: no password, secret key,
 personal data, employer data, client data, patient data, or unrelated file.
-Then run:
+Rerun Stage 1 in this same PowerShell window so the exact marker and Git-root
+checks pass again. Then run:
 
 ```powershell
-$projectRoot = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'AI-workflow-learning\operations-exception-assistant'
 Set-Location -LiteralPath $projectRoot
 git status --short
 git add -- "evidence/module-03"
-git commit -m "complete module 3 evidence"
+git commit --only -m "complete module 3 evidence" -- "evidence/module-03"
 git status --short
 ```
 
 `git status --short` previews changes. `git add --` stages only this module;
-`--` marks the end of Git options. `git commit` records the passed checkpoint.
-If a rerun reports “nothing to commit,” the unchanged evidence is already
-recorded. Do not broaden the path to force a commit.
+`--` marks the end of Git options. `git commit --only` records only the
+repeated module path, even if a different file had already been staged. If a
+rerun reports “nothing to commit,” the unchanged evidence is already recorded.
+Do not broaden the path to force a commit.
 
 ## Stop or rework
 

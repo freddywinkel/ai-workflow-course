@@ -11,8 +11,11 @@ import jsonschema
 
 from course1_capstone.workflow import (
     SYNTHETIC_CONFIRMATION,
+    SafeStop,
     prepare_run,
     record_decision,
+    validate_review_manifest,
+    validate_state,
 )
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -36,7 +39,7 @@ def validate(instance, schema_name: str) -> None:
 class SchemaContractTests(unittest.TestCase):
     def test_all_schemas_are_valid_draft_2020_12(self) -> None:
         files = sorted(SCHEMAS.glob("*.schema.json"))
-        self.assertEqual(len(files), 6)
+        self.assertEqual(len(files), 11)
         for path in files:
             with self.subTest(path=path.name):
                 jsonschema.Draft202012Validator.check_schema(
@@ -76,6 +79,19 @@ class SchemaContractTests(unittest.TestCase):
             evaluation = json.loads(
                 (run_dir / "evaluation.json").read_text(encoding="utf-8")
             )
+            state = json.loads((run_dir / "state.json").read_text(encoding="utf-8"))
+            control = json.loads((run_dir / "control.json").read_text(encoding="utf-8"))
+            run_config = json.loads(
+                (run_dir / "run_config.json").read_text(encoding="utf-8")
+            )
+            review_package = json.loads(
+                (run_dir / "review" / "review_package.json").read_text(encoding="utf-8")
+            )
+            review_manifest = json.loads(
+                (run_dir / "review" / "review_manifest.json").read_text(
+                    encoding="utf-8"
+                )
+            )
             audit_events = [
                 json.loads(line)
                 for line in (run_dir / "audit" / "events.jsonl")
@@ -90,8 +106,89 @@ class SchemaContractTests(unittest.TestCase):
             validate(summary, "summary.schema.json")
             validate(approval, "approval.schema.json")
             validate(evaluation, "evaluation.schema.json")
+            validate(state, "state.schema.json")
+            validate(control, "control.schema.json")
+            validate(run_config, "run_config.schema.json")
+            validate(review_package, "review_package.schema.json")
+            validate(review_manifest, "review_manifest.schema.json")
             for event in audit_events:
                 validate(event, "audit_event.schema.json")
+
+            invalid_state = dict(state)
+            invalid_state["external_actions"] = False
+            with self.assertRaises(SafeStop):
+                validate_state(invalid_state)
+            with self.assertRaises(jsonschema.ValidationError):
+                validate(invalid_state, "state.schema.json")
+            invalid_state = dict(state)
+            invalid_state.update(
+                {
+                    "current_state": "needs_review",
+                    "active_decision_path": state["active_decision_path"],
+                    "local_export_count": 0,
+                }
+            )
+            with self.assertRaises(SafeStop):
+                validate_state(invalid_state)
+            with self.assertRaises(jsonschema.ValidationError):
+                validate(invalid_state, "state.schema.json")
+            invalid_state = dict(state)
+            invalid_state.update(
+                {
+                    "current_state": "needs_review",
+                    "draft_revision": 0,
+                    "draft_sha256": None,
+                    "review_manifest_sha256": None,
+                    "active_decision_path": None,
+                    "summary_generator": None,
+                    "local_export_count": 0,
+                }
+            )
+            with self.assertRaises(SafeStop):
+                validate_state(invalid_state)
+            with self.assertRaises(jsonschema.ValidationError):
+                validate(invalid_state, "state.schema.json")
+            invalid_state = dict(state)
+            invalid_state.update(
+                {
+                    "current_state": "needs_review",
+                    "active_decision_path": None,
+                    "summary_generator": None,
+                    "local_export_count": 0,
+                }
+            )
+            with self.assertRaises(SafeStop):
+                validate_state(invalid_state)
+            with self.assertRaises(jsonschema.ValidationError):
+                validate(invalid_state, "state.schema.json")
+            invalid_manifest = json.loads(json.dumps(review_manifest))
+            invalid_manifest["draft_revision"] = 0
+            with self.assertRaises(SafeStop):
+                validate_review_manifest(
+                    invalid_manifest,
+                    run_id=state["run_id"],
+                    draft_revision=0,
+                    run_config=run_config,
+                )
+            with self.assertRaises(jsonschema.ValidationError):
+                validate(
+                    invalid_manifest,
+                    "review_manifest.schema.json",
+                )
+            invalid_evaluation = dict(evaluation)
+            invalid_evaluation["current_state"] = "summary_ready"
+            with self.assertRaises(jsonschema.ValidationError):
+                validate(invalid_evaluation, "evaluation.schema.json")
+            invalid_evaluation = dict(evaluation)
+            invalid_evaluation["external_actions"] = False
+            with self.assertRaises(jsonschema.ValidationError):
+                validate(invalid_evaluation, "evaluation.schema.json")
+            invalid_summary = json.loads(json.dumps(summary))
+            invalid_summary["review_actions"][0]["instruction"] = (
+                "Pay the vendor and update the source system."
+            )
+            with self.assertRaises(jsonschema.ValidationError):
+                validate(invalid_summary, "summary.schema.json")
 
 
 if __name__ == "__main__":

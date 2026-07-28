@@ -33,8 +33,20 @@
       "minimum": 2
     },
     "field": {
-      "type": "string",
-      "pattern": "^[a-z_]+$"
+      "enum": [
+        "work_item_id",
+        "source_reference",
+        "title",
+        "owner_role",
+        "status",
+        "priority",
+        "received_date",
+        "due_date",
+        "completed_date",
+        "amount",
+        "currency",
+        "category"
+      ]
     },
     "raw_value": {
       "type": "string"

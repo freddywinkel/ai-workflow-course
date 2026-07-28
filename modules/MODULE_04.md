@@ -107,8 +107,25 @@ remain.
 $projectRoot = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'AI-workflow-learning\operations-exception-assistant'
 $moduleFolder = Join-Path $projectRoot 'evidence\module-04'
 $pythonExe = Join-Path $projectRoot '.venv\Scripts\python.exe'
-if (-not (Test-Path -LiteralPath (Join-Path $projectRoot '.git'))) {
-    throw 'Project repository missing. Return to Windows Setup.'
+$projectMarker = Join-Path $projectRoot 'COURSE_PROJECT.md'
+$expectedMarker = @'
+# Course 1 synthetic learner project
+
+This folder is only for the fictional Course 1 practice project.
+Never place real client, employer, medical, or personal data here.
+'@
+if (-not (Test-Path -LiteralPath $projectMarker -PathType Leaf)) {
+    throw 'Course project marker missing. Do not enter or execute this folder.'
+}
+$actualMarker = (Get-Content -Raw -LiteralPath $projectMarker) -replace "`r`n", "`n"
+if ($actualMarker -ne ($expectedMarker -replace "`r`n", "`n")) {
+    throw 'Course project marker is unfamiliar. Do not enter or execute this folder.'
+}
+$savedGitRoot = git -C $projectRoot rev-parse --show-toplevel 2>$null
+if ($LASTEXITCODE -ne 0 -or
+    (Resolve-Path -LiteralPath $savedGitRoot).Path -ne
+    (Resolve-Path -LiteralPath $projectRoot).Path) {
+    throw 'The marked Course 1 Git repository is missing or belongs to another folder.'
 }
 if (-not (Test-Path -LiteralPath $pythonExe)) {
     throw 'Project Python missing. Return to Windows Setup.'
@@ -119,11 +136,162 @@ $courseRoot = Read-Host 'Paste the full path to AI_WORKFLOW_DOCUMENT_SYSTEMS_COU
 if (-not (Test-Path -LiteralPath (Join-Path $courseRoot 'course1_capstone\workflow.py'))) {
     throw 'That course folder does not contain course1_capstone\workflow.py.'
 }
+$controlledWorkedInput = Join-Path $courseRoot 'practice_data\work_items.csv'
+$controlledWorkedExpected = Join-Path $courseRoot 'practice_data\expected_issues.csv'
+$learnerWorkedInput = Join-Path $projectRoot 'data\input\work_items.csv'
+$learnerWorkedExpected = Join-Path $projectRoot 'tests\expected_issues.csv'
+foreach ($pair in @(
+    @($controlledWorkedInput,$learnerWorkedInput),
+    @($controlledWorkedExpected,$learnerWorkedExpected)
+)) {
+    if (-not (Test-Path -LiteralPath $pair[0] -PathType Leaf) -or
+        -not (Test-Path -LiteralPath $pair[1] -PathType Leaf) -or
+        (Get-FileHash -LiteralPath $pair[0] -Algorithm SHA256).Hash -ne
+        (Get-FileHash -LiteralPath $pair[1] -Algorithm SHA256).Hash) {
+        throw "Worked synthetic fixture is missing, wrong-type, or changed. Nothing was executed: $($pair[1])"
+    }
+}
+$runner = Join-Path $projectRoot 'src\course1_capstone\cli.py'
+$sourceRunner = Join-Path $courseRoot 'course1_capstone'
+$runnerFolder = Join-Path $projectRoot 'src\course1_capstone'
+$runnerHashRecord = Join-Path $moduleFolder 'reference_runner_hashes.json'
+$expectedRunnerNames = @('__init__.py','workflow.py','cli.py')
+function Assert-ControlledCourseRunner {
+    if ((Test-Path -LiteralPath $runnerFolder) -and
+        -not (Test-Path -LiteralPath $runnerFolder -PathType Container)) {
+        throw 'Runner destination exists but is not a folder. Nothing was executed.'
+    }
+    if (Test-Path -LiteralPath $runnerFolder -PathType Container) {
+        $unexpectedRunnerEntries = @(
+            Get-ChildItem -LiteralPath $runnerFolder -Force |
+                Where-Object {
+                    $expectedRunnerNames -cnotcontains $_.Name -and
+                    -not ($_.PSIsContainer -and $_.Name -ceq '__pycache__')
+                }
+        )
+        if ($unexpectedRunnerEntries.Count -gt 0) {
+            throw 'The controlled runner folder contains an unexpected entry. Preserve it and ask for read-only diagnosis.'
+        }
+    }
+    $runnerArtifactsExist =
+        (Test-Path -LiteralPath $runnerHashRecord) -or
+        @($expectedRunnerNames | Where-Object {
+            Test-Path -LiteralPath (Join-Path $runnerFolder $_)
+        }).Count -gt 0
+    if (-not $runnerArtifactsExist) {
+        Write-Host 'FIRST SESSION: Stage 1 must create and verify the controlled runner before it is used.'
+        return $false
+    }
+    if (-not (Test-Path -LiteralPath $runnerHashRecord)) {
+        foreach ($expectedRunnerName in $expectedRunnerNames) {
+            $sourceFile = Join-Path $sourceRunner $expectedRunnerName
+            $destinationFile = Join-Path $runnerFolder $expectedRunnerName
+            if (Test-Path -LiteralPath $destinationFile) {
+                if (-not (Test-Path -LiteralPath $sourceFile -PathType Leaf) -or
+                    -not (Test-Path -LiteralPath $destinationFile -PathType Leaf) -or
+                    (Get-FileHash -LiteralPath $sourceFile -Algorithm SHA256).Hash -ne
+                    (Get-FileHash -LiteralPath $destinationFile -Algorithm SHA256).Hash) {
+                    throw "Unrecorded partial runner copy is wrong-type or differs from the current course source: $expectedRunnerName"
+                }
+            }
+        }
+        Write-Host 'RECOVERABLE PARTIAL COPY: existing controlled files match; rerun Stage 1 to finish and record all three.'
+        return $false
+    }
+    if (-not (Test-Path -LiteralPath $runnerHashRecord -PathType Leaf)) {
+        throw 'Runner files exist without a valid Module 4 hash record. Nothing was executed; preserve them for read-only diagnosis.'
+    }
+    try {
+        $savedRunnerHashes = Get-Content -Raw -LiteralPath $runnerHashRecord |
+            ConvertFrom-Json
+    } catch {
+        throw 'The Module 4 runner-hash record is damaged. Nothing was executed.'
+    }
+    $savedRunnerNames = @($savedRunnerHashes | ForEach-Object { [string]$_.name })
+    if (
+        @($savedRunnerHashes).Count -ne $expectedRunnerNames.Count -or
+        @(Compare-Object $expectedRunnerNames $savedRunnerNames -CaseSensitive).Count -ne 0
+    ) {
+        throw 'The Module 4 runner-hash record does not contain each exact controlled filename once.'
+    }
+    foreach ($expectedRunnerName in $expectedRunnerNames) {
+        $sourceFile = Join-Path $sourceRunner $expectedRunnerName
+        $destinationFile = Join-Path $runnerFolder $expectedRunnerName
+        $saved = @($savedRunnerHashes | Where-Object {
+            $_.name -ceq $expectedRunnerName
+        })
+        if ($saved.Count -ne 1 -or
+            -not (Test-Path -LiteralPath $sourceFile -PathType Leaf) -or
+            -not (Test-Path -LiteralPath $destinationFile -PathType Leaf)) {
+            throw "Controlled runner evidence is missing or ambiguous for $expectedRunnerName. Nothing was executed."
+        }
+        $sourceHash = (Get-FileHash -LiteralPath $sourceFile -Algorithm SHA256).Hash
+        $destinationHash = (Get-FileHash -LiteralPath $destinationFile -Algorithm SHA256).Hash
+        if ($saved[0].source_sha256 -ne $sourceHash -or
+            $saved[0].destination_sha256 -ne $destinationHash -or
+            $sourceHash -ne $destinationHash) {
+            throw "Controlled runner or course source changed for $expectedRunnerName. Nothing was executed; preserve everything and ask for read-only diagnosis before any upgrade."
+        }
+    }
+    Write-Host 'VERIFIED the current course source, learner runner, and Module 4 hash record.'
+    return $true
+}
+$runnerReady = Assert-ControlledCourseRunner
+function Resolve-SavedCourseRun {
+    param([string]$Workspace)
+    $latest = Join-Path $Workspace 'latest_run.txt'
+    if (-not (Test-Path -LiteralPath $latest)) {
+        return $null
+    }
+    if (-not (Test-Path -LiteralPath $latest -PathType Leaf)) {
+        throw "Saved run locator is not a file: $latest"
+    }
+    $locatorLines = @(Get-Content -LiteralPath $latest)
+    if ($locatorLines.Count -ne 1) {
+        throw "Saved run locator must contain exactly one line: $latest"
+    }
+    $locator = [string]$locatorLines[0]
+    if (
+        [string]::IsNullOrWhiteSpace($locator) -or
+        $locator -cne $locator.Trim() -or
+        [System.IO.Path]::IsPathRooted($locator) -or
+        $locator -cnotmatch '^runs[\\/]RUN-[A-F0-9]{12}$'
+    ) {
+        throw "Saved run locator is empty or unsafe: $latest"
+    }
+    $runDir = Join-Path $Workspace $locator
+    if (-not (Test-Path -LiteralPath $runDir -PathType Container)) {
+        throw "Saved run folder is missing: $runDir"
+    }
+    $runsRoot = (Resolve-Path -LiteralPath (Join-Path $Workspace 'runs')).Path
+    $resolvedRunDir = (Resolve-Path -LiteralPath $runDir).Path
+    if ((Split-Path -Parent $resolvedRunDir) -ne $runsRoot) {
+        throw "Saved run resolves outside its exact runs folder: $latest"
+    }
+    return $resolvedRunDir
+}
+$workedWorkspace = Join-Path $moduleFolder 'worked'
+$workedRunDir = Resolve-SavedCourseRun $workedWorkspace
+$recreatedInput = Join-Path $moduleFolder 'recreated_work_items.csv'
+$predictionPath = Join-Path $moduleFolder 'recreated_prediction.csv'
+$correctedPredictionPath = Join-Path $moduleFolder 'recreated_prediction_corrected.csv'
+$officialExpectedPath = Join-Path $courseRoot 'course1_capstone\fixtures\recreated_expected_issues.csv'
+$recreatedWorkspace = Join-Path $moduleFolder 'recreated'
+$recreatedRunDir = Resolve-SavedCourseRun $recreatedWorkspace
+$correctedWorkspace = Join-Path $moduleFolder 'recreated-corrected'
+$correctedRunDir = Resolve-SavedCourseRun $correctedWorkspace
 & $pythonExe --version
 ```
 
 Always use `& $pythonExe`. Do not replace it with bare `python`; Windows could
 silently select another installation.
+
+Safe session stops are after Stage 4, after Stage 7, after Recreation 1, and
+after Recreation 3. On return, run the complete block above. It re-verifies
+all three runner files against both the current course source and the durable
+Module 4 hash record, then reconstructs the worked, first-attempt, and
+corrected run folders from their saved relative locators. You do not need to
+replay a state-changing stage merely to restore variables.
 
 ## Follow along — I show you exactly how
 
@@ -138,20 +306,81 @@ if (-not (Test-Path -LiteralPath (Join-Path $sourceRunner 'workflow.py'))) {
     throw 'course1_capstone\workflow.py was not found in that course folder.'
 }
 New-Item -ItemType Directory -Force -Path $runnerFolder | Out-Null
+$runnerComparisons = @()
 foreach ($name in '__init__.py','workflow.py','cli.py') {
+    $source = Join-Path $sourceRunner $name
     $destination = Join-Path $runnerFolder $name
+    if (-not (Test-Path -LiteralPath $source -PathType Leaf)) {
+        throw "Reference runner source is missing or is not a file: $source"
+    }
+    $sourceHash = (Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash
     if (Test-Path -LiteralPath $destination) {
-        Write-Host "KEEPING existing $destination"
+        if (-not (Test-Path -LiteralPath $destination -PathType Leaf)) {
+            throw "Runner destination is not a file. Nothing was executed: $destination"
+        }
+        $destinationHash = (Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash
+        if ($destinationHash -ne $sourceHash) {
+            throw "Existing runner file differs from the controlled course source. Nothing was executed: $destination"
+        }
+        Write-Host "VERIFIED existing $destination"
     } else {
-        Copy-Item -LiteralPath (Join-Path $sourceRunner $name) -Destination $destination
-        Write-Host "COPIED $destination"
+        Copy-Item -LiteralPath $source -Destination $destination
+        $destinationHash = (Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash
+        if ($destinationHash -ne $sourceHash) {
+            throw "Copied runner hash does not match its source. Nothing was executed: $destination"
+        }
+        Write-Host "COPIED AND VERIFIED $destination"
+    }
+    $runnerComparisons += [PSCustomObject]@{
+        name = $name
+        source_sha256 = $sourceHash
+        destination_sha256 = $destinationHash
     }
 }
-Get-ChildItem -LiteralPath $runnerFolder
+$runnerHashRecord = Join-Path $moduleFolder 'reference_runner_hashes.json'
+if (Test-Path -LiteralPath $runnerHashRecord) {
+    if (-not (Test-Path -LiteralPath $runnerHashRecord -PathType Leaf)) {
+        throw 'The saved runner-hash record is not a file. Stop and inspect Module 4.'
+    }
+    try {
+        $savedComparisons = Get-Content -Raw -LiteralPath $runnerHashRecord |
+            ConvertFrom-Json
+    } catch {
+        throw 'The saved runner-hash record is damaged. Stop and ask Codex for read-only diagnosis.'
+    }
+    if (@($savedComparisons).Count -ne $runnerComparisons.Count) {
+        throw 'The saved runner-hash record no longer matches the controlled runner.'
+    }
+    foreach ($current in $runnerComparisons) {
+        $saved = @($savedComparisons | Where-Object { $_.name -ceq $current.name })
+        if (
+            $saved.Count -ne 1 -or
+            $saved[0].source_sha256 -ne $current.source_sha256 -or
+            $saved[0].destination_sha256 -ne $current.destination_sha256
+        ) {
+            throw "The saved runner-hash record differs for $($current.name). Nothing was executed."
+        }
+    }
+    Write-Host "VERIFIED existing $runnerHashRecord"
+} else {
+    $runnerComparisons |
+        ConvertTo-Json -Depth 3 |
+        Set-Content -LiteralPath $runnerHashRecord -Encoding utf8
+    Write-Host "CREATED $runnerHashRecord"
+}
+$runnerReady = Assert-ControlledCourseRunner
+if (-not $runnerReady) {
+    throw 'Stage 1 could not establish the controlled runner. Nothing may execute.'
+}
+Get-ChildItem -LiteralPath $runnerFolder -File
 ```
 
-**Expected result:** three files are listed. On a later session, the command
-prints `KEEPING` and does not erase your files.
+**Expected result:** three files are listed and
+`reference_runner_hashes.json` records matching source and destination
+SHA-256 values. On a later session, the command prints `VERIFIED` and does not
+erase your files. A missing, wrong-type, changed, or partly copied runner file
+stops before Python imports or executes it. Never bypass that stop or replace
+the recorded hash by hand; ask Codex for read-only diagnosis.
 
 The supplied runner is reference code, not a mystery service. It imports only
 Python standard-library modules and contains no network or external-action
@@ -172,6 +401,9 @@ understand every code line yet.
 This small command calls `load_work_items` and stops before any rule or output:
 
 ```powershell
+if (-not $runnerReady) {
+    throw 'Complete Stage 1 verification before importing or executing the runner.'
+}
 & $pythonExe -c "from pathlib import Path; from src.course1_capstone.workflow import load_work_items; raw, rows = load_work_items(Path('data/input/work_items.csv')); print(f'PASS: {len(rows)} rows; {len(rows[0]) - 1} business columns; {len(raw)} source bytes')"
 ```
 
@@ -209,6 +441,9 @@ The field is part of the identity.
 Run:
 
 ```powershell
+if (-not $runnerReady) {
+    throw 'Complete Stage 1 verification before preparing a controlled run.'
+}
 $workedWorkspace = Join-Path $moduleFolder 'worked'
 & $pythonExe .\src\course1_capstone\cli.py prepare `
     --input .\data\input\work_items.csv `
@@ -219,9 +454,10 @@ $workedWorkspace = Join-Path $moduleFolder 'worked'
 if ($LASTEXITCODE -ne 0) {
     throw 'The worked run safely stopped. Read the message above before changing anything.'
 }
-$workedRunLocator = (Get-Content -LiteralPath `
-    (Join-Path $workedWorkspace 'latest_run.txt')).Trim()
-$workedRunDir = Join-Path $workedWorkspace $workedRunLocator
+$workedRunDir = Resolve-SavedCourseRun $workedWorkspace
+if ($null -eq $workedRunDir) {
+    throw 'The worked prepare command returned no validated saved run.'
+}
 Get-Content -LiteralPath (Join-Path $workedRunDir 'state.json')
 Get-Content -LiteralPath (Join-Path $workedRunDir 'evaluation.json')
 ```
@@ -264,9 +500,10 @@ Never edit the expected file to make a difference disappear.
 Run the exact Stage 4 `prepare` command again. Then run:
 
 ```powershell
-$workedRunLocatorAfterRetry = (Get-Content -LiteralPath `
-    (Join-Path $workedWorkspace 'latest_run.txt')).Trim()
-$workedRunDirAfterRetry = Join-Path $workedWorkspace $workedRunLocatorAfterRetry
+$workedRunDirAfterRetry = Resolve-SavedCourseRun $workedWorkspace
+if ($null -eq $workedRunDirAfterRetry) {
+    throw 'The retry returned no validated saved run.'
+}
 $workedRunDir -eq $workedRunDirAfterRetry
 (Get-Content -LiteralPath (Join-Path $workedRunDir 'audit\events.jsonl') |
     Select-String '"event_type": "duplicate_retry_ignored"').Count
@@ -294,7 +531,11 @@ Duplicate work-item ID:
     --workspace (Join-Path $moduleFolder 'failure-duplicate-id') `
     --ai-mode disabled `
     --synthetic-confirmation I_CONFIRM_SYNTHETIC_DATA_ONLY
-$LASTEXITCODE
+$duplicateIdExit = $LASTEXITCODE
+if ($duplicateIdExit -ne 1) {
+    throw 'Duplicate-ID failure did not produce the exact safe-stop exit code.'
+}
+$duplicateIdExit
 ```
 
 Expected: `SAFE STOP: duplicate_work_item_id...` and exit code `1`.
@@ -307,7 +548,11 @@ Unexpected header:
     --workspace (Join-Path $moduleFolder 'failure-header') `
     --ai-mode disabled `
     --synthetic-confirmation I_CONFIRM_SYNTHETIC_DATA_ONLY
-$LASTEXITCODE
+$headerExit = $LASTEXITCODE
+if ($headerExit -ne 1) {
+    throw 'Header failure did not produce the exact safe-stop exit code.'
+}
+$headerExit
 ```
 
 Expected: `SAFE STOP: header_mismatch...` and exit code `1`.
@@ -320,7 +565,11 @@ Malformed CSV:
     --workspace (Join-Path $moduleFolder 'failure-malformed') `
     --ai-mode disabled `
     --synthetic-confirmation I_CONFIRM_SYNTHETIC_DATA_ONLY
-$LASTEXITCODE
+$malformedExit = $LASTEXITCODE
+if ($malformedExit -ne 1) {
+    throw 'Malformed-input failure did not produce the exact safe-stop exit code.'
+}
+$malformedExit
 ```
 
 Expected: `SAFE STOP: malformed_input...` and exit code `1`.
@@ -333,7 +582,11 @@ Missing file:
     --workspace (Join-Path $moduleFolder 'failure-missing') `
     --ai-mode disabled `
     --synthetic-confirmation I_CONFIRM_SYNTHETIC_DATA_ONLY
-$LASTEXITCODE
+$missingExit = $LASTEXITCODE
+if ($missingExit -ne 1) {
+    throw 'Missing-file failure did not produce the exact safe-stop exit code.'
+}
+$missingExit
 ```
 
 Expected: `SAFE STOP: missing_file...` and exit code `1`.
@@ -342,7 +595,40 @@ Do not “fix” a safe stop by weakening validation.
 
 ### Stage 8 — Record the worked design evidence
 
-Create `evidence\module-04\worked_architecture.md` in Visual Studio Code:
+Run this create-once guard:
+
+```powershell
+$workedArchitecturePath = Join-Path $moduleFolder 'worked_architecture.md'
+if (Test-Path -LiteralPath $workedArchitecturePath) {
+    if (-not (Test-Path -LiteralPath $workedArchitecturePath -PathType Leaf)) {
+        throw 'worked_architecture.md exists but is not a file.'
+    }
+    $workedArchitectureText = Get-Content -Raw -LiteralPath $workedArchitecturePath
+    if ($null -eq $workedArchitectureText) { $workedArchitectureText = '' }
+    $workedArchitectureFirstLine = Get-Content -LiteralPath $workedArchitecturePath -TotalCount 1
+    if (-not [string]::IsNullOrEmpty($workedArchitectureText) -and
+        $workedArchitectureFirstLine -cne '# Worked to-be architecture') {
+        throw 'The existing worked architecture is unfamiliar. It was not opened or changed.'
+    }
+    if ($workedArchitectureText.Contains('## Rejected alternatives') -and
+        $workedArchitectureText.Contains('Reassessment trigger:')) {
+        Write-Host 'COMPLETE: keeping worked_architecture.md unchanged.'
+    } else {
+        Write-Host 'INCOMPLETE: continue the recognised synthetic file without duplicating sections.'
+        & notepad.exe $workedArchitecturePath
+    }
+} else {
+    New-Item -ItemType File -Path $workedArchitecturePath | Out-Null
+    Write-Host 'NEW: paste the supplied lesson content once.'
+    & notepad.exe $workedArchitecturePath
+}
+```
+
+Before running it, confirm the named file is synthetic lesson work. A
+wrong-type or unfamiliar existing file stops without opening or changing it;
+preserve it and ask Codex for read-only diagnosis before a clearly numbered
+retry. For `NEW`, paste the completed example below. For `INCOMPLETE`, add only
+the missing section. For `COMPLETE`, do not paste again:
 
 ```markdown
 # Worked to-be architecture and ADR-001
@@ -392,10 +678,25 @@ Run:
 
 ```powershell
 $recreatedInput = Join-Path $moduleFolder 'recreated_work_items.csv'
+$recreatedInputSource = Join-Path $courseRoot 'course1_capstone\fixtures\recreated_work_items.csv'
+if (-not (Test-Path -LiteralPath $recreatedInputSource -PathType Leaf)) {
+    throw 'The controlled recreated input source is missing or is not a file.'
+}
 if (Test-Path -LiteralPath $recreatedInput) {
+    if (-not (Test-Path -LiteralPath $recreatedInput -PathType Leaf)) {
+        throw 'Recreated input path exists but is not a file. Preserve it and stop.'
+    }
+    if ((Get-FileHash -LiteralPath $recreatedInputSource -Algorithm SHA256).Hash -ne
+        (Get-FileHash -LiteralPath $recreatedInput -Algorithm SHA256).Hash) {
+        throw 'Recreated input changed from its controlled synthetic source. Preserve it and ask for read-only diagnosis.'
+    }
     Write-Host "KEEPING your existing $recreatedInput"
 } else {
-    Copy-Item -LiteralPath (Join-Path $courseRoot 'course1_capstone\fixtures\recreated_work_items.csv') -Destination $recreatedInput
+    Copy-Item -LiteralPath $recreatedInputSource -Destination $recreatedInput
+    if ((Get-FileHash -LiteralPath $recreatedInputSource -Algorithm SHA256).Hash -ne
+        (Get-FileHash -LiteralPath $recreatedInput -Algorithm SHA256).Hash) {
+        throw 'The new recreated input copy did not match its controlled source.'
+    }
     Write-Host "CREATED $recreatedInput"
 }
 Import-Csv -LiteralPath $recreatedInput | Format-Table work_item_id,status,received_date,due_date,completed_date,amount
@@ -410,6 +711,10 @@ the header on the first attempt and keeps an existing attempt unchanged:
 ```powershell
 $predictionPath = Join-Path $moduleFolder 'recreated_prediction.csv'
 if (Test-Path -LiteralPath $predictionPath) {
+    if (-not (Test-Path -LiteralPath $predictionPath -PathType Leaf) -or
+        (Get-Content -LiteralPath $predictionPath -TotalCount 1) -cne 'work_item_id,rule_code,field') {
+        throw 'Existing prediction is the wrong type or has an unfamiliar header. Preserve it and ask for read-only diagnosis.'
+    }
     Write-Host "KEEPING your existing $predictionPath"
 } else {
     'work_item_id,rule_code,field' | Set-Content -LiteralPath $predictionPath -Encoding utf8
@@ -440,39 +745,63 @@ Run:
 
 ```powershell
 $recreatedWorkspace = Join-Path $moduleFolder 'recreated'
-$recreatedLatest = Join-Path $recreatedWorkspace 'latest_run.txt'
-if (Test-Path -LiteralPath $recreatedLatest) {
-    Write-Host "KEEPING your existing $recreatedWorkspace"
+if (-not $runnerReady) {
+    throw 'Stage 1 has not yet created and verified the controlled runner in this session.'
+}
+if ($null -ne $recreatedRunDir) {
+    Write-Host "RESUME: keeping the saved first-attempt run $recreatedRunDir"
 } else {
     & $pythonExe .\src\course1_capstone\cli.py prepare `
         --input $recreatedInput `
-        --expected $predictionPath `
         --workspace $recreatedWorkspace `
         --ai-mode disabled `
         --synthetic-confirmation I_CONFIRM_SYNTHETIC_DATA_ONLY
     if ($LASTEXITCODE -ne 0) {
         throw 'The recreated run safely stopped. Read the named reason above.'
     }
+    $recreatedRunDir = Resolve-SavedCourseRun $recreatedWorkspace
 }
-$recreatedRunLocator = (Get-Content -LiteralPath $recreatedLatest).Trim()
-$recreatedRunDir = Join-Path $recreatedWorkspace $recreatedRunLocator
-Get-Content -LiteralPath (Join-Path $recreatedRunDir 'evaluation.json')
+$predictionRows = @(Import-Csv -LiteralPath $predictionPath)
+$predictedKeys = @($predictionRows | ForEach-Object {
+    "$($_.work_item_id)|$($_.rule_code)|$($_.field)"
+} | Sort-Object -Unique)
+$firstAttemptFound = @(Import-Csv -LiteralPath (Join-Path $recreatedRunDir 'issues\issues.csv'))
+$foundKeys = @($firstAttemptFound | ForEach-Object {
+    "$($_.work_item_id)|$($_.rule_code)|$($_.field)"
+} | Sort-Object -Unique)
+$truePositiveKeys = @($predictedKeys | Where-Object { $foundKeys -ccontains $_ })
+$falsePositiveKeys = @($predictedKeys | Where-Object { $foundKeys -cnotcontains $_ })
+$falseNegativeKeys = @($foundKeys | Where-Object { $predictedKeys -cnotcontains $_ })
+[PSCustomObject]@{
+    detected_issues = $foundKeys.Count
+    predicted_unique_keys = $predictedKeys.Count
+    duplicate_prediction_rows = $predictionRows.Count - $predictedKeys.Count
+    true_positives = $truePositiveKeys.Count
+    false_positives = $falsePositiveKeys.Count
+    false_negatives = $falseNegativeKeys.Count
+}
 ```
 
-Your first target is:
+This first evaluation is diagnostic learning evidence. If your prediction was
+right, it shows:
 
 - detected issues: 5;
 - true positives: 5;
 - false positives: 0;
 - false negatives: 0.
 
-If not, keep your original prediction unchanged. Create the exact optional
-notes and corrected-copy paths below without overwriting a prior attempt:
+If not, that is an expected learning outcome, not a failed module. Keep your
+original prediction and its run unchanged. Create the exact notes and
+corrected-copy paths below without overwriting a prior attempt:
 
 ```powershell
 $predictionNotesPath = Join-Path $moduleFolder 'recreated_prediction_notes.md'
 $correctedPredictionPath = Join-Path $moduleFolder 'recreated_prediction_corrected.csv'
 if (Test-Path -LiteralPath $predictionNotesPath) {
+    if (-not (Test-Path -LiteralPath $predictionNotesPath -PathType Leaf) -or
+        (Get-Content -LiteralPath $predictionNotesPath -TotalCount 1) -cne '# Recreated prediction notes') {
+        throw 'Existing prediction notes are the wrong type or unfamiliar. Preserve them and stop.'
+    }
     Write-Host "KEEPING your existing $predictionNotesPath"
 } else {
     @'
@@ -485,6 +814,10 @@ What I will check next time:
 '@ | Set-Content -LiteralPath $predictionNotesPath -Encoding utf8
 }
 if (Test-Path -LiteralPath $correctedPredictionPath) {
+    if (-not (Test-Path -LiteralPath $correctedPredictionPath -PathType Leaf) -or
+        (Get-Content -LiteralPath $correctedPredictionPath -TotalCount 1) -cne 'work_item_id,rule_code,field') {
+        throw 'Existing corrected prediction is the wrong type or has an unfamiliar header. Preserve it and stop.'
+    }
     Write-Host "KEEPING your existing $correctedPredictionPath"
 } else {
     Copy-Item -LiteralPath $predictionPath -Destination $correctedPredictionPath
@@ -496,7 +829,7 @@ notepad $correctedPredictionPath
 Do not erase evidence of the learning mistake. The original
 `recreated_prediction.csv` remains your first attempt.
 
-After your attempt, compare against the official answer:
+After your attempt, compare the detected rules with the official answer:
 
 ```powershell
 $official = Import-Csv -LiteralPath (Join-Path $courseRoot 'course1_capstone\fixtures\recreated_expected_issues.csv')
@@ -508,6 +841,60 @@ Compare-Object $officialKeys $recreatedKeys
 
 Expected: no output.
 
+Use that comparison to correct
+`recreated_prediction_corrected.csv`. Keep its exact three-column header and
+save one row for each of the five official keys. Then run this separate,
+non-overwriting corrected evaluation:
+
+```powershell
+$correctedPredictionPath = Join-Path $moduleFolder 'recreated_prediction_corrected.csv'
+$officialExpectedPath = Join-Path $courseRoot 'course1_capstone\fixtures\recreated_expected_issues.csv'
+if (-not (Test-Path -LiteralPath $correctedPredictionPath -PathType Leaf) -or
+    -not (Test-Path -LiteralPath $officialExpectedPath -PathType Leaf)) {
+    throw 'The corrected prediction or controlled answer file is missing.'
+}
+$official = Import-Csv -LiteralPath $officialExpectedPath
+$corrected = Import-Csv -LiteralPath $correctedPredictionPath
+$correctedKeys = $corrected | ForEach-Object {
+    "$($_.work_item_id)|$($_.rule_code)|$($_.field)"
+}
+$officialKeys = $official | ForEach-Object {
+    "$($_.work_item_id)|$($_.rule_code)|$($_.field)"
+}
+$correctedDifference = @(Compare-Object $officialKeys $correctedKeys)
+if ($correctedDifference.Count -ne 0) {
+    $correctedDifference
+    throw 'Corrected prediction is not yet exact. Keep editing the corrected copy; do not change the first attempt.'
+}
+if ($null -ne $correctedRunDir) {
+    Write-Host "RESUME: keeping the saved corrected run $correctedRunDir"
+} else {
+    & $pythonExe $runner prepare `
+        --input $recreatedInput `
+        --expected $correctedPredictionPath `
+        --workspace $correctedWorkspace `
+        --ai-mode disabled `
+        --synthetic-confirmation I_CONFIRM_SYNTHETIC_DATA_ONLY
+    if ($LASTEXITCODE -ne 0) {
+        throw 'The corrected evaluation safely stopped. Read the named reason above.'
+    }
+    $correctedRunDir = Resolve-SavedCourseRun $correctedWorkspace
+}
+$correctedEvaluation = Get-Content -Raw -LiteralPath `
+    (Join-Path $correctedRunDir 'evaluation.json') | ConvertFrom-Json
+if ($correctedEvaluation.detected_issue_count -ne 5 -or
+    $correctedEvaluation.true_positives -ne 5 -or
+    $correctedEvaluation.false_positives -ne 0 -or
+    $correctedEvaluation.false_negatives -ne 0) {
+    throw 'Corrected evaluation did not reach the exact 5/5/0/0 acceptance result.'
+}
+$correctedEvaluation
+```
+
+Expected: detected `5`, true positive `5`, false positive `0`, false negative
+`0`. The first-attempt workspace remains evidence of what you initially
+predicted; the corrected workspace is the Module 4 acceptance evidence.
+
 ### Recreation 4 — Explain your design
 
 Create `evidence\module-04\recreated_architecture.md` in your own words. This
@@ -516,6 +903,10 @@ command creates a blank heading once and keeps a prior version unchanged:
 ```powershell
 $recreatedArchitecturePath = Join-Path $moduleFolder 'recreated_architecture.md'
 if (Test-Path -LiteralPath $recreatedArchitecturePath) {
+    if (-not (Test-Path -LiteralPath $recreatedArchitecturePath -PathType Leaf) -or
+        (Get-Content -LiteralPath $recreatedArchitecturePath -TotalCount 1) -cne '# Recreated architecture') {
+        throw 'Existing recreated architecture is the wrong type or unfamiliar. Preserve it and stop.'
+    }
     Write-Host "KEEPING your existing $recreatedArchitecturePath"
 } else {
     @'
@@ -539,24 +930,43 @@ Complete that file with:
 
 ## Ask Codex to check your work
 
-Run `(Resolve-Path $moduleFolder).Path`, paste the full path below, and send:
+Run both commands and paste each full path into its matching placeholder:
+
+```powershell
+(Resolve-Path $moduleFolder).Path
+(Resolve-Path (Join-Path $projectRoot 'src\course1_capstone')).Path
+```
+
+Then send:
 
 ```text
 READ-ONLY COURSE REVIEW.
 
-I authorize inspection of only this full path:
+I authorize inspection of only these two full paths:
 [PASTE FULL MODULE-04 PATH]
+[PASTE FULL SRC\COURSE1_CAPSTONE PATH]
 
-Do not edit, create, delete, move, rename, format, or execute anything. Do not
-inspect a parent folder. This path must contain no secrets and no real client,
-real work, personal, or medical data. Stop if it does.
+Learner attestation: I created these files for this fictional exercise and
+have not knowingly put real client, employer, personal, medical, credential,
+or secret data in them. This statement is an attestation, not proof.
+
+You may only list names, read files, and calculate hashes inside the two
+authorised folders. Do not create, edit, delete, rename, move, or format any
+file. Do not
+execute the runner, lesson scripts, or tests, use a network, or inspect a
+parent or other location. If apparent sensitive data is noticed,
+do not quote or repeat it: return NOT YET with only the filename and general
+category, then stop. If none is noticed, say that non-detection is not proof
+that none exists.
 
 Return:
 1. PASS or NOT YET;
-2. checks for the worked 13-issue run and recreated 5-issue run;
+2. checks for the worked 13-issue run, preserved first prediction run, and
+corrected 5/5/0/0 recreation run;
 3. confirmation that comparisons use work_item_id + rule_code + field;
-4. input hashes/source preservation, named states, idempotent retry, audit and
-evaluation evidence, deterministic fallback, zero external actions;
+4. input hashes/source preservation, runner hashes against the Module 4 record,
+named states, idempotent retry, audit and evaluation evidence, deterministic
+fallback, and zero recorded external actions;
 5. safe-stop evidence for duplicate ID, header mismatch, malformed input, and
 missing file;
 6. worked and recreated architecture records;
@@ -568,9 +978,13 @@ Remain read-only. Do not provide replacement files.
 ## Pass criteria
 
 - [ ] Exact project Python is used through `$pythonExe`.
+- [ ] All three copied runner files match the controlled course source by
+      SHA-256 before any import or execution.
 - [ ] Worked input has 15 rows and 12 business columns.
 - [ ] Worked result matches all 13 three-part expected keys.
-- [ ] Recreated result matches all 5 three-part expected keys.
+- [ ] The original recreated prediction/run is preserved, and the separate
+      corrected recreation reaches detected 5, true positive 5, false positive
+      0, and false negative 0 against all five three-part expected keys.
 - [ ] Every issue has source row, field, raw value, rule, severity, and date.
 - [ ] An identical retry creates no duplicate logical effect.
 - [ ] Duplicate ID, bad header, malformed input, and missing file safely stop.
@@ -581,19 +995,24 @@ Remain read-only. Do not provide replacement files.
 
 ### Record your Module 4 PASS in Git
 
-Only after Codex returns `PASS`:
+Only after Codex returns `PASS`, rerun the complete **Start or resume safely**
+block in this same PowerShell window so the exact marker and Git-root checks
+pass again:
 
 ```powershell
 Set-Location -LiteralPath $projectRoot
 git status --short
 git add -- "src/course1_capstone"
 git add -- "evidence\module-04"
-git commit -m "complete module 4 evidence"
+git commit --only -m "complete module 4 evidence" -- `
+    "src/course1_capstone" "evidence/module-04"
 git status --short
 ```
 
-If Git says `nothing to commit`, the same evidence may already be recorded.
-Never add real data, secrets, or unrelated files.
+`git commit --only` restricts this checkpoint to the two repeated paths, even
+if a different file had already been staged. If Git says `nothing to commit`,
+the same evidence may already be recorded. Never add real data, secrets, or
+unrelated files.
 
 ## Consultant lens
 

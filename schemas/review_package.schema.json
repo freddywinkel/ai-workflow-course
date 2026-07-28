@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://course.invalid/schemas/review_package.schema.json",
+  "title": "Course 1 Human Review Package",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id",
+    "draft_revision",
+    "draft_sha256",
+    "issue_count",
+    "issues_json_path",
+    "issues_csv_path",
+    "source_path",
+    "summary_path",
+    "control_path",
+    "run_config_path",
+    "review_manifest_path",
+    "reviewer_must_check",
+    "allowed_decisions",
+    "external_actions"
+  ],
+  "properties": {
+    "run_id": {
+      "type": "string",
+      "pattern": "^RUN-[A-F0-9]{12}$"
+    },
+    "draft_revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "draft_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "issue_count": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "issues_json_path": {
+      "const": "issues/issues.json"
+    },
+    "issues_csv_path": {
+      "const": "issues/issues.csv"
+    },
+    "source_path": {
+      "const": "source/work_items.csv"
+    },
+    "summary_path": {
+      "const": "draft/summary.json"
+    },
+    "control_path": {
+      "const": "control.json"
+    },
+    "run_config_path": {
+      "const": "run_config.json"
+    },
+    "review_manifest_path": {
+      "const": "review/review_manifest.json"
+    },
+    "reviewer_must_check": {
+      "type": "array",
+      "minItems": 4,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "allowed_decisions": {
+      "const": ["approve", "edit", "reject", "expire"]
+    },
+    "external_actions": {
+      "const": 0
+    }
+  }
+}

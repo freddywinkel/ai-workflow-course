@@ -11,15 +11,27 @@ import csv
 import hashlib
 import io
 import json
+import os
 import re
+import shutil
+import tempfile
+import threading
+import uuid
 from collections import Counter
+from contextlib import contextmanager
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable, Iterator
 
 ASSESSMENT_DATE = date.fromisoformat("2026-07-26")
 PIPELINE_VERSION = "course1-offline-v1"
+RULES_VERSION = "course1-rules-v1"
+PROMPT_VERSION = "course1-summary-v1"
+MOCK_GENERATOR_VERSION = "course1-offline-mock-v1"
+FALLBACK_GENERATOR_VERSION = "course1-deterministic-fallback-v1"
+RUN_CONFIG_SCHEMA_VERSION = "course1-run-config-v1"
+REVIEW_MANIFEST_SCHEMA_VERSION = "course1-review-manifest-v1"
 SYNTHETIC_CONFIRMATION = "I_CONFIRM_SYNTHETIC_DATA_ONLY"
 HEADERS = [
     "work_item_id",
@@ -59,6 +71,7 @@ APPROVAL_FIELDS = {
     "decision",
     "draft_revision",
     "draft_sha256",
+    "review_manifest_sha256",
     "decided_at",
     "expires_at",
     "evidence_reviewed",
@@ -74,6 +87,99 @@ AI_MODES = {
 }
 DECISIONS = {"approve", "edit", "reject", "expire"}
 TERMINAL_NON_EXPORT_STATES = {"changes_requested", "rejected", "expired"}
+WORKFLOW_STATES = {
+    "received",
+    "validated",
+    "issues_ready",
+    "summary_ready",
+    "needs_review",
+    "changes_requested",
+    "approved_for_local_export",
+    "approved_draft",
+    "rejected",
+    "expired",
+    "no_action_needed",
+    "failed_manual",
+}
+PERSISTED_STATES = {
+    "needs_review",
+    "changes_requested",
+    "approved_for_local_export",
+    "approved_draft",
+    "rejected",
+    "expired",
+    "no_action_needed",
+}
+STATE_FIELDS = {
+    "run_id",
+    "run_config_sha256",
+    "input_sha256",
+    "assessment_date",
+    "pipeline_version",
+    "rules_version",
+    "prompt_version",
+    "current_state",
+    "draft_revision",
+    "draft_sha256",
+    "review_manifest_sha256",
+    "active_decision_path",
+    "ai_mode_requested",
+    "summary_generator",
+    "summary_fallback_reason",
+    "external_actions",
+    "local_export_count",
+    "expected_keys",
+}
+RUN_CONFIG_FIELDS = {
+    "schema_version",
+    "input_sha256",
+    "assessment_date",
+    "pipeline_version",
+    "rules_version",
+    "prompt_version",
+    "requested_adapter_mode",
+    "mock_generator_version",
+    "fallback_generator_version",
+    "expected_oracle_present",
+    "expected_oracle_sha256",
+}
+CONTROL = {
+    "EXTERNAL_ACTIONS_ENABLED": False,
+    "allowed_output": "local_draft_only",
+    "dataset_kind": "synthetic",
+}
+REVIEW_PACKAGE_FIELDS = {
+    "run_id",
+    "draft_revision",
+    "draft_sha256",
+    "issue_count",
+    "issues_json_path",
+    "issues_csv_path",
+    "source_path",
+    "summary_path",
+    "control_path",
+    "run_config_path",
+    "review_manifest_path",
+    "reviewer_must_check",
+    "allowed_decisions",
+    "external_actions",
+}
+EXPECTED_ORACLE_EVIDENCE_PATH = "source/expected_issues.evidence"
+EXPECTED_ORACLE_ABSENT_BYTES = b"EXPECTED_ORACLE_NOT_SUPPLIED\n"
+STAGING_PREFIX = ".course1-staging-"
+PROTECTED_REVIEW_ARTIFACTS = {
+    "source": "source/work_items.csv",
+    "expected_oracle": EXPECTED_ORACLE_EVIDENCE_PATH,
+    "issues_json": "issues/issues.json",
+    "issues_csv": "issues/issues.csv",
+    "summary": "draft/summary.json",
+    "control": "control.json",
+    "run_config": "run_config.json",
+    "review_package": "review/review_package.json",
+}
+OPERATION_LOCK_NAME = ".course1-operation.lock"
+TRANSACTION_INCOMPLETE_NAME = "CONTROLLED_TRANSACTION_INCOMPLETE.txt"
+_LOCK_OWNERS = threading.local()
 
 
 class SafeStop(RuntimeError):
@@ -98,10 +204,17 @@ def iso_utc(value: datetime) -> str:
 
 
 def parse_datetime(value: str, field: str) -> datetime:
+    if not isinstance(value, str) or not isinstance(field, str):
+        raise SafeStop(
+            "invalid_datetime",
+            "A date-time value and field name must both be text.",
+        )
     try:
         parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
     except (TypeError, ValueError) as error:
-        raise SafeStop("invalid_datetime", f"{field} is not a valid date-time.") from error
+        raise SafeStop(
+            "invalid_datetime", f"{field} is not a valid date-time."
+        ) from error
     if parsed.tzinfo is None or parsed.utcoffset() is None:
         raise SafeStop("invalid_datetime", f"{field} must include a timezone.")
     return parsed.astimezone(timezone.utc)
@@ -132,12 +245,159 @@ def read_json(path: Path) -> Any:
             f"Required JSON file is missing: {path.name}.",
         ) from error
     except json.JSONDecodeError as error:
-        raise SafeStop("malformed_json", f"Invalid JSON in {path.name}: {error.msg}") from error
+        raise SafeStop(
+            "malformed_json", f"Invalid JSON in {path.name}: {error.msg}"
+        ) from error
+    except UnicodeError as error:
+        raise SafeStop(
+            "malformed_json",
+            f"Invalid text encoding in {path.name}.",
+        ) from error
+    except OSError as error:
+        raise SafeStop(
+            "file_read_error",
+            f"Could not safely read required file {path.name}.",
+        ) from error
+
+
+def atomic_write_bytes(path: Path, value: bytes) -> None:
+    if not isinstance(path, Path) or type(value) is not bytes:
+        raise SafeStop(
+            "invalid_argument",
+            "Controlled writes require a Path and bytes.",
+        )
+    temporary_path = path.parent / f"~{uuid.uuid4().hex[:8]}.tmp"
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with temporary_path.open("xb") as stream:
+            stream.write(value)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary_path, path)
+    except OSError as error:
+        try:
+            temporary_path.unlink(missing_ok=True)
+        except OSError:
+            pass
+        raise SafeStop(
+            "file_write_error",
+            f"Could not safely write controlled file {path.name}.",
+        ) from error
 
 
 def write_json(path: Path, value: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(canonical_bytes(value))
+    atomic_write_bytes(path, canonical_bytes(value))
+
+
+def _read_bytes(path: Path, label: str) -> bytes:
+    if not isinstance(path, Path):
+        raise SafeStop("invalid_argument", f"{label} path must be a Path.")
+    try:
+        return path.read_bytes()
+    except FileNotFoundError as error:
+        raise SafeStop("missing_file", f"Required {label} is missing.") from error
+    except OSError as error:
+        raise SafeStop("file_read_error", f"Could not safely read {label}.") from error
+
+
+def _path_exists(path: Path, label: str) -> bool:
+    if not isinstance(path, Path):
+        raise SafeStop("invalid_argument", f"{label} path must be a Path.")
+    try:
+        return path.exists()
+    except OSError as error:
+        raise SafeStop(
+            "filesystem_check_error",
+            f"Could not safely inspect {label}.",
+        ) from error
+
+
+@contextmanager
+def _exclusive_operation_lock(scope: Path) -> Iterator[None]:
+    """Reject overlapping operations instead of interleaving controlled writes."""
+
+    if not isinstance(scope, Path):
+        raise SafeStop("invalid_argument", "Lock scope must be a Path.")
+    try:
+        scope_key = os.path.normcase(str(scope.resolve()))
+    except OSError as error:
+        raise SafeStop("lock_error", "The lock scope could not be resolved.") from error
+    held = getattr(_LOCK_OWNERS, "held", {})
+    if held.get(scope_key, 0):
+        held[scope_key] += 1
+        _LOCK_OWNERS.held = held
+        try:
+            yield
+        finally:
+            held[scope_key] -= 1
+            if held[scope_key] == 0:
+                del held[scope_key]
+        return
+    lock_path = scope / OPERATION_LOCK_NAME
+    descriptor: int | None = None
+    try:
+        scope.mkdir(parents=True, exist_ok=True)
+        descriptor = os.open(
+            lock_path,
+            os.O_CREAT | os.O_EXCL | os.O_WRONLY,
+            0o600,
+        )
+        os.write(
+            descriptor,
+            canonical_bytes(
+                {
+                    "pid": os.getpid(),
+                    "created_at": iso_utc(utc_now()),
+                }
+            ),
+        )
+        os.fsync(descriptor)
+    except FileExistsError as error:
+        raise SafeStop(
+            "concurrent_operation",
+            "Another Course 1 operation is already using this controlled scope. "
+            "Wait for it to finish, then retry. After a confirmed crash, follow "
+            "the proof-first stale-lock steps in course1_capstone/README.md.",
+        ) from error
+    except OSError as error:
+        if descriptor is not None:
+            try:
+                os.close(descriptor)
+            except OSError:
+                pass
+            descriptor = None
+            try:
+                lock_path.unlink(missing_ok=True)
+            except OSError:
+                pass
+        raise SafeStop(
+            "lock_error",
+            "The controlled operation lock could not be created.",
+        ) from error
+    finally:
+        if descriptor is not None:
+            try:
+                os.close(descriptor)
+            except OSError:
+                pass
+    try:
+        held[scope_key] = 1
+        _LOCK_OWNERS.held = held
+        yield
+    finally:
+        held[scope_key] -= 1
+        if held[scope_key] == 0:
+            del held[scope_key]
+        try:
+            lock_path.unlink()
+        except FileNotFoundError:
+            pass
+        except OSError as error:
+            raise SafeStop(
+                "lock_release_error",
+                "The operation finished but its lock could not be removed. "
+                "Do not continue until the lock is checked.",
+            ) from error
 
 
 def _require_exact_keys(value: Any, required: set[str], label: str) -> None:
@@ -161,6 +421,38 @@ def _require_non_empty_string(value: Any, label: str, code: str) -> str:
     return value
 
 
+def _require_sha256(value: Any, label: str, code: str) -> str:
+    if not isinstance(value, str) or not re.fullmatch(r"[a-f0-9]{64}", value):
+        raise SafeStop(code, f"{label} must be a lowercase SHA-256 hash.")
+    return value
+
+
+def _require_run_id(value: Any, label: str, code: str) -> str:
+    if not isinstance(value, str) or not re.fullmatch(r"RUN-[A-F0-9]{12}", value):
+        raise SafeStop(code, f"{label} is invalid.")
+    return value
+
+
+def _spreadsheet_safe(value: Any) -> Any:
+    """Keep spreadsheet software from evaluating controlled CSV text as a formula."""
+
+    if not isinstance(value, str):
+        return value
+    if re.match(r"^[\s\x00-\x1f]*[=+\-@]", value):
+        return "'" + value
+    return value
+
+
+def _csv_bytes(rows: list[dict[str, Any]], fields: list[str]) -> bytes:
+    buffer = io.StringIO(newline="")
+    writer = csv.DictWriter(buffer, fieldnames=fields, lineterminator="\r\n")
+    writer.writeheader()
+    writer.writerows(
+        [{field: _spreadsheet_safe(row[field]) for field in fields} for row in rows]
+    )
+    return buffer.getvalue().encode("utf-8")
+
+
 def _run_locator(run_id: str) -> str:
     """Return the username-free locator stored in a workspace."""
 
@@ -168,9 +460,9 @@ def _run_locator(run_id: str) -> str:
 
 
 def _write_latest_run_locator(workspace: Path, run_id: str) -> None:
-    (workspace / "latest_run.txt").write_text(
-        _run_locator(run_id) + "\n",
-        encoding="utf-8",
+    atomic_write_bytes(
+        workspace / "latest_run.txt",
+        (_run_locator(run_id) + "\n").encode("utf-8"),
     )
 
 
@@ -178,7 +470,9 @@ def _parse_csv_bytes(input_bytes: bytes, source_name: str) -> list[dict[str, str
     try:
         text = input_bytes.decode("utf-8-sig")
     except UnicodeDecodeError as error:
-        raise SafeStop("malformed_input", f"{source_name} is not UTF-8 text.") from error
+        raise SafeStop(
+            "malformed_input", f"{source_name} is not UTF-8 text."
+        ) from error
     try:
         reader = csv.DictReader(io.StringIO(text, newline=""), strict=True)
         if reader.fieldnames != HEADERS:
@@ -188,7 +482,9 @@ def _parse_csv_bytes(input_bytes: bytes, source_name: str) -> list[dict[str, str
             )
         rows = list(reader)
     except csv.Error as error:
-        raise SafeStop("malformed_input", f"{source_name} is malformed CSV: {error}.") from error
+        raise SafeStop(
+            "malformed_input", f"{source_name} is malformed CSV: {error}."
+        ) from error
     if not rows:
         raise SafeStop("malformed_input", f"{source_name} contains no work-item rows.")
     clean_rows: list[dict[str, str]] = []
@@ -205,12 +501,19 @@ def _parse_csv_bytes(input_bytes: bytes, source_name: str) -> list[dict[str, str
 
 
 def load_work_items(input_path: Path) -> tuple[bytes, list[dict[str, str]]]:
+    if not isinstance(input_path, Path):
+        raise SafeStop("invalid_argument", "Input path must be a Path.")
     try:
         input_bytes = input_path.read_bytes()
     except FileNotFoundError as error:
         raise SafeStop(
             "missing_file",
             f"Input file does not exist: {input_path.name}.",
+        ) from error
+    except OSError as error:
+        raise SafeStop(
+            "file_read_error",
+            f"Could not safely read input file {input_path.name}.",
         ) from error
     rows = _parse_csv_bytes(input_bytes, input_path.name)
     work_ids = [row["work_item_id"].strip() for row in rows]
@@ -425,7 +728,7 @@ def detect_issues(rows: list[dict[str, str]]) -> list[dict[str, Any]]:
                 "source_reference",
                 "R010",
                 "high",
-                f"Source reference {reference} is duplicated.",
+                "Source reference is duplicated.",
             )
 
     for row in rows:
@@ -455,21 +758,42 @@ def detect_issues(rows: list[dict[str, str]]) -> list[dict[str, Any]]:
 
 def validate_issue(issue: dict[str, Any]) -> None:
     _require_exact_keys(issue, set(ISSUE_FIELDS), "issue")
-    expected_id = (
-        f"{issue['work_item_id']}|{issue['rule_code']}|{issue['field']}"
-    )
+    for field in (
+        "issue_id",
+        "work_item_id",
+        "source_reference",
+        "field",
+        "raw_value",
+        "rule_code",
+        "severity",
+        "message",
+        "assessment_date",
+    ):
+        if not isinstance(issue[field], str):
+            raise SafeStop("invalid_issue", f"Issue {field} must be a string.")
+    if type(issue["source_row"]) is not int:
+        raise SafeStop("invalid_issue", "Issue source_row must be an integer.")
+    expected_id = f"{issue['work_item_id']}|{issue['rule_code']}|{issue['field']}"
     if issue["issue_id"] != expected_id:
         raise SafeStop("invalid_issue_id", f"{issue['issue_id']} is not canonical.")
     if not re.fullmatch(r"WI-[0-9]{4}", issue["work_item_id"]):
         raise SafeStop("invalid_issue", "Issue work_item_id is invalid.")
     if not re.fullmatch(r"R[0-9]{3}", issue["rule_code"]):
         raise SafeStop("invalid_issue", "Issue rule_code is invalid.")
+    if issue["field"] not in HEADERS:
+        raise SafeStop("invalid_issue", "Issue field is invalid.")
     if issue["severity"] not in {"low", "medium", "high"}:
         raise SafeStop("invalid_issue", "Issue severity is invalid.")
-    if not isinstance(issue["source_row"], int) or issue["source_row"] < 2:
+    if issue["source_row"] < 2:
         raise SafeStop("invalid_issue", "Issue source_row is invalid.")
-    if not isinstance(issue["raw_value"], str) or not issue["message"]:
+    if not issue["message"]:
         raise SafeStop("invalid_issue", "Issue evidence or message is invalid.")
+    try:
+        parsed_assessment_date = date.fromisoformat(issue["assessment_date"])
+    except ValueError as error:
+        raise SafeStop("invalid_issue", "Issue assessment_date is invalid.") from error
+    if parsed_assessment_date.isoformat() != issue["assessment_date"]:
+        raise SafeStop("invalid_issue", "Issue assessment_date is not canonical.")
 
 
 def _build_summary(
@@ -506,7 +830,7 @@ def _build_summary(
     ]
     return {
         "run_id": run_id,
-        "prompt_version": "course1-summary-v1",
+        "prompt_version": PROMPT_VERSION,
         "generator": generator,
         "headline": f"{len(issues)} verified synthetic issues require human review.",
         "groups": groups,
@@ -520,6 +844,7 @@ def validate_summary(
     summary: Any,
     issues: list[dict[str, Any]],
     run_id: str,
+    source_rows: list[dict[str, str]] | None = None,
 ) -> None:
     required = {
         "run_id",
@@ -539,21 +864,28 @@ def validate_summary(
         raise SafeStop("summary_contract", "Summary run_id is invalid.")
     if summary["run_id"] != run_id:
         raise SafeStop("summary_run_mismatch", "Summary run_id is not this run.")
-    _require_non_empty_string(
-        summary["prompt_version"],
-        "Summary prompt_version",
-        "summary_contract",
-    )
+    if summary["prompt_version"] != PROMPT_VERSION:
+        raise SafeStop(
+            "summary_contract",
+            "Summary prompt_version is not the controlled Course 1 version.",
+        )
     if not isinstance(summary["generator"], str) or summary["generator"] not in {
         "offline-mock",
         "deterministic-fallback",
     }:
         raise SafeStop("summary_contract", "Summary generator is not permitted.")
-    _require_non_empty_string(
-        summary["headline"],
-        "Summary headline",
-        "summary_contract",
+    headline = _require_non_empty_string(
+        summary["headline"], "Summary headline", "summary_contract"
     )
+    safe_headlines = {
+        f"{len(issues)} verified synthetic issues require human review.",
+        f"Human review is required for {len(issues)} verified synthetic issues.",
+    }
+    if headline not in safe_headlines:
+        raise SafeStop(
+            "unsupported_summary_claim",
+            "Summary headline must use one of the controlled evidence-count templates.",
+        )
     if summary["review_required"] is not True:
         raise SafeStop("review_bypass", "review_required must be true.")
     if not isinstance(summary["unsupported_statements"], list) or any(
@@ -570,7 +902,8 @@ def validate_summary(
             "Unsupported statements require deterministic fallback.",
         )
 
-    known_ids = {issue["issue_id"] for issue in issues}
+    issue_by_id = {issue["issue_id"]: issue for issue in issues}
+    known_ids = set(issue_by_id)
     grouped_ids: list[str] = []
     if not isinstance(summary["groups"], list) or not summary["groups"]:
         raise SafeStop("summary_contract", "At least one summary group is required.")
@@ -578,7 +911,7 @@ def validate_summary(
         if not isinstance(group, dict):
             raise SafeStop("summary_contract", "Each group must be an object.")
         _require_exact_keys(group, {"label", "issue_ids", "summary"}, "group")
-        _require_non_empty_string(
+        group_label = _require_non_empty_string(
             group["label"],
             "Group label",
             "summary_contract",
@@ -615,6 +948,24 @@ def validate_summary(
                     f"Summary text does not visibly cite {issue_id}.",
                 )
             grouped_ids.append(issue_id)
+        selected_issues = [issue_by_id[issue_id] for issue_id in group["issue_ids"]]
+        severities = {issue["severity"] for issue in selected_issues}
+        if len(severities) != 1:
+            raise SafeStop(
+                "unsupported_summary_claim",
+                "A controlled summary group cannot mix issue severities.",
+            )
+        severity = next(iter(severities))
+        expected_label = f"{severity.title()}-severity verified issues"
+        expected_text = " ".join(
+            f"[{issue['issue_id']}] {issue['message']}" for issue in selected_issues
+        )
+        if group_label != expected_label or group_text != expected_text:
+            raise SafeStop(
+                "unsupported_summary_claim",
+                "Group prose must be rendered only from verified issue identifiers "
+                "and controlled rule messages.",
+            )
     if len(grouped_ids) != len(set(grouped_ids)):
         raise SafeStop("duplicate_ai_issue_reference", "An issue is grouped twice.")
     if set(grouped_ids) != known_ids:
@@ -625,9 +976,7 @@ def validate_summary(
 
     action_ids: list[str] = []
     covered_by_actions: list[str] = []
-    if not isinstance(summary["review_actions"], list) or not summary[
-        "review_actions"
-    ]:
+    if not isinstance(summary["review_actions"], list) or not summary["review_actions"]:
         raise SafeStop(
             "summary_contract",
             "review_actions must be a non-empty list.",
@@ -654,11 +1003,13 @@ def validate_summary(
                 "summary_contract",
                 "Review action_id must use the form ACT-001.",
             )
+        if not isinstance(action["action_type"], str):
+            raise SafeStop("summary_contract", "Review action_type must be text.")
         if action["action_type"] != "human_review":
             raise SafeStop("unsafe_action", "Only human_review actions are permitted.")
         if action["external_action"] is not False:
             raise SafeStop("external_action_blocked", "External action must be false.")
-        _require_non_empty_string(
+        instruction = _require_non_empty_string(
             action["instruction"],
             "Review instruction",
             "summary_contract",
@@ -681,6 +1032,11 @@ def validate_summary(
                 "summary_contract",
                 "A review action contains the same issue more than once.",
             )
+        if len(action["issue_ids"]) != 1:
+            raise SafeStop(
+                "unsafe_action",
+                "Each controlled human-review action must identify exactly one issue.",
+            )
         action_ids.append(action["action_id"])
         for issue_id in action["issue_ids"]:
             if issue_id not in known_ids:
@@ -689,6 +1045,17 @@ def validate_summary(
                     f"Review action contains unknown issue_id {issue_id}.",
                 )
             covered_by_actions.append(issue_id)
+            issue = issue_by_id[issue_id]
+            expected_instruction = (
+                f"Review field {issue['field']} in synthetic source row "
+                f"{issue['source_row']}; do not perform an external action."
+            )
+            if instruction != expected_instruction:
+                raise SafeStop(
+                    "unsafe_action",
+                    "Review instructions must use the controlled no-external-action "
+                    "template.",
+                )
     if len(action_ids) != len(set(action_ids)):
         raise SafeStop("summary_contract", "Review action IDs are not unique.")
     if len(covered_by_actions) != len(set(covered_by_actions)):
@@ -698,10 +1065,19 @@ def validate_summary(
             "summary_contract",
             "Every verified issue needs exactly one source-linked review action.",
         )
+    # Generated summaries are safe by construction: every accepted prose field
+    # is an exact controlled template or a deterministic rule message. Learner
+    # candidates use this same bounded contract. No substring matching against
+    # source prose is used, so ordinary words and short tokens cannot cause
+    # false positives.
+
+
+def _decision_id(approval_without_id: dict[str, Any]) -> str:
+    return "DEC-" + sha256_bytes(canonical_bytes(approval_without_id))[:12].upper()
 
 
 def validate_approval(approval: Any) -> tuple[datetime, datetime]:
-    """Validate the complete portable approval contract at every use."""
+    """Validate and locally fingerprint every material decision field."""
 
     _require_exact_keys(approval, APPROVAL_FIELDS, "approval")
     if not isinstance(approval["decision_id"], str) or not re.fullmatch(
@@ -709,30 +1085,32 @@ def validate_approval(approval: Any) -> tuple[datetime, datetime]:
         approval["decision_id"],
     ):
         raise SafeStop("approval_contract", "Approval decision_id is invalid.")
-    if not isinstance(approval["run_id"], str) or not re.fullmatch(
-        r"RUN-[A-F0-9]{12}",
-        approval["run_id"],
-    ):
-        raise SafeStop("approval_contract", "Approval run_id is invalid.")
+    _require_run_id(approval["run_id"], "Approval run_id", "approval_contract")
     _require_non_empty_string(
         approval["reviewer_role"],
         "Approval reviewer_role",
         "approval_contract",
     )
-    if not isinstance(approval["decision"], str) or approval[
-        "decision"
-    ] not in DECISIONS:
+    if (
+        not isinstance(approval["decision"], str)
+        or approval["decision"] not in DECISIONS
+    ):
         raise SafeStop("approval_contract", "Approval decision is invalid.")
     if type(approval["draft_revision"]) is not int or approval["draft_revision"] < 1:
         raise SafeStop(
             "approval_contract",
             "Approval draft_revision must be an integer of at least 1.",
         )
-    if not isinstance(approval["draft_sha256"], str) or not re.fullmatch(
-        r"[a-f0-9]{64}",
+    _require_sha256(
         approval["draft_sha256"],
-    ):
-        raise SafeStop("approval_contract", "Approval draft_sha256 is invalid.")
+        "Approval draft_sha256",
+        "approval_contract",
+    )
+    _require_sha256(
+        approval["review_manifest_sha256"],
+        "Approval review_manifest_sha256",
+        "approval_contract",
+    )
     date_time_pattern = (
         r"[0-9]{4}-[0-9]{2}-[0-9]{2}T"
         r"[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]+)?"
@@ -774,7 +1152,447 @@ def validate_approval(approval: Any) -> tuple[datetime, datetime]:
                 "approval_contract",
                 "Approval expires_at must be after decided_at.",
             )
+    expected_decision_id = _decision_id(
+        {field: approval[field] for field in sorted(APPROVAL_FIELDS - {"decision_id"})}
+    )
+    if approval["decision_id"] != expected_decision_id:
+        raise SafeStop(
+            "decision_integrity_mismatch",
+            "Decision fields no longer match decision_id. This is local tamper "
+            "detection, not identity authentication.",
+        )
     return decided_at, expires_at
+
+
+def validate_run_config(config: Any) -> None:
+    _require_exact_keys(config, RUN_CONFIG_FIELDS, "run configuration")
+    if config["schema_version"] != RUN_CONFIG_SCHEMA_VERSION:
+        raise SafeStop("run_config_contract", "Run configuration version is invalid.")
+    _require_sha256(
+        config["input_sha256"],
+        "Run configuration input_sha256",
+        "run_config_contract",
+    )
+    try:
+        configured_date = date.fromisoformat(config["assessment_date"])
+    except (TypeError, ValueError) as error:
+        raise SafeStop(
+            "run_config_contract",
+            "Run configuration assessment_date is invalid.",
+        ) from error
+    if configured_date.isoformat() != config["assessment_date"]:
+        raise SafeStop(
+            "run_config_contract",
+            "Run configuration assessment_date is not canonical.",
+        )
+    for field in (
+        "pipeline_version",
+        "rules_version",
+        "prompt_version",
+        "mock_generator_version",
+        "fallback_generator_version",
+    ):
+        _require_non_empty_string(
+            config[field],
+            f"Run configuration {field}",
+            "run_config_contract",
+        )
+    if (
+        not isinstance(config["requested_adapter_mode"], str)
+        or config["requested_adapter_mode"] not in AI_MODES
+    ):
+        raise SafeStop(
+            "run_config_contract",
+            "Run configuration requested_adapter_mode is invalid.",
+        )
+    if not isinstance(config["expected_oracle_present"], bool):
+        raise SafeStop(
+            "run_config_contract",
+            "Run configuration expected_oracle_present must be boolean.",
+        )
+    oracle_hash = config["expected_oracle_sha256"]
+    if config["expected_oracle_present"]:
+        _require_sha256(
+            oracle_hash,
+            "Run configuration expected_oracle_sha256",
+            "run_config_contract",
+        )
+    elif oracle_hash is not None:
+        raise SafeStop(
+            "run_config_contract",
+            "Absent expected oracle must have a null hash.",
+        )
+
+
+def _run_config_hash(config: dict[str, Any]) -> str:
+    validate_run_config(config)
+    return sha256_bytes(canonical_bytes(config))
+
+
+def _run_id_from_config(config: dict[str, Any]) -> str:
+    return "RUN-" + _run_config_hash(config)[:12].upper()
+
+
+def validate_state(state: Any) -> None:
+    _require_exact_keys(state, STATE_FIELDS, "state")
+    _require_run_id(state["run_id"], "State run_id", "state_contract")
+    for field in ("run_config_sha256", "input_sha256"):
+        _require_sha256(state[field], f"State {field}", "state_contract")
+    try:
+        state_date = date.fromisoformat(state["assessment_date"])
+    except (TypeError, ValueError) as error:
+        raise SafeStop("state_contract", "State assessment_date is invalid.") from error
+    if state_date.isoformat() != state["assessment_date"]:
+        raise SafeStop("state_contract", "State assessment_date is not canonical.")
+    for field in ("pipeline_version", "rules_version", "prompt_version"):
+        _require_non_empty_string(state[field], f"State {field}", "state_contract")
+    if (
+        not isinstance(state["current_state"], str)
+        or state["current_state"] not in PERSISTED_STATES
+    ):
+        raise SafeStop("state_contract", "State current_state is invalid.")
+    if type(state["draft_revision"]) is not int or state["draft_revision"] < 0:
+        raise SafeStop("state_contract", "State draft_revision is invalid.")
+    if state["draft_sha256"] is not None:
+        _require_sha256(
+            state["draft_sha256"],
+            "State draft_sha256",
+            "state_contract",
+        )
+    if state["review_manifest_sha256"] is not None:
+        _require_sha256(
+            state["review_manifest_sha256"],
+            "State review_manifest_sha256",
+            "state_contract",
+        )
+    active_path = state["active_decision_path"]
+    if active_path is not None and (
+        not isinstance(active_path, str)
+        or not re.fullmatch(r"review/decision-r[1-9][0-9]*\.json", active_path)
+    ):
+        raise SafeStop("state_contract", "State active_decision_path is invalid.")
+    if (
+        not isinstance(state["ai_mode_requested"], str)
+        or state["ai_mode_requested"] not in AI_MODES
+    ):
+        raise SafeStop("state_contract", "State ai_mode_requested is invalid.")
+    if state["summary_generator"] is not None and (
+        not isinstance(state["summary_generator"], str)
+        or state["summary_generator"] not in {"offline-mock", "deterministic-fallback"}
+    ):
+        raise SafeStop("state_contract", "State summary_generator is invalid.")
+    if state["summary_fallback_reason"] is not None and not isinstance(
+        state["summary_fallback_reason"],
+        str,
+    ):
+        raise SafeStop("state_contract", "State fallback reason is invalid.")
+    if type(state["external_actions"]) is not int or state["external_actions"] != 0:
+        raise SafeStop("external_action_blocked", "State external_actions must be 0.")
+    if type(state["local_export_count"]) is not int or state[
+        "local_export_count"
+    ] not in {0, 2}:
+        raise SafeStop("state_contract", "State local_export_count must be 0 or 2.")
+    expected_keys = state["expected_keys"]
+    if expected_keys is not None:
+        if not isinstance(expected_keys, list):
+            raise SafeStop("state_contract", "State expected_keys must be a list.")
+        normalized: list[tuple[str, str, str]] = []
+        for value in expected_keys:
+            if (
+                not isinstance(value, list)
+                or len(value) != 3
+                or not all(isinstance(item, str) for item in value)
+            ):
+                raise SafeStop("state_contract", "State expected key is invalid.")
+            normalized.append(tuple(value))
+        if len(normalized) != len(set(normalized)):
+            raise SafeStop("state_contract", "State expected keys are not unique.")
+    if state["current_state"] == "no_action_needed":
+        if any(
+            (
+                state["draft_revision"] != 0,
+                state["draft_sha256"] is not None,
+                state["review_manifest_sha256"] is not None,
+                state["summary_generator"] is not None,
+                state["active_decision_path"] is not None,
+            )
+        ):
+            raise SafeStop("state_contract", "No-action state contains draft data.")
+    else:
+        if (
+            state["draft_revision"] < 1
+            or state["draft_sha256"] is None
+            or state["review_manifest_sha256"] is None
+            or state["summary_generator"] is None
+        ):
+            raise SafeStop(
+                "state_contract",
+                "Issue-bearing state is missing controlled draft evidence.",
+            )
+    if state["current_state"] == "needs_review" and active_path is not None:
+        raise SafeStop(
+            "state_contract",
+            "Needs-review state cannot have an active decision.",
+        )
+    if (
+        state["current_state"]
+        in (
+            TERMINAL_NON_EXPORT_STATES | {"approved_for_local_export", "approved_draft"}
+        )
+        and active_path is None
+    ):
+        raise SafeStop(
+            "state_contract",
+            "Decision state is missing its active decision path.",
+        )
+    if active_path is not None and active_path != (
+        f"review/decision-r{state['draft_revision']}.json"
+    ):
+        raise SafeStop(
+            "state_contract",
+            "State active decision path does not match the current revision.",
+        )
+    if state["current_state"] == "approved_draft":
+        if state["local_export_count"] != 2:
+            raise SafeStop(
+                "state_contract",
+                "Approved-draft state must identify the complete two-file export.",
+            )
+    elif state["local_export_count"] != 0:
+        raise SafeStop(
+            "state_contract",
+            "Only approved-draft state may identify local export files.",
+        )
+
+
+def validate_control(control: Any) -> None:
+    if not isinstance(control, dict) or canonical_bytes(control) != canonical_bytes(
+        CONTROL
+    ):
+        raise SafeStop(
+            "external_action_blocked",
+            "Control must explicitly allow only synthetic local drafts with "
+            "EXTERNAL_ACTIONS_ENABLED=false.",
+        )
+
+
+def validate_review_package(
+    package: Any,
+    *,
+    run_id: str,
+    draft_revision: int,
+    draft_sha256: str,
+    issue_count: int,
+) -> None:
+    _require_exact_keys(package, REVIEW_PACKAGE_FIELDS, "review package")
+    if (
+        type(package["draft_revision"]) is not int
+        or type(package["issue_count"]) is not int
+    ):
+        raise SafeStop(
+            "review_package_contract",
+            "Review package revision and issue count must be integers.",
+        )
+    if package["run_id"] != run_id:
+        raise SafeStop("review_package_contract", "Review package run_id differs.")
+    if package["draft_revision"] != draft_revision:
+        raise SafeStop(
+            "review_package_contract",
+            "Review package draft revision differs.",
+        )
+    if package["draft_sha256"] != draft_sha256:
+        raise SafeStop("review_package_contract", "Review package draft hash differs.")
+    if package["issue_count"] != issue_count:
+        raise SafeStop("review_package_contract", "Review package issue count differs.")
+    expected_paths = {
+        "issues_json_path": PROTECTED_REVIEW_ARTIFACTS["issues_json"],
+        "issues_csv_path": PROTECTED_REVIEW_ARTIFACTS["issues_csv"],
+        "source_path": PROTECTED_REVIEW_ARTIFACTS["source"],
+        "summary_path": PROTECTED_REVIEW_ARTIFACTS["summary"],
+        "control_path": PROTECTED_REVIEW_ARTIFACTS["control"],
+        "run_config_path": PROTECTED_REVIEW_ARTIFACTS["run_config"],
+        "review_manifest_path": "review/review_manifest.json",
+    }
+    if any(package[field] != value for field, value in expected_paths.items()):
+        raise SafeStop(
+            "review_package_contract",
+            "Review package contains a non-canonical artifact path.",
+        )
+    if (
+        not isinstance(package["reviewer_must_check"], list)
+        or len(package["reviewer_must_check"]) < 4
+        or any(
+            not isinstance(item, str) or not item.strip()
+            for item in package["reviewer_must_check"]
+        )
+    ):
+        raise SafeStop(
+            "review_package_contract",
+            "Review package checklist is invalid.",
+        )
+    if package["allowed_decisions"] != ["approve", "edit", "reject", "expire"]:
+        raise SafeStop(
+            "review_package_contract",
+            "Review package decisions are invalid.",
+        )
+    if type(package["external_actions"]) is not int or package["external_actions"] != 0:
+        raise SafeStop(
+            "external_action_blocked",
+            "Review package external_actions must be 0.",
+        )
+
+
+def validate_review_manifest(
+    manifest: Any,
+    *,
+    run_id: str,
+    draft_revision: int,
+    run_config: dict[str, Any],
+) -> None:
+    required = {
+        "schema_version",
+        "run_id",
+        "draft_revision",
+        "run_config_sha256",
+        "configuration",
+        "artifact_sha256",
+    }
+    _require_exact_keys(manifest, required, "review manifest")
+    if type(manifest["draft_revision"]) is not int or manifest["draft_revision"] < 1:
+        raise SafeStop(
+            "review_manifest_contract",
+            "Review manifest draft revision must be an integer.",
+        )
+    if manifest["schema_version"] != REVIEW_MANIFEST_SCHEMA_VERSION:
+        raise SafeStop(
+            "review_manifest_contract", "Review manifest version is invalid."
+        )
+    if manifest["run_id"] != run_id or manifest["draft_revision"] != draft_revision:
+        raise SafeStop(
+            "review_manifest_contract",
+            "Review manifest identifies a different run or revision.",
+        )
+    expected_config_hash = _run_config_hash(run_config)
+    if manifest["run_config_sha256"] != expected_config_hash:
+        raise SafeStop(
+            "review_manifest_contract",
+            "Review manifest configuration hash differs.",
+        )
+    configuration = manifest["configuration"]
+    expected_configuration = {
+        "assessment_date": run_config["assessment_date"],
+        "pipeline_version": run_config["pipeline_version"],
+        "rules_version": run_config["rules_version"],
+        "prompt_version": run_config["prompt_version"],
+        "requested_adapter_mode": run_config["requested_adapter_mode"],
+        "mock_generator_version": run_config["mock_generator_version"],
+        "fallback_generator_version": run_config["fallback_generator_version"],
+        "expected_oracle_present": run_config["expected_oracle_present"],
+        "expected_oracle_sha256": run_config["expected_oracle_sha256"],
+    }
+    if not isinstance(configuration, dict) or canonical_bytes(
+        configuration
+    ) != canonical_bytes(expected_configuration):
+        raise SafeStop(
+            "review_manifest_contract",
+            "Review manifest configuration values differ.",
+        )
+    artifact_hashes = manifest["artifact_sha256"]
+    if not isinstance(artifact_hashes, dict) or set(artifact_hashes) != set(
+        PROTECTED_REVIEW_ARTIFACTS.values()
+    ):
+        raise SafeStop(
+            "review_manifest_contract",
+            "Review manifest protected artifact set differs.",
+        )
+    for path, digest in artifact_hashes.items():
+        _require_sha256(
+            digest,
+            f"Review manifest hash for {path}",
+            "review_manifest_contract",
+        )
+
+
+def _review_package(
+    run_id: str,
+    draft_revision: int,
+    draft_sha256: str,
+    issue_count: int,
+) -> dict[str, Any]:
+    return {
+        "run_id": run_id,
+        "draft_revision": draft_revision,
+        "draft_sha256": draft_sha256,
+        "issue_count": issue_count,
+        "issues_json_path": PROTECTED_REVIEW_ARTIFACTS["issues_json"],
+        "issues_csv_path": PROTECTED_REVIEW_ARTIFACTS["issues_csv"],
+        "source_path": PROTECTED_REVIEW_ARTIFACTS["source"],
+        "summary_path": PROTECTED_REVIEW_ARTIFACTS["summary"],
+        "control_path": PROTECTED_REVIEW_ARTIFACTS["control"],
+        "run_config_path": PROTECTED_REVIEW_ARTIFACTS["run_config"],
+        "review_manifest_path": "review/review_manifest.json",
+        "reviewer_must_check": [
+            "Every issue against the named synthetic source row and field.",
+            "The JSON and spreadsheet-safe CSV issue registers contain the same issues.",
+            "Every summary sentence against its visible issue identifiers.",
+            "Every proposed action is human_review with external_action false.",
+            "The exact protected review-manifest hash and revision before deciding.",
+        ],
+        "allowed_decisions": ["approve", "edit", "reject", "expire"],
+        "external_actions": 0,
+    }
+
+
+def _build_review_manifest(
+    run_dir: Path,
+    run_id: str,
+    draft_revision: int,
+    run_config: dict[str, Any],
+) -> dict[str, Any]:
+    artifact_hashes: dict[str, str] = {}
+    for relative_path in PROTECTED_REVIEW_ARTIFACTS.values():
+        path = run_dir / relative_path
+        try:
+            artifact_hashes[relative_path] = sha256_bytes(path.read_bytes())
+        except FileNotFoundError as error:
+            raise SafeStop(
+                "missing_file",
+                f"Protected review artifact is missing: {relative_path}.",
+            ) from error
+        except OSError as error:
+            raise SafeStop(
+                "file_read_error",
+                f"Could not read protected review artifact: {relative_path}.",
+            ) from error
+    manifest = {
+        "schema_version": REVIEW_MANIFEST_SCHEMA_VERSION,
+        "run_id": run_id,
+        "draft_revision": draft_revision,
+        "run_config_sha256": _run_config_hash(run_config),
+        "configuration": {
+            "assessment_date": run_config["assessment_date"],
+            "pipeline_version": run_config["pipeline_version"],
+            "rules_version": run_config["rules_version"],
+            "prompt_version": run_config["prompt_version"],
+            "requested_adapter_mode": run_config["requested_adapter_mode"],
+            "mock_generator_version": run_config["mock_generator_version"],
+            "fallback_generator_version": run_config["fallback_generator_version"],
+            "expected_oracle_present": run_config["expected_oracle_present"],
+            "expected_oracle_sha256": run_config["expected_oracle_sha256"],
+        },
+        "artifact_sha256": artifact_hashes,
+    }
+    validate_review_manifest(
+        manifest,
+        run_id=run_id,
+        draft_revision=draft_revision,
+        run_config=run_config,
+    )
+    return manifest
+
+
+def _review_manifest_hash(manifest: dict[str, Any]) -> str:
+    return sha256_bytes(canonical_bytes(manifest))
 
 
 def _simulate_ai_response(
@@ -790,7 +1608,9 @@ def _simulate_ai_response(
         try:
             return json.loads('{"run_id":')
         except json.JSONDecodeError as error:
-            raise SafeStop("malformed_ai_json", "The simulated AI JSON is malformed.") from error
+            raise SafeStop(
+                "malformed_ai_json", "The simulated AI JSON is malformed."
+            ) from error
     response = _build_summary(run_id, issues, "offline-mock")
     if mode == "unknown_issue_id":
         response["groups"][0]["issue_ids"][0] = "WI-9999|R999|unknown"
@@ -805,7 +1625,7 @@ def create_bounded_summary(
     run_id: str,
     issues: list[dict[str, Any]],
 ) -> tuple[dict[str, Any], str | None]:
-    if mode not in AI_MODES:
+    if not isinstance(mode, str) or mode not in AI_MODES:
         raise SafeStop("invalid_ai_mode", f"Unknown AI mode: {mode}.")
     if not issues:
         raise SafeStop("no_action_needed", "There are no issues to summarize.")
@@ -834,9 +1654,20 @@ def _event_id(
     run_id: str,
     event_type: str,
     state: str,
+    occurred_at: str,
+    actor_type: str,
     details: dict[str, Any],
 ) -> str:
-    seed = canonical_bytes([run_id, event_type, state, details])
+    seed = canonical_bytes(
+        {
+            "run_id": run_id,
+            "event_type": event_type,
+            "state": state,
+            "occurred_at": occurred_at,
+            "actor_type": actor_type,
+            "details": details,
+        }
+    )
     return "EVT-" + sha256_bytes(seed)[:16].upper()
 
 
@@ -849,30 +1680,45 @@ def append_audit_event(
     details: dict[str, Any],
     occurred_at: datetime | None = None,
 ) -> dict[str, Any]:
+    occurred_at_text = iso_utc(occurred_at or utc_now())
     event = {
-        "event_id": _event_id(run_id, event_type, state, details),
+        "event_id": _event_id(
+            run_id,
+            event_type,
+            state,
+            occurred_at_text,
+            actor_type,
+            details,
+        ),
         "run_id": run_id,
         "event_type": event_type,
         "state": state,
-        "occurred_at": iso_utc(occurred_at or utc_now()),
+        "occurred_at": occurred_at_text,
         "actor_type": actor_type,
         "details": details,
     }
     validate_audit_event(event)
     audit_path = run_dir / "audit" / "events.jsonl"
-    audit_path.parent.mkdir(parents=True, exist_ok=True)
-    existing: list[dict[str, Any]] = []
-    if audit_path.exists():
-        for line in audit_path.read_text(encoding="utf-8").splitlines():
-            if line.strip():
-                existing.append(json.loads(line))
+    existing = _load_audit_events(audit_path, expected_run_id=run_id)
     if event["event_id"] not in {item["event_id"] for item in existing}:
-        with audit_path.open("a", encoding="utf-8", newline="\n") as stream:
-            stream.write(json.dumps(event, ensure_ascii=False, sort_keys=True) + "\n")
+        encoded = "".join(
+            json.dumps(item, ensure_ascii=False, sort_keys=True) + "\n"
+            for item in [*existing, event]
+        ).encode("utf-8")
+        try:
+            atomic_write_bytes(audit_path, encoded)
+        except SafeStop as error:
+            raise SafeStop(
+                "audit_write_error",
+                "Could not atomically persist the controlled audit event.",
+            ) from error
     return event
 
 
-def validate_audit_event(event: dict[str, Any]) -> None:
+def validate_audit_event(
+    event: dict[str, Any],
+    expected_run_id: str | None = None,
+) -> None:
     required = {
         "event_id",
         "run_id",
@@ -883,49 +1729,158 @@ def validate_audit_event(event: dict[str, Any]) -> None:
         "details",
     }
     _require_exact_keys(event, required, "audit event")
-    if not re.fullmatch(r"EVT-[A-F0-9]{16}", event["event_id"]):
+    if not isinstance(event["event_id"], str) or not re.fullmatch(
+        r"EVT-[A-F0-9]{16}",
+        event["event_id"],
+    ):
         raise SafeStop("invalid_audit_event", "Audit event_id is invalid.")
-    if event["actor_type"] not in {"system", "mock_ai", "ai", "reviewer"}:
+    _require_run_id(event["run_id"], "Audit run_id", "invalid_audit_event")
+    if expected_run_id is not None and event["run_id"] != expected_run_id:
+        raise SafeStop("invalid_audit_event", "Audit event belongs to another run.")
+    if not isinstance(event["event_type"], str) or not re.fullmatch(
+        r"[a-z_]+",
+        event["event_type"],
+    ):
+        raise SafeStop("invalid_audit_event", "Audit event_type is invalid.")
+    if not isinstance(event["state"], str) or event["state"] not in WORKFLOW_STATES:
+        raise SafeStop("invalid_audit_event", "Audit state is invalid.")
+    if not isinstance(event["actor_type"], str) or event["actor_type"] not in {
+        "system",
+        "mock_ai",
+        "ai",
+        "reviewer",
+    }:
         raise SafeStop("invalid_audit_event", "Audit actor_type is invalid.")
     parse_datetime(event["occurred_at"], "occurred_at")
     if not isinstance(event["details"], dict):
         raise SafeStop("invalid_audit_event", "Audit details must be an object.")
+    expected_id = _event_id(
+        event["run_id"],
+        event["event_type"],
+        event["state"],
+        event["occurred_at"],
+        event["actor_type"],
+        event["details"],
+    )
+    if event["event_id"] != expected_id:
+        raise SafeStop(
+            "audit_integrity_mismatch",
+            "Audit event fields no longer match event_id.",
+        )
+
+
+def _load_audit_events(
+    path: Path,
+    *,
+    expected_run_id: str | None = None,
+) -> list[dict[str, Any]]:
+    if not path.exists():
+        return []
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except UnicodeError as error:
+        raise SafeStop("audit_corrupt", "Audit file encoding is invalid.") from error
+    except OSError as error:
+        raise SafeStop("file_read_error", "Could not read the audit file.") from error
+    events: list[dict[str, Any]] = []
+    for line_number, line in enumerate(lines, start=1):
+        if not line.strip():
+            continue
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError as error:
+            raise SafeStop(
+                "audit_corrupt",
+                f"Audit line {line_number} is not valid JSON.",
+            ) from error
+        validate_audit_event(event, expected_run_id)
+        events.append(event)
+    if len({event["event_id"] for event in events}) != len(events):
+        raise SafeStop("audit_corrupt", "Audit event identifiers are duplicated.")
+    return events
 
 
 def _write_issues_csv(path: Path, issues: list[dict[str, Any]]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8", newline="") as stream:
-        writer = csv.DictWriter(stream, fieldnames=ISSUE_FIELDS)
-        writer.writeheader()
-        writer.writerows(issues)
+    atomic_write_bytes(path, _csv_bytes(issues, ISSUE_FIELDS))
 
 
-def _read_expected_keys(path: Path | None) -> set[tuple[str, str, str]] | None:
+def _read_expected_oracle(
+    path: Path | None,
+) -> tuple[set[tuple[str, str, str]] | None, str | None, bytes]:
     if path is None:
-        return None
+        return None, None, EXPECTED_ORACLE_ABSENT_BYTES
     try:
-        with path.open("r", encoding="utf-8-sig", newline="") as stream:
-            rows = list(csv.DictReader(stream, strict=True))
+        oracle_bytes = path.read_bytes()
     except FileNotFoundError as error:
         raise SafeStop(
             "missing_file",
             f"Expected-issues file is missing: {path.name}.",
         ) from error
+    except OSError as error:
+        raise SafeStop(
+            "file_read_error",
+            f"Could not safely read expected-issues file {path.name}.",
+        ) from error
+    return (
+        _parse_expected_oracle_bytes(oracle_bytes),
+        sha256_bytes(oracle_bytes),
+        oracle_bytes,
+    )
+
+
+def _parse_expected_oracle_bytes(
+    oracle_bytes: bytes,
+) -> set[tuple[str, str, str]]:
+    try:
+        text = oracle_bytes.decode("utf-8-sig")
+    except UnicodeError as error:
+        raise SafeStop(
+            "malformed_input",
+            "Expected-issues CSV is not UTF-8 text.",
+        ) from error
+    try:
+        rows = list(csv.DictReader(io.StringIO(text, newline=""), strict=True))
     except csv.Error as error:
-        raise SafeStop("malformed_input", f"Expected-issues CSV is malformed: {error}") from error
+        raise SafeStop(
+            "malformed_input", f"Expected-issues CSV is malformed: {error}"
+        ) from error
     required = {"work_item_id", "rule_code", "field"}
     if not rows or not required.issubset(set(rows[0])):
         raise SafeStop(
             "expected_contract",
             "Expected issues must contain work_item_id, rule_code, and field.",
         )
-    keys = {
-        (row["work_item_id"], row["rule_code"], row["field"])
-        for row in rows
-    }
+    keys = {(row["work_item_id"], row["rule_code"], row["field"]) for row in rows}
     if len(keys) != len(rows):
         raise SafeStop("expected_contract", "Expected issue keys are not unique.")
     return keys
+
+
+def _expected_keys_from_run_evidence(
+    run_dir: Path,
+    run_config: dict[str, Any],
+) -> set[tuple[str, str, str]] | None:
+    evidence_bytes = _read_bytes(
+        run_dir / EXPECTED_ORACLE_EVIDENCE_PATH,
+        "protected expected-issue evidence",
+    )
+    if run_config["expected_oracle_present"]:
+        if sha256_bytes(evidence_bytes) != run_config["expected_oracle_sha256"]:
+            raise SafeStop(
+                "expected_oracle_integrity_mismatch",
+                "Protected expected-issue evidence differs from the run identity.",
+            )
+        return _parse_expected_oracle_bytes(evidence_bytes)
+    if (
+        run_config["expected_oracle_sha256"] is not None
+        or evidence_bytes != EXPECTED_ORACLE_ABSENT_BYTES
+    ):
+        raise SafeStop(
+            "expected_oracle_integrity_mismatch",
+            "The run identity says no expected-issue oracle was supplied, but "
+            "protected evidence disagrees.",
+        )
+    return None
 
 
 def _evaluation(
@@ -957,7 +1912,7 @@ def _evaluation(
             "Modules 1-3 and 7-9 must also pass before the learner may change "
             "this recommendation."
         )
-    return {
+    evaluation = {
         "run_id": run_id,
         "dataset_kind": "synthetic",
         "expected_issue_count": expected_count,
@@ -974,6 +1929,90 @@ def _evaluation(
         "course1_recommendation": recommendation,
         "recommendation_reason": reason,
     }
+    validate_evaluation(evaluation)
+    return evaluation
+
+
+def validate_evaluation(evaluation: Any) -> None:
+    required = {
+        "run_id",
+        "dataset_kind",
+        "expected_issue_count",
+        "detected_issue_count",
+        "true_positives",
+        "false_positives",
+        "false_negatives",
+        "correct_issue_references",
+        "unsupported_ai_claims",
+        "summary_fallback_used",
+        "duplicate_retry_safe",
+        "external_actions",
+        "current_state",
+        "course1_recommendation",
+        "recommendation_reason",
+    }
+    _require_exact_keys(evaluation, required, "evaluation")
+    _require_run_id(
+        evaluation["run_id"],
+        "Evaluation run_id",
+        "evaluation_contract",
+    )
+    if (
+        not isinstance(evaluation["dataset_kind"], str)
+        or evaluation["dataset_kind"] != "synthetic"
+    ):
+        raise SafeStop("evaluation_contract", "Evaluation dataset_kind is invalid.")
+    for field in (
+        "expected_issue_count",
+        "true_positives",
+        "false_positives",
+        "false_negatives",
+    ):
+        value = evaluation[field]
+        if value is not None and (type(value) is not int or value < 0):
+            raise SafeStop("evaluation_contract", f"Evaluation {field} is invalid.")
+    for field in (
+        "detected_issue_count",
+        "correct_issue_references",
+        "unsupported_ai_claims",
+    ):
+        if type(evaluation[field]) is not int or evaluation[field] < 0:
+            raise SafeStop("evaluation_contract", f"Evaluation {field} is invalid.")
+    if not isinstance(evaluation["summary_fallback_used"], bool):
+        raise SafeStop(
+            "evaluation_contract",
+            "Evaluation summary_fallback_used is invalid.",
+        )
+    if (
+        type(evaluation["duplicate_retry_safe"]) is not bool
+        or evaluation["duplicate_retry_safe"] is not True
+    ):
+        raise SafeStop("evaluation_contract", "Evaluation retry control is invalid.")
+    if (
+        type(evaluation["external_actions"]) is not int
+        or evaluation["external_actions"] != 0
+    ):
+        raise SafeStop(
+            "external_action_blocked", "Evaluation external_actions must be 0."
+        )
+    if (
+        not isinstance(evaluation["current_state"], str)
+        or evaluation["current_state"] not in PERSISTED_STATES
+    ):
+        raise SafeStop("evaluation_contract", "Evaluation current_state is invalid.")
+    if not isinstance(evaluation["course1_recommendation"], str) or evaluation[
+        "course1_recommendation"
+    ] not in {
+        "ACCEPT FOR SYNTHETIC PORTFOLIO",
+        "REWORK",
+        "DO NOT CONTINUE",
+    }:
+        raise SafeStop("evaluation_contract", "Evaluation recommendation is invalid.")
+    _require_non_empty_string(
+        evaluation["recommendation_reason"],
+        "Evaluation recommendation_reason",
+        "evaluation_contract",
+    )
 
 
 def _manual_fallback_text(run_id: str, issues: list[dict[str, Any]]) -> str:
@@ -996,80 +2035,663 @@ prohibited in this Course 1 runner.
 """
 
 
-def prepare_run(
+def _cleanup_prepare_staging(workspace: Path) -> None:
+    runs_root = workspace.resolve() / "runs"
+    try:
+        if not runs_root.is_dir():
+            return
+        staging_directories = [
+            path
+            for path in runs_root.iterdir()
+            if path.is_dir() and path.name.startswith(STAGING_PREFIX)
+        ]
+        for path in staging_directories:
+            shutil.rmtree(path)
+    except OSError as error:
+        raise SafeStop(
+            "staging_cleanup_error",
+            "A private prepare staging folder could not be removed. Do not "
+            "continue until it is inspected.",
+        ) from error
+
+
+def _publish_staged_run(
+    staging_parent: Path,
+    staged_run_dir: Path,
+    final_run_dir: Path,
+) -> None:
+    _load_run(staged_run_dir)
+    try:
+        os.replace(staged_run_dir, final_run_dir)
+        staging_parent.rmdir()
+    except OSError as error:
+        raise SafeStop(
+            "run_publish_error",
+            "The fully validated run could not be atomically published.",
+        ) from error
+
+
+def _audit_matches(
+    event: dict[str, Any],
+    event_type: str,
+    details: dict[str, Any],
+) -> bool:
+    return event["event_type"] == event_type and all(
+        event["details"].get(key) == value for key, value in details.items()
+    )
+
+
+def _reconcile_audit_history(
+    run_dir: Path,
+    state: dict[str, Any],
+    issues: list[dict[str, Any]],
+    events: list[dict[str, Any]],
+    source_row_count: int,
+) -> None:
+    """Bind material audit history to the actual controlled lifecycle."""
+
+    def positions(event_type: str) -> list[int]:
+        return [
+            index
+            for index, event in enumerate(events)
+            if event["event_type"] == event_type
+        ]
+
+    def one(event_type: str) -> int:
+        found = positions(event_type)
+        if len(found) != 1:
+            raise SafeStop(
+                "audit_history_mismatch",
+                f"Material audit event {event_type} must occur exactly once.",
+            )
+        return found[0]
+
+    def require_exact_event(
+        index: int,
+        *,
+        event_type: str,
+        event_state: str,
+        actor_type: str,
+        details: dict[str, Any],
+    ) -> None:
+        event = events[index]
+        if (
+            event["event_type"] != event_type
+            or event["state"] != event_state
+            or event["actor_type"] != actor_type
+            or canonical_bytes(event["details"]) != canonical_bytes(details)
+        ):
+            raise SafeStop(
+                "audit_history_mismatch",
+                f"Material audit event {event_type} differs from controlled evidence.",
+            )
+
+    received = one("run_received")
+    validated = one("input_validated")
+    if received >= validated:
+        raise SafeStop(
+            "audit_history_mismatch",
+            "Run receipt must precede input validation in the audit history.",
+        )
+    require_exact_event(
+        received,
+        event_type="run_received",
+        event_state="received",
+        actor_type="system",
+        details={
+            "input_sha256": state["input_sha256"],
+            "run_config_sha256": state["run_config_sha256"],
+            "dataset_kind": "synthetic",
+        },
+    )
+    require_exact_event(
+        validated,
+        event_type="input_validated",
+        event_state="validated",
+        actor_type="system",
+        details={
+            "row_count": source_row_count,
+            "header_count": len(HEADERS),
+        },
+    )
+
+    duplicate_retry_positions = positions("duplicate_retry_ignored")
+    if len(duplicate_retry_positions) > 1 or any(
+        index <= validated for index in duplicate_retry_positions
+    ):
+        raise SafeStop(
+            "audit_history_mismatch",
+            "Duplicate-retry audit history is duplicated or out of order.",
+        )
+    for index in duplicate_retry_positions:
+        event = events[index]
+        if event["actor_type"] != "system" or canonical_bytes(
+            event["details"]
+        ) != canonical_bytes(
+            {
+                "input_sha256": state["input_sha256"],
+                "run_config_sha256": state["run_config_sha256"],
+                "no_duplicate_effect": True,
+            }
+        ):
+            raise SafeStop(
+                "audit_history_mismatch",
+                "Duplicate-retry audit evidence differs from controlled state.",
+            )
+
+    material_decision_types = {
+        "review_decision_recorded",
+        "draft_revision_created",
+        "local_export_created",
+        "review_expired",
+    }
+    if state["current_state"] == "no_action_needed":
+        no_issues = one("no_verified_issues")
+        if validated >= no_issues or issues:
+            raise SafeStop(
+                "audit_history_mismatch",
+                "No-action audit history conflicts with detected issues.",
+            )
+        if any(index <= no_issues for index in duplicate_retry_positions):
+            raise SafeStop(
+                "audit_history_mismatch",
+                "Duplicate retry precedes completed no-action evidence.",
+            )
+        require_exact_event(
+            no_issues,
+            event_type="no_verified_issues",
+            event_state="no_action_needed",
+            actor_type="system",
+            details={"issue_count": 0, "external_actions": 0},
+        )
+        if any(positions(event_type) for event_type in material_decision_types):
+            raise SafeStop(
+                "audit_history_mismatch",
+                "No-action history contains an impossible review or export event.",
+            )
+        return
+
+    issues_created = one("issues_created")
+    summary_event_type = (
+        "summary_fallback"
+        if state["summary_fallback_reason"] is not None
+        else "mock_summary_validated"
+    )
+    other_summary_type = (
+        "mock_summary_validated"
+        if summary_event_type == "summary_fallback"
+        else "summary_fallback"
+    )
+    summary_ready = one(summary_event_type)
+    if positions(other_summary_type):
+        raise SafeStop(
+            "audit_history_mismatch",
+            "Audit history contains conflicting summary-generation events.",
+        )
+    review_required = one("human_review_required")
+    if not (validated < issues_created < summary_ready < review_required):
+        raise SafeStop(
+            "audit_history_mismatch",
+            "Base issue, summary, and human-review events are out of order.",
+        )
+    if any(index <= review_required for index in duplicate_retry_positions):
+        raise SafeStop(
+            "audit_history_mismatch",
+            "Duplicate retry precedes completed human-review evidence.",
+        )
+    require_exact_event(
+        issues_created,
+        event_type="issues_created",
+        event_state="issues_ready",
+        actor_type="system",
+        details={
+            "issue_count": len(issues),
+            "identity_fields": ["work_item_id", "rule_code", "field"],
+        },
+    )
+    if summary_event_type == "summary_fallback":
+        summary_details = {
+            "reason": state["summary_fallback_reason"],
+            "generator": "deterministic-fallback",
+        }
+        summary_actor = "system"
+    else:
+        summary_details = {
+            "generator": "offline-mock",
+            "issue_reference_count": len(issues),
+        }
+        summary_actor = "mock_ai"
+    require_exact_event(
+        summary_ready,
+        event_type=summary_event_type,
+        event_state="summary_ready",
+        actor_type=summary_actor,
+        details=summary_details,
+    )
+
+    revision = state["draft_revision"]
+    decision_paths: dict[int, Path] = {}
+    review_dir = run_dir / "review"
+    try:
+        for path in review_dir.iterdir():
+            match = re.fullmatch(r"decision-r([1-9][0-9]*)\.json", path.name)
+            if match:
+                decision_paths[int(match.group(1))] = path
+    except OSError as error:
+        raise SafeStop(
+            "file_read_error",
+            "Could not inspect controlled decision records.",
+        ) from error
+
+    expected_decision_revisions = set(range(1, revision))
+    if state["active_decision_path"] is not None:
+        expected_decision_revisions.add(revision)
+    if set(decision_paths) != expected_decision_revisions:
+        raise SafeStop(
+            "audit_history_mismatch",
+            "Decision files do not match the controlled revision lifecycle.",
+        )
+
+    decision_event_positions = positions("review_decision_recorded")
+    if len(decision_event_positions) != len(decision_paths):
+        raise SafeStop(
+            "audit_history_mismatch",
+            "Decision audit events do not match controlled decision files.",
+        )
+    decision_positions_by_revision: dict[int, int] = {}
+    decision_records: dict[int, dict[str, Any]] = {}
+    for decision_revision, decision_path in sorted(decision_paths.items()):
+        decision = read_json(decision_path)
+        validate_approval(decision)
+        if (
+            decision["run_id"] != state["run_id"]
+            or decision["draft_revision"] != decision_revision
+        ):
+            raise SafeStop(
+                "audit_history_mismatch",
+                "A decision file identifies a different run or revision.",
+            )
+        if decision_revision < revision and decision["decision"] != "edit":
+            raise SafeStop(
+                "audit_history_mismatch",
+                "Only an edit decision can precede a later controlled revision.",
+            )
+        matches = [
+            index
+            for index, event in enumerate(events)
+            if _audit_matches(
+                event,
+                "review_decision_recorded",
+                {
+                    "decision_id": decision["decision_id"],
+                    "decision": decision["decision"],
+                    "draft_revision": decision_revision,
+                    "draft_sha256": decision["draft_sha256"],
+                    "review_manifest_sha256": decision["review_manifest_sha256"],
+                    "evidence_reviewed": decision["evidence_reviewed"],
+                },
+            )
+        ]
+        if len(matches) != 1:
+            raise SafeStop(
+                "audit_history_mismatch",
+                "A controlled decision lacks one exact matching audit event.",
+            )
+        expected_decision_state = {
+            "approve": "approved_for_local_export",
+            "edit": "changes_requested",
+            "reject": "rejected",
+            "expire": "expired",
+        }[decision["decision"]]
+        require_exact_event(
+            matches[0],
+            event_type="review_decision_recorded",
+            event_state=expected_decision_state,
+            actor_type="reviewer",
+            details={
+                "decision_id": decision["decision_id"],
+                "decision": decision["decision"],
+                "draft_revision": decision_revision,
+                "draft_sha256": decision["draft_sha256"],
+                "review_manifest_sha256": decision["review_manifest_sha256"],
+                "evidence_reviewed": decision["evidence_reviewed"],
+                "integrity_scope": "local_tamper_detection_not_authentication",
+            },
+        )
+        decision_positions_by_revision[decision_revision] = matches[0]
+        decision_records[decision_revision] = decision
+
+    initial_evidence = decision_records.get(1)
+    initial_draft_sha256 = (
+        initial_evidence["draft_sha256"]
+        if initial_evidence is not None
+        else state["draft_sha256"]
+    )
+    initial_manifest_sha256 = (
+        initial_evidence["review_manifest_sha256"]
+        if initial_evidence is not None
+        else state["review_manifest_sha256"]
+    )
+    require_exact_event(
+        review_required,
+        event_type="human_review_required",
+        event_state="needs_review",
+        actor_type="system",
+        details={
+            "draft_revision": 1,
+            "draft_sha256": initial_draft_sha256,
+            "review_manifest_sha256": initial_manifest_sha256,
+        },
+    )
+
+    revision_event_positions = positions("draft_revision_created")
+    if len(revision_event_positions) != revision - 1:
+        raise SafeStop(
+            "audit_history_mismatch",
+            "Draft-revision audit events do not match the current revision.",
+        )
+    revision_positions: dict[int, int] = {}
+    for created_revision in range(2, revision + 1):
+        matches = [
+            index
+            for index, event in enumerate(events)
+            if _audit_matches(
+                event,
+                "draft_revision_created",
+                {
+                    "previous_revision": created_revision - 1,
+                    "draft_revision": created_revision,
+                },
+            )
+        ]
+        if len(matches) != 1:
+            raise SafeStop(
+                "audit_history_mismatch",
+                "A controlled draft revision lacks one exact audit event.",
+            )
+        previous_decision = decision_records[created_revision - 1]
+        created_evidence = decision_records.get(created_revision)
+        created_sha256 = (
+            created_evidence["draft_sha256"]
+            if created_evidence is not None
+            else state["draft_sha256"]
+        )
+        created_manifest_sha256 = (
+            created_evidence["review_manifest_sha256"]
+            if created_evidence is not None
+            else state["review_manifest_sha256"]
+        )
+        require_exact_event(
+            matches[0],
+            event_type="draft_revision_created",
+            event_state="needs_review",
+            actor_type="system",
+            details={
+                "previous_revision": created_revision - 1,
+                "draft_revision": created_revision,
+                "previous_sha256": previous_decision["draft_sha256"],
+                "draft_sha256": created_sha256,
+                "review_manifest_sha256": created_manifest_sha256,
+            },
+        )
+        revision_positions[created_revision] = matches[0]
+        if decision_positions_by_revision[created_revision - 1] >= matches[0]:
+            raise SafeStop(
+                "audit_history_mismatch",
+                "A draft revision event precedes its required edit decision.",
+            )
+
+    for decision_revision, decision_position in decision_positions_by_revision.items():
+        prerequisite = (
+            review_required
+            if decision_revision == 1
+            else revision_positions[decision_revision]
+        )
+        if decision_position <= prerequisite:
+            raise SafeStop(
+                "audit_history_mismatch",
+                "A decision event precedes the evidence revision it reviews.",
+            )
+
+    export_positions = positions("local_export_created")
+    if state["current_state"] == "approved_draft":
+        if len(export_positions) != 1:
+            raise SafeStop(
+                "audit_history_mismatch",
+                "Approved draft must have one material export audit event.",
+            )
+        current_decision = decision_records.get(revision)
+        if current_decision is None or not _audit_matches(
+            events[export_positions[0]],
+            "local_export_created",
+            {
+                "decision_id": current_decision["decision_id"],
+                "draft_revision": revision,
+                "external_actions": 0,
+            },
+        ):
+            raise SafeStop(
+                "audit_history_mismatch",
+                "Export audit evidence differs from the active approval.",
+            )
+        require_exact_event(
+            export_positions[0],
+            event_type="local_export_created",
+            event_state="approved_draft",
+            actor_type="system",
+            details={
+                "decision_id": current_decision["decision_id"],
+                "draft_revision": revision,
+                "files": [
+                    f"approved-r{revision}.json",
+                    f"approved-r{revision}.csv",
+                ],
+                "external_actions": 0,
+            },
+        )
+        if export_positions[0] <= decision_positions_by_revision[revision]:
+            raise SafeStop(
+                "audit_history_mismatch",
+                "Export audit event precedes its approval.",
+            )
+    elif export_positions:
+        raise SafeStop(
+            "audit_history_mismatch",
+            "A non-export state contains an impossible material export event.",
+        )
+
+    expiry_positions = positions("review_expired")
+    active = decision_records.get(revision)
+    expiry_required = (
+        state["current_state"] == "expired"
+        and active is not None
+        and active["decision"] == "approve"
+    )
+    if expiry_required:
+        if (
+            len(expiry_positions) != 1
+            or expiry_positions[0] <= decision_positions_by_revision[revision]
+        ):
+            raise SafeStop(
+                "audit_history_mismatch",
+                "Expired approval must have one ordered expiry audit event.",
+            )
+        require_exact_event(
+            expiry_positions[0],
+            event_type="review_expired",
+            event_state="expired",
+            actor_type="system",
+            details={
+                "decision_id": active["decision_id"],
+                "draft_revision": revision,
+            },
+        )
+    elif expiry_positions:
+        raise SafeStop(
+            "audit_history_mismatch",
+            "Audit history contains an impossible review-expiry event.",
+        )
+
+
+def _prepare_run_unlocked(
     input_path: Path,
     workspace: Path,
     ai_mode: str,
     synthetic_confirmation: str,
     expected_path: Path | None = None,
 ) -> Path:
+    if (
+        not isinstance(input_path, Path)
+        or not isinstance(workspace, Path)
+        or (expected_path is not None and not isinstance(expected_path, Path))
+    ):
+        raise SafeStop(
+            "invalid_argument",
+            "Prepare paths must be Path values.",
+        )
     if synthetic_confirmation != SYNTHETIC_CONFIRMATION:
         raise SafeStop(
             "synthetic_confirmation_required",
             f"Use the exact confirmation {SYNTHETIC_CONFIRMATION}; never use real data.",
         )
+    if not isinstance(ai_mode, str) or ai_mode not in AI_MODES:
+        raise SafeStop("invalid_ai_mode", f"Unknown AI mode: {ai_mode}.")
     input_bytes, rows = load_work_items(input_path)
     input_hash = sha256_bytes(input_bytes)
-    run_seed = (
-        input_hash + "|" + ASSESSMENT_DATE.isoformat() + "|" + PIPELINE_VERSION
-    ).encode("utf-8")
-    run_id = "RUN-" + sha256_bytes(run_seed)[:12].upper()
-    run_dir = workspace.resolve() / "runs" / run_id
+    expected_keys, expected_oracle_hash, expected_oracle_evidence = (
+        _read_expected_oracle(expected_path)
+    )
+    run_config = {
+        "schema_version": RUN_CONFIG_SCHEMA_VERSION,
+        "input_sha256": input_hash,
+        "assessment_date": ASSESSMENT_DATE.isoformat(),
+        "pipeline_version": PIPELINE_VERSION,
+        "rules_version": RULES_VERSION,
+        "prompt_version": PROMPT_VERSION,
+        "requested_adapter_mode": ai_mode,
+        "mock_generator_version": MOCK_GENERATOR_VERSION,
+        "fallback_generator_version": FALLBACK_GENERATOR_VERSION,
+        "expected_oracle_present": expected_path is not None,
+        "expected_oracle_sha256": expected_oracle_hash,
+    }
+    validate_run_config(run_config)
+    run_config_hash = _run_config_hash(run_config)
+    run_id = _run_id_from_config(run_config)
+    try:
+        resolved_workspace = workspace.resolve()
+    except OSError as error:
+        raise SafeStop(
+            "filesystem_check_error",
+            "Could not resolve the workspace path.",
+        ) from error
+    run_dir = resolved_workspace / "runs" / run_id
     state_path = run_dir / "state.json"
-    workspace.mkdir(parents=True, exist_ok=True)
+    try:
+        workspace.mkdir(parents=True, exist_ok=True)
+    except OSError as error:
+        raise SafeStop(
+            "file_write_error",
+            "Could not create the controlled workspace.",
+        ) from error
 
     if state_path.exists():
-        state = read_json(state_path)
-        if state.get("input_sha256") != input_hash:
-            raise SafeStop("run_collision", "Existing run has a different source hash.")
-        append_audit_event(
-            run_dir,
-            run_id,
-            "duplicate_retry_ignored",
-            state["current_state"],
-            "system",
-            {"input_sha256": input_hash, "no_duplicate_effect": True},
-        )
-        _write_latest_run_locator(workspace, run_id)
-        return run_dir
+        with _exclusive_operation_lock(run_dir):
+            state = read_json(state_path)
+            validate_state(state)
+            existing_config = read_json(run_dir / "run_config.json")
+            validate_run_config(existing_config)
+            if (
+                canonical_bytes(existing_config) != canonical_bytes(run_config)
+                or state["run_config_sha256"] != run_config_hash
+                or state["run_id"] != run_id
+            ):
+                raise SafeStop(
+                    "run_collision",
+                    "Existing run has a different canonical run configuration.",
+                )
+            _load_run(run_dir)
+            existing_events = _load_audit_events(
+                run_dir / "audit" / "events.jsonl",
+                expected_run_id=run_id,
+            )
+            if not any(
+                event["event_type"] == "duplicate_retry_ignored"
+                and event["details"].get("run_config_sha256") == run_config_hash
+                for event in existing_events
+            ):
+                append_audit_event(
+                    run_dir,
+                    run_id,
+                    "duplicate_retry_ignored",
+                    state["current_state"],
+                    "system",
+                    {
+                        "input_sha256": input_hash,
+                        "run_config_sha256": run_config_hash,
+                        "no_duplicate_effect": True,
+                    },
+                )
+            _write_latest_run_locator(workspace, run_id)
+            return run_dir
+
+    runs_root = resolved_workspace / "runs"
+    try:
+        runs_root.mkdir(parents=True, exist_ok=True)
+        staging_parent = Path(tempfile.mkdtemp(prefix=STAGING_PREFIX, dir=runs_root))
+        staged_run_dir = staging_parent / run_id
+        staged_run_dir.mkdir()
+    except OSError as error:
+        raise SafeStop(
+            "file_write_error",
+            "Could not create the private run staging folder.",
+        ) from error
+    final_run_dir = run_dir
+    run_dir = staged_run_dir
+    state_path = run_dir / "state.json"
 
     issues = detect_issues(rows)
     for issue in issues:
         validate_issue(issue)
-    expected_keys = _read_expected_keys(expected_path)
+    expected_keys_value = (
+        [list(key) for key in sorted(expected_keys)]
+        if expected_keys is not None
+        else None
+    )
+    state_common = {
+        "run_id": run_id,
+        "run_config_sha256": run_config_hash,
+        "input_sha256": input_hash,
+        "assessment_date": ASSESSMENT_DATE.isoformat(),
+        "pipeline_version": PIPELINE_VERSION,
+        "rules_version": RULES_VERSION,
+        "prompt_version": PROMPT_VERSION,
+        "ai_mode_requested": ai_mode,
+        "external_actions": 0,
+        "local_export_count": 0,
+        "expected_keys": expected_keys_value,
+    }
+    write_json(run_dir / "run_config.json", run_config)
+    atomic_write_bytes(run_dir / "source" / "work_items.csv", input_bytes)
+    atomic_write_bytes(
+        run_dir / EXPECTED_ORACLE_EVIDENCE_PATH,
+        expected_oracle_evidence,
+    )
+    _write_issues_csv(run_dir / "issues" / "issues.csv", issues)
+    write_json(run_dir / "issues" / "issues.json", issues)
+    write_json(run_dir / "control.json", CONTROL)
+
     if not issues:
-        (run_dir / "source").mkdir(parents=True, exist_ok=True)
-        (run_dir / "source" / "work_items.csv").write_bytes(input_bytes)
-        _write_issues_csv(run_dir / "issues" / "issues.csv", issues)
-        write_json(run_dir / "issues" / "issues.json", issues)
-        write_json(
-            run_dir / "control.json",
-            {
-                "EXTERNAL_ACTIONS_ENABLED": False,
-                "allowed_output": "local_draft_only",
-                "dataset_kind": "synthetic",
-            },
-        )
         state = {
-            "run_id": run_id,
-            "input_sha256": input_hash,
-            "assessment_date": ASSESSMENT_DATE.isoformat(),
-            "pipeline_version": PIPELINE_VERSION,
+            **state_common,
             "current_state": "no_action_needed",
             "draft_revision": 0,
             "draft_sha256": None,
+            "review_manifest_sha256": None,
             "active_decision_path": None,
-            "ai_mode_requested": ai_mode,
             "summary_generator": None,
             "summary_fallback_reason": None,
-            "external_actions": 0,
-            "local_export_count": 0,
-            "expected_keys": (
-                [list(key) for key in sorted(expected_keys)]
-                if expected_keys is not None
-                else None
-            ),
         }
+        validate_state(state)
         write_json(state_path, state)
         write_json(
             run_dir / "evaluation.json",
@@ -1087,7 +2709,11 @@ def prepare_run(
             "run_received",
             "received",
             "system",
-            {"input_sha256": input_hash, "dataset_kind": "synthetic"},
+            {
+                "input_sha256": input_hash,
+                "run_config_sha256": run_config_hash,
+                "dataset_kind": "synthetic",
+            },
         )
         append_audit_event(
             run_dir,
@@ -1105,70 +2731,42 @@ def prepare_run(
             "system",
             {"issue_count": 0, "external_actions": 0},
         )
+        _publish_staged_run(staging_parent, run_dir, final_run_dir)
         _write_latest_run_locator(workspace, run_id)
-        return run_dir
+        return final_run_dir
+
     summary, fallback_reason = create_bounded_summary(ai_mode, run_id, issues)
+    validate_summary(summary, issues, run_id, rows)
     draft_bytes = canonical_bytes(summary)
     draft_hash = sha256_bytes(draft_bytes)
-
-    (run_dir / "source").mkdir(parents=True, exist_ok=True)
-    (run_dir / "source" / "work_items.csv").write_bytes(input_bytes)
-    _write_issues_csv(run_dir / "issues" / "issues.csv", issues)
-    write_json(run_dir / "issues" / "issues.json", issues)
-    (run_dir / "draft").mkdir(parents=True, exist_ok=True)
-    (run_dir / "draft" / "summary.json").write_bytes(draft_bytes)
-    write_json(
-        run_dir / "review" / "review_package.json",
-        {
-            "run_id": run_id,
-            "draft_revision": 1,
-            "draft_sha256": draft_hash,
-            "issue_count": len(issues),
-            "issues_path": "issues/issues.json",
-            "source_path": "source/work_items.csv",
-            "summary_path": "draft/summary.json",
-            "reviewer_must_check": [
-                "Every issue against the named synthetic source row and field.",
-                "Every summary sentence against its visible issue identifiers.",
-                "Every proposed action is human_review with external_action false.",
-                "The exact draft hash and revision before deciding.",
-            ],
-            "allowed_decisions": ["approve", "edit", "reject", "expire"],
-            "external_actions": 0,
-        },
+    atomic_write_bytes(run_dir / "draft" / "summary.json", draft_bytes)
+    review_package = _review_package(run_id, 1, draft_hash, len(issues))
+    validate_review_package(
+        review_package,
+        run_id=run_id,
+        draft_revision=1,
+        draft_sha256=draft_hash,
+        issue_count=len(issues),
     )
-    write_json(
-        run_dir / "control.json",
-        {
-            "EXTERNAL_ACTIONS_ENABLED": False,
-            "allowed_output": "local_draft_only",
-            "dataset_kind": "synthetic",
-        },
-    )
-    (run_dir / "manual_fallback.md").write_text(
-        _manual_fallback_text(run_id, issues),
-        encoding="utf-8",
+    write_json(run_dir / "review" / "review_package.json", review_package)
+    review_manifest = _build_review_manifest(run_dir, run_id, 1, run_config)
+    review_manifest_hash = _review_manifest_hash(review_manifest)
+    write_json(run_dir / "review" / "review_manifest.json", review_manifest)
+    atomic_write_bytes(
+        run_dir / "manual_fallback.md",
+        _manual_fallback_text(run_id, issues).encode("utf-8"),
     )
     state = {
-        "run_id": run_id,
-        "input_sha256": input_hash,
-        "assessment_date": ASSESSMENT_DATE.isoformat(),
-        "pipeline_version": PIPELINE_VERSION,
+        **state_common,
         "current_state": "needs_review",
         "draft_revision": 1,
         "draft_sha256": draft_hash,
+        "review_manifest_sha256": review_manifest_hash,
         "active_decision_path": None,
-        "ai_mode_requested": ai_mode,
         "summary_generator": summary["generator"],
         "summary_fallback_reason": fallback_reason,
-        "external_actions": 0,
-        "local_export_count": 0,
-        "expected_keys": (
-            [list(key) for key in sorted(expected_keys)]
-            if expected_keys is not None
-            else None
-        ),
     }
+    validate_state(state)
     write_json(state_path, state)
     write_json(
         run_dir / "evaluation.json",
@@ -1187,7 +2785,11 @@ def prepare_run(
         "run_received",
         "received",
         "system",
-        {"input_sha256": input_hash, "dataset_kind": "synthetic"},
+        {
+            "input_sha256": input_hash,
+            "run_config_sha256": run_config_hash,
+            "dataset_kind": "synthetic",
+        },
     )
     append_audit_event(
         run_dir,
@@ -1235,25 +2837,324 @@ def prepare_run(
         "human_review_required",
         "needs_review",
         "system",
-        {"draft_revision": 1, "draft_sha256": draft_hash},
+        {
+            "draft_revision": 1,
+            "draft_sha256": draft_hash,
+            "review_manifest_sha256": review_manifest_hash,
+        },
     )
+    _publish_staged_run(staging_parent, run_dir, final_run_dir)
     _write_latest_run_locator(workspace, run_id)
-    return run_dir
+    return final_run_dir
 
 
-def _load_run(run_dir: Path) -> tuple[dict[str, Any], list[dict[str, Any]], dict[str, Any]]:
+def _load_run(
+    run_dir: Path,
+) -> tuple[dict[str, Any], list[dict[str, Any]], dict[str, Any] | None]:
+    if not isinstance(run_dir, Path):
+        raise SafeStop("invalid_argument", "Run directory must be a Path.")
+    if _path_exists(
+        run_dir / TRANSACTION_INCOMPLETE_NAME,
+        "controlled transaction marker",
+    ):
+        raise SafeStop(
+            "incomplete_controlled_transaction",
+            "A prior controlled mutation could not be rolled back completely. "
+            "Do not continue until the visible transaction marker is resolved.",
+        )
+    if _path_exists(run_dir / "outbox" / "INCOMPLETE.txt", "export marker"):
+        raise SafeStop(
+            "incomplete_export_transaction",
+            "A prior export could not be rolled back completely. Do not use "
+            "the outbox until a human resolves the visible INCOMPLETE marker.",
+        )
     state = read_json(run_dir / "state.json")
+    validate_state(state)
+    if run_dir.name != state["run_id"]:
+        raise SafeStop("run_directory_mismatch", "Run folder name differs from run_id.")
+    run_config = read_json(run_dir / "run_config.json")
+    validate_run_config(run_config)
+    config_hash = _run_config_hash(run_config)
+    if state["run_config_sha256"] != config_hash:
+        raise SafeStop(
+            "run_config_integrity_mismatch",
+            "State no longer identifies the actual run configuration.",
+        )
+    if _run_id_from_config(run_config) != state["run_id"]:
+        raise SafeStop(
+            "run_config_integrity_mismatch",
+            "Run identifier no longer matches its canonical configuration.",
+        )
+    expected_config_values = {
+        "assessment_date": ASSESSMENT_DATE.isoformat(),
+        "pipeline_version": PIPELINE_VERSION,
+        "rules_version": RULES_VERSION,
+        "prompt_version": PROMPT_VERSION,
+        "mock_generator_version": MOCK_GENERATOR_VERSION,
+        "fallback_generator_version": FALLBACK_GENERATOR_VERSION,
+    }
+    if any(
+        run_config[field] != value for field, value in expected_config_values.items()
+    ):
+        raise SafeStop(
+            "unsupported_run_version",
+            "Run configuration uses a version this runner cannot safely execute.",
+        )
+    if (
+        state["input_sha256"] != run_config["input_sha256"]
+        or state["assessment_date"] != run_config["assessment_date"]
+        or state["pipeline_version"] != run_config["pipeline_version"]
+        or state["rules_version"] != run_config["rules_version"]
+        or state["prompt_version"] != run_config["prompt_version"]
+        or state["ai_mode_requested"] != run_config["requested_adapter_mode"]
+    ):
+        raise SafeStop(
+            "run_config_integrity_mismatch",
+            "State configuration fields differ from run_config.json.",
+        )
+    source_path = run_dir / "source" / "work_items.csv"
+    try:
+        source_bytes = source_path.read_bytes()
+    except FileNotFoundError as error:
+        raise SafeStop("missing_file", "Protected source file is missing.") from error
+    except OSError as error:
+        raise SafeStop(
+            "file_read_error", "Could not read protected source file."
+        ) from error
+    if sha256_bytes(source_bytes) != state["input_sha256"]:
+        raise SafeStop(
+            "source_integrity_mismatch",
+            "Protected source bytes differ from the canonical run configuration.",
+        )
+    source_rows = _parse_csv_bytes(source_bytes, source_path.name)
+    detected_issues = detect_issues(source_rows)
+    for issue in detected_issues:
+        validate_issue(issue)
     issues = read_json(run_dir / "issues" / "issues.json")
     if not isinstance(issues, list):
         raise SafeStop("contract_mismatch", "issues.json must contain a list.")
     for issue in issues:
         validate_issue(issue)
+    if issues != detected_issues:
+        raise SafeStop(
+            "issues_integrity_mismatch",
+            "Issue JSON differs from deterministic source evaluation.",
+        )
+    issues_csv_path = run_dir / "issues" / "issues.csv"
+    try:
+        issues_csv_bytes = issues_csv_path.read_bytes()
+    except FileNotFoundError as error:
+        raise SafeStop("missing_file", "Issue CSV is missing.") from error
+    except OSError as error:
+        raise SafeStop("file_read_error", "Could not read issue CSV.") from error
+    if issues_csv_bytes != _csv_bytes(issues, ISSUE_FIELDS):
+        raise SafeStop(
+            "issues_integrity_mismatch",
+            "Issue CSV differs from the canonical issue JSON.",
+        )
+    control = read_json(run_dir / "control.json")
+    validate_control(control)
+    protected_expected_keys = _expected_keys_from_run_evidence(
+        run_dir,
+        run_config,
+    )
+    audit_events = _load_audit_events(
+        run_dir / "audit" / "events.jsonl",
+        expected_run_id=state["run_id"],
+    )
+    if not audit_events:
+        raise SafeStop("audit_corrupt", "Run audit has no valid events.")
+    evaluation = read_json(run_dir / "evaluation.json")
+    validate_evaluation(evaluation)
+    expected_raw = state["expected_keys"]
+    state_expected_keys = (
+        {tuple(value) for value in expected_raw} if expected_raw is not None else None
+    )
+    if state_expected_keys != protected_expected_keys:
+        raise SafeStop(
+            "expected_oracle_integrity_mismatch",
+            "Mutable state expected keys differ from protected run evidence.",
+        )
+    recomputed_evaluation = _evaluation(
+        state["run_id"],
+        issues,
+        protected_expected_keys,
+        state["summary_fallback_reason"],
+        state["current_state"],
+    )
+    if evaluation != recomputed_evaluation:
+        raise SafeStop(
+            "evaluation_integrity_mismatch",
+            "Evaluation differs from exact deterministic recomputation.",
+        )
+    if state["current_state"] == "no_action_needed":
+        if issues:
+            raise SafeStop(
+                "state_contract",
+                "No-action state contains verified issues.",
+            )
+        _reconcile_audit_history(
+            run_dir,
+            state,
+            issues,
+            audit_events,
+            len(source_rows),
+        )
+        return state, issues, None
+
     summary = read_json(run_dir / "draft" / "summary.json")
-    validate_summary(summary, issues, state["run_id"])
+    validate_summary(summary, issues, state["run_id"], source_rows)
+    draft_bytes = _read_bytes(
+        run_dir / "draft" / "summary.json",
+        "controlled summary draft",
+    )
+    if sha256_bytes(draft_bytes) != state["draft_sha256"]:
+        raise SafeStop(
+            "draft_integrity_mismatch",
+            "Draft bytes differ from the controlled state hash.",
+        )
+    if (
+        summary["prompt_version"] != run_config["prompt_version"]
+        or summary["generator"] != state["summary_generator"]
+    ):
+        raise SafeStop(
+            "summary_contract",
+            "Summary version or generator differs from controlled configuration.",
+        )
+    review_package = read_json(run_dir / "review" / "review_package.json")
+    validate_review_package(
+        review_package,
+        run_id=state["run_id"],
+        draft_revision=state["draft_revision"],
+        draft_sha256=state["draft_sha256"],
+        issue_count=len(issues),
+    )
+    stored_manifest = read_json(run_dir / "review" / "review_manifest.json")
+    validate_review_manifest(
+        stored_manifest,
+        run_id=state["run_id"],
+        draft_revision=state["draft_revision"],
+        run_config=run_config,
+    )
+    recomputed_manifest = _build_review_manifest(
+        run_dir,
+        state["run_id"],
+        state["draft_revision"],
+        run_config,
+    )
+    if stored_manifest != recomputed_manifest:
+        raise SafeStop(
+            "review_manifest_mismatch",
+            "Protected artifact bytes differ from the stored review manifest.",
+        )
+    current_manifest_hash = _review_manifest_hash(recomputed_manifest)
+    if current_manifest_hash != state["review_manifest_sha256"]:
+        raise SafeStop(
+            "review_manifest_mismatch",
+            "Review manifest no longer matches controlled state.",
+        )
+    decision_relative = state["active_decision_path"]
+    if decision_relative is not None:
+        decision = read_json(run_dir / decision_relative)
+        validate_approval(decision)
+        if (
+            decision["run_id"] != state["run_id"]
+            or decision["draft_revision"] != state["draft_revision"]
+            or decision["draft_sha256"] != state["draft_sha256"]
+            or decision["review_manifest_sha256"] != current_manifest_hash
+        ):
+            raise SafeStop(
+                "decision_integrity_mismatch",
+                "Active decision identifies different protected review evidence.",
+            )
+        expected_decisions = {
+            "approved_for_local_export": {"approve"},
+            "approved_draft": {"approve"},
+            "changes_requested": {"edit"},
+            "rejected": {"reject"},
+            "expired": {"approve", "expire"},
+        }
+        allowed = expected_decisions.get(state["current_state"])
+        if allowed is None or decision["decision"] not in allowed:
+            raise SafeStop(
+                "decision_state_mismatch",
+                "The active decision does not permit the controlled run state.",
+            )
+    elif state["current_state"] in {
+        "approved_for_local_export",
+        "approved_draft",
+        "changes_requested",
+        "rejected",
+        "expired",
+    }:
+        raise SafeStop(
+            "decision_state_mismatch",
+            "A decision-controlled state is missing its active decision.",
+        )
+
+    outbox = run_dir / "outbox"
+    json_path = outbox / f"approved-r{state['draft_revision']}.json"
+    csv_path = outbox / f"approved-r{state['draft_revision']}.csv"
+    json_exists = _path_exists(json_path, "approved JSON export")
+    csv_exists = _path_exists(csv_path, "approved CSV export")
+    if json_exists != csv_exists:
+        raise SafeStop(
+            "export_pair_mismatch",
+            "Only one member of the controlled export pair exists.",
+        )
+    if state["current_state"] == "approved_draft":
+        if not json_exists:
+            raise SafeStop(
+                "missing_approved_export",
+                "Approved-draft state is missing its controlled JSON/CSV pair.",
+            )
+        if decision_relative is None:
+            raise SafeStop(
+                "decision_state_mismatch", "Approved export has no decision."
+            )
+        decision = read_json(run_dir / decision_relative)
+        export_count = _local_export_audit_count(
+            run_dir,
+            state["run_id"],
+            decision["decision_id"],
+            state["draft_revision"],
+        )
+        if export_count != 1:
+            raise SafeStop(
+                "export_audit_mismatch",
+                "Approved export must have exactly one matching audit event.",
+            )
+        expected_json, expected_csv = _expected_export_bytes(
+            state,
+            issues,
+            summary,
+            decision,
+            current_manifest_hash,
+        )
+        if (
+            _read_bytes(json_path, "approved JSON export") != expected_json
+            or _read_bytes(csv_path, "approved CSV export") != expected_csv
+        ):
+            raise SafeStop(
+                "export_integrity_mismatch",
+                "Approved export bytes differ from the exact controlled evidence.",
+            )
+    elif json_exists:
+        raise SafeStop(
+            "unexpected_export",
+            "Controlled export files exist before approved-draft state.",
+        )
+    _reconcile_audit_history(
+        run_dir,
+        state,
+        issues,
+        audit_events,
+        len(source_rows),
+    )
     return state, issues, summary
 
 
-def record_decision(
+def _record_decision_unlocked(
     run_dir: Path,
     decision: str,
     reviewer_role: str,
@@ -1263,17 +3164,39 @@ def record_decision(
     expires_at: datetime | None = None,
     decided_at: datetime | None = None,
 ) -> Path:
-    if decision not in DECISIONS:
-        raise SafeStop("invalid_decision", f"Decision must be one of {sorted(DECISIONS)}.")
-    if not reviewer_role.strip() or not reason.strip():
+    if not isinstance(decision, str) or decision not in DECISIONS:
+        raise SafeStop(
+            "invalid_decision", f"Decision must be one of {sorted(DECISIONS)}."
+        )
+    if (
+        not isinstance(reviewer_role, str)
+        or not isinstance(reason, str)
+        or not reviewer_role.strip()
+        or not reason.strip()
+    ):
         raise SafeStop("invalid_decision", "Reviewer role and reason are required.")
-    initial_state = read_json(run_dir / "state.json")
-    if initial_state.get("current_state") == "no_action_needed":
+    if type(expected_revision) is not int or expected_revision < 1:
+        raise SafeStop(
+            "invalid_decision",
+            "Expected revision must be a positive integer.",
+        )
+    if type(evidence_reviewed) is not bool:
+        raise SafeStop(
+            "invalid_decision",
+            "Evidence-reviewed must be true or false.",
+        )
+    if expires_at is not None and not isinstance(expires_at, datetime):
+        raise SafeStop("invalid_datetime", "expires_at must be a date-time.")
+    if decided_at is not None and not isinstance(decided_at, datetime):
+        raise SafeStop("invalid_datetime", "decided_at must be a date-time.")
+    state, _, summary = _load_run(run_dir)
+    if state["current_state"] == "no_action_needed":
         raise SafeStop(
             "no_action_needed",
             "A run with no verified issues has no draft to decide.",
         )
-    state, _, _ = _load_run(run_dir)
+    if summary is None:
+        raise SafeStop("state_contract", "Issue-bearing run has no summary.")
     if state["current_state"] not in {"needs_review"}:
         raise SafeStop(
             "invalid_state",
@@ -1296,34 +3219,25 @@ def record_decision(
         raise SafeStop("expired_review", "Approval must expire after it is decided.")
 
     draft_path = run_dir / "draft" / "summary.json"
-    current_hash = sha256_bytes(draft_path.read_bytes())
+    current_hash = sha256_bytes(_read_bytes(draft_path, "controlled summary draft"))
     if current_hash != state["draft_sha256"]:
         raise SafeStop(
             "draft_changed_before_decision",
             "The draft changed; create and review a new controlled revision.",
         )
-    decision_seed = canonical_bytes(
-        [
-            state["run_id"],
-            decision,
-            expected_revision,
-            current_hash,
-            reviewer_role,
-            iso_utc(decided),
-        ]
-    )
-    record = {
-        "decision_id": "DEC-" + sha256_bytes(decision_seed)[:12].upper(),
+    material = {
         "run_id": state["run_id"],
         "reviewer_role": reviewer_role.strip(),
         "decision": decision,
         "draft_revision": expected_revision,
         "draft_sha256": current_hash,
+        "review_manifest_sha256": state["review_manifest_sha256"],
         "decided_at": iso_utc(decided),
         "expires_at": iso_utc(expires),
         "evidence_reviewed": evidence_reviewed,
         "reason": reason.strip(),
     }
+    record = {"decision_id": _decision_id(material), **material}
     validate_approval(record)
     decision_path = run_dir / "review" / f"decision-r{expected_revision}.json"
     if decision_path.exists():
@@ -1331,7 +3245,6 @@ def record_decision(
             "decision_already_recorded",
             f"Revision {expected_revision} already has a recorded decision.",
         )
-    write_json(decision_path, record)
     if decision == "approve":
         new_state = "approved_for_local_export"
     elif decision == "edit":
@@ -1340,34 +3253,61 @@ def record_decision(
         new_state = "rejected"
     else:
         new_state = "expired"
-    state["current_state"] = new_state
-    state["active_decision_path"] = str(decision_path.relative_to(run_dir))
-    write_json(run_dir / "state.json", state)
-    append_audit_event(
+    state_path = run_dir / "state.json"
+    audit_path = run_dir / "audit" / "events.jsonl"
+    evaluation_path = run_dir / "evaluation.json"
+
+    def commit_decision() -> None:
+        write_json(decision_path, record)
+        state["current_state"] = new_state
+        state["active_decision_path"] = decision_path.relative_to(run_dir).as_posix()
+        validate_state(state)
+        write_json(state_path, state)
+        append_audit_event(
+            run_dir,
+            state["run_id"],
+            "review_decision_recorded",
+            new_state,
+            "reviewer",
+            {
+                "decision_id": record["decision_id"],
+                "decision": decision,
+                "draft_revision": expected_revision,
+                "draft_sha256": current_hash,
+                "review_manifest_sha256": state["review_manifest_sha256"],
+                "evidence_reviewed": evidence_reviewed,
+                "integrity_scope": "local_tamper_detection_not_authentication",
+            },
+            decided,
+        )
+        _refresh_evaluation(run_dir, state, new_state)
+
+    _execute_controlled_transaction(
         run_dir,
-        state["run_id"],
-        "review_decision_recorded",
-        new_state,
-        "reviewer",
-        {
-            "decision_id": record["decision_id"],
-            "decision": decision,
-            "draft_revision": expected_revision,
-            "draft_sha256": current_hash,
-            "evidence_reviewed": evidence_reviewed,
-        },
-        decided,
+        [decision_path, state_path, audit_path, evaluation_path],
+        commit_decision,
+        failure_code="decision_finalize_error",
+        failure_message=(
+            "The decision could not be finalized. Prior controlled state was "
+            "restored; retry is safe."
+        ),
     )
-    _refresh_evaluation(run_dir, state, new_state)
     return decision_path
 
 
-def revise_draft(
+def _revise_draft_unlocked(
     run_dir: Path,
     replacement_path: Path,
     expected_revision: int,
 ) -> int:
-    state, issues, _ = _load_run(run_dir)
+    if not isinstance(replacement_path, Path) or type(expected_revision) is not int:
+        raise SafeStop(
+            "invalid_argument",
+            "Revision requires a replacement Path and integer expected revision.",
+        )
+    state, issues, current_summary = _load_run(run_dir)
+    if current_summary is None:
+        raise SafeStop("no_action_needed", "A no-action run has no draft to revise.")
     if state["current_state"] != "changes_requested":
         raise SafeStop("invalid_state", "A new draft requires an edit decision.")
     if expected_revision != state["draft_revision"]:
@@ -1377,68 +3317,173 @@ def revise_draft(
             f"{state['draft_revision']}.",
         )
     replacement = read_json(replacement_path)
-    validate_summary(replacement, issues, state["run_id"])
+    run_config = read_json(run_dir / "run_config.json")
+    validate_run_config(run_config)
+    if (
+        not isinstance(replacement, dict)
+        or replacement.get("prompt_version") != run_config["prompt_version"]
+        or replacement.get("generator") != state["summary_generator"]
+    ):
+        raise SafeStop(
+            "replacement_run_mismatch",
+            "Replacement prompt version and generator must match this exact run.",
+        )
+    source_bytes = (run_dir / "source" / "work_items.csv").read_bytes()
+    source_rows = _parse_csv_bytes(source_bytes, "work_items.csv")
+    validate_summary(replacement, issues, state["run_id"], source_rows)
     replacement_bytes = canonical_bytes(replacement)
     old_hash = state["draft_sha256"]
     new_hash = sha256_bytes(replacement_bytes)
     if new_hash == old_hash:
         raise SafeStop("unchanged_revision", "The replacement draft did not change.")
     next_revision = expected_revision + 1
-    (run_dir / "draft" / "summary.json").write_bytes(replacement_bytes)
-    state["draft_revision"] = next_revision
-    state["draft_sha256"] = new_hash
-    state["current_state"] = "needs_review"
-    state["active_decision_path"] = None
-    write_json(run_dir / "state.json", state)
-    review_package = read_json(run_dir / "review" / "review_package.json")
-    review_package["draft_revision"] = next_revision
-    review_package["draft_sha256"] = new_hash
-    write_json(run_dir / "review" / "review_package.json", review_package)
-    append_audit_event(
-        run_dir,
+    draft_path = run_dir / "draft" / "summary.json"
+    review_package = _review_package(
         state["run_id"],
-        "draft_revision_created",
-        "needs_review",
-        "system",
-        {
-            "previous_revision": expected_revision,
-            "draft_revision": next_revision,
-            "previous_sha256": old_hash,
-            "draft_sha256": new_hash,
-        },
+        next_revision,
+        new_hash,
+        len(issues),
     )
-    _refresh_evaluation(run_dir, state, "needs_review")
+    validate_review_package(
+        review_package,
+        run_id=state["run_id"],
+        draft_revision=next_revision,
+        draft_sha256=new_hash,
+        issue_count=len(issues),
+    )
+    package_path = run_dir / "review" / "review_package.json"
+    manifest_path = run_dir / "review" / "review_manifest.json"
+    state_path = run_dir / "state.json"
+    audit_path = run_dir / "audit" / "events.jsonl"
+    evaluation_path = run_dir / "evaluation.json"
+
+    def commit_revision() -> None:
+        atomic_write_bytes(draft_path, replacement_bytes)
+        write_json(package_path, review_package)
+        review_manifest = _build_review_manifest(
+            run_dir,
+            state["run_id"],
+            next_revision,
+            run_config,
+        )
+        review_manifest_hash = _review_manifest_hash(review_manifest)
+        write_json(manifest_path, review_manifest)
+        state["draft_revision"] = next_revision
+        state["draft_sha256"] = new_hash
+        state["review_manifest_sha256"] = review_manifest_hash
+        state["current_state"] = "needs_review"
+        state["active_decision_path"] = None
+        state["local_export_count"] = 0
+        validate_state(state)
+        write_json(state_path, state)
+        append_audit_event(
+            run_dir,
+            state["run_id"],
+            "draft_revision_created",
+            "needs_review",
+            "system",
+            {
+                "previous_revision": expected_revision,
+                "draft_revision": next_revision,
+                "previous_sha256": old_hash,
+                "draft_sha256": new_hash,
+                "review_manifest_sha256": review_manifest_hash,
+            },
+        )
+        _refresh_evaluation(run_dir, state, "needs_review")
+
+    _execute_controlled_transaction(
+        run_dir,
+        [
+            draft_path,
+            package_path,
+            manifest_path,
+            state_path,
+            audit_path,
+            evaluation_path,
+        ],
+        commit_revision,
+        failure_code="revision_finalize_error",
+        failure_message=(
+            "The new revision could not be finalized. Prior controlled state "
+            "was restored; retry is safe."
+        ),
+    )
     return next_revision
 
 
-def validate_candidate_summary(run_dir: Path, candidate_path: Path) -> Path:
+def _validate_candidate_summary_unlocked(
+    run_dir: Path,
+    candidate_path: Path,
+) -> Path:
     """Validate a learner-created mock summary without replacing the run draft."""
-    state, issues, _ = _load_run(run_dir)
+    state, issues, summary = _load_run(run_dir)
+    if summary is None:
+        raise SafeStop("no_action_needed", "A no-action run has no summary contract.")
+    if state["current_state"] != "needs_review":
+        raise SafeStop(
+            "invalid_state",
+            "A learner candidate can only be validated while the run needs review.",
+        )
+    if not isinstance(candidate_path, Path):
+        raise SafeStop("invalid_argument", "Candidate path must be a Path.")
     candidate = read_json(candidate_path)
-    validate_summary(candidate, issues, state["run_id"])
-    result_path = run_dir / "review" / "candidate-validation.json"
-    write_json(
-        result_path,
-        {
-            "run_id": state["run_id"],
-            "candidate_sha256": sha256_bytes(canonical_bytes(candidate)),
-            "status": "structure_and_issue_references_valid",
-            "issue_reference_count": len(issues),
-            "human_support_review_required": True,
-            "external_actions": 0,
-        },
+    run_config = read_json(run_dir / "run_config.json")
+    validate_run_config(run_config)
+    if (
+        not isinstance(candidate, dict)
+        or candidate.get("prompt_version") != run_config["prompt_version"]
+        or candidate.get("generator") != state["summary_generator"]
+    ):
+        raise SafeStop(
+            "candidate_run_mismatch",
+            "Candidate prompt version and generator must match this exact run.",
+        )
+    source_rows = _parse_csv_bytes(
+        (run_dir / "source" / "work_items.csv").read_bytes(),
+        "work_items.csv",
     )
-    append_audit_event(
+    validate_summary(candidate, issues, state["run_id"], source_rows)
+    result_path = run_dir / "review" / "candidate-validation.json"
+    audit_path = run_dir / "audit" / "events.jsonl"
+    candidate_hash = sha256_bytes(canonical_bytes(candidate))
+
+    def commit_candidate_result() -> None:
+        write_json(
+            result_path,
+            {
+                "run_id": state["run_id"],
+                "candidate_sha256": candidate_hash,
+                "status": "bounded_structure_and_references_valid",
+                "prose_support_status": "controlled_templates_only",
+                "issue_reference_count": len(issues),
+                "human_support_review_required": True,
+                "external_actions": 0,
+            },
+        )
+        append_audit_event(
+            run_dir,
+            state["run_id"],
+            "candidate_summary_validated",
+            state["current_state"],
+            "system",
+            {
+                "candidate_sha256": candidate_hash,
+                "issue_reference_count": len(issues),
+                "prose_support_status": "controlled_templates_only",
+                "human_support_review_required": True,
+            },
+        )
+
+    _execute_controlled_transaction(
         run_dir,
-        state["run_id"],
-        "candidate_summary_validated",
-        "needs_review",
-        "system",
-        {
-            "candidate_sha256": sha256_bytes(canonical_bytes(candidate)),
-            "issue_reference_count": len(issues),
-            "human_support_review_required": True,
-        },
+        [result_path, audit_path],
+        commit_candidate_result,
+        failure_code="candidate_validation_write_error",
+        failure_message=(
+            "Candidate validation evidence could not be finalized. Prior "
+            "controlled evidence was restored; retry is safe."
+        ),
     )
     return result_path
 
@@ -1449,18 +3494,28 @@ def _refresh_evaluation(
     current_state: str,
 ) -> None:
     issues = read_json(run_dir / "issues" / "issues.json")
+    if not isinstance(issues, list):
+        raise SafeStop("contract_mismatch", "issues.json must contain a list.")
+    for issue in issues:
+        validate_issue(issue)
+    run_config = read_json(run_dir / "run_config.json")
+    validate_run_config(run_config)
+    protected_expected_keys = _expected_keys_from_run_evidence(run_dir, run_config)
     expected_raw = state.get("expected_keys")
-    expected_keys = (
-        {tuple(value) for value in expected_raw}
-        if expected_raw is not None
-        else None
+    state_expected_keys = (
+        {tuple(value) for value in expected_raw} if expected_raw is not None else None
     )
+    if state_expected_keys != protected_expected_keys:
+        raise SafeStop(
+            "expected_oracle_integrity_mismatch",
+            "State expected keys differ from protected run evidence.",
+        )
     write_json(
         run_dir / "evaluation.json",
         _evaluation(
             state["run_id"],
             issues,
-            expected_keys,
+            protected_expected_keys,
             state.get("summary_fallback_reason"),
             current_state,
         ),
@@ -1481,29 +3536,183 @@ def _find_review_action(summary: dict[str, Any], issue_id: str) -> str:
     raise SafeStop("summary_contract", f"No review action contains {issue_id}.")
 
 
-def export_approved(
+def _expected_export_bytes(
+    state: dict[str, Any],
+    issues: list[dict[str, Any]],
+    summary: dict[str, Any],
+    decision: dict[str, Any],
+    review_manifest_sha256: str,
+) -> tuple[bytes, bytes]:
+    records = [
+        {
+            "run_id": state["run_id"],
+            "draft_revision": state["draft_revision"],
+            "issue_id": issue["issue_id"],
+            "work_item_id": issue["work_item_id"],
+            "source_reference": issue["source_reference"],
+            "source_row": issue["source_row"],
+            "field": issue["field"],
+            "raw_value": issue["raw_value"],
+            "rule_code": issue["rule_code"],
+            "severity": issue["severity"],
+            "message": issue["message"],
+            "summary_group": _find_group_label(summary, issue["issue_id"]),
+            "review_action": _find_review_action(summary, issue["issue_id"]),
+        }
+        for issue in issues
+    ]
+    payload = {
+        "run_id": state["run_id"],
+        "draft_revision": state["draft_revision"],
+        "draft_sha256": state["draft_sha256"],
+        "review_manifest_sha256": review_manifest_sha256,
+        "decision_id": decision["decision_id"],
+        "dataset_kind": "synthetic",
+        "output_kind": "local_draft_only",
+        "external_actions": 0,
+        "records": records,
+    }
+    return canonical_bytes(payload), _csv_bytes(records, list(records[0]))
+
+
+def _local_export_audit_count(
+    run_dir: Path,
+    run_id: str,
+    decision_id: str,
+    draft_revision: int,
+) -> int:
+    events = _load_audit_events(
+        run_dir / "audit" / "events.jsonl",
+        expected_run_id=run_id,
+    )
+    return sum(
+        1
+        for event in events
+        if event["event_type"] == "local_export_created"
+        and event["state"] == "approved_draft"
+        and event["details"].get("decision_id") == decision_id
+        and event["details"].get("draft_revision") == draft_revision
+    )
+
+
+def _controlled_file_snapshot(path: Path, label: str) -> bytes | None:
+    try:
+        return path.read_bytes() if path.exists() else None
+    except OSError as error:
+        raise SafeStop(
+            "file_read_error",
+            f"Could not snapshot {label} before export.",
+        ) from error
+
+
+def _restore_controlled_file(path: Path, snapshot: bytes | None) -> None:
+    try:
+        if snapshot is None:
+            path.unlink(missing_ok=True)
+        else:
+            atomic_write_bytes(path, snapshot)
+    except OSError as error:
+        raise SafeStop(
+            "file_write_error",
+            f"Could not restore controlled file {path.name}.",
+        ) from error
+
+
+def _execute_controlled_transaction(
+    run_dir: Path,
+    paths: list[Path],
+    action: Callable[[], Any],
+    *,
+    failure_code: str,
+    failure_message: str,
+) -> Any:
+    """Run a multi-file mutation with byte-for-byte rollback on failure."""
+
+    unique_paths = list(dict.fromkeys(paths))
+    snapshots = {
+        path: _controlled_file_snapshot(path, path.name) for path in unique_paths
+    }
+    try:
+        return action()
+    except Exception as error:
+        rollback_errors: list[str] = []
+        for path, snapshot in snapshots.items():
+            try:
+                _restore_controlled_file(path, snapshot)
+            except Exception:
+                rollback_errors.append(path.name)
+        if rollback_errors:
+            marker = run_dir / TRANSACTION_INCOMPLETE_NAME
+            try:
+                atomic_write_bytes(
+                    marker,
+                    (
+                        "CONTROLLED TRANSACTION INCOMPLETE\n"
+                        "Do not continue until a human verifies and restores the "
+                        "last valid controlled artifacts.\n"
+                        f"Rollback failures: {sorted(set(rollback_errors))}\n"
+                    ).encode("utf-8"),
+                )
+            except Exception:
+                pass
+            raise SafeStop(
+                "transaction_rollback_failed",
+                "The controlled mutation failed and rollback could not restore "
+                "every prior artifact. Do not continue while the transaction "
+                "marker is present.",
+            ) from error
+        if isinstance(error, SafeStop):
+            raise error
+        raise SafeStop(failure_code, failure_message) from error
+
+
+def _append_local_export_audit(
+    run_dir: Path,
+    state: dict[str, Any],
+    decision: dict[str, Any],
+    json_path: Path,
+    csv_path: Path,
+    checked: datetime,
+) -> None:
+    append_audit_event(
+        run_dir,
+        state["run_id"],
+        "local_export_created",
+        "approved_draft",
+        "system",
+        {
+            "decision_id": decision["decision_id"],
+            "draft_revision": state["draft_revision"],
+            "files": [json_path.name, csv_path.name],
+            "external_actions": 0,
+        },
+        checked,
+    )
+
+
+def _export_approved_unlocked(
     run_dir: Path,
     checked_at: datetime | None = None,
 ) -> tuple[Path, Path]:
+    if checked_at is not None and not isinstance(checked_at, datetime):
+        raise SafeStop("invalid_datetime", "checked_at must be a date-time.")
     checked = checked_at or utc_now()
-    initial_state = read_json(run_dir / "state.json")
-    if initial_state.get("current_state") == "no_action_needed":
+    try:
+        state, issues, summary = _load_run(run_dir)
+    except SafeStop as error:
+        if error.code == "draft_integrity_mismatch":
+            raise SafeStop(
+                "edited_draft_after_approval",
+                "Draft bytes changed after review; the decision is invalid.",
+            ) from error
+        raise
+    if state["current_state"] == "no_action_needed":
         raise SafeStop(
             "no_action_needed",
             "A run with no verified issues has no draft to export.",
         )
-    state, issues, summary = _load_run(run_dir)
-    control = read_json(run_dir / "control.json")
-    if control != {
-        "EXTERNAL_ACTIONS_ENABLED": False,
-        "allowed_output": "local_draft_only",
-        "dataset_kind": "synthetic",
-    }:
-        raise SafeStop(
-            "external_action_blocked",
-            "Control must explicitly allow only synthetic local drafts with "
-            "EXTERNAL_ACTIONS_ENABLED=false.",
-        )
+    if summary is None:
+        raise SafeStop("state_contract", "Issue-bearing run has no summary.")
     if state["current_state"] in TERMINAL_NON_EXPORT_STATES:
         raise SafeStop(
             "decision_not_approved",
@@ -1539,113 +3748,233 @@ def export_approved(
             "edited_draft_after_approval",
             "Decision hash does not match the current draft.",
         )
+    run_config = read_json(run_dir / "run_config.json")
+    validate_run_config(run_config)
+    recomputed_manifest = _build_review_manifest(
+        run_dir,
+        state["run_id"],
+        state["draft_revision"],
+        run_config,
+    )
+    recomputed_manifest_hash = _review_manifest_hash(recomputed_manifest)
+    if (
+        recomputed_manifest_hash != state["review_manifest_sha256"]
+        or decision["review_manifest_sha256"] != recomputed_manifest_hash
+    ):
+        raise SafeStop(
+            "review_manifest_mismatch",
+            "Approval does not identify the current protected source, issue "
+            "registers, summary, control, review package, and run configuration.",
+        )
     if checked < decided_at:
         raise SafeStop(
             "approval_not_yet_effective",
             "The export check is earlier than the approval decision.",
         )
     if checked >= expires_at:
-        state["current_state"] = "expired"
-        write_json(run_dir / "state.json", state)
-        append_audit_event(
+        state_path = run_dir / "state.json"
+        audit_path = run_dir / "audit" / "events.jsonl"
+        evaluation_path = run_dir / "evaluation.json"
+
+        def commit_expiry() -> None:
+            state["current_state"] = "expired"
+            validate_state(state)
+            write_json(state_path, state)
+            append_audit_event(
+                run_dir,
+                state["run_id"],
+                "review_expired",
+                "expired",
+                "system",
+                {
+                    "decision_id": decision["decision_id"],
+                    "draft_revision": decision["draft_revision"],
+                },
+                checked,
+            )
+            _refresh_evaluation(run_dir, state, "expired")
+
+        _execute_controlled_transaction(
             run_dir,
-            state["run_id"],
-            "review_expired",
-            "expired",
-            "system",
-            {
-                "decision_id": decision["decision_id"],
-                "draft_revision": decision["draft_revision"],
-            },
-            checked,
+            [state_path, audit_path, evaluation_path],
+            commit_expiry,
+            failure_code="expiry_finalize_error",
+            failure_message=(
+                "Review expiry could not be finalized. Prior controlled state "
+                "was restored; retry is safe."
+            ),
         )
-        _refresh_evaluation(run_dir, state, "expired")
         raise SafeStop("expired_review", "The approval expired before export.")
 
-    records = [
-        {
-            "run_id": state["run_id"],
-            "draft_revision": state["draft_revision"],
-            "issue_id": issue["issue_id"],
-            "work_item_id": issue["work_item_id"],
-            "source_reference": issue["source_reference"],
-            "source_row": issue["source_row"],
-            "field": issue["field"],
-            "raw_value": issue["raw_value"],
-            "rule_code": issue["rule_code"],
-            "severity": issue["severity"],
-            "message": issue["message"],
-            "summary_group": _find_group_label(summary, issue["issue_id"]),
-            "review_action": _find_review_action(summary, issue["issue_id"]),
-        }
-        for issue in issues
-    ]
-    export_payload = {
-        "run_id": state["run_id"],
-        "draft_revision": state["draft_revision"],
-        "draft_sha256": current_hash,
-        "decision_id": decision["decision_id"],
-        "dataset_kind": "synthetic",
-        "output_kind": "local_draft_only",
-        "external_actions": 0,
-        "records": records,
-    }
     outbox = run_dir / "outbox"
-    outbox.mkdir(parents=True, exist_ok=True)
+    try:
+        outbox.mkdir(parents=True, exist_ok=True)
+    except OSError as error:
+        raise SafeStop(
+            "export_write_error",
+            "Could not create the controlled outbox.",
+        ) from error
     json_path = outbox / f"approved-r{state['draft_revision']}.json"
     csv_path = outbox / f"approved-r{state['draft_revision']}.csv"
-    json_bytes = canonical_bytes(export_payload)
-    if json_path.exists() and json_path.read_bytes() != json_bytes:
-        raise SafeStop("idempotency_conflict", "Existing JSON export differs.")
-    json_path.write_bytes(json_bytes)
-    fields = list(records[0])
-    buffer = io.StringIO(newline="")
-    writer = csv.DictWriter(buffer, fieldnames=fields)
-    writer.writeheader()
-    writer.writerows(records)
-    csv_bytes = buffer.getvalue().encode("utf-8")
-    if csv_path.exists() and csv_path.read_bytes() != csv_bytes:
-        raise SafeStop("idempotency_conflict", "Existing CSV export differs.")
-    csv_path.write_bytes(csv_bytes)
-
-    state["current_state"] = "approved_draft"
-    state["local_export_count"] = 2
-    state["external_actions"] = 0
-    write_json(run_dir / "state.json", state)
-    append_audit_event(
-        run_dir,
-        state["run_id"],
-        "local_export_created",
-        "approved_draft",
-        "system",
-        {
-            "decision_id": decision["decision_id"],
-            "draft_revision": state["draft_revision"],
-            "files": [json_path.name, csv_path.name],
-            "external_actions": 0,
-        },
-        checked,
+    json_bytes, csv_bytes = _expected_export_bytes(
+        state,
+        issues,
+        summary,
+        decision,
+        recomputed_manifest_hash,
     )
-    _refresh_evaluation(run_dir, state, "approved_draft")
-    return json_path, csv_path
+    json_exists = _path_exists(json_path, "approved JSON export")
+    csv_exists = _path_exists(csv_path, "approved CSV export")
+    if json_exists != csv_exists:
+        raise SafeStop(
+            "idempotency_conflict",
+            "Only one member of the approved JSON/CSV export pair exists; "
+            "nothing was written.",
+        )
+    already_exported = json_exists and csv_exists
+    if already_exported:
+        if _read_bytes(json_path, "approved JSON export") != json_bytes:
+            raise SafeStop("idempotency_conflict", "Existing JSON export differs.")
+        if _read_bytes(csv_path, "approved CSV export") != csv_bytes:
+            raise SafeStop("idempotency_conflict", "Existing CSV export differs.")
+        return json_path, csv_path
+
+    state_path = run_dir / "state.json"
+    evaluation_path = run_dir / "evaluation.json"
+    audit_path = run_dir / "audit" / "events.jsonl"
+    snapshots = {
+        state_path: _controlled_file_snapshot(state_path, "state.json"),
+        evaluation_path: _controlled_file_snapshot(
+            evaluation_path,
+            "evaluation.json",
+        ),
+        audit_path: _controlled_file_snapshot(audit_path, "events.jsonl"),
+    }
+    incomplete_marker = outbox / "INCOMPLETE.txt"
+    atomic_write_bytes(
+        incomplete_marker,
+        (
+            "CONTROLLED EXPORT INCOMPLETE\n"
+            "Do not use files in this outbox until this marker is absent.\n"
+        ).encode("utf-8"),
+    )
+    finalization_started = already_exported
+    try:
+        if not already_exported:
+            with tempfile.TemporaryDirectory(prefix="s-", dir=outbox) as staging:
+                staging_dir = Path(staging)
+                staged_json = staging_dir / json_path.name
+                staged_csv = staging_dir / csv_path.name
+                try:
+                    staged_json.write_bytes(json_bytes)
+                    staged_csv.write_bytes(csv_bytes)
+                    if (
+                        staged_json.read_bytes() != json_bytes
+                        or staged_csv.read_bytes() != csv_bytes
+                    ):
+                        raise OSError("staged export verification failed")
+                except OSError as error:
+                    raise SafeStop(
+                        "export_write_error",
+                        "Could not stage the complete local JSON/CSV export pair.",
+                    ) from error
+                promoted: list[Path] = []
+                try:
+                    os.replace(staged_json, json_path)
+                    promoted.append(json_path)
+                    os.replace(staged_csv, csv_path)
+                    promoted.append(csv_path)
+                except OSError as error:
+                    for path in promoted:
+                        try:
+                            path.unlink(missing_ok=True)
+                        except OSError:
+                            pass
+                    raise SafeStop(
+                        "export_write_error",
+                        "The complete JSON/CSV pair could not be published; staged "
+                        "files were cleaned up.",
+                    ) from error
+            finalization_started = True
+
+        state["current_state"] = "approved_draft"
+        state["local_export_count"] = 2
+        state["external_actions"] = 0
+        validate_state(state)
+        write_json(state_path, state)
+        _append_local_export_audit(
+            run_dir,
+            state,
+            decision,
+            json_path,
+            csv_path,
+            checked,
+        )
+        _refresh_evaluation(run_dir, state, "approved_draft")
+        if (
+            _local_export_audit_count(
+                run_dir,
+                state["run_id"],
+                decision["decision_id"],
+                state["draft_revision"],
+            )
+            != 1
+        ):
+            raise SafeStop(
+                "export_audit_mismatch",
+                "Exactly one local export audit event could not be verified.",
+            )
+        incomplete_marker.unlink()
+        return json_path, csv_path
+    except Exception as error:
+        rollback_errors: list[str] = []
+        for output_path in (json_path, csv_path):
+            try:
+                output_path.unlink(missing_ok=True)
+            except OSError:
+                rollback_errors.append(output_path.name)
+        for controlled_path, snapshot in snapshots.items():
+            try:
+                _restore_controlled_file(controlled_path, snapshot)
+            except Exception:
+                rollback_errors.append(controlled_path.name)
+        if not rollback_errors:
+            try:
+                incomplete_marker.unlink(missing_ok=True)
+            except OSError:
+                rollback_errors.append(incomplete_marker.name)
+        if rollback_errors:
+            raise SafeStop(
+                "export_rollback_failed",
+                "The export did not complete and rollback could not restore every "
+                "controlled artifact. Do not use the outbox while INCOMPLETE.txt "
+                "is present.",
+            ) from error
+        if (
+            not finalization_started
+            and isinstance(error, SafeStop)
+            and error.code == "export_write_error"
+        ):
+            raise error
+        raise SafeStop(
+            "export_finalize_error",
+            "The local export could not be finalized. The JSON/CSV pair and "
+            "controlled state changes were rolled back; retry is safe.",
+        ) from error
 
 
-def inspect_run(run_dir: Path) -> dict[str, Any]:
-    state = read_json(run_dir / "state.json")
-    issues = read_json(run_dir / "issues" / "issues.json")
+def _inspect_run_unlocked(run_dir: Path) -> dict[str, Any]:
+    state, issues, summary = _load_run(run_dir)
     if state["current_state"] == "no_action_needed":
         summary_generator = None
     else:
-        _, issues, summary = _load_run(run_dir)
+        if summary is None:
+            raise SafeStop("state_contract", "Issue-bearing run has no summary.")
         summary_generator = summary["generator"]
     audit_path = run_dir / "audit" / "events.jsonl"
-    events = [
-        json.loads(line)
-        for line in audit_path.read_text(encoding="utf-8").splitlines()
-        if line.strip()
-    ]
-    for event in events:
-        validate_audit_event(event)
+    events = _load_audit_events(audit_path, expected_run_id=state["run_id"])
+    if not events:
+        raise SafeStop("audit_corrupt", "Run audit has no events.")
     return {
         "run_id": state["run_id"],
         "current_state": state["current_state"],
@@ -1658,3 +3987,118 @@ def inspect_run(run_dir: Path) -> dict[str, Any]:
         "local_export_count": state["local_export_count"],
         "external_actions": state["external_actions"],
     }
+
+
+def _run_locked(
+    scope: Path,
+    action: Callable[[], Any],
+) -> Any:
+    try:
+        with _exclusive_operation_lock(scope):
+            return action()
+    except SafeStop:
+        raise
+    except OSError as error:
+        raise SafeStop(
+            "filesystem_operation_error",
+            "A filesystem operation failed safely; no external action occurred.",
+        ) from error
+
+
+def prepare_run(
+    input_path: Path,
+    workspace: Path,
+    ai_mode: str,
+    synthetic_confirmation: str,
+    expected_path: Path | None = None,
+) -> Path:
+    if not isinstance(workspace, Path):
+        raise SafeStop("invalid_argument", "Workspace must be a Path.")
+
+    def prepare_and_cleanup() -> Path:
+        try:
+            return _prepare_run_unlocked(
+                input_path,
+                workspace,
+                ai_mode,
+                synthetic_confirmation,
+                expected_path,
+            )
+        finally:
+            _cleanup_prepare_staging(workspace)
+
+    return _run_locked(
+        workspace,
+        prepare_and_cleanup,
+    )
+
+
+def record_decision(
+    run_dir: Path,
+    decision: str,
+    reviewer_role: str,
+    reason: str,
+    expected_revision: int,
+    evidence_reviewed: bool,
+    expires_at: datetime | None = None,
+    decided_at: datetime | None = None,
+) -> Path:
+    if not isinstance(run_dir, Path):
+        raise SafeStop("invalid_argument", "Run directory must be a Path.")
+    return _run_locked(
+        run_dir,
+        lambda: _record_decision_unlocked(
+            run_dir,
+            decision,
+            reviewer_role,
+            reason,
+            expected_revision,
+            evidence_reviewed,
+            expires_at,
+            decided_at,
+        ),
+    )
+
+
+def revise_draft(
+    run_dir: Path,
+    replacement_path: Path,
+    expected_revision: int,
+) -> int:
+    if not isinstance(run_dir, Path):
+        raise SafeStop("invalid_argument", "Run directory must be a Path.")
+    return _run_locked(
+        run_dir,
+        lambda: _revise_draft_unlocked(
+            run_dir,
+            replacement_path,
+            expected_revision,
+        ),
+    )
+
+
+def validate_candidate_summary(run_dir: Path, candidate_path: Path) -> Path:
+    if not isinstance(run_dir, Path):
+        raise SafeStop("invalid_argument", "Run directory must be a Path.")
+    return _run_locked(
+        run_dir,
+        lambda: _validate_candidate_summary_unlocked(run_dir, candidate_path),
+    )
+
+
+def export_approved(
+    run_dir: Path,
+    checked_at: datetime | None = None,
+) -> tuple[Path, Path]:
+    if not isinstance(run_dir, Path):
+        raise SafeStop("invalid_argument", "Run directory must be a Path.")
+    return _run_locked(
+        run_dir,
+        lambda: _export_approved_unlocked(run_dir, checked_at),
+    )
+
+
+def inspect_run(run_dir: Path) -> dict[str, Any]:
+    if not isinstance(run_dir, Path):
+        raise SafeStop("invalid_argument", "Run directory must be a Path.")
+    return _run_locked(run_dir, lambda: _inspect_run_unlocked(run_dir))

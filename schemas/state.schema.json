@@ -1,0 +1,202 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://course.invalid/schemas/state.schema.json",
+  "title": "Course 1 Controlled Run State",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id",
+    "run_config_sha256",
+    "input_sha256",
+    "assessment_date",
+    "pipeline_version",
+    "rules_version",
+    "prompt_version",
+    "current_state",
+    "draft_revision",
+    "draft_sha256",
+    "review_manifest_sha256",
+    "active_decision_path",
+    "ai_mode_requested",
+    "summary_generator",
+    "summary_fallback_reason",
+    "external_actions",
+    "local_export_count",
+    "expected_keys"
+  ],
+  "properties": {
+    "run_id": {
+      "type": "string",
+      "pattern": "^RUN-[A-F0-9]{12}$"
+    },
+    "run_config_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "input_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "assessment_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "pipeline_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "rules_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "prompt_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "current_state": {
+      "enum": [
+        "needs_review",
+        "changes_requested",
+        "approved_for_local_export",
+        "approved_draft",
+        "rejected",
+        "expired",
+        "no_action_needed"
+      ]
+    },
+    "draft_revision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "draft_sha256": {
+      "type": ["string", "null"],
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "review_manifest_sha256": {
+      "type": ["string", "null"],
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "active_decision_path": {
+      "type": ["string", "null"],
+      "pattern": "^review/decision-r[1-9][0-9]*\\.json$"
+    },
+    "ai_mode_requested": {
+      "enum": [
+        "mock",
+        "disabled",
+        "timeout",
+        "refusal",
+        "malformed_json",
+        "unknown_issue_id"
+      ]
+    },
+    "summary_generator": {
+      "enum": [null, "offline-mock", "deterministic-fallback"]
+    },
+    "summary_fallback_reason": {
+      "type": ["string", "null"]
+    },
+    "external_actions": {
+      "type": "integer",
+      "const": 0
+    },
+    "local_export_count": {
+      "type": "integer",
+      "enum": [0, 2]
+    },
+    "expected_keys": {
+      "type": ["array", "null"],
+      "uniqueItems": true,
+      "items": {
+        "type": "array",
+        "prefixItems": [
+          {"type": "string"},
+          {"type": "string"},
+          {"type": "string"}
+        ],
+        "items": false,
+        "minItems": 3,
+        "maxItems": 3
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {"current_state": {"const": "no_action_needed"}},
+        "required": ["current_state"]
+      },
+      "then": {
+        "properties": {
+          "draft_revision": {"const": 0},
+          "draft_sha256": {"const": null},
+          "review_manifest_sha256": {"const": null},
+          "active_decision_path": {"const": null},
+          "summary_generator": {"const": null},
+          "local_export_count": {"const": 0}
+        }
+      },
+      "else": {
+        "properties": {
+          "draft_revision": {"type": "integer", "minimum": 1},
+          "draft_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "review_manifest_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "summary_generator": {
+            "enum": ["offline-mock", "deterministic-fallback"]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"current_state": {"const": "approved_draft"}},
+        "required": ["current_state"]
+      },
+      "then": {
+        "properties": {
+          "local_export_count": {"const": 2}
+        }
+      },
+      "else": {
+        "properties": {
+          "local_export_count": {"const": 0}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "current_state": {
+            "enum": [
+              "changes_requested",
+              "approved_for_local_export",
+              "approved_draft",
+              "rejected",
+              "expired"
+            ]
+          }
+        },
+        "required": ["current_state"]
+      },
+      "then": {
+        "properties": {
+          "active_decision_path": {
+            "type": "string",
+            "pattern": "^review/decision-r[1-9][0-9]*\\.json$"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "active_decision_path": {"const": null}
+        }
+      }
+    }
+  ]
+}

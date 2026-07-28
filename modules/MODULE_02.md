@@ -42,7 +42,7 @@ data processing. These definitions are orientation, not legal advice.
 1. [CBS: AI use by Dutch microbusinesses](https://www.cbs.nl/nl-nl/longread/rapportages/2026/gebruik-van-ai-technologie-door-nederlandse-microbedrijven?onepage=true)
 2. [NIST AI Risk Management Framework Core](https://airc.nist.gov/airmf-resources/airmf/5-sec-core/)
 3. [European Commission: AI Act risk-based approach](https://digital-strategy.ec.europa.eu/en/policies/regulatory-framework-ai)
-4. [European Commission: GDPR processing principles](https://commission.europa.eu/law/law-topic/data-protection/rules-business-and-organisations/principles-gdpr/overview-principles/what-data-can-we-process-and-under-which-conditions_en)
+4. [European Commission: GDPR processing principles](https://commission.europa.eu/law/law-topic/data-protection/information-business-and-organisations/principles-gdpr/overview-principles/what-data-can-we-process-and-under-which-conditions_en)
 
 The course boundary is deliberately more conservative than a legal
 classification.
@@ -83,25 +83,93 @@ Open Windows PowerShell and run:
 
 ```powershell
 $projectRoot = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'AI-workflow-learning\operations-exception-assistant'
-if (-not (Test-Path (Join-Path $projectRoot '.git'))) { throw 'Project Git repository not found. Complete Windows Setup before Module 2.' }
+$projectMarker = Join-Path $projectRoot 'COURSE_PROJECT.md'
+$expectedMarker = @'
+# Course 1 synthetic learner project
+
+This folder is only for the fictional Course 1 practice project.
+Never place real client, employer, medical, or personal data here.
+'@
+if (-not (Test-Path -LiteralPath $projectMarker -PathType Leaf)) {
+    throw 'Course project marker missing. Do not enter or change this folder.'
+}
+$actualMarker = (Get-Content -Raw -LiteralPath $projectMarker) -replace "`r`n", "`n"
+if ($actualMarker -ne ($expectedMarker -replace "`r`n", "`n")) {
+    throw 'Course project marker is unfamiliar. Do not enter or change this folder.'
+}
+$savedGitRoot = git -C $projectRoot rev-parse --show-toplevel 2>$null
+if ($LASTEXITCODE -ne 0 -or
+    (Resolve-Path -LiteralPath $savedGitRoot).Path -ne
+    (Resolve-Path -LiteralPath $projectRoot).Path) {
+    throw 'The marked Course 1 Git repository is missing or belongs to another folder.'
+}
 $moduleFolder = Join-Path $projectRoot 'evidence\module-02'
 New-Item -ItemType Directory -Force -Path $moduleFolder
 Set-Location -LiteralPath $moduleFolder
 (Get-Location).Path
+function Open-CreateOnceCourseFile {
+    param(
+        [string]$Path,
+        [string]$RecognizedStart,
+        [string[]]$RequiredPatterns
+    )
+    if (Test-Path -LiteralPath $Path) {
+        if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+            throw "Expected a lesson file but found another path type: $Path"
+        }
+        $content = Get-Content -Raw -LiteralPath $Path
+        if ($null -eq $content) { $content = '' }
+        $firstLine = Get-Content -LiteralPath $Path -TotalCount 1
+        if (-not [string]::IsNullOrEmpty($content) -and
+            $firstLine -cne $RecognizedStart) {
+            throw "Existing file is unfamiliar. It was not opened or changed: $Path"
+        }
+        $complete = -not [string]::IsNullOrWhiteSpace($content)
+        foreach ($pattern in $RequiredPatterns) {
+            if (-not $content.Contains($pattern)) { $complete = $false }
+        }
+        if ($complete) {
+            Write-Host "COMPLETE: keeping $Path unchanged."
+            return
+        }
+        Write-Host 'INCOMPLETE: continue the recognised synthetic file without duplicating lines.'
+    } else {
+        New-Item -ItemType File -Path $Path | Out-Null
+        Write-Host 'NEW: paste the supplied lesson content once.'
+    }
+    & notepad.exe $Path
+}
 ```
 
-The `if` line stops rather than letting you create a second untracked module
-project. **Expected result:** one path ending in
+The marker and Git-root checks are read-only and stop before a folder is
+created unless this is the exact synthetic Course 1 project made by setup.
+**Expected result:** one path ending in
 `\AI-workflow-learning\operations-exception-assistant\evidence\module-02`.
 
 If it does not, run `Get-Location`, then repeat `Set-Location -LiteralPath
 $moduleFolder`. If the repository error appears, stop and complete Windows
 Setup; do not remove the check.
 
+The create-once helper below never overwrites. Before using it, confirm the
+named file is synthetic lesson work. It creates a missing file, reopens an
+empty or recognised incomplete one, skips a complete one, and stops without
+opening a wrong-type or unfamiliar file. Preserve any unfamiliar file and ask
+Codex for read-only diagnosis before starting a clearly numbered retry.
+
 ### Stage 2 — Follow a complete opportunity-selection decision
 
-Run `notepad .\worked_opportunity_brief.md`, click **Yes**, paste the completed
-example below, and save with **Ctrl+S**:
+Run:
+
+```powershell
+Open-CreateOnceCourseFile `
+    -Path (Join-Path $moduleFolder 'worked_opportunity_brief.md') `
+    -RecognizedStart '# Worked opportunity brief' `
+    -RequiredPatterns @('## Scope-change triggers','SELECT FOR SYNTHETIC PROOF')
+```
+
+For `NEW`, paste the completed example below and save with **Ctrl+S**. For
+`INCOMPLETE`, continue only the missing part of the recognised file. For
+`COMPLETE`, do not paste it again:
 
 ```markdown
 # Worked opportunity brief — fictional stock administration
@@ -230,8 +298,17 @@ The worked brief contains the reasoning. The reusable **workflow opportunity
 scorecard** gives that reasoning a consistent evidence trail. Follow one small
 completed example before recreating it.
 
-Run `notepad .\worked_workflow_opportunity_scorecard.md`, click **Yes**, paste,
-save, and close:
+Run:
+
+```powershell
+Open-CreateOnceCourseFile `
+    -Path (Join-Path $moduleFolder 'worked_workflow_opportunity_scorecard.md') `
+    -RecognizedStart '# Worked workflow opportunity scorecard' `
+    -RequiredPatterns @('Artifact ID: WORKED-M02-SCORECARD','**26**','SELECT FOR SYNTHETIC PROOF')
+```
+
+For `NEW`, paste, save, and close. For `INCOMPLETE`, continue without
+duplicating existing sections. For `COMPLETE`, move to the checks:
 
 ```markdown
 # Worked workflow opportunity scorecard
@@ -303,16 +380,48 @@ First copy the blank scorecard template, then create
 ```powershell
 $courseRoot = Read-Host 'Paste the full path to AI_WORKFLOW_DOCUMENT_SYSTEMS_COURSE'
 $scorecardTemplate = Join-Path $courseRoot 'templates\workflow_opportunity_scorecard.md'
+if (-not (Test-Path -LiteralPath $scorecardTemplate -PathType Leaf)) {
+    throw 'The controlled scorecard template is missing or is not a file.'
+}
 if (Test-Path -LiteralPath .\workflow_opportunity_scorecard.md) {
+    if (-not (Test-Path -LiteralPath .\workflow_opportunity_scorecard.md -PathType Leaf) -or
+        (Get-Content -LiteralPath .\workflow_opportunity_scorecard.md -TotalCount 1) -cne '# Workflow Opportunity Scorecard') {
+        throw 'Existing scorecard is the wrong type or is unfamiliar. Preserve it and ask for read-only diagnosis.'
+    }
     Write-Host 'Resume: workflow_opportunity_scorecard.md already exists and was left unchanged.'
 } else {
     Copy-Item -LiteralPath $scorecardTemplate -Destination .\workflow_opportunity_scorecard.md
+    if ((Get-FileHash -LiteralPath $scorecardTemplate -Algorithm SHA256).Hash -ne
+        (Get-FileHash -LiteralPath .\workflow_opportunity_scorecard.md -Algorithm SHA256).Hash) {
+        throw 'The new scorecard copy did not match its controlled source.'
+    }
 }
 Get-Item .\workflow_opportunity_scorecard.md
+notepad.exe .\workflow_opportunity_scorecard.md
 ```
 
 `Copy-Item` preserves the blank source template and gives your completed
 capstone record the exact required name.
+
+Create or reopen the brief before writing:
+
+```powershell
+$briefPath = Join-Path $moduleFolder 'recreated_opportunity_brief.md'
+if (Test-Path -LiteralPath $briefPath) {
+    if (-not (Test-Path -LiteralPath $briefPath -PathType Leaf) -or
+        (Get-Content -LiteralPath $briefPath -TotalCount 1) -cne '# Recreated opportunity brief') {
+        throw 'Existing opportunity brief is the wrong type or is unfamiliar. Preserve it and ask for read-only diagnosis.'
+    }
+    Write-Host "Resume: $briefPath already exists and was left unchanged."
+} else {
+    "# Recreated opportunity brief`r`n" |
+        Set-Content -LiteralPath $briefPath -Encoding utf8
+    Write-Host "Created: $briefPath"
+}
+notepad.exe $briefPath
+```
+
+Assess:
 
 1. the Synthetic SME Operations Exception Assistant using
    `practice_data/work_items.csv`;
@@ -368,10 +477,16 @@ READ-ONLY COURSE REVIEW.
 I authorize you to inspect only this full path:
 [PASTE FULL PATH HERE]
 
-Do not edit, create, delete, rename, move, or format files. Do not inspect the
-parent folder or any other folder. This folder must contain no secrets and no
-real client or workplace data. Stop if it contains credentials, personal data,
-or health data.
+Learner attestation: I created these files for this fictional exercise and
+have not knowingly put real client, employer, personal, medical, credential,
+or secret data in them. This statement is an attestation, not proof.
+
+You may only list names, read files, and calculate hashes inside the authorised
+path. Do not create, edit, delete, rename, move, or format any file. Do not
+execute lesson scripts, use a network, or inspect a parent
+or other location. If apparent sensitive data is noticed, do not quote or
+repeat it: return NOT YET with only the filename and general category, then
+stop. If none is noticed, say that non-detection is not proof that none exists.
 
 Review worked_opportunity_brief.md,
 worked_workflow_opportunity_scorecard.md,
@@ -437,20 +552,21 @@ The **Pass criteria** are the complete module gate.
 Do this only after Codex returns `PASS`. Inspect the module folder yourself and
 confirm it contains only synthetic course evidence: no password, secret key,
 personal data, employer data, client data, patient data, or unrelated file.
-Then run:
+Rerun Stage 1 in this same PowerShell window so the exact marker and Git-root
+checks pass again. Then run:
 
 ```powershell
-$projectRoot = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'AI-workflow-learning\operations-exception-assistant'
 Set-Location -LiteralPath $projectRoot
 git status --short
 git add -- "evidence/module-02"
-git commit -m "complete module 2 evidence"
+git commit --only -m "complete module 2 evidence" -- "evidence/module-02"
 git status --short
 ```
 
 `git status --short` previews changes. `git add --` stages only this module;
-`--` marks the end of Git options. `git commit` records the passed checkpoint.
-If a rerun produces “nothing to commit,” the unchanged evidence is already
+`--` marks the end of Git options. `git commit --only` records only the
+repeated module path, even if a different file had already been staged. If a
+rerun produces “nothing to commit,” the unchanged evidence is already
 recorded. Do not broaden the path to force a commit.
 
 ## Stop or rework

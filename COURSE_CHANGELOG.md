@@ -1,5 +1,73 @@
 # Course Changelog
 
+## 2.5.0 — 2026-07-28
+
+### Literal beginner completion pass
+
+- Reworked readiness and Foundations 1–9 so a learner can close every window,
+  return later, and make an explicit resume-or-retry decision without
+  overwriting prior evidence.
+- Added create-once guards and numbered retry folders to every file-creating
+  foundation exercise, including safe Git recovery when a repository is
+  incomplete, dirty, or already has different history.
+- Clarified that Course 1 performs no live model call or model-written work.
+  The only permitted model interaction in the AI foundation is the final,
+  bounded, read-only Codex evidence check.
+- Made every foundation check require the learner's synthetic-only attestation
+  and explain that an automated non-detection result is not proof that a folder
+  contains no sensitive information.
+
+### Controlled workflow integrity
+
+- Bound each run to a canonical configuration covering the source, expected
+  oracle, fixed date, rules, pipeline, prompt, adapter mode, and
+  mock/fallback versions.
+- Added a protected review manifest over the source, issue JSON and
+  spreadsheet-safe issue CSV, summary, control, run configuration, and review
+  package. Approval and export recompute those hashes from the actual files.
+- Bound every approval field to a recomputed decision identifier, while
+  explicitly documenting that this is local tamper detection rather than
+  authentication or a digital signature.
+- Added strict runtime validation for every saved contract, formula-safe CSV,
+  atomic paired CSV/JSON publication with rollback, short immutable
+  safe-stop evidence, and long-Windows-path coverage.
+- Added exclusive fail-closed workspace/run locks, pre-mutation audit checks,
+  transactional decision/revision recovery, exact evaluation/export
+  reconciliation, and strict wrong-type/filesystem safe stops.
+- Unified duplicate preparation, decisions, revisions, validation, export,
+  inspection, and failure recording under one same-workspace lock; made first
+  run publication retry-safe; protected the expected oracle as run evidence;
+  and reconciled required audit events with every material workflow state.
+- Replaced self-declared safe free text with controlled headline, group, and
+  review-instruction templates rendered from verified evidence.
+- Expanded the executable Course 1 runner suite from 41 to 61 adversarial and
+  normal-path tests across Python 3.12, 3.13, and 3.14.
+
+### Practice and PWA corrections
+
+- Corrected Module 8's timing inputs, resume variables, interrupted-timer
+  handling, and create-once evidence behavior.
+- Corrected Module 9's failure exercises to verify
+  `failures/latest.json`, follow its immutable numbered history record, and
+  preserve a portable evidence copy.
+- Updated Module 6 so the learner inspects and records both the draft and
+  protected review-manifest hashes before deciding.
+- Added exact project-marker and resolved Git-root checks before every module
+  can create evidence or execute the runner, plus byte-for-byte runner-copy
+  verification and durable Module 5–6 resume paths.
+- Made Modules 4, 5, 6, and 9 reject every unexpected runner entry before
+  Python execution; preserved the exact protected `RUN-…` folder name when
+  Module 6 copies a Module 5 run; and made Modules 8 and 9 validate saved run
+  locators as one exact safe line inside the controlled `runs` folder.
+- Made worked lesson files create-once and interruption-safe, with unfamiliar
+  files preserved or safely stopped instead of overwritten.
+- Changed Resume to return to the first incomplete reading or practical gate,
+  preventing an out-of-order last-opened page from bypassing prerequisites.
+- Made application navigation and browser Back/Forward navigation move keyboard
+  focus to the new page heading, with an end-to-end browser regression check.
+- Raised the practice revision so materially changed required pages reopen
+  while notes, appearance, and unrelated local state remain preserved.
+
 ## 2.4.0 — 2026-07-28
 
 ### Literal-beginner Course 1 execution

@@ -13,8 +13,8 @@
     "title": "Controlled Artificial Intelligence (AI) Workflow Foundations",
     "shortTitle": "Course 1",
     "subtitle": "From zero technical knowledge to one safe, evidence-backed small and medium-sized enterprise (SME) workflow",
-    "version": "2.4.0",
-    "practiceRevision": 3,
+    "version": "2.5.0",
+    "practiceRevision": 4,
     "verifiedThrough": "2026-07-28",
     "learnerStartingPoint": "No coding, automation, consulting, or AI implementation knowledge is assumed.",
     "outcome": "You can investigate a small operational workflow, decide what should and should not be automated, and build a small prototype with clear limits, fixed checks, evidence, human approval, testing, and a documented manual way of working.",
@@ -128,7 +128,7 @@
       "documents": [
         {
           "id": "course-1-foundation-01",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "foundations/01_FILES_AND_TEXT.md",
           "title": "Foundation 1 — Files, Folders, Paths, and Plain Text",
           "estimatedPracticeHours": {
@@ -141,7 +141,7 @@
         },
         {
           "id": "course-1-foundation-02",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "foundations/02_COMMAND_LINE_SURVIVAL.md",
           "title": "Foundation 2 — PowerShell and Command-Line Interface (CLI) Survival",
           "estimatedPracticeHours": {
@@ -167,7 +167,7 @@
         },
         {
           "id": "course-1-foundation-04",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "foundations/04_WEB_APIS_AND_JSON.md",
           "title": "Foundation 4 — Application Programming Interfaces (APIs), Hypertext Transfer Protocol (HTTP), and JavaScript Object Notation (JSON)",
           "estimatedPracticeHours": {
@@ -180,7 +180,7 @@
         },
         {
           "id": "course-1-foundation-05",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "foundations/05_GIT_AND_SAFE_CHANGES.md",
           "title": "Foundation 5 — Git, a Tool for Recording File Changes Safely",
           "estimatedPracticeHours": {
@@ -193,7 +193,7 @@
         },
         {
           "id": "course-1-foundation-06",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "foundations/06_SPREADSHEETS_CSV_AND_DATA_QUALITY.md",
           "title": "Foundation 6 — Spreadsheets, Comma-Separated Values (CSV), and Data Quality",
           "estimatedPracticeHours": {
@@ -215,7 +215,7 @@
         },
         {
           "id": "course-1-foundation-08",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "foundations/08_SAFE_AI_ASSISTED_BUILDING.md",
           "title": "Foundation 8 — Safe Artificial Intelligence (AI)-Assisted Building",
           "estimatedPracticeHours": {
@@ -515,7 +515,7 @@
         },
         {
           "id": "course-1-foundations-guide",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "foundations/README.md",
           "legacyIds": []
         },
@@ -529,13 +529,13 @@
         },
         {
           "id": "course-1-practice-data-guide",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "practice_data/README.md",
           "legacyIds": []
         },
         {
           "id": "course-1-schema-guide",
-          "revision": "2026-07-26",
+          "revision": "2026-07-28",
           "sourcePath": "schemas/README.md",
           "legacyIds": []
         }

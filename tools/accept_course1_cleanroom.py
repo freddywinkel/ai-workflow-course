@@ -66,8 +66,13 @@ def main() -> int:
     source = root / "practice_data" / "work_items.csv"
     expected = root / "practice_data" / "expected_issues.csv"
     schemas = sorted((root / "schemas").glob("*.schema.json"))
+    runner_files = sorted(
+        path
+        for path in (root / "course1_capstone").rglob("*")
+        if path.is_file() and "__pycache__" not in path.parts
+    )
 
-    required = [cli, source, expected, *schemas]
+    required = [Path(__file__).resolve(), source, expected, *schemas, *runner_files]
     missing = [str(path) for path in required if not path.is_file()]
     if missing:
         print(json.dumps({"result": "FAIL", "missing": missing}, indent=2))
@@ -167,6 +172,26 @@ def main() -> int:
                 root=root,
                 environment=environment,
             )
+            controlled_retry_paths = [
+                run_dir / "source" / "work_items.csv",
+                run_dir / "issues" / "issues.json",
+                run_dir / "issues" / "issues.csv",
+                run_dir / "draft" / "summary.json",
+                run_dir / "control.json",
+                run_dir / "run_config.json",
+                run_dir / "review" / "review_package.json",
+                run_dir / "review" / "review_manifest.json",
+                run_dir / "review" / "decision-r1.json",
+                run_dir / "outbox" / "approved-r1.json",
+                run_dir / "outbox" / "approved-r1.csv",
+            ]
+            controlled_hashes_before_retry = {
+                path.relative_to(run_dir).as_posix(): sha256(path)
+                for path in controlled_retry_paths
+            }
+            first_run_config_hash = load_json(
+                run_dir / "state.json"
+            )["run_config_sha256"]
 
             # New subprocesses simulate closing and reopening PowerShell.
             retry_prepare_output = run_command(
@@ -179,6 +204,14 @@ def main() -> int:
                 root=root,
                 environment=environment,
             )
+            retry_locator = (
+                workspace / "latest_run.txt"
+            ).read_text(encoding="utf-8").strip()
+            retry_run_dir = (workspace / Path(retry_locator)).resolve()
+            controlled_hashes_after_retry = {
+                path.relative_to(run_dir).as_posix(): sha256(path)
+                for path in controlled_retry_paths
+            }
             status_output = run_command(
                 [
                     sys.executable,
@@ -214,7 +247,18 @@ def main() -> int:
                 "decision_passed": "PASS: decision recorded" in decision_output,
                 "first_export_passed": "external actions=0" in first_export_output,
                 "retry_prepare_same_run": "PASS: prepared controlled run"
-                in retry_prepare_output,
+                in retry_prepare_output
+                and f"RUN_LOCATOR={run_locator}" in retry_prepare_output
+                and retry_locator == run_locator
+                and retry_run_dir == run_dir,
+                "retry_config_hash_unchanged": load_json(
+                    run_dir / "state.json"
+                )["run_config_sha256"]
+                == first_run_config_hash,
+                "retry_protected_artifact_hashes_unchanged": (
+                    controlled_hashes_after_retry
+                    == controlled_hashes_before_retry
+                ),
                 "retry_export_idempotent": "external actions=0"
                 in retry_export_output,
                 "status_is_json": load_json_text(status_output)["current_state"]
@@ -262,7 +306,7 @@ def main() -> int:
                 "result": "PASS",
                 "python": sys.version.split()[0],
                 "test_count": int(test_count_match.group(1)),
-                "clean_process_commands": 6,
+                "clean_process_commands": 7,
                 "issue_count": len(issues),
                 "local_export_files": 2,
                 "external_actions": 0,

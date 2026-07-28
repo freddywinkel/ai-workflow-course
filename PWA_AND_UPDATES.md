@@ -51,7 +51,7 @@ invalid source.
 
 ## Progress model
 
-Course 1 version 2.4.0 uses stable lesson identifiers (IDs) plus revision
+Course 1 version 2.5.0 uses stable lesson identifiers (IDs) plus revision
 dates. This
 prevents:
 

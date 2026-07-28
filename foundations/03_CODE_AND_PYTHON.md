@@ -33,8 +33,16 @@ explain its input, decision, output, and failure risk.
 - A **credential** is a secret value, such as a password, key, or token, that
   can grant access.
 - A **dataset** is a collection of related records used together.
+- **Git** is the version-control tool installed during Windows Setup; its name
+  is not an abbreviation. A **repository root** is the exact top-level project
+  folder Git tracks.
+- `COURSE_PROJECT.md` is the synthetic-project identity marker created by
+  Windows Setup. A **resolved path** is the full unambiguous Windows path after
+  folder shortcuts and relative pieces have been resolved.
 - **Codex** is the artificial intelligence (AI) assistant used for the final
-  read-only check. The check prompt limits it to one practice folder.
+  read-only check. The check prompt limits file inspection to one practice
+  folder and permits only the exact project Python file to execute the named
+  local checks without making a change.
 
 A program that runs is not automatically correct. Tests establish only the
 specific examples and rules they exercise.
@@ -57,14 +65,73 @@ Do not paste private code, credentials, or business records into an assistant.
 ### Start or resume safely — run this at every new PowerShell session
 
 PowerShell forgets variables when you close its window. Therefore, run this
-whole block whenever you start or resume Foundation 3:
+whole block whenever you start or resume Foundation 3. On the first attempt,
+leave `$lessonFolderName` as `foundation-03`. If the recovery decision below
+created a numbered retry, replace only that quoted value with the exact retry
+name PowerShell displayed:
 
 ```powershell
 $documentsPath = [Environment]::GetFolderPath("MyDocuments")
 $projectRoot = Join-Path $documentsPath "AI-workflow-learning\operations-exception-assistant"
+$projectMarker = Join-Path $projectRoot "COURSE_PROJECT.md"
+$expectedMarker = @'
+# Course 1 synthetic learner project
+
+This folder is only for the fictional Course 1 practice project.
+Never place real client, employer, medical, or personal data here.
+'@
+if (-not (Test-Path -LiteralPath $projectMarker -PathType Leaf)) {
+    throw "STOP: the exact Course 1 project marker is missing. Return to Windows Setup; do not execute project Python."
+}
+$actualMarker = (Get-Content -Raw -LiteralPath $projectMarker) -replace "`r`n", "`n"
+$normalizedExpectedMarker = $expectedMarker -replace "`r`n", "`n"
+if ($actualMarker -ne $normalizedExpectedMarker) {
+    throw "STOP: the Course 1 project marker is unfamiliar. Do not enter or execute this folder."
+}
+$savedGitRoot = git -C $projectRoot rev-parse --show-toplevel 2>$null
+if ($LASTEXITCODE -ne 0) {
+    throw "STOP: the marked Course 1 Git repository is missing or unreadable. Return to Windows Setup."
+}
+$resolvedProjectRoot = (Resolve-Path -LiteralPath $projectRoot).Path
+$resolvedGitRoot = (Resolve-Path -LiteralPath $savedGitRoot).Path
+if ($resolvedGitRoot -ne $resolvedProjectRoot) {
+    throw "STOP: Git resolves to a different repository root. Do not execute project Python."
+}
 $pythonExe = Join-Path $projectRoot ".venv\Scripts\python.exe"
 $practiceRoot = Join-Path $documentsPath "controlled-ai-course-practice"
-$lessonPath = Join-Path $practiceRoot "foundation-03"
+$lessonFolderName = "foundation-03"
+if ($lessonFolderName -notmatch '^foundation-03(?:-retry-\d{2,})?$') {
+    throw "STOP: use foundation-03 or a retry name created by this lesson."
+}
+$lessonPath = Join-Path $practiceRoot $lessonFolderName
+
+function New-FoundationRetryAttempt {
+    param([string]$BaseName, [string]$PracticeRoot)
+    $retryNumber = 1
+    do {
+        $retryName = "$BaseName-retry-{0:D2}" -f $retryNumber
+        $retryPath = Join-Path $PracticeRoot $retryName
+        $retryNumber += 1
+    } while (Test-Path -LiteralPath $retryPath)
+    New-Item -ItemType Directory -Path $retryPath -ErrorAction Stop | Out-Null
+    $retryPath
+}
+
+function Open-GuardedPracticeFile {
+    param([string]$AttemptPath, [string]$FileName)
+    $filePath = Join-Path $AttemptPath $FileName
+    if (Test-Path -LiteralPath $filePath -PathType Container) {
+        throw "STOP: $FileName is a folder. Do not change it; use a fresh retry attempt."
+    }
+    if (Test-Path -LiteralPath $filePath -PathType Leaf) {
+        "EXISTING — DO NOT EDIT OR OVERWRITE: $FileName"
+        Get-Content -LiteralPath $filePath
+        return
+    }
+    New-Item -ItemType File -Path $filePath -ErrorAction Stop | Out-Null
+    "CREATED ONCE — enter the requested content: $FileName"
+    notepad $filePath
+}
 
 if (-not (Test-Path -LiteralPath $pythonExe -PathType Leaf)) {
     throw "STOP: the exact course Python file is missing. Return to Windows Setup; do not use a bare python command."
@@ -77,14 +144,14 @@ if (-not (Test-Path -LiteralPath $practiceRoot -PathType Container)) {
     throw "STOP: the controlled-ai-course-practice folder is missing. Return to Foundation 1."
 }
 if (Test-Path -LiteralPath $lessonPath -PathType Leaf) {
-    throw "STOP: foundation-03 is a file, not a folder. Do not rename or delete it; ask Codex to inspect read-only."
+    throw "STOP: the selected Foundation 3 attempt is a file, not a folder. Do not change it; use a fresh retry attempt."
 }
 if (-not (Test-Path -LiteralPath $lessonPath -PathType Container)) {
     New-Item -ItemType Directory -Path $lessonPath | Out-Null
-    "Created a new foundation-03 folder."
+    "Created a new Foundation 3 attempt: $lessonFolderName"
 }
 else {
-    "Existing foundation-03 folder found; nothing was overwritten."
+    "Existing Foundation 3 attempt found; nothing was overwritten: $lessonFolderName"
 }
 
 Set-Location -LiteralPath $lessonPath
@@ -98,6 +165,10 @@ What this does:
 
 - `$projectRoot` derives the one Course 1 project path from your real Windows
   Documents location;
+- the exact `COURSE_PROJECT.md` check proves that the folder still has the
+  complete synthetic Course 1 identity marker written by Windows Setup;
+- `git rev-parse --show-toplevel` asks Git for the repository root, and the two
+  resolved full paths must match before any project Python can run;
 - `$pythonExe` stores the exact
   `AI-workflow-learning\operations-exception-assistant\.venv\Scripts\python.exe`
   path, and `&` runs that exact file;
@@ -105,44 +176,68 @@ What this does:
   missing;
 - the version check accepts only a stable Python 3.14 patch such as
   `Python 3.14.6`, not an alpha, beta, or release candidate;
-- the `if` block creates `foundation-03` only when it is absent;
+- the `if` block creates only the selected Foundation 3 attempt when absent;
+- `New-FoundationRetryAttempt` creates only the next unused numbered retry
+  when you deliberately call it;
+- `Open-GuardedPracticeFile` creates a named file only when absent, or displays
+  an existing file without opening it for editing;
 - `Get-ChildItem -Force` shows existing contents before you edit anything.
 
 Expected result: the location ends in
-`controlled-ai-course-practice\foundation-03`; the displayed executable path
-ends in
+`controlled-ai-course-practice\foundation-03` or the selected numbered retry
+name; the displayed executable path ends in
 `AI-workflow-learning\operations-exception-assistant\.venv\Scripts\python.exe`;
 and the version is `Python 3.14` followed by a patch number. If existing files
-are listed, inspect them before continuing. Do not delete the folder or paste
-over a file automatically.
+are listed, apply the decision below before opening them.
+
+### Decide whether to resume or use a fresh attempt
+
+Apply this decision before Part B and again after every interruption:
+
+1. An empty selected attempt continues at Part B.
+2. The only expected names are `status_check.py`, `known_status.py`, and
+   `priority_check.py`.
+3. For an attempt containing only those names, use each guarded file step:
+   - `EXISTING` plus exactly complete synthetic code means leave the file
+     unchanged and skip its creation;
+   - an absent expected file may be created;
+   - incomplete, different, unfamiliar, wrong-kind, or apparently
+     real/sensitive content means do not execute, edit, rename, delete, or
+     overwrite anything in that attempt.
+4. An unexpected item also requires a fresh attempt.
+5. For either stop condition, run:
+
+   ```powershell
+   $lessonPath = New-FoundationRetryAttempt -BaseName "foundation-03" -PracticeRoot $practiceRoot
+   $lessonFolderName = Split-Path -Leaf $lessonPath
+   Set-Location -LiteralPath $lessonPath
+   "Selected fresh attempt: $lessonFolderName"
+   ```
+
+   `Split-Path -Leaf` reads only the final folder name from the complete retry
+   path; it does not move or change the folder.
+
+6. Write down the displayed retry name. In a new PowerShell session, replace
+   only `"foundation-03"` in `$lessonFolderName` with that exact name. Restart
+   at Part B in the new empty attempt.
 
 ### Part B — write a function and its tests
 
-1. Run this non-overwriting check:
+1. Run this create-once guard:
 
    ```powershell
-   $statusCheckPath = Join-Path $lessonPath "status_check.py"
-   if (Test-Path -LiteralPath $statusCheckPath) {
-       "Existing status_check.py found; it was not opened or overwritten."
-       Get-Item -LiteralPath $statusCheckPath
-   }
-   else {
-       notepad $statusCheckPath
-   }
+   Open-GuardedPracticeFile -AttemptPath $lessonPath -FileName "status_check.py"
    ```
 
-   What this does: for a new attempt, it opens Notepad with the correct new
-   path. For a resumed attempt, it reports the existing item without changing
-   it.
+   What this does: for an absent file, it creates the file once and opens that
+   new file in Notepad. For an existing file, it displays the content without
+   opening it for editing.
 
-2. If an existing file was reported, first run
-   `Get-Content -LiteralPath $statusCheckPath` to inspect it. If it is your own
-   incomplete synthetic attempt, run `notepad $statusCheckPath` and correct
-   only the unfinished work. If it is already complete, leave it unchanged and
-   continue to Part C. If it is unfamiliar, is a folder, or contains real
-   data, stop and ask Codex for read-only help.
-3. For a new file, if Notepad asks whether to create it, click **Yes**.
-4. For a new or deliberately resumed incomplete file, enter this exact code:
+2. Leave an `EXISTING` file unchanged only when it exactly matches the complete
+   program below; then continue to Part C. Any incomplete, different,
+   unfamiliar, wrong-kind, or apparently real content requires a fresh retry
+   attempt.
+3. Only after `CREATED ONCE`, enter this exact code:
 
    ```python
    def needs_review(status):
@@ -158,7 +253,7 @@ over a file automatically.
    print("3 checks passed")
    ```
 
-5. Click **File**, then **Save**. Close Notepad.
+4. Click **File**, then **Save**. Close Notepad.
 
 What the code does:
 
@@ -178,25 +273,17 @@ condition. The four spaces before the indented lines matter.
 The recreation below will ask you to use a list and a membership check. First
 you will build and run one complete example.
 
-1. Run this non-overwriting check:
+1. Run this create-once guard:
 
    ```powershell
-   $knownStatusPath = Join-Path $lessonPath "known_status.py"
-   if (Test-Path -LiteralPath $knownStatusPath) {
-       "Existing known_status.py found; it was not opened or overwritten."
-       Get-Item -LiteralPath $knownStatusPath
-   }
-   else {
-       notepad $knownStatusPath
-   }
+   Open-GuardedPracticeFile -AttemptPath $lessonPath -FileName "known_status.py"
    ```
 
-2. If an existing file was reported, inspect it with
-   `Get-Content -LiteralPath $knownStatusPath`. Resume only your own incomplete
-   synthetic attempt. Leave a complete file unchanged. Stop if the item is
-   unfamiliar, is a folder, or contains real data.
-3. For a new file, if Notepad asks whether to create it, click **Yes**.
-4. For a new or deliberately resumed incomplete file, enter this exact code:
+2. Leave an `EXISTING` file unchanged only when it exactly matches the complete
+   program below; then continue to Part D. Any incomplete, different,
+   unfamiliar, wrong-kind, or apparently real content requires a fresh retry
+   attempt.
+3. Only after `CREATED ONCE`, enter this exact code:
 
    ```python
    def is_known_status(status):
@@ -211,7 +298,7 @@ you will build and run one complete example.
    print("3 membership checks passed")
    ```
 
-5. Save and close Notepad, then run:
+4. Save and close Notepad, then run:
 
    ```powershell
    & $pythonExe ".\known_status.py"
@@ -281,34 +368,30 @@ No Python error appears. `Get-ChildItem` includes `status_check.py` and
   return to Windows Setup. Do not use a bare `python` command and do not
   download a similarly named package from an unverified site.
 - If Python reports `IndentationError`, compare the leading spaces with the
-  sample. Do not use random tabs and spaces.
+  sample. Preserve that attempt and use a fresh retry with the demonstrated
+  indentation; do not edit the existing file or use random tabs and spaces.
 - If an assertion fails, Python prints `AssertionError`. Compare the function
-  and that assertion with the exact sample instead of deleting the test.
+  and that assertion with the exact sample, preserve the attempt, and use a
+  fresh retry instead of deleting or editing the test.
 - If Notepad saved `status_check.py.txt`, turn on extensions as taught in
-  Foundation 1 and correct only the final `.txt`.
+  Foundation 1. Preserve that attempt and use a fresh retry with the correct
+  `.py` name instead of renaming or overwriting the item.
 
 ## Now recreate it yourself
 
 First make sure you ran the complete **Start or resume safely** block in this
-PowerShell window. Then run:
+PowerShell window. Then run the create-once guard:
 
 ```powershell
-$priorityCheckPath = Join-Path $lessonPath "priority_check.py"
-if (Test-Path -LiteralPath $priorityCheckPath) {
-    "Existing priority_check.py found; inspect it before deciding what remains."
-    Get-Item -LiteralPath $priorityCheckPath
-}
-else {
-    "No priority_check.py exists yet; it is safe to create this new file."
-}
+Open-GuardedPracticeFile -AttemptPath $lessonPath -FileName "priority_check.py"
 ```
 
-If the file exists, inspect it with
-`Get-Content -LiteralPath $priorityCheckPath`. Resume only your own incomplete
-synthetic attempt and leave a completed file unchanged. If it is unfamiliar,
-is a folder, or contains real data, stop and ask for read-only help.
+Leave an `EXISTING` file unchanged only when it already meets every requirement
+below. Any incomplete, different, unfamiliar, wrong-kind, or apparently real
+content requires a fresh retry attempt and must not be executed. Only after
+`CREATED ONCE`, create `priority_check.py` in the selected Foundation 3 attempt.
 
-Create `priority_check.py` in `foundation-03`. It must:
+It must:
 
 1. define a function named `is_allowed_priority` with one input named
    `priority`;
@@ -327,15 +410,20 @@ Run the program yourself with the exact project interpreter:
 
 ## Ask Codex to check your work
 
-Replace `[PASTE THE EXACT PATH]` with the full path output from
-`(Get-Location).Path`.
+Replace `[PASTE THE EXACT PRACTICE-FOLDER PATH]` with the full path output from
+`(Get-Location).Path`. Replace `[PASTE THE EXACT PROJECT PYTHON PATH]` with the
+full path printed for `$pythonExe` by the **Start or resume safely** block.
 
 ```text
-You may inspect READ-ONLY this one practice folder and no other location:
-[PASTE THE EXACT PATH]
+You may access exactly these two locations, for only these purposes:
+1. Inspect READ-ONLY this one practice folder:
+   [PASTE THE EXACT PRACTICE-FOLDER PATH]
+2. Execute, but do not edit or replace, this one project Python file:
+   [PASTE THE EXACT PROJECT PYTHON PATH]
 
-Do not create, edit, move, rename, or delete anything. Do not run any command
-that changes files, installs packages, or contacts an external system.
+Do not browse, list, read, or inspect any other folder or file. Do not create,
+edit, move, rename, or delete anything. Do not install packages, change
+settings, or contact an external system.
 
 Report PASS or NOT YET for each criterion:
 1. status_check.py defines needs_review and contains the three required
@@ -351,17 +439,21 @@ Report PASS or NOT YET for each criterion:
 7. None of the three files reads, writes, deletes, installs, or calls a network
    service.
 
-You may reason about the code and, if your environment permits, derive only
-Documents\AI-workflow-learning\operations-exception-assistant\.venv\Scripts\python.exe
-and use that exact executable to run these three local files. Do not use a bare
-python command. Make no changes. Explain any NOT YET result in beginner
-language.
+First inspect each local Python file. If a file could change a file, setting, or
+external system, do not execute it; report NOT YET. Otherwise, you may use only
+the authorised project Python file to run status_check.py, known_status.py, and
+priority_check.py from the authorised practice folder. This execution is part
+of the read-only check: it may print output but must not change anything. Do not
+use a bare python command. Explain any NOT YET result in beginner language.
 
-This folder must contain synthetic course data only. I must not include
-secrets, personal data, client data, employer data, or other work data. If you
-notice such content, stop, do not repeat it, and tell me to remove it locally.
-Confirm that the folder contains no secrets and no real employer, client, or
-work data.
+I attest that I created this attempt with synthetic course data only and did
+not intentionally add secrets, personal data, client data, employer data, or
+other real work data. If you notice content that appears sensitive, stop the
+inspection,
+do not quote or repeat it, report only the file name and general category, and
+report NOT YET. If you notice none, say: "No apparent sensitive content noticed
+in this bounded inspection; this is not proof that none exists." Do not claim
+that an inspection proves the folder is free of secrets or real data.
 ```
 
 ## Pass criteria
@@ -369,6 +461,10 @@ work data.
 - [ ] The derived `$pythonExe` path ends in
       `AI-workflow-learning\operations-exception-assistant\.venv\Scripts\python.exe`
       and reports a stable Python 3.14 patch.
+- [ ] The exact Course 1 project marker and resolved Git root matched before
+      project Python ran.
+- [ ] The selected attempt is `foundation-03` or the exact numbered
+      `foundation-03-retry-XX` folder whose full path I gave to Codex.
 - [ ] `status_check.py` prints exactly `3 checks passed`.
 - [ ] `known_status.py` prints exactly `3 membership checks passed`.
 - [ ] I can explain the list and the membership check demonstrated before the
@@ -377,6 +473,8 @@ work data.
 - [ ] I can explain each function's input, condition, and Boolean output.
 - [ ] I can explain why an assertion is stronger evidence than seeing no error.
 - [ ] I know that these five examples do not prove every possible input.
-- [ ] No package, service, secret, or real business data was used.
+- [ ] No package or service was used. I attest that all information I entered
+      was synthetic and that I did not intentionally add secrets or real
+      business data.
 - [ ] Codex reported PASS for every read-only criterion, or I corrected each
       NOT YET item myself.

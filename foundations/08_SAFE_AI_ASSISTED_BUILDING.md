@@ -106,10 +106,69 @@ whenever you start or resume Foundation 8:
 ```powershell
 $documentsPath = [Environment]::GetFolderPath("MyDocuments")
 $projectRoot = Join-Path $documentsPath "AI-workflow-learning\operations-exception-assistant"
+$projectMarker = Join-Path $projectRoot "COURSE_PROJECT.md"
 $pythonExe = Join-Path $projectRoot ".venv\Scripts\python.exe"
 $practiceRoot = Join-Path $documentsPath "controlled-ai-course-practice"
-$lessonPath = Join-Path $practiceRoot "foundation-08"
+$lessonFolderName = "foundation-08"
+if ($lessonFolderName -notmatch '^foundation-08(?:-retry-\d{2,})?$') {
+    throw "STOP: use foundation-08 or a retry name created by this lesson."
+}
+$lessonPath = Join-Path $practiceRoot $lessonFolderName
 
+function New-FoundationRetryAttempt {
+    param([string]$BaseName, [string]$PracticeRoot)
+    $retryNumber = 1
+    do {
+        $retryName = "$BaseName-retry-{0:D2}" -f $retryNumber
+        $retryPath = Join-Path $PracticeRoot $retryName
+        $retryNumber += 1
+    } while (Test-Path -LiteralPath $retryPath)
+    New-Item -ItemType Directory -Path $retryPath -ErrorAction Stop | Out-Null
+    $retryPath
+}
+
+function Open-GuardedPracticeFile {
+    param([string]$AttemptPath, [string]$FileName)
+    $filePath = Join-Path $AttemptPath $FileName
+    if (Test-Path -LiteralPath $filePath -PathType Container) {
+        throw "STOP: $FileName is a folder. Do not change it; use a fresh retry attempt."
+    }
+    if (Test-Path -LiteralPath $filePath -PathType Leaf) {
+        "EXISTING — DO NOT EDIT OR OVERWRITE: $FileName"
+        Get-Content -LiteralPath $filePath
+        return
+    }
+    New-Item -ItemType File -Path $filePath -ErrorAction Stop | Out-Null
+    "CREATED ONCE — enter the requested content: $FileName"
+    notepad $filePath
+}
+
+$expectedProjectMarker = @'
+# Course 1 synthetic learner project
+
+This folder is only for the fictional Course 1 practice project.
+Never place real client, employer, medical, or personal data here.
+'@
+if (-not (Test-Path -LiteralPath $projectMarker -PathType Leaf)) {
+    throw "STOP: the exact Course 1 project marker is missing. Return to Windows Setup."
+}
+$actualProjectMarker = (
+    Get-Content -Raw -LiteralPath $projectMarker
+) -replace "`r`n", "`n"
+$normalizedExpectedProjectMarker = $expectedProjectMarker -replace "`r`n", "`n"
+if ($actualProjectMarker -ne $normalizedExpectedProjectMarker) {
+    throw "STOP: the Course 1 project marker is unfamiliar. Do not execute this folder."
+}
+$projectGitRoot = git -C $projectRoot rev-parse --show-toplevel 2>$null
+if ($LASTEXITCODE -ne 0) {
+    throw "STOP: the marked Course 1 Git repository is missing or unreadable."
+}
+if (
+    (Resolve-Path -LiteralPath $projectGitRoot).Path -ne
+    (Resolve-Path -LiteralPath $projectRoot).Path
+) {
+    throw "STOP: Git resolves to a different repository root. Do not continue."
+}
 if (-not (Test-Path -LiteralPath $pythonExe -PathType Leaf)) {
     throw "STOP: the exact course Python file is missing. Return to Windows Setup; do not use a bare python command."
 }
@@ -121,14 +180,14 @@ if (-not (Test-Path -LiteralPath $practiceRoot -PathType Container)) {
     throw "STOP: the controlled-ai-course-practice folder is missing. Return to Foundation 1."
 }
 if (Test-Path -LiteralPath $lessonPath -PathType Leaf) {
-    throw "STOP: foundation-08 is a file, not a folder. Do not rename or delete it; ask Codex to inspect read-only."
+    throw "STOP: the selected Foundation 8 attempt is a file, not a folder. Do not change it."
 }
 if (-not (Test-Path -LiteralPath $lessonPath -PathType Container)) {
     New-Item -ItemType Directory -Path $lessonPath | Out-Null
-    "Created a new foundation-08 folder."
+    "Created a new Foundation 8 attempt: $lessonFolderName"
 }
 else {
-    "Existing foundation-08 folder found; nothing was overwritten."
+    "Existing Foundation 8 attempt found; nothing was overwritten: $lessonFolderName"
 }
 
 Set-Location -LiteralPath $lessonPath
@@ -139,16 +198,46 @@ Get-ChildItem -Force
 ```
 
 This derives the exact project interpreter from your real Documents path,
-checks that it exists, accepts only a stable Python 3.14 patch, creates the
-lesson folder only when absent, and shows existing contents before you edit.
+requires the exact synthetic Course 1 identity marker, confirms Git resolves
+to that project rather than a parent or different repository, checks that the
+interpreter exists, accepts only a stable Python 3.14 patch, creates the lesson
+folder only when absent, and shows existing contents before you edit.
 The displayed executable path must end in
 `AI-workflow-learning\operations-exception-assistant\.venv\Scripts\python.exe`,
-and the current location must end in
-`controlled-ai-course-practice\foundation-08`.
+and the current location must end in `foundation-08` or the selected numbered
+retry name.
 
-If existing files are listed, inspect them before continuing. Resume only your
-own synthetic lesson attempt. Do not overwrite unfamiliar material and do not
-use a folder containing real data.
+### Decide whether to resume or use a fresh attempt
+
+The two helper functions have narrow jobs:
+`New-FoundationRetryAttempt` creates the next unused retry folder;
+`Open-GuardedPracticeFile` creates a named file only when absent, or displays an
+existing file without opening it for editing.
+
+Apply this decision before Part A and after every interruption:
+
+1. An empty attempt continues at Part A.
+2. The only expected names are `title_check.py`, `title_check_evidence.md`,
+   `priority_check.py`, and `priority_check_evidence.md`. For an attempt
+   containing only those names, use each guarded step:
+   - `EXISTING` plus exactly complete synthetic content means leave the file
+     unchanged and skip its creation;
+   - an absent expected file may be created;
+   - incomplete, different, unfamiliar, or apparently real/sensitive content
+     means do not execute, edit, rename, delete, or overwrite anything.
+3. An unexpected item also requires a fresh attempt.
+4. For either stop condition, run:
+
+   ```powershell
+   $lessonPath = New-FoundationRetryAttempt -BaseName "foundation-08" -PracticeRoot $practiceRoot
+   $lessonFolderName = Split-Path -Leaf $lessonPath
+   Set-Location -LiteralPath $lessonPath
+   "Selected fresh attempt: $lessonFolderName"
+   ```
+
+5. Record the retry name. In a new PowerShell session, replace only
+   `"foundation-08"` in `$lessonFolderName` with that exact name. Restart at
+   Part A in the new empty folder.
 
 ### Part A — define the bounded requirement
 
@@ -172,13 +261,15 @@ Make sure you ran the complete **Start or resume safely** block in this
 PowerShell window. Confirm that `Get-ChildItem -Force` showed no unfamiliar or
 real-data file.
 
-Run:
+Run the create-once guard:
 
 ```powershell
-notepad "title_check.py"
+Open-GuardedPracticeFile -AttemptPath $lessonPath -FileName "title_check.py"
 ```
 
-Enter:
+If it reports `EXISTING`, leave the file unchanged only when it exactly matches
+the complete program below; otherwise use a fresh retry attempt and do not
+execute it. Only after `CREATED ONCE` should you enter:
 
 ```python
 def title_reason_code(record):
@@ -221,13 +312,15 @@ Expected output:
 
 ### Part C — record claim, evidence, and limitation
 
-Run:
+Run the create-once guard:
 
 ```powershell
-notepad "title_check_evidence.md"
+Open-GuardedPracticeFile -AttemptPath $lessonPath -FileName "title_check_evidence.md"
 ```
 
-Enter:
+If it reports `EXISTING`, leave the file unchanged only when it exactly matches
+the completed evidence below; otherwise use a fresh retry attempt. Only after
+`CREATED ONCE` should you enter:
 
 ```markdown
 # Title-check evidence
@@ -272,21 +365,32 @@ check.
 
 ### Troubleshooting
 
-- If an assertion fails, do not delete it. Compare the function and input with
-  the stated acceptance criteria.
+- If an assertion fails, do not delete or edit it. Compare the displayed
+  function with the acceptance criteria, preserve that attempt, and use a fresh
+  retry.
 - If the exact project Python reports a syntax or indentation error, compare
-  punctuation and leading spaces with the sample.
+  punctuation and leading spaces with the sample, preserve that attempt, and
+  use a fresh retry rather than overwriting the file.
 - If `$pythonExe` is missing, not recognised, or reports the wrong version,
   rerun the complete **Start or resume safely** block. If it still stops,
   return to Windows Setup. Do not use a bare `python` command.
 - If an assistant proposes installing a package for this function, reject that
   expansion; built-in Python is sufficient.
-- If `foundation-08` already exists, do not delete it. Inspect its contents
-  before continuing.
+- If the selected attempt already exists, do not delete or overwrite it. Apply
+  the attempt decision and use a fresh retry for any non-complete file.
 
 ## Now recreate it yourself
 
-Create `priority_check.py` for a meaningfully different requirement:
+Run the recreation program's create-once guard:
+
+```powershell
+Open-GuardedPracticeFile -AttemptPath $lessonPath -FileName "priority_check.py"
+```
+
+If it reports `EXISTING`, leave the file unchanged only when it already meets
+every requirement and assertion below; otherwise use a fresh retry attempt and
+do not execute it. After `CREATED ONCE`, create the program for a meaningfully
+different requirement:
 
 > Return reason code `R003` unless `priority` is exactly `low`, `medium`, or
 > `high`. Return `None` for those three allowed values. Have no side effects.
@@ -297,12 +401,9 @@ Include five assertions:
 - `urgent` returns `R003`;
 - a missing `priority` key returns `R003`.
 
-Print exactly `5 priority checks passed`. Create
-`priority_check_evidence.md` with the claim, exact observed output, side-effect
-assessment, and one honest limitation.
-
-Do not copy the title function and merely rename the file. Explain why a list
-membership check is appropriate for this new rule.
+Print exactly `5 priority checks passed`. Do not copy the title function and
+merely rename the file. Explain why a list membership check is appropriate for
+this new rule.
 
 Run the recreation with the exact project interpreter:
 
@@ -310,17 +411,32 @@ Run the recreation with the exact project interpreter:
 & $pythonExe ".\priority_check.py"
 ```
 
+Only after the program prints its exact success message, run:
+
+```powershell
+Open-GuardedPracticeFile -AttemptPath $lessonPath -FileName "priority_check_evidence.md"
+```
+
+Leave an `EXISTING` file unchanged only when it is complete; otherwise use a
+fresh retry attempt. After `CREATED ONCE`, record the claim, exact observed
+output, side-effect assessment, and one honest limitation.
+
 ## Ask Codex to check your work
 
-Replace `[PASTE THE EXACT PATH]` with the full path output from
-`(Get-Location).Path`.
+Replace `[PASTE THE EXACT PRACTICE-FOLDER PATH]` with the full path output from
+`(Get-Location).Path`. Replace `[PASTE THE EXACT PROJECT PYTHON PATH]` with the
+full path printed for `$pythonExe` by the **Start or resume safely** block.
 
 ```text
-You may inspect READ-ONLY this one practice folder and no other location:
-[PASTE THE EXACT PATH]
+You may access exactly these two locations, for only these purposes:
+1. Inspect READ-ONLY this one practice folder:
+   [PASTE THE EXACT PRACTICE-FOLDER PATH]
+2. Execute, but do not edit or replace, this one project Python file:
+   [PASTE THE EXACT PROJECT PYTHON PATH]
 
-Do not create, edit, move, rename, or delete anything. Do not install a
-package, change Git state, or contact any external service.
+Do not browse, list, read, or inspect any other folder or file. Do not create,
+edit, move, rename, or delete anything. Do not install a package, change Git
+state or settings, or contact any external service.
 
 Report PASS or NOT YET for each criterion:
 1. title_check.py returns None for a normal title and R001 for empty,
@@ -336,26 +452,35 @@ Report PASS or NOT YET for each criterion:
 6. Both evidence files state claim, observed evidence, side effects, and a
    limitation.
 
-You may derive only
-Documents\AI-workflow-learning\operations-exception-assistant\.venv\Scripts\python.exe
-and use that exact executable to run the two local Python files. Do not use a
-bare python command. Make no changes. Explain NOT YET in beginner language.
-This folder must contain synthetic course data only. I must not include
-secrets, personal data, client data, employer data, or other work data. If you
-notice such content, stop, do not repeat it, and tell me to remove it locally.
-Confirm that the folder contains no secrets and no real employer, client, or
-work data.
+First inspect each local Python file. If a file could change a file, setting, or
+external system, do not execute it; report NOT YET. Otherwise, you may use only
+the authorised project Python file to run title_check.py and priority_check.py
+from the authorised practice folder. This execution is part of the read-only
+check: it may print output but must not change anything. Do not use a bare
+python command. Explain NOT YET in beginner language.
+I attest that I created this attempt with synthetic course data only and did
+not intentionally add secrets, personal data, client data, employer data, or
+other real work data. If you notice content that appears sensitive, stop the
+inspection,
+do not quote or repeat it, report only the file name and general category, and
+report NOT YET. If you notice none, say: "No apparent sensitive content noticed
+in this bounded inspection; this is not proof that none exists." Do not claim
+that an inspection proves the folder is free of secrets or real data.
 ```
 
 ## Pass criteria
 
 - [ ] Both programs print their exact expected pass messages.
+- [ ] The exact Course 1 project marker and resolved Git root matched before
+      project Python ran.
 - [ ] Both programs were run through the derived project `$pythonExe`, which
       reports a stable Python 3.14 patch.
 - [ ] I can explain each function's input, output, and absence of side effects.
 - [ ] I can connect every assertion to one acceptance criterion.
 - [ ] Both evidence files distinguish claim, evidence, and limitation.
 - [ ] I can explain why generated code and commands remain proposals.
-- [ ] No dependency, network call, secret, or real data was introduced.
+- [ ] No dependency or network call was introduced. I attest that all
+      information I entered was synthetic and that I did not intentionally add
+      secrets or real data.
 - [ ] Codex reported PASS for every read-only criterion, or I corrected each
       NOT YET item myself.

@@ -2,6 +2,7 @@ import {
   escapeAttribute,
   escapeHtml,
   renderMarkdown as renderCourseMarkdown,
+  stripLeadingDocumentTitle,
 } from "./markdown.js";
 
 const config = window.__COURSE_APP__;
@@ -335,27 +336,16 @@ function learningSequenceDocuments() {
 function resumeDocument() {
   const sequence = learningSequenceDocuments();
   const lastDocument = documentById.get(state.lastDocument);
-  const lastIsActionable = sequence.some(
-    (courseDocument) => courseDocument.id === lastDocument?.id,
+  const firstIncomplete = sequence.find(
+    (courseDocument) =>
+      !isDocumentComplete(courseDocument) ||
+      (requiresPracticalSelfCheck(courseDocument) &&
+        !isPracticalPassed(courseDocument)),
   );
-  if (
-    lastIsActionable &&
-    (!isDocumentComplete(lastDocument) ||
-      (requiresPracticalSelfCheck(lastDocument) &&
-        !isPracticalPassed(lastDocument)))
-  ) {
+  if (firstIncomplete?.id === lastDocument?.id) {
     return lastDocument;
   }
-  return (
-    sequence.find((courseDocument) => !isDocumentComplete(courseDocument)) ||
-    sequence.find(
-      (courseDocument) =>
-        requiresPracticalSelfCheck(courseDocument) &&
-        !isPracticalPassed(courseDocument),
-    ) ||
-    sequence[0] ||
-    null
-  );
+  return firstIncomplete || sequence[0] || null;
 }
 
 function pagerDocumentsFor(courseDocument) {
@@ -1101,7 +1091,9 @@ function renderDocument(id) {
     }
   `;
   const content = document.querySelector("#reader-content");
-  content.innerHTML = renderCourseMarkdown(courseDocument.markdown);
+  content.innerHTML = renderCourseMarkdown(
+    stripLeadingDocumentTitle(courseDocument.markdown),
+  );
   wireCourseLinks(content, courseDocument);
   wireCodeCopy(content);
 
@@ -1725,7 +1717,10 @@ function setCourseShellReady() {
 }
 
 function wireEvents() {
-  window.addEventListener("hashchange", renderRoute);
+  window.addEventListener("hashchange", () => {
+    pendingRouteFocus = true;
+    renderRoute();
+  });
   window.addEventListener("online", updateConnectionStatus);
   window.addEventListener("offline", updateConnectionStatus);
   window.addEventListener("focus", () => checkForUpdates());
@@ -1736,6 +1731,13 @@ function wireEvents() {
   });
   window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
     if (state.theme === "system") applyAppearance();
+  });
+
+  document.querySelector(".skip-link").addEventListener("click", (event) => {
+    event.preventDefault();
+    const mainContent = document.querySelector("#main-content");
+    mainContent.focus({ preventScroll: true });
+    mainContent.scrollIntoView({ block: "start" });
   });
 
   document.querySelector("#menu-button").addEventListener("click", () => {

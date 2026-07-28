@@ -370,10 +370,15 @@ function renderMarkdown(markdown) {
   return output.join("\n");
 }
 
+function stripLeadingDocumentTitle(markdown) {
+  return String(markdown).replace(/^(?:\uFEFF)?# [^\r\n]+(?:\r?\n){1,2}/, "");
+}
+
 export {
   escapeAttribute,
   escapeHtml,
   renderInline,
   renderMarkdown,
   safeLink,
+  stripLeadingDocumentTitle,
 };

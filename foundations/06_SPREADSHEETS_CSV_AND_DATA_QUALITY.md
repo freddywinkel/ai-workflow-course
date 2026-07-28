@@ -96,20 +96,52 @@ Run this whole block whenever you start or resume Foundation 6:
 ```powershell
 $documentsPath = [Environment]::GetFolderPath("MyDocuments")
 $practiceRoot = Join-Path $documentsPath "controlled-ai-course-practice"
-$lessonPath = Join-Path $practiceRoot "foundation-06"
+$lessonFolderName = "foundation-06"
+if ($lessonFolderName -notmatch '^foundation-06(?:-retry-\d{2,})?$') {
+    throw "STOP: use foundation-06 or a retry name created by this lesson."
+}
+$lessonPath = Join-Path $practiceRoot $lessonFolderName
+
+function New-FoundationRetryAttempt {
+    param([string]$BaseName, [string]$PracticeRoot)
+    $retryNumber = 1
+    do {
+        $retryName = "$BaseName-retry-{0:D2}" -f $retryNumber
+        $retryPath = Join-Path $PracticeRoot $retryName
+        $retryNumber += 1
+    } while (Test-Path -LiteralPath $retryPath)
+    New-Item -ItemType Directory -Path $retryPath -ErrorAction Stop | Out-Null
+    $retryPath
+}
+
+function Open-GuardedPracticeFile {
+    param([string]$AttemptPath, [string]$FileName)
+    $filePath = Join-Path $AttemptPath $FileName
+    if (Test-Path -LiteralPath $filePath -PathType Container) {
+        throw "STOP: $FileName is a folder. Do not change it; use a fresh retry attempt."
+    }
+    if (Test-Path -LiteralPath $filePath -PathType Leaf) {
+        "EXISTING — DO NOT EDIT OR OVERWRITE: $FileName"
+        Get-Content -LiteralPath $filePath
+        return
+    }
+    New-Item -ItemType File -Path $filePath -ErrorAction Stop | Out-Null
+    "CREATED ONCE — enter the requested content: $FileName"
+    notepad $filePath
+}
 
 if (-not (Test-Path -LiteralPath $practiceRoot -PathType Container)) {
     throw "STOP: the controlled-ai-course-practice folder is missing. Return to Foundation 1."
 }
 if (Test-Path -LiteralPath $lessonPath -PathType Leaf) {
-    throw "STOP: foundation-06 is a file, not a folder. Do not rename or delete it; ask Codex to inspect read-only."
+    throw "STOP: the selected Foundation 6 attempt is a file, not a folder. Do not change it."
 }
 if (-not (Test-Path -LiteralPath $lessonPath -PathType Container)) {
     New-Item -ItemType Directory -Path $lessonPath | Out-Null
-    "Created a new foundation-06 folder."
+    "Created a new Foundation 6 attempt: $lessonFolderName"
 }
 else {
-    "Existing foundation-06 folder found; nothing was overwritten."
+    "Existing Foundation 6 attempt found; nothing was overwritten: $lessonFolderName"
 }
 
 Set-Location -LiteralPath $lessonPath
@@ -117,24 +149,55 @@ Get-Location
 Get-ChildItem -Force
 ```
 
-Expected result: the location ends in `foundation-06`. The block creates that
-folder only when absent and lists existing contents without changing them.
-Resume only your own synthetic lesson attempt. Before opening an existing CSV
-in Notepad, read it with `Get-Content -LiteralPath` and leave a completed file
-unchanged. Stop if an item is unfamiliar or may contain real data.
+Expected result: the location ends in `foundation-06` or the selected numbered
+retry name. The block creates an absent attempt and lists existing contents
+without changing them.
+
+### Decide whether to resume or use a fresh attempt
+
+The two helper functions have narrow jobs:
+`New-FoundationRetryAttempt` creates the next unused retry folder;
+`Open-GuardedPracticeFile` creates a named file only when absent, or displays an
+existing file without opening it for editing.
+
+Apply this decision before Part A and again after any interruption:
+
+1. If the attempt is empty, continue to Part A.
+2. The only expected names are `work_items.csv`, `found_issues.csv`,
+   `service_queue.csv`, and `recreated_issues.csv`. If the attempt contains
+   only those names, use each guarded file step below:
+   - `EXISTING` plus exactly complete synthetic content means close or leave
+     the file unchanged and skip its creation;
+   - an expected file that is absent may be created;
+   - an incomplete, different, unfamiliar, or apparently real/sensitive file
+     means do not edit, rename, delete, or overwrite anything in this attempt.
+3. An unexpected item also requires a fresh attempt.
+4. To create the next unused retry, run:
+
+   ```powershell
+   $lessonPath = New-FoundationRetryAttempt -BaseName "foundation-06" -PracticeRoot $practiceRoot
+   $lessonFolderName = Split-Path -Leaf $lessonPath
+   Set-Location -LiteralPath $lessonPath
+   "Selected fresh attempt: $lessonFolderName"
+   ```
+
+5. Write down the displayed retry name. In a new PowerShell session, replace
+   only `"foundation-06"` in `$lessonFolderName` with that exact name before
+   running the start block. A retry always restarts at Part A in the new empty
+   folder.
 
 ### Part A — create the source CSV
 
-If `work_items.csv` was not listed, run:
+Run the create-once guard:
 
 ```powershell
-notepad "work_items.csv"
+Open-GuardedPracticeFile -AttemptPath $lessonPath -FileName "work_items.csv"
 ```
 
-If it was listed, inspect it first with
-`Get-Content -LiteralPath ".\work_items.csv"`. If it already contains the exact
-synthetic guided table, skip to Part B. Resume only your own incomplete
-synthetic attempt; do not paste over an unfamiliar file.
+If the output starts with `EXISTING`, compare the displayed file with the exact
+table below. If it is complete, skip its creation and continue to Part B. For
+any other existing content, use a fresh retry attempt. Only when the output
+starts with `CREATED ONCE` should you enter the table:
 
 Enter these exact four lines:
 
@@ -214,13 +277,16 @@ Expected result: one row for `WI-203` with due date `not-a-date`.
 
 ### Part D — record the issues separately
 
-Run:
+Run the create-once guard:
 
 ```powershell
-notepad "found_issues.csv"
+Open-GuardedPracticeFile -AttemptPath $lessonPath -FileName "found_issues.csv"
 ```
 
-Enter:
+If the output starts with `EXISTING`, compare it with the exact issue table
+below. Leave an exact completed file unchanged and skip its creation. For any
+other existing content, use a fresh retry attempt. Only after `CREATED ONCE`
+should you enter:
 
 ```csv
 issue_id,work_item_id,field,rule_code,message
@@ -261,10 +327,11 @@ CSV files.
 
 ### Troubleshooting
 
-- If the table appears as one column, confirm the file uses commas and is named
-  `.csv`, not `.csv.txt`.
-- If `$workItems.Count` is not `3`, reopen the file and compare line breaks and
-  commas with the sample.
+- If the table appears as one column or the file is named `.csv.txt`, do not
+  correct or overwrite that attempt. Preserve it and use a fresh retry with
+  commas and the correct `.csv` extension.
+- If `$workItems.Count` is not `3`, compare the displayed file with the sample.
+  Do not overwrite it; preserve that attempt and use a fresh retry.
 - If PowerShell forgets `$workItems`, you opened a new terminal. Run the
   `Import-Csv` assignment again.
 - If a spreadsheet program changes dates or leading zeros, close it without
@@ -272,7 +339,15 @@ CSV files.
 
 ## Now recreate it yourself
 
-Create `service_queue.csv` with these six headers:
+Run the create-once guard for the recreation input:
+
+```powershell
+Open-GuardedPracticeFile -AttemptPath $lessonPath -FileName "service_queue.csv"
+```
+
+If it reports `EXISTING`, leave the file unchanged only when it already meets
+every requirement below; otherwise use a fresh retry attempt. After
+`CREATED ONCE`, create the file with these six headers:
 
 ```text
 ticket_id,category,state,opened_date,target_date,assigned_role
@@ -286,9 +361,26 @@ Create four fictional rows using IDs `T-91` through `T-94`. Include exactly:
   `active`, and `done`;
 - one row whose `opened_date` uses `2026/08/02` instead of `2026-08-02`.
 
-Then create `recreated_issues.csv` with one traceable issue row for each of those
-three deliberate problems. Choose three new issue IDs and three stable rule
-codes. Use PowerShell to confirm four input rows and three issue rows.
+Then run:
+
+```powershell
+Open-GuardedPracticeFile -AttemptPath $lessonPath -FileName "recreated_issues.csv"
+```
+
+If it reports `EXISTING`, leave the file unchanged only when it is exactly
+complete; otherwise use a fresh retry attempt. After `CREATED ONCE`, add one
+traceable issue row for each of those three deliberate problems. Choose three
+new issue IDs and three stable rule codes. Use PowerShell to confirm four input
+rows and three issue rows.
+
+Run these exact read-only counts:
+
+```powershell
+@(Import-Csv -LiteralPath ".\service_queue.csv").Count
+@(Import-Csv -LiteralPath ".\recreated_issues.csv").Count
+```
+
+Expected output: `4`, followed by `3`.
 
 This uses a different unit of work, fields, identifiers, states, and issue codes
 from the guided example.
@@ -318,11 +410,14 @@ Report PASS or NOT YET for each criterion:
    three problems.
 
 Explain NOT YET in beginner language and make no changes.
-This folder must contain synthetic course data only. I must not include
-secrets, personal data, client data, employer data, or other work data. If you
-notice such content, stop, do not repeat it, and tell me to remove it locally.
-Confirm that the folder contains no secrets and no real employer, client, or
-work data.
+I attest that I created this attempt with synthetic course data only and did
+not intentionally add secrets, personal data, client data, employer data, or
+other real work data. If you notice content that appears sensitive, stop the
+inspection,
+do not quote or repeat it, report only the file name and general category, and
+report NOT YET. If you notice none, say: "No apparent sensitive content noticed
+in this bounded inspection; this is not proof that none exists." Do not claim
+that an inspection proves the folder is free of secrets or real data.
 ```
 
 ## Pass criteria
@@ -334,6 +429,7 @@ work data.
 - [ ] My issue files point to the relevant input ID, field, and rule code.
 - [ ] I can explain the five data-quality dimensions.
 - [ ] I can distinguish a date-shape check from proof of a valid calendar date.
-- [ ] The exercise contains only synthetic data.
+- [ ] I attest that all data I entered was synthetic and that I did not
+      intentionally add secrets or real personal, employer, or client data.
 - [ ] Codex reported PASS for every read-only criterion, or I corrected each
       NOT YET item myself.

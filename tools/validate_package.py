@@ -185,8 +185,13 @@ REQUIRED_ONBOARDING_PHRASES = {
 EXPECTED_SCHEMA_FILES = {
     "approval.schema.json",
     "audit_event.schema.json",
+    "control.schema.json",
     "evaluation.schema.json",
     "issue.schema.json",
+    "review_manifest.schema.json",
+    "review_package.schema.json",
+    "run_config.schema.json",
+    "state.schema.json",
     "summary.schema.json",
     "work_item.schema.json",
 }
@@ -1434,8 +1439,9 @@ def validate_integrated_course_contract(
             PROJECT_REPOSITORY_FRAGMENT,
             f"evidence\\module-{number:02d}",
             f'git add -- "evidence\\module-{number:02d}"',
-            f'git commit -m "complete module {number} evidence"',
-            "Join-Path $projectRoot '.git'",
+            f'git commit --only -m "complete module {number} evidence"',
+            "COURSE_PROJECT.md",
+            "rev-parse --show-toplevel",
         )
         for fragment in required_repository_fragments:
             if fragment not in normalized:
@@ -1896,6 +1902,108 @@ def validate_course1_beginner_execution_contract(
                     f"ASSESSMENT_AND_RUBRIC.md lacks objective rule {fragment!r}"
                 )
 
+    beginner_repair_contracts = {
+        "BEGINNER_READINESS_CHECK.md": (
+            "Required readiness exercise — complete before Foundation 1",
+            "Do not begin Foundation 1 while any box above remains unchecked",
+        ),
+        "foundations/01_FILES_AND_TEXT.md": (
+            "selected lesson-attempt folder",
+            "foundation-01-retry-XX",
+        ),
+        "foundations/03_CODE_AND_PYTHON.md": (
+            "You may access exactly these two locations",
+            "Execute, but do not edit or replace, this one project Python file",
+        ),
+        "foundations/04_WEB_APIS_AND_JSON.md": (
+            "Create a safe retry attempt",
+            "Created request.json once",
+            "Created response.json once",
+            "You may access exactly these two locations",
+        ),
+        "foundations/07_AI_AND_CONTROLLED_WORKFLOWS.md": (
+            "The required Course 1 exercise is fully local",
+            "Do not call a live model",
+        ),
+        "foundations/08_SAFE_AI_ASSISTED_BUILDING.md": (
+            "You may access exactly these two locations",
+            "Execute, but do not edit or replace, this one project Python file",
+        ),
+        "modules/MODULE_01.md": (
+            "complete Foundations 3 through 9",
+            "Open-CreateOnceCourseFile",
+            "non-detection is not proof",
+            "Readiness → Foundations 1–2 → Software Check and Windows Setup →",
+        ),
+        "modules/MODULE_02.md": (
+            "Open-CreateOnceCourseFile",
+            "non-detection is not proof",
+        ),
+        "modules/MODULE_03.md": (
+            "Open-CreateOnceCourseFile",
+            "it still works after PowerShell has been closed",
+        ),
+        "modules/MODULE_04.md": (
+            "reference_runner_hashes.json",
+            "differs from the controlled course source",
+            "A missing, wrong-type, changed, or partly copied runner file",
+            "The controlled runner folder contains an unexpected entry",
+        ),
+        "modules/MODULE_05.md": (
+            "function Resolve-SavedCourseRun",
+            "reference_runner_hashes.json",
+            "Safe stopping points",
+            "The controlled runner folder contains an unexpected entry",
+        ),
+        "modules/MODULE_06.md": (
+            "function Resolve-SavedCourseRun",
+            "reference_runner_hashes.json",
+            "Do not replay a completed",
+            "$workedRunDir = Join-Path $workedDecisionParent (Split-Path -Leaf $moduleFiveWorkedRunDir)",
+            "$recreatedRunDir = Join-Path $recreatedDecisionParent (Split-Path -Leaf $moduleFiveRecreatedRunDir)",
+            "source/expected_issues.evidence",
+            "Which eight protected artifact paths",
+            "The controlled runner folder contains an unexpected entry",
+        ),
+        "modules/MODULE_07.md": (
+            "Open-CreateOnceCourseFile",
+            "non-detection is not proof",
+        ),
+        "modules/MODULE_08.md": (
+            "CurrentCulture",
+            "Completion marker: USABILITY TEST COMPLETE",
+            "COURSE_PROJECT.md",
+            "function Get-SavedCourseRunLocator",
+            "initial_copy_hashes.json",
+            "$controlledExpectedHash -ne $recreatedExpectedHash",
+            "recreated_expected.csv does not match the controlled course answer key",
+            "This statement is an attestation, not proof",
+            "non-detection is not proof that none exists",
+        ),
+        "modules/MODULE_09.md": (
+            "PRESERVED INCOMPLETE ATTEMPT",
+            "COURSE_PROJECT.md",
+            "failures\\latest.json",
+            "function Resolve-SavedCourseRun",
+            "reference_runner_hashes.json",
+            "$savedRunnerHash[0].source_sha256 -ne",
+            "The controlled runner folder contains an unexpected entry",
+            "This statement is an attestation, not proof",
+            "non-detection is not proof that none exists",
+        ),
+    }
+    for relative_path, fragments in beginner_repair_contracts.items():
+        repair_path = root / relative_path
+        if not repair_path.is_file():
+            failures.append(f"beginner repair contract is missing {relative_path}")
+            continue
+        repair_text = repair_path.read_text(encoding="utf-8")
+        for fragment in fragments:
+            if fragment not in repair_text:
+                failures.append(
+                    f"{relative_path} lacks repaired beginner contract {fragment!r}"
+                )
+
     module_eight_path = root / "modules" / "MODULE_08.md"
     if module_eight_path.is_file():
         module_eight = module_eight_path.read_text(encoding="utf-8")
@@ -1916,6 +2024,14 @@ def validate_course1_beginner_execution_contract(
             r"issues\issues.csv",
             "PROVISIONAL PRE-UAT",
             "not the final Course 1 decision",
+            "recreated_module4_provenance.json",
+            "source_project_relative",
+            "destination_sha256",
+            "recreated_matched_timing.md",
+            "recreated_cost_scenarios.csv",
+            "Completed low/expected/high cost scenarios",
+            "licence/usage",
+            "one-time setup",
         ):
             if fragment not in module_eight:
                 failures.append(
@@ -1932,6 +2048,9 @@ def validate_course1_beginner_execution_contract(
             "FINAL POST-UAT",
             "recreated_course_assessment.md",
             "All ten oral questions",
+            "function New-UatAttemptFolder",
+            "attempt-info.json",
+            "prior_attempts_preserved",
         ):
             if fragment not in module_nine:
                 failures.append(
@@ -1954,12 +2073,16 @@ def validate_course1_beginner_execution_contract(
                     )
             workspace_token = (
                 f"$uat{scenario_number:02d}Workspace = "
-                f"Join-Path $scenarioRoot '{scenario_id}'"
+                f"New-UatAttemptFolder -ScenarioId '{scenario_id}'"
             )
             if workspace_token not in scenario:
                 failures.append(
-                    f"Module 9 {scenario_id} does not create its own isolated workspace"
+                    f"Module 9 {scenario_id} does not create a fresh isolated attempt"
                 )
+        if "$defectFolder = New-UatAttemptFolder -ScenarioId 'UAT-D01'" not in module_nine:
+            failures.append(
+                "Module 9 UAT-D01 does not create a fresh isolated attempt"
+            )
         for required_fragment in (
             "latest_attempt_state",
             "last valid `current_state`",
@@ -2054,6 +2177,13 @@ def validate_course1_beginner_execution_contract(
         runner_workflow = runner_workflow_path.read_text(encoding="utf-8")
         runner_cli = runner_cli_path.read_text(encoding="utf-8")
         module_six = module_six_path.read_text(encoding="utf-8")
+        if (
+            "worked-decision-run" in module_six
+            or "recreated-decision-run" in module_six
+        ):
+            failures.append(
+                "Module 6 renames a protected run instead of preserving its exact RUN identifier"
+            )
         for fragment in (
             "def _write_latest_run_locator",
             '"latest_attempt_state": events[-1]["state"]',

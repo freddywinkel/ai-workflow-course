@@ -64,11 +64,19 @@
       "const": true
     },
     "external_actions": {
+      "type": "integer",
       "const": 0
     },
     "current_state": {
-      "type": "string",
-      "minLength": 1
+      "enum": [
+        "needs_review",
+        "changes_requested",
+        "approved_for_local_export",
+        "approved_draft",
+        "rejected",
+        "expired",
+        "no_action_needed"
+      ]
     },
     "course1_recommendation": {
       "enum": [

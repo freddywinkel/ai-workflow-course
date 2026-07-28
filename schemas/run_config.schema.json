@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://course.invalid/schemas/run_config.schema.json",
+  "title": "Course 1 Canonical Run Configuration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "input_sha256",
+    "assessment_date",
+    "pipeline_version",
+    "rules_version",
+    "prompt_version",
+    "requested_adapter_mode",
+    "mock_generator_version",
+    "fallback_generator_version",
+    "expected_oracle_present",
+    "expected_oracle_sha256"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "course1-run-config-v1"
+    },
+    "input_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "assessment_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "pipeline_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "rules_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "prompt_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "requested_adapter_mode": {
+      "enum": [
+        "mock",
+        "disabled",
+        "timeout",
+        "refusal",
+        "malformed_json",
+        "unknown_issue_id"
+      ]
+    },
+    "mock_generator_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "fallback_generator_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "expected_oracle_present": {
+      "type": "boolean"
+    },
+    "expected_oracle_sha256": {
+      "type": ["string", "null"],
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "expected_oracle_present": {
+            "const": true
+          }
+        },
+        "required": ["expected_oracle_present"]
+      },
+      "then": {
+        "properties": {
+          "expected_oracle_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "expected_oracle_sha256": {
+            "const": null
+          }
+        }
+      }
+    }
+  ]
+}

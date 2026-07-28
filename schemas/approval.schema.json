@@ -11,6 +11,7 @@
     "decision",
     "draft_revision",
     "draft_sha256",
+    "review_manifest_sha256",
     "decided_at",
     "expires_at",
     "evidence_reviewed",
@@ -37,6 +38,10 @@
       "minimum": 1
     },
     "draft_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "review_manifest_sha256": {
       "type": "string",
       "pattern": "^[a-f0-9]{64}$"
     },

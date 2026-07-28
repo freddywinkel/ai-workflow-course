@@ -13,11 +13,19 @@ uses no employer, client, patient, employee, or other real data.
 
 ## Beginner checkpoint
 
-Start here when you can create a folder, open a plain-text file, and copy an
-exact command. If those actions are unfamiliar, complete Foundations 1 and 2
-first. Complete Windows Setup before this module; it creates the one project
-tracked by **Git**, a version-control tool that records file changes, for
-Modules 1–9.
+Module 1 is not the beginning of the course. Start it only after all of these
+earlier gates have passed:
+
+1. complete the **Beginner Readiness Check**;
+2. complete Foundations 1 and 2;
+3. complete the **Software Check** and **Windows Setup**;
+4. complete Foundations 3 through 9.
+
+That is the required order:
+**Readiness → Foundations 1–2 → Software Check and Windows Setup →
+Foundations 3–9 → Module 1**. Do not skip a foundation because a command below
+looks familiar. Windows Setup creates the one project tracked by **Git**, a
+version-control tool that records file changes, for Modules 1–9.
 
 Comma-separated values (CSV) is a plain-text table format; `.csv` is its file
 name ending.
@@ -90,11 +98,13 @@ checkpoint until the module's full pass criteria are satisfied.
 
 ### Stage 1 — Open the one controlled project and create this evidence folder
 
-**Prerequisites and start state:** Windows is open, the course files remain
-unchanged, and Windows Setup created
-`Documents\AI-workflow-learning\operations-exception-assistant`. Foundations
-remain in `Documents\controlled-ai-course-practice`; do not put module evidence
-there.
+**Prerequisites and start state:** the Beginner Readiness Check, Foundations
+1–9, Software Check, and Windows Setup have all passed; Windows is open; the
+course files remain unchanged; and Windows Setup created
+`Documents\AI-workflow-learning\operations-exception-assistant`. Foundation
+evidence remains in `Documents\controlled-ai-course-practice`; do not put
+module evidence there. If any earlier gate is incomplete, stop here and return
+to that page before running Stage 1.
 
 1. Press the Windows key, type `PowerShell`, and click **Windows PowerShell**.
    PowerShell is the Windows command-line application used to run exact text
@@ -103,7 +113,26 @@ there.
 
 ```powershell
 $projectRoot = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'AI-workflow-learning\operations-exception-assistant'
-if (-not (Test-Path (Join-Path $projectRoot '.git'))) { throw 'Project Git repository not found. Complete Windows Setup before Module 1.' }
+$projectMarker = Join-Path $projectRoot 'COURSE_PROJECT.md'
+$expectedMarker = @'
+# Course 1 synthetic learner project
+
+This folder is only for the fictional Course 1 practice project.
+Never place real client, employer, medical, or personal data here.
+'@
+if (-not (Test-Path -LiteralPath $projectMarker -PathType Leaf)) {
+    throw 'Course project marker missing. Do not enter or change this folder.'
+}
+$actualMarker = (Get-Content -Raw -LiteralPath $projectMarker) -replace "`r`n", "`n"
+if ($actualMarker -ne ($expectedMarker -replace "`r`n", "`n")) {
+    throw 'Course project marker is unfamiliar. Do not enter or change this folder.'
+}
+$savedGitRoot = git -C $projectRoot rev-parse --show-toplevel 2>$null
+if ($LASTEXITCODE -ne 0 -or
+    (Resolve-Path -LiteralPath $savedGitRoot).Path -ne
+    (Resolve-Path -LiteralPath $projectRoot).Path) {
+    throw 'The marked Course 1 Git repository is missing or belongs to another folder.'
+}
 $moduleFolder = Join-Path $projectRoot 'evidence\module-01'
 New-Item -ItemType Directory -Force -Path $moduleFolder
 Set-Location -LiteralPath $moduleFolder
@@ -112,18 +141,63 @@ $courseRoot = Read-Host 'Paste the full path to AI_WORKFLOW_DOCUMENT_SYSTEMS_COU
 $guidedSourceCsv = Join-Path $courseRoot 'practice_data\work_items.csv'
 $guidedSourceCsv
 Test-Path -LiteralPath $guidedSourceCsv
+function Open-CreateOnceCourseFile {
+    param(
+        [string]$Path,
+        [string]$RecognizedStart,
+        [string[]]$RequiredPatterns,
+        [string[]]$ForbiddenPatterns = @()
+    )
+    if (Test-Path -LiteralPath $Path) {
+        if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+            throw "Expected a lesson file but found another path type: $Path"
+        }
+        $content = Get-Content -Raw -LiteralPath $Path
+        if ($null -eq $content) { $content = '' }
+        $firstLine = Get-Content -LiteralPath $Path -TotalCount 1
+        if (-not [string]::IsNullOrEmpty($content) -and
+            $firstLine -cne $RecognizedStart) {
+            throw "Existing file is unfamiliar. It was not opened or changed: $Path"
+        }
+        $complete = -not [string]::IsNullOrWhiteSpace($content)
+        foreach ($pattern in $RequiredPatterns) {
+            if (-not $content.Contains($pattern)) { $complete = $false }
+        }
+        foreach ($pattern in $ForbiddenPatterns) {
+            if ($content.Contains($pattern)) { $complete = $false }
+        }
+        if ($complete) {
+            Write-Host "COMPLETE: keeping $Path unchanged."
+            return
+        }
+        Write-Host "INCOMPLETE: continue your synthetic lesson file; do not paste duplicate lines."
+    } else {
+        New-Item -ItemType File -Path $Path | Out-Null
+        Write-Host "NEW: paste the supplied lesson content once."
+    }
+    & notepad.exe $Path
+}
 ```
 
-`Join-Path` safely combines a parent path with a child name. The `if` line
-stops instead of silently creating a second, untracked project when the
-`.git` folder is missing. `.git` is the hidden folder Git uses to track project
-history. `New-Item` creates this module's evidence folder. `Set-Location` makes
-it the current folder.
+`Join-Path` safely combines a parent path with a child name. The marker check
+requires the exact visible synthetic-course identity created during setup.
+`git ... --show-toplevel` asks Git for the repository's real root; the next
+comparison requires that root to be this exact project rather than a parent or
+nested repository. These read-only checks stop before `New-Item` can create
+anything in an unfamiliar folder. `New-Item` then creates this module's
+evidence folder. `Set-Location` makes it the current folder.
 
 `Read-Host` pauses and stores exactly the course-folder path you paste.
 The second `Join-Path` constructs the complete source-file path without asking
 you to type every backslash. `Test-Path` checks that the named source exists; it
 does not open or change it.
+
+`Open-CreateOnceCourseFile` is the restart guard used below. Before each call,
+confirm that the named module file is your synthetic lesson work. A missing
+file is created once; an empty or recognisable incomplete file is reopened; a
+complete file is left closed; a wrong path type or unfamiliar first line stops
+without opening or changing it. If that safe stop appears, preserve the file
+and ask Codex for read-only diagnosis before starting a clearly numbered retry.
 
 **Expected result:** the first path ends in
 `\Documents\AI-workflow-learning\operations-exception-assistant\evidence\module-01`,
@@ -149,11 +223,15 @@ the next path ends in `\practice_data\work_items.csv`, and the final line is
 1. In PowerShell, run:
 
 ```powershell
-notepad .\worked_queue.csv
+Open-CreateOnceCourseFile `
+    -Path (Join-Path $moduleFolder 'worked_queue.csv') `
+    -RecognizedStart 'job_id,status,due_date,owner_role' `
+    -RequiredPatterns @('JB-104,new,2026-08-03,intake')
 ```
 
-Notepad is Windows' plain-text editor. When asked to create the file, click
-**Yes**. Paste:
+Notepad is Windows' plain-text editor. If the helper printed `NEW`, paste the
+whole block. If it printed `INCOMPLETE`, keep correct existing lines and add
+only what is missing:
 
 ```csv
 job_id,status,due_date,owner_role
@@ -205,10 +283,16 @@ whole block to create a fresh guided copy.
 2. Run:
 
 ```powershell
-notepad .\worked_observation.md
+Open-CreateOnceCourseFile `
+    -Path (Join-Path $moduleFolder 'worked_observation.md') `
+    -RecognizedStart '# Worked process observation' `
+    -RequiredPatterns @('## Baseline','Unresolved questions: 5') `
+    -ForbiddenPatterns @('REPLACE WITH')
 ```
 
-Click **Yes** and paste the completed Markdown example:
+If the helper printed `NEW`, paste the completed Markdown example. If it
+printed `INCOMPLETE`, continue the existing recognised file without
+duplicating earlier sections:
 
 ```markdown
 # Worked process observation
@@ -296,11 +380,22 @@ separately records who uses, owns, reviews, supports, or is affected by the
 process. A **baseline and value record** separately defines how measurements
 were made and which statements are observations or assumptions.
 
+An **artifact identifier (ID)** is the unique label for one course record.
+From this point onward, `ID` means identifier.
+
 First follow these two small completed examples. They show the level of
 specificity expected before you fill the blank templates for the capstone.
 
-1. Run `notepad .\worked_stakeholder_map.md`, click **Yes**, paste, save, and
-   close:
+1. Run the guarded opener below. Paste the block only for `NEW`; for
+   `INCOMPLETE`, continue your recognised file without duplicating content.
+   `COMPLETE` means move to step 2.
+
+```powershell
+Open-CreateOnceCourseFile `
+    -Path (Join-Path $moduleFolder 'worked_stakeholder_map.md') `
+    -RecognizedStart '# Worked stakeholder and user map' `
+    -RequiredPatterns @('Artifact ID: WORKED-M01-STAKEHOLDERS','Unresolved question:')
+```
 
 ```markdown
 # Worked stakeholder and user map
@@ -321,9 +416,18 @@ error. Protection: label every item for human review and link it to the source.
 Unresolved question: who confirms which statuses require an owner?
 ```
 
-2. Run `notepad .\worked_baseline_record.md`, click **Yes**, paste, replace the
-   two placeholders with the same measurement recorded in
-   `worked_observation.md`, save, and close:
+2. Run the guarded opener below. Paste the block only for `NEW`; then replace
+   both placeholders with the same measurement recorded in
+   `worked_observation.md`. On `INCOMPLETE`, continue the recognised file
+   without duplicating content. On `COMPLETE`, move to step 3.
+
+```powershell
+Open-CreateOnceCourseFile `
+    -Path (Join-Path $moduleFolder 'worked_baseline_record.md') `
+    -RecognizedStart '# Worked baseline and value record' `
+    -RequiredPatterns @('Artifact ID: WORKED-M01-BASELINE','Next evidence:') `
+    -ForbiddenPatterns @('REPLACE WITH')
+```
 
 ```markdown
 # Worked baseline and value record
@@ -370,20 +474,47 @@ $sourceCsv = Join-Path $courseRoot 'practice_data\work_items.csv'
 $stakeholderTemplate = Join-Path $courseRoot 'templates\stakeholder_and_user_map.md'
 $baselineTemplate = Join-Path $courseRoot 'templates\baseline_and_value_record.md'
 function Copy-NewPracticeFile {
-    param([string]$Source, [string]$Destination)
+    param(
+        [string]$Source,
+        [string]$Destination,
+        [string]$ExpectedHeading,
+        [switch]$MustRemainExact
+    )
+    if (-not (Test-Path -LiteralPath $Source -PathType Leaf)) {
+        throw "Controlled course source is missing or is not a file: $Source"
+    }
     if (Test-Path -LiteralPath $Destination) {
+        if (-not (Test-Path -LiteralPath $Destination -PathType Leaf)) {
+            throw "Practice path exists but is not a file. Preserve it and stop: $Destination"
+        }
+        if ($MustRemainExact) {
+            $sourceHash = (Get-FileHash -LiteralPath $Source -Algorithm SHA256).Hash
+            $destinationHash = (Get-FileHash -LiteralPath $Destination -Algorithm SHA256).Hash
+            if ($sourceHash -ne $destinationHash) {
+                throw "Controlled working copy changed. Preserve it and ask for read-only diagnosis: $Destination"
+            }
+        } elseif ((Get-Content -LiteralPath $Destination -TotalCount 1) -cne $ExpectedHeading) {
+            throw "Existing learner file is unfamiliar. Preserve it and ask for read-only diagnosis: $Destination"
+        }
         Write-Host "Resume: $Destination already exists and was left unchanged."
     } else {
         Copy-Item -LiteralPath $Source -Destination $Destination
+        $sourceHash = (Get-FileHash -LiteralPath $Source -Algorithm SHA256).Hash
+        $destinationHash = (Get-FileHash -LiteralPath $Destination -Algorithm SHA256).Hash
+        if ($sourceHash -ne $destinationHash) {
+            throw "New practice copy did not match its source: $Destination"
+        }
         Write-Host "Created: $Destination"
     }
 }
-Copy-NewPracticeFile $sourceCsv .\recreated_work_items.csv
-Copy-NewPracticeFile $stakeholderTemplate .\stakeholder_and_user_map.md
-Copy-NewPracticeFile $baselineTemplate .\baseline_and_value_record.md
+Copy-NewPracticeFile $sourceCsv .\recreated_work_items.csv '' -MustRemainExact
+Copy-NewPracticeFile $stakeholderTemplate .\stakeholder_and_user_map.md '# Stakeholder and User Map'
+Copy-NewPracticeFile $baselineTemplate .\baseline_and_value_record.md '# Baseline and Value Record'
 Get-FileHash -LiteralPath $sourceCsv -Algorithm SHA256
 Get-FileHash -LiteralPath .\recreated_work_items.csv -Algorithm SHA256
 Get-Item .\stakeholder_and_user_map.md,.\baseline_and_value_record.md
+notepad.exe .\stakeholder_and_user_map.md
+notepad.exe .\baseline_and_value_record.md
 ```
 
 The two SHA-256 values must match; matching values show that the copy has the
@@ -391,8 +522,28 @@ same bytes.
 
 2. Time one manual inspection of `recreated_work_items.csv`. Do not open
    `expected_issues.csv`.
-3. Create `recreated_observation.md` in Notepad. Use the worked example's
-   sections, but write a new map for the 15-row work-item process. Include:
+3. Create or reopen `recreated_observation.md` with this safe-restart block.
+   It creates only the heading on the first attempt, reopens a recognisable
+   attempt, and stops without overwriting an unfamiliar path:
+
+```powershell
+$observationPath = Join-Path $moduleFolder 'recreated_observation.md'
+if (Test-Path -LiteralPath $observationPath) {
+    if (-not (Test-Path -LiteralPath $observationPath -PathType Leaf) -or
+        (Get-Content -LiteralPath $observationPath -TotalCount 1) -cne '# Recreated process observation') {
+        throw 'Existing recreated observation is the wrong type or is unfamiliar. Preserve it and ask for read-only diagnosis.'
+    }
+    Write-Host "Resume: $observationPath already exists and was left unchanged."
+} else {
+    "# Recreated process observation`r`n" |
+        Set-Content -LiteralPath $observationPath -Encoding utf8
+    Write-Host "Created: $observationPath"
+}
+notepad.exe $observationPath
+```
+
+   Use the worked example's sections, but write a new map for the 15-row
+   work-item process. Include:
    trigger, completion, actors, source of truth, fallback, at least five
    observations, at least five clearly labelled assumptions, five discovery
    questions, active time, and repeated checks.
@@ -406,8 +557,27 @@ same bytes.
    and rework definitions. Label single-run results as observations and future
    value as an assumption. Do not invent a target or cash saving. Write `not
    tested in Course 1` in later comparison fields that cannot yet be completed.
-6. Run both hash commands again. The source and recreated copy must still
-   match.
+6. Run this self-contained block even if you reopened PowerShell. It rebuilds
+   the source path before comparing, so it does not depend on an old
+   `$sourceCsv` variable:
+
+```powershell
+$courseRoot = Read-Host 'Paste the full path to AI_WORKFLOW_DOCUMENT_SYSTEMS_COURSE'
+$sourceCsv = Join-Path $courseRoot 'practice_data\work_items.csv'
+$recreatedCsv = Join-Path $moduleFolder 'recreated_work_items.csv'
+if (-not (Test-Path -LiteralPath $sourceCsv -PathType Leaf) -or
+    -not (Test-Path -LiteralPath $recreatedCsv -PathType Leaf)) {
+    throw 'A named source or recreated CSV is missing. Stop and inspect the paths.'
+}
+$sourceHash = (Get-FileHash -LiteralPath $sourceCsv -Algorithm SHA256).Hash
+$recreatedHash = (Get-FileHash -LiteralPath $recreatedCsv -Algorithm SHA256).Hash
+$sourceHash
+$recreatedHash
+$sourceHash -eq $recreatedHash
+```
+
+   The final line must be `True`. If it is `False`, preserve both files and
+   stop for read-only diagnosis.
 
 This is recreation, not copying: your observations, timing, and questions must
 come from the different 15-row file.
@@ -424,10 +594,16 @@ READ-ONLY COURSE REVIEW.
 I authorize you to inspect only this full path:
 [PASTE FULL PATH HERE]
 
-Do not create, edit, delete, rename, move, or format any file. Do not inspect
-the parent folder or any other location. Do not run a command that changes
-state. This folder must contain no secrets and no real client or workplace
-data; stop if you see credentials, personal data, or health data.
+Learner attestation: I created these files for this fictional exercise and
+have not knowingly put real client, employer, personal, medical, credential,
+or secret data in them. This statement is an attestation, not proof.
+
+You may only list names, read files, and calculate hashes inside the authorised
+path. Do not create, edit, delete, rename, move, or format any file. Do not
+execute lesson scripts, use a network, or inspect a parent
+or other location. If apparent sensitive data is noticed, do not quote or
+repeat it: return NOT YET with only the filename and general category, then
+stop. If none is noticed, say that non-detection is not proof that none exists.
 
 Check worked_queue.csv, worked_queue_copy.csv, worked_observation.md,
 worked_stakeholder_map.md, worked_baseline_record.md,
@@ -450,6 +626,8 @@ criteria.
 
 ## Pass criteria
 
+- [ ] Beginner Readiness, Foundations 1–9, Software Check, and Windows Setup
+      passed before Module 1 was started.
 - [ ] The authorised folder is exactly `module-01`, not its parent.
 - [ ] Worked and recreated files contain synthetic information only.
 - [ ] The worked queue and guided copy produce matching SHA-256 values.
@@ -510,22 +688,23 @@ tasks.
 Do this only after Codex returns `PASS`. First open the module folder yourself
 and confirm it contains only synthetic course evidence: no password, secret
 key, personal data, employer data, client data, patient data, or unrelated
-file. Then run:
+file. Rerun Stage 1 in this same PowerShell window so the exact marker and
+Git-root checks pass again. Then run:
 
 ```powershell
-$projectRoot = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'AI-workflow-learning\operations-exception-assistant'
 Set-Location -LiteralPath $projectRoot
 git status --short
 git add -- "evidence/module-01"
-git commit -m "complete module 1 evidence"
+git commit --only -m "complete module 1 evidence" -- "evidence/module-01"
 git status --short
 ```
 
 `git status --short` previews changed files. `git add --` stages only this
-module folder; `--` marks the end of Git options. `git commit` records that
-staged checkpoint. If Git says there is nothing to commit after you rerun the
-lesson, that is expected when the files have not changed. Never broaden the
-path merely to force a commit.
+module folder; `--` marks the end of Git options. `git commit --only` records
+only the repeated module path, even if a different file had already been
+staged. If Git says there is nothing to commit after you rerun the lesson,
+that is expected when the files have not changed. Never broaden the path
+merely to force a commit.
 
 ## Stop or rework
 

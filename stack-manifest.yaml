@@ -1,7 +1,7 @@
 schema_version: 2
 course_id: course-1-controlled-ai-workflow-foundations
-course_version: 2.4.0
-practice_revision: 3
+course_version: 2.5.0
+practice_revision: 4
 last_verified: "2026-07-28"
 verification_timezone: Europe/Amsterdam
 purpose: private synthetic-data learning demonstration
