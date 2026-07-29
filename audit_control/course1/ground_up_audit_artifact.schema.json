@@ -713,7 +713,6 @@
             },
             "changes": {
               "type": "array",
-              "minItems": 1,
               "items": {"$ref": "#/$defs/changeRow"}
             },
             "priorEvidenceDisposition": {"const": "INVALIDATED"},
@@ -738,6 +737,28 @@
             "priorEvidenceDisposition",
             "lastMaterialChangeFrozen",
             "integratedRerunAfterLastMaterialChange"
+          ],
+          "oneOf": [
+            {
+              "properties": {
+                "baseline": {
+                  "properties": {
+                    "dirty": {"const": false}
+                  }
+                },
+                "changes": {"maxItems": 0}
+              }
+            },
+            {
+              "properties": {
+                "baseline": {
+                  "properties": {
+                    "dirty": {"const": true}
+                  }
+                },
+                "changes": {"minItems": 1}
+              }
+            }
           ]
         }
       ],

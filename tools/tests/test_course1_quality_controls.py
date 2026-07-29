@@ -264,6 +264,133 @@ class Course1QualityControlTests(unittest.TestCase):
             any("missing-maintainer-tool" in failure for failure in failures)
         )
 
+    def test_pwa_quality_builds_without_preexisting_dist_before_serial_tests(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            tests_root = root / "app" / "tests"
+            tests_root.mkdir(parents=True)
+            (tests_root / "property-security.test.mjs").write_text(
+                "// synthetic test placeholder\n",
+                encoding="utf-8",
+            )
+            dist_root = root / "app" / "dist"
+            observed: list[str] = []
+
+            def fake_run_command(
+                name: str,
+                command: list[str],
+                *,
+                cwd: Path,
+                environment: dict[str, str] | None = None,
+            ) -> dict[str, object]:
+                observed.append(name)
+                self.assertEqual(cwd, root / "app")
+                self.assertEqual(environment["BASE_PATH"], "/ai-workflow-course/")
+                self.assertEqual(environment["COURSE1_BUILD_MODE"], "development")
+                if name == "pwa-quality-build":
+                    self.assertFalse(dist_root.exists())
+                    dist_root.mkdir()
+                    (dist_root / "index.html").write_text(
+                        "fresh build",
+                        encoding="utf-8",
+                    )
+                else:
+                    self.assertTrue((dist_root / "index.html").is_file())
+                    self.assertIn("--test-concurrency=1", command)
+                return {
+                    "name": name,
+                    "command": command,
+                    "cwd": str(cwd),
+                    "exitCode": 0,
+                    "result": "PASS",
+                    "output": "ok",
+                }
+
+            with (
+                mock.patch.dict(
+                    quality_gate.os.environ,
+                    {"GITHUB_ACTIONS": "false"},
+                ),
+                mock.patch.object(
+                    quality_gate,
+                    "run_command",
+                    side_effect=fake_run_command,
+                ),
+            ):
+                result, commands, failures = quality_gate.run_pwa_quality_layer(
+                    Path("node"),
+                    self.contract,
+                    root=root,
+                )
+
+        self.assertEqual(observed, ["pwa-quality-build", "pwa-properties-and-coverage"])
+        self.assertEqual([command["name"] for command in commands], observed)
+        self.assertEqual(result["result"], "PASS")
+        self.assertEqual(failures, [])
+
+    def test_pwa_quality_uses_fail_closed_candidate_mode_on_github(self) -> None:
+        self.assertEqual(
+            quality_gate.quality_pwa_build_mode(
+                {"GITHUB_ACTIONS": "true", "GITHUB_SHA": "not-a-full-sha"}
+            ),
+            "candidate",
+        )
+        self.assertEqual(
+            quality_gate.quality_pwa_build_mode(
+                {"GITHUB_ACTIONS": "false", "COURSE1_BUILD_MODE": "candidate"}
+            ),
+            "development",
+        )
+
+    def test_failed_pwa_build_blocks_tests_and_quality_result(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            tests_root = root / "app" / "tests"
+            tests_root.mkdir(parents=True)
+            (tests_root / "property-security.test.mjs").write_text(
+                "// synthetic test placeholder\n",
+                encoding="utf-8",
+            )
+            build_failure = {
+                "name": "pwa-quality-build",
+                "command": ["node", "scripts/build.mjs"],
+                "cwd": "app",
+                "exitCode": 1,
+                "result": "FAIL",
+                "output": "injected build failure",
+            }
+            with (
+                mock.patch.dict(
+                    quality_gate.os.environ,
+                    {"GITHUB_ACTIONS": "false"},
+                ),
+                mock.patch.object(
+                    quality_gate,
+                    "run_command",
+                    return_value=build_failure,
+                ) as run,
+            ):
+                result, commands, failures = quality_gate.run_pwa_quality_layer(
+                    Path("node"),
+                    self.contract,
+                    root=root,
+                )
+
+        self.assertEqual(run.call_count, 1)
+        self.assertEqual(commands, [build_failure])
+        self.assertEqual(result["result"], "FAIL")
+        self.assertTrue(any("pre-existing app/dist" in item for item in failures))
+
+        overall, overall_failures = quality_gate.final_quality_decision(
+            failures,
+            commands,
+            {"pwaCoverageAndProperties": result},
+        )
+        self.assertEqual(overall, "FAIL")
+        self.assertTrue(overall_failures)
+
     def test_windows_setup_preserves_beginner_dependency_boundary(self) -> None:
         text = (ROOT / "SETUP_WINDOWS.md").read_text(encoding="utf-8")
         for required in (

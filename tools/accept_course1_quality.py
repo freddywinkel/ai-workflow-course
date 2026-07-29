@@ -112,6 +112,98 @@ def coverage_percent(covered: int, total: int) -> float:
     return 100.0 if total == 0 else round((covered / total) * 100, 2)
 
 
+def quality_pwa_build_mode(environment: dict[str, str]) -> str:
+    """Use immutable candidate provenance on GitHub and local provenance elsewhere."""
+
+    return (
+        "candidate"
+        if environment.get("GITHUB_ACTIONS", "").strip().lower() == "true"
+        else "development"
+    )
+
+
+def run_pwa_quality_layer(
+    node_path: Path,
+    contract: dict[str, Any],
+    *,
+    root: Path = ROOT,
+) -> tuple[dict[str, Any], list[dict[str, Any]], list[str]]:
+    """Build a fresh PWA before running its coverage suite without file races."""
+
+    commands: list[dict[str, Any]] = []
+    failures: list[str] = []
+    limitation = contract["coverage"]["pwaLimitation"]
+    app_root = root / "app"
+    build_environment = os.environ.copy()
+    build_environment["BASE_PATH"] = "/ai-workflow-course/"
+    build_environment["COURSE1_BUILD_MODE"] = quality_pwa_build_mode(
+        build_environment
+    )
+
+    commands.append(
+        run_command(
+            "pwa-quality-build",
+            [str(node_path), "scripts/build.mjs"],
+            cwd=app_root,
+            environment=build_environment,
+        )
+    )
+    if commands[-1]["exitCode"] != 0:
+        failures.append(
+            "PWA quality build failed; coverage tests were not allowed to use "
+            "missing or pre-existing app/dist output"
+        )
+        return (
+            {"result": "FAIL", "limitation": limitation},
+            commands,
+            failures,
+        )
+
+    pwa_modules = [
+        str(Path(path).relative_to("app")).replace("\\", "/")
+        for path in contract["coverage"]["pwaModules"]
+    ]
+    command = [
+        str(node_path),
+        "--experimental-test-coverage",
+        f"--test-coverage-lines={contract['coverage']['minimumLinePercent']}",
+        f"--test-coverage-branches={contract['coverage']['minimumBranchPercent']}",
+        "--test-concurrency=1",
+    ]
+    for path in pwa_modules:
+        command.append(f"--test-coverage-include={path}")
+    pwa_tests = [
+        str(path.relative_to(app_root)).replace("\\", "/")
+        for path in sorted((app_root / "tests").glob("*.test.mjs"))
+    ]
+    if not pwa_tests:
+        failures.append("no PWA test modules were discovered")
+        return (
+            {"result": "FAIL", "limitation": limitation},
+            commands,
+            failures,
+        )
+    command.extend(["--test", *pwa_tests])
+    commands.append(
+        run_command(
+            "pwa-properties-and-coverage",
+            command,
+            cwd=app_root,
+            environment=build_environment,
+        )
+    )
+    if commands[-1]["exitCode"] != 0:
+        failures.append("PWA critical-module coverage or property tests failed")
+    return (
+        {
+            "result": commands[-1]["result"],
+            "limitation": limitation,
+        },
+        commands,
+        failures,
+    )
+
+
 def validate_runtime_dependencies(
     maintainer_dependencies: set[str],
 ) -> list[str]:
@@ -430,38 +522,16 @@ def main() -> int:
             "limitation": contract["coverage"]["pwaLimitation"],
         }
         if node_path.is_file():
-            pwa_modules = [
-                str(Path(path).relative_to("app")).replace("\\", "/")
-                for path in contract["coverage"]["pwaModules"]
-            ]
-            command = [
-                str(node_path),
-                "--experimental-test-coverage",
-                f"--test-coverage-lines={contract['coverage']['minimumLinePercent']}",
-                f"--test-coverage-branches={contract['coverage']['minimumBranchPercent']}",
-            ]
-            for path in pwa_modules:
-                command.append(f"--test-coverage-include={path}")
-            pwa_tests = [
-                str(path.relative_to(ROOT / "app")).replace("\\", "/")
-                for path in sorted((ROOT / "app" / "tests").glob("*.test.mjs"))
-            ]
-            if not pwa_tests:
-                failures.append("no PWA test modules were discovered")
-            command.extend(["--test", *pwa_tests])
-            commands.append(
-                run_command(
-                    "pwa-properties-and-coverage",
-                    command,
-                    cwd=ROOT / "app",
-                )
+            (
+                pwa_result,
+                pwa_commands,
+                pwa_failures,
+            ) = run_pwa_quality_layer(
+                node_path,
+                contract,
             )
-            pwa_result = {
-                "result": commands[-1]["result"],
-                "limitation": contract["coverage"]["pwaLimitation"],
-            }
-            if commands[-1]["exitCode"] != 0:
-                failures.append("PWA critical-module coverage or property tests failed")
+            commands.extend(pwa_commands)
+            failures.extend(pwa_failures)
 
         mutation_result = "NOT RUN"
         if args.skip_mutations:

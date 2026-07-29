@@ -16,6 +16,7 @@ from build_course1_ground_up_audit import (  # noqa: E402
     MACHINE_FILES,
     MARKDOWN_FILES,
     build,
+    raw_evidence,
     validate_raw_evidence_manifest,
     validate_machine_documents,
     validated_unique_ids,
@@ -81,7 +82,11 @@ class GroundUpAuditArtifactTests(unittest.TestCase):
 
     def test_missing_external_and_candidate_evidence_stays_unverified(self) -> None:
         baseline = self.read("baseline-file-inventory.json")
-        self.assertTrue(baseline["git"]["dirty"])
+        change_map = self.read("change-to-evidence-map.json")
+        self.assertEqual(
+            baseline["git"]["dirty"],
+            bool(change_map["changes"]),
+        )
         self.assertEqual(baseline["status"], "UNVERIFIED")
         self.assertEqual(baseline["preRepairBaseline"]["status"], "UNVERIFIED")
         raw = self.read("raw-evidence-index.json")
@@ -102,6 +107,33 @@ class GroundUpAuditArtifactTests(unittest.TestCase):
         assurance = self.read("audit-assurance-result.json")
         assurance["overallAuditStatus"] = "PASS"
         self.assertTrue(list(self.validator.iter_errors(assurance)))
+
+    def test_clean_change_map_accepts_zero_changes_and_stays_fail_closed(
+        self,
+    ) -> None:
+        clean = self.read("change-to-evidence-map.json")
+        clean["baseline"]["dirty"] = False
+        clean["changes"] = []
+        self.assertEqual(list(self.validator.iter_errors(clean)), [])
+
+        dirty_without_changes = self.read("change-to-evidence-map.json")
+        dirty_without_changes["baseline"]["dirty"] = True
+        dirty_without_changes["changes"] = []
+        self.assertTrue(list(self.validator.iter_errors(dirty_without_changes)))
+
+        malformed = self.read("change-to-evidence-map.json")
+        malformed["baseline"]["dirty"] = True
+        malformed["changes"] = [
+            {
+                "path": "tools/example.py",
+                "workingTreeStatus": "TRACKED_UNCHANGED",
+                "classification": "COURSE1_ONLY",
+                "invalidatedEvidenceFamilies": [],
+                "rerunRequired": True,
+                "unexpected": True,
+            }
+        ]
+        self.assertTrue(list(self.validator.iter_errors(malformed)))
 
     def test_generator_gate_rejects_invalid_machine_document(self) -> None:
         documents = {name: self.read(name) for name in MACHINE_FILES}
@@ -181,10 +213,13 @@ class GroundUpAuditArtifactTests(unittest.TestCase):
                 encoding="utf-8",
             )
             output = base / "audit"
-            build(ROOT, output, "2026-07-29", manifest)
-            evidence = json.loads(
-                (output / "raw-evidence-index.json").read_text(encoding="utf-8")
-            )["entries"][0]
+            evidence = raw_evidence(
+                output,
+                manifest,
+                True,
+                baseline["git"]["headCommit"],
+                self.schema,
+            )[0]
             self.assertTrue(evidence["exists"])
             self.assertEqual(evidence["result"], "UNVERIFIED")
             self.assertEqual(evidence["candidateBinding"], "UNBOUND_WORKING_COPY")
