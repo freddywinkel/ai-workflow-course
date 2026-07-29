@@ -103,6 +103,12 @@ def git_text(root: Path, *args: str) -> str:
     return git(root, *args).decode("utf-8", errors="strict").strip()
 
 
+def normalise_git_branch(branch: str) -> str:
+    """Give detached commits an explicit, non-branch provenance label."""
+
+    return branch or "DETACHED_HEAD"
+
+
 def common(course_version: str, audit_date: str, artifact_type: str) -> dict[str, Any]:
     return {
         "schemaVersion": SCHEMA_VERSION,
@@ -191,7 +197,9 @@ def snapshot_files(root: Path) -> tuple[list[dict[str, Any]], dict[str, Any]]:
             }
         )
     metadata = {
-        "branch": git_text(root, "branch", "--show-current"),
+        "branch": normalise_git_branch(
+            git_text(root, "branch", "--show-current")
+        ),
         "headCommit": git_text(root, "rev-parse", "HEAD"),
         "headTree": git_text(root, "rev-parse", "HEAD^{tree}"),
         "dirty": any(row["workingTreeStatus"] != "TRACKED_UNCHANGED" for row in rows),

@@ -16,6 +16,7 @@ from build_course1_ground_up_audit import (  # noqa: E402
     MACHINE_FILES,
     MARKDOWN_FILES,
     build,
+    normalise_git_branch,
     raw_evidence,
     validate_raw_evidence_manifest,
     validate_machine_documents,
@@ -44,6 +45,13 @@ class GroundUpAuditArtifactTests(unittest.TestCase):
 
     def read(self, name: str) -> dict:
         return json.loads((self.output / name).read_text(encoding="utf-8"))
+
+    def test_detached_head_has_an_explicit_provenance_label(self) -> None:
+        self.assertEqual(normalise_git_branch(""), "DETACHED_HEAD")
+        self.assertEqual(
+            normalise_git_branch("codex/course1-v2.6-repair"),
+            "codex/course1-v2.6-repair",
+        )
 
     def test_schema_is_valid_and_every_machine_artifact_matches(self) -> None:
         Draft202012Validator.check_schema(self.schema)
