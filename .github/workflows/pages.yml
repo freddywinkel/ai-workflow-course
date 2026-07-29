@@ -1,60 +1,100 @@
-name: Validate and deploy course PWA
+name: Course 1 candidate validation and controlled Pages promotion
 
 on:
+  pull_request:
+    branches:
+      - main
+    paths-ignore:
+      - advanced_capstone/**
+      - future_courses/**
   push:
     branches:
       - main
+    paths-ignore:
+      - advanced_capstone/**
+      - future_courses/**
   workflow_dispatch:
+    inputs:
+      mode:
+        description: Validate a candidate or promote an already accepted candidate
+        required: true
+        type: choice
+        default: validate
+        options:
+          - validate
+          - promote
+      accepted_commit:
+        description: Full 40-character commit SHA recorded by the acceptance reviewer
+        required: false
+        type: string
+      acceptance_record:
+        description: JSON record path inside release_evidence/
+        required: false
+        type: string
+      acceptance_record_commit:
+        description: Full commit SHA that stores the post-review acceptance record
+        required: false
+        type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: pages-${{ github.ref }}
-  cancel-in-progress: true
+  group: course1-pages-${{ inputs.mode == 'promote' && 'production' || github.ref }}
+  cancel-in-progress: ${{ inputs.mode != 'promote' }}
 
 jobs:
   validate-and-build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - name: Check out repository
+      - name: Check out the exact candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
 
-      - name: Set up Python
+      - name: Set up the validator Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          python-version: "3.13"
+          python-version: "3.13.14"
           cache: pip
           cache-dependency-path: tools/requirements-validation.txt
 
-      - name: Install course validator dependencies
-        run: python -m pip install -r tools/requirements-validation.txt
+      - name: Install pinned validator dependencies
+        run: >-
+          python -m pip install
+          --require-hashes
+          -r tools/requirements-validation.txt
 
-      - name: Validate course package
-        run: python tools/validate_package.py
+      - name: Validate Course 1 and shared-reader isolation
+        run: python tools/validate_package.py --scope course1
 
-      - name: Set up Node
+      - name: Test fail-closed promotion status handling
+        run: python -m unittest discover -s tools/tests -p "test_*.py"
+
+      - name: Set up the pinned Node runtime
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "24"
+          node-version: "24.18.0"
           cache: npm
           cache-dependency-path: app/package-lock.json
 
-      - name: Install app dependencies
+      - name: Install the locked PWA dependency set
         working-directory: app
         run: npm ci
 
-      - name: Test app
+      - name: Run PWA unit and contract tests
         working-directory: app
         run: npm test
 
-      - name: Build GitHub Pages artifact
+      - name: Build the exact GitHub Pages candidate
         working-directory: app
         env:
           BASE_PATH: /ai-workflow-course/
+          COURSE1_BUILD_MODE: candidate
         run: npm run build
 
-      - name: Test the Course 1 PWA in Chrome
+      - name: Run Course 1 browser and old-client update checks
         working-directory: app
         run: |
           npm run smoke:browser
@@ -63,55 +103,32 @@ jobs:
       - name: Confirm validation did not repair a stale tracked report
         run: git diff --exit-code -- VALIDATION_REPORT.md
 
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
-
-      - name: Upload GitHub Pages artifact
-        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+      - name: Preserve a manually requested candidate
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
+          name: course1-candidate-${{ github.sha }}
           path: app/dist
-
-  test-capstone-offline:
-    runs-on: ubuntu-latest
-    env:
-      PROVIDER_MODE: fake
-      ALLOW_LIVE_GOOGLE_TESTS: "NO"
-      FREE_TRIAL_CONFIRMED: "NO"
-      PAID_BILLING_ACTIVATED: "NO"
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Set up Python 3.12 for the offline capstone
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: "3.12"
-          cache: pip
-          cache-dependency-path: |
-            future_courses/course_04_controlled_document_ai/controlled_document_intake_demo/requirements-ci.txt
-
-      - name: Install the fully pinned capstone test environment
-        working-directory: future_courses/course_04_controlled_document_ai/controlled_document_intake_demo
-        run: python -m pip install -r requirements-ci.txt
-
-      - name: Test capstone offline
-        working-directory: future_courses/course_04_controlled_document_ai/controlled_document_intake_demo
-        run: python -m pytest
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 30
 
   test-course1-offline:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
         python-version:
-          - "3.12"
-          - "3.13"
-          - "3.14"
+          - "3.12.13"
+          - "3.13.14"
+          - "3.14.6"
     steps:
-      - name: Check out repository
+      - name: Check out the exact candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-      - name: Set up Python for Course 1
+      - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: ${{ matrix.python-version }}
@@ -119,25 +136,200 @@ jobs:
           cache-dependency-path: requirements-course.txt
 
       - name: Install the pinned Course 1 environment
-        run: python -m pip install -r requirements-course.txt
+        run: >-
+          python -m pip install
+          --require-hashes
+          -r requirements-course.txt
+
+      - name: Verify the installed dependency environment
+        run: python -m pip check
 
       - name: Run the Course 1 clean-room workflow and every scenario
         run: python tools/accept_course1_cleanroom.py
 
-  deploy:
-    if: github.ref == 'refs/heads/main'
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
+  audit-course1-supply-and-sources:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out the exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up the audit Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14.6"
+
+      - name: Install the hash-locked SBOM validator
+        run: >-
+          python -m pip install
+          --require-hashes
+          -r tools/requirements-validation.txt
+
+      - name: Audit pinned packages, licences, provenance, SBOM, and advisories
+        run: >-
+          python tools/audit_course1_supply_chain.py
+          --online
+          --report audit-evidence/supply-chain.json
+
+      - name: Audit claim-level source ownership, freshness, and availability
+        run: >-
+          python tools/audit_course1_sources.py
+          --online
+          --report audit-evidence/source-claims.json
+
+      - name: Set up the pinned Node runtime
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24.18.0"
+
+      - name: Query npm advisories for the locked dependency-free PWA
+        working-directory: app
+        run: npm audit --package-lock-only --audit-level=low
+
+      - name: Preserve machine-readable audit evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: course1-audit-evidence-${{ github.sha }}
+          path: audit-evidence
+          if-no-files-found: warn
+          retention-days: 30
+
+  test-course1-quality-controls:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out the exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up the quality-gate Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13.14"
+          cache: pip
+          cache-dependency-path: |
+            requirements-course.txt
+            tools/requirements-maintainer.txt
+
+      - name: Install hash-locked learner and maintainer test dependencies
+        run: >-
+          python -m pip install
+          --require-hashes
+          -r requirements-course.txt
+          -r tools/requirements-maintainer.txt
+
+      - name: Set up the pinned Node runtime
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24.18.0"
+
+      - name: Prove coverage, properties, mutations, and broken-system controls
+        run: >-
+          python tools/accept_course1_quality.py
+          --node "$(command -v node)"
+          --report audit-evidence/course1-quality.json
+
+      - name: Preserve machine-readable quality evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: course1-quality-evidence-${{ github.sha }}
+          path: audit-evidence/course1-quality.json
+          if-no-files-found: error
+          retention-days: 30
+
+  prepare-accepted-pages-artifact:
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      inputs.mode == 'promote'
+    runs-on: ubuntu-24.04
     needs:
       - validate-and-build
       - test-course1-offline
-      - test-capstone-offline
+      - audit-course1-supply-and-sources
+      - test-course1-quality-controls
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    steps:
+      - name: Check out the accepted source and evidence
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Reject mismatched, abbreviated, or moving promotion references
+        shell: bash
+        env:
+          ACCEPTED_COMMIT: ${{ inputs.accepted_commit }}
+          ACCEPTANCE_RECORD_COMMIT: ${{ inputs.acceptance_record_commit }}
+          WORKFLOW_COMMIT: ${{ github.sha }}
+        run: |
+          if [[ ! "$ACCEPTED_COMMIT" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "accepted_commit must be a full lower-case 40-character Git SHA"
+            exit 1
+          fi
+          if [[ "$ACCEPTED_COMMIT" != "$WORKFLOW_COMMIT" ]]; then
+            echo "accepted_commit must exactly match the checked-out workflow commit"
+            exit 1
+          fi
+          if [[ ! "$ACCEPTANCE_RECORD_COMMIT" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "acceptance_record_commit must be a full lower-case 40-character Git SHA"
+            exit 1
+          fi
+
+      - name: Check out the immutable post-review acceptance record
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.acceptance_record_commit }}
+          path: acceptance-control
+          persist-credentials: false
+
+      - name: Set up the promotion verifier Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14.6"
+
+      - name: Download the already tested candidate without rebuilding
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: course1-candidate-${{ github.sha }}
+          path: app/dist
+
+      - name: Verify exact acceptance, artifact identity, and ledger gates
+        env:
+          ACCEPTANCE_RECORD: ${{ inputs.acceptance_record }}
+          ACCEPTED_COMMIT: ${{ inputs.accepted_commit }}
+        run: >-
+          python tools/verify_course1_promotion.py
+          --record "$ACCEPTANCE_RECORD"
+          --expected-commit "$ACCEPTED_COMMIT"
+          --evidence-root acceptance-control
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+
+      - name: Upload the accepted Pages artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: app/dist
+
+  deploy:
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      inputs.mode == 'promote'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-24.04
+    needs:
+      - prepare-accepted-pages-artifact
     permissions:
       pages: write
       id-token: write
     steps:
-      - name: Deploy to GitHub Pages
+      - name: Deploy the exact accepted artifact
         id: deployment
         uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0

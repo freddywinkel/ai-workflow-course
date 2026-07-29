@@ -50,6 +50,42 @@ function assertMetadata(condition, message) {
   if (!condition) throw new Error(`Invalid curriculum.json: ${message}`);
 }
 
+function isIsoDate(value) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+  const parsed = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+}
+
+function listedDocumentRevisions(curriculum) {
+  if (!Array.isArray(curriculum?.groups)) return [];
+  return curriculum.groups.flatMap((group) =>
+    Array.isArray(group?.documents)
+      ? group.documents
+          .map((document) => document?.revision)
+          .filter((revision) => typeof revision === "string")
+      : [],
+  );
+}
+
+function normaliseCurriculumMetadata(curriculum) {
+  if (curriculum?.schemaVersion !== 2) return curriculum;
+  const revisions = listedDocumentRevisions(curriculum).filter(isIsoDate);
+  const legacySourceDate = curriculum.course?.verifiedThrough;
+  return {
+    ...curriculum,
+    schemaVersion: 3,
+    course: {
+      ...curriculum.course,
+      sourceVerifiedThrough: legacySourceDate,
+      contentRevisionThrough:
+        revisions.length > 0 ? [...revisions].sort().at(-1) : undefined,
+      verifiedThrough: legacySourceDate,
+    },
+  };
+}
+
 function validateSourcePath(sourcePath, documentId) {
   assertMetadata(
     typeof sourcePath === "string" && sourcePath.endsWith(".md"),
@@ -73,7 +109,8 @@ async function readCurriculum() {
     throw new Error(`Could not read curriculum.json: ${error.message}`);
   }
 
-  assertMetadata(curriculum?.schemaVersion === 2, "schemaVersion must be 2");
+  curriculum = normaliseCurriculumMetadata(curriculum);
+  assertMetadata(curriculum?.schemaVersion === 3, "schemaVersion must be 2 or 3");
   assertMetadata(curriculum.program?.id, "program.id is required");
   assertMetadata(curriculum.program?.title, "program.title is required");
   assertMetadata(curriculum.course?.id, "course.id is required");
@@ -83,8 +120,20 @@ async function readCurriculum() {
     "course.version must be semantic version text",
   );
   assertMetadata(
-    /^\d{4}-\d{2}-\d{2}$/.test(curriculum.course?.verifiedThrough || ""),
-    "course.verifiedThrough must be an ISO date",
+    isIsoDate(curriculum.course?.sourceVerifiedThrough),
+    "course.sourceVerifiedThrough must be an ISO date",
+  );
+  assertMetadata(
+    isIsoDate(curriculum.course?.contentRevisionThrough),
+    "course.contentRevisionThrough must be an ISO date",
+  );
+  assertMetadata(
+    isIsoDate(curriculum.course?.verifiedThrough),
+    "course.verifiedThrough compatibility alias must be an ISO date",
+  );
+  assertMetadata(
+    curriculum.course.verifiedThrough === curriculum.course.sourceVerifiedThrough,
+    "course.verifiedThrough must equal course.sourceVerifiedThrough",
   );
   assertMetadata(
     Array.isArray(curriculum.course?.coreGroupIds),
@@ -138,7 +187,7 @@ async function readCurriculum() {
         `document "${document.id}" references unknown course "${documentCourseId}"`,
       );
       assertMetadata(
-        /^\d{4}-\d{2}-\d{2}$/.test(document.revision || ""),
+        isIsoDate(document.revision),
         `document "${document.id}" needs an ISO revision date`,
       );
       validateSourcePath(document.sourcePath, document.id);
@@ -179,6 +228,13 @@ async function readCurriculum() {
   for (const coreGroupId of curriculum.course.coreGroupIds) {
     assertMetadata(groupIds.has(coreGroupId), `unknown core group "${coreGroupId}"`);
   }
+
+  const documentRevisions = listedDocumentRevisions(curriculum);
+  const latestDocumentRevision = [...documentRevisions].sort().at(-1);
+  assertMetadata(
+    latestDocumentRevision === curriculum.course.contentRevisionThrough,
+    "course.contentRevisionThrough must equal the latest document revision",
+  );
 
   return curriculum;
 }
@@ -366,17 +422,81 @@ function createIconPng(size, maskable = false) {
   ]);
 }
 
-async function gitCommit() {
-  if (process.env.GITHUB_SHA) return process.env.GITHUB_SHA.slice(0, 12);
+const FULL_GIT_COMMIT = /^[a-f0-9]{40}$/;
+const BUILD_MODES = new Set(["development", "candidate"]);
+
+function selectBuildProvenance({
+  mode,
+  workflowCommit,
+  repositoryCommit,
+  repositoryClean,
+}) {
+  const normalisedMode = String(mode || "").trim().toLowerCase();
+  if (!BUILD_MODES.has(normalisedMode)) {
+    throw new Error(
+      "COURSE1_BUILD_MODE must be either development or candidate.",
+    );
+  }
+  if (normalisedMode === "development") return "working-copy";
+  if (!FULL_GIT_COMMIT.test(workflowCommit || "")) {
+    throw new Error(
+      "Candidate builds require GITHUB_SHA as one full lower-case 40-character commit.",
+    );
+  }
+  if (!FULL_GIT_COMMIT.test(repositoryCommit || "")) {
+    throw new Error(
+      "Candidate builds require a Git checkout with one full 40-character HEAD commit.",
+    );
+  }
+  if (repositoryCommit !== workflowCommit) {
+    throw new Error("Candidate GITHUB_SHA does not match the checked-out HEAD commit.");
+  }
+  if (repositoryClean !== true) {
+    throw new Error(
+      "Candidate builds require a clean source tree; commit or remove every tracked and untracked source change first.",
+    );
+  }
+  return workflowCommit;
+}
+
+function gitRepositoryContext() {
   try {
-    return execFileSync("git", ["rev-parse", "--short=12", "HEAD"], {
+    const repositoryCommit = execFileSync("git", ["rev-parse", "HEAD"], {
       cwd: courseRoot,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "ignore"],
-    }).trim();
+    })
+      .trim()
+      .toLowerCase();
+    const status = execFileSync(
+      "git",
+      ["status", "--porcelain=v1", "--untracked-files=all"],
+      {
+        cwd: courseRoot,
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"],
+      },
+    );
+    return {
+      repositoryCommit,
+      repositoryClean: status.length === 0,
+    };
   } catch {
-    return "working-copy";
+    return {
+      repositoryCommit: "",
+      repositoryClean: false,
+    };
   }
+}
+
+function buildProvenance() {
+  const repository = gitRepositoryContext();
+  return selectBuildProvenance({
+    mode: process.env.COURSE1_BUILD_MODE || "development",
+    workflowCommit: String(process.env.GITHUB_SHA || "").trim().toLowerCase(),
+    repositoryCommit: repository.repositoryCommit,
+    repositoryClean: repository.repositoryClean,
+  });
 }
 
 function createBuildId({
@@ -384,7 +504,11 @@ function createBuildId({
   sourceAssets,
   buildScriptSource,
   basePath,
+  commit,
 }) {
+  if (typeof commit !== "string" || !commit.trim()) {
+    throw new Error("Build commit provenance is required.");
+  }
   const buildInputs = [
     ...sourceAssets,
     ["scripts/build.mjs", buildScriptSource],
@@ -393,19 +517,42 @@ function createBuildId({
     .map(([name, body]) => `${name}\n${body}`)
     .join("\n");
   return createHash("sha256")
-    .update(`${contentHash}\n${assetDigest}\n${basePath}`)
+    .update(
+      `${contentHash}\n${assetDigest}\n${basePath}\ncommit:${commit.trim().toLowerCase()}`,
+    )
     .digest("hex")
     .slice(0, 12);
 }
 
+function generatedProgressAndReaderRules() {
+  const progress = Array.from(
+    { length: 101 },
+    (_, value) => `.progress-pct-${value}{--progress:${value}}`,
+  );
+  const reader = Array.from(
+    { length: 36 },
+    (_, index) => {
+      const value = index + 90;
+      return `.reader-scale-${value}{--reader-scale:${value / 100}}`;
+    },
+  );
+  return `\n/* Generated fixed-value classes keep the strict Content Security Policy free of inline styles. */\n${[
+    ...progress,
+    ...reader,
+  ].join("\n")}\n`;
+}
+
 async function build() {
   const basePath = normaliseBasePath(process.env.BASE_PATH || "/");
+  const commit = buildProvenance();
   const bundle = await createCourseBundle();
   const sourceAssetNames = [
     "index.html",
     "styles.css",
+    "bootstrap.js",
     "app.js",
     "markdown.js",
+    "state.js",
     "sw.js",
     "favicon.svg",
   ];
@@ -418,23 +565,29 @@ async function build() {
     sourceAssets,
     buildScriptSource,
     basePath,
+    commit,
   });
-  const commit = await gitCommit();
   const replacements = new Map([
     ["__BASE_PATH__", basePath],
     ["__BUILD_ID__", buildId],
     ["__COURSE_VERSION__", bundle.course.version],
+    ["__SOURCE_VERIFIED_THROUGH__", bundle.course.sourceVerifiedThrough],
+    ["__CONTENT_REVISION_THROUGH__", bundle.course.contentRevisionThrough],
     ["__VERIFIED_THROUGH__", bundle.course.verifiedThrough],
+    ["__CONTENT_HASH__", bundle.course.contentHash],
+    ["__BUILD_PROVENANCE__", commit],
   ]);
 
   await rm(outputRoot, { recursive: true, force: true });
   await mkdir(join(outputRoot, "icons"), { recursive: true });
 
   for (const [name, source] of sourceAssets) {
+    if (name === "sw.js") continue;
     let output = source;
     for (const [placeholder, value] of replacements) {
       output = output.replaceAll(placeholder, value);
     }
+    if (name === "styles.css") output += generatedProgressAndReaderRules();
     await writeFile(join(outputRoot, name), output, "utf8");
   }
 
@@ -483,6 +636,8 @@ async function build() {
         programId: bundle.program.id,
         courseId: bundle.course.id,
         courseVersion: bundle.course.version,
+        sourceVerifiedThrough: bundle.course.sourceVerifiedThrough,
+        contentRevisionThrough: bundle.course.contentRevisionThrough,
         verifiedThrough: bundle.course.verifiedThrough,
         contentHash: bundle.course.contentHash,
         commit,
@@ -499,6 +654,70 @@ async function build() {
     createIconPng(512, true),
   );
   await writeFile(join(outputRoot, "icons", "apple-touch-icon.png"), createIconPng(180));
+  const precacheFiles = [
+    "index.html",
+    "bootstrap.js",
+    "app.js",
+    "markdown.js",
+    "state.js",
+    "styles.css",
+    "favicon.svg",
+    "course-content.json",
+    "manifest.webmanifest",
+    "version.json",
+    "icons/icon-192.png",
+    "icons/icon-512.png",
+    "icons/icon-maskable-512.png",
+    "icons/apple-touch-icon.png",
+  ];
+  const contentTypes = {
+    ".css": "text/css",
+    ".html": "text/html",
+    ".js": "text/javascript",
+    ".json": "application/json",
+    ".png": "image/png",
+    ".svg": "image/svg+xml",
+    ".webmanifest": "application/manifest+json",
+  };
+  const assetEntries = {};
+  for (const relativePath of precacheFiles) {
+    const bytes = await readFile(join(outputRoot, ...relativePath.split("/")));
+    const extension = relativePath.slice(relativePath.lastIndexOf("."));
+    assetEntries[relativePath] = {
+      sha256: createHash("sha256").update(bytes).digest("hex"),
+      contentType: contentTypes[extension],
+    };
+  }
+  const assetManifestText = `${JSON.stringify(
+    {
+      schemaVersion: 1,
+      buildId,
+      contentHash: bundle.course.contentHash,
+      provenance: {
+        commit,
+      },
+      assets: assetEntries,
+    },
+    null,
+    2,
+  )}\n`;
+  await writeFile(
+    join(outputRoot, "asset-manifest.json"),
+    assetManifestText,
+    "utf8",
+  );
+  const assetManifestSha256 = createHash("sha256")
+    .update(assetManifestText)
+    .digest("hex");
+  let serviceWorkerOutput = sourceAssets.find(([name]) => name === "sw.js")[1];
+  for (const [placeholder, value] of replacements) {
+    serviceWorkerOutput = serviceWorkerOutput.replaceAll(placeholder, value);
+  }
+  serviceWorkerOutput = serviceWorkerOutput.replaceAll(
+    "__ASSET_MANIFEST_SHA256__",
+    assetManifestSha256,
+  );
+  await writeFile(join(outputRoot, "sw.js"), serviceWorkerOutput, "utf8");
   await writeFile(join(outputRoot, ".nojekyll"), "", "utf8");
 
   const summary = {
@@ -521,7 +740,9 @@ export {
   createCourseBundle,
   createBuildId,
   createIconPng,
+  normaliseCurriculumMetadata,
   normaliseBasePath,
+  selectBuildProvenance,
 };
 
 if (resolve(process.argv[1] || "") === fileURLToPath(import.meta.url)) {

@@ -1,0 +1,61 @@
+{
+  "schemaVersion": "course1-learning-evidence-v1",
+  "evidenceId": "C1-LV-EV-TEMPLATE-000",
+  "requirementId": "C1-LV-001",
+  "evidenceClass": "AUTOMATED_ARTIFACT",
+  "candidate": {
+    "commit": "0000000000000000000000000000000000000000",
+    "courseVersion": "0.0.0",
+    "practiceRevision": 1,
+    "buildId": "000000000000",
+    "contentHash": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "recordedAt": "2000-01-01T00:00:00Z",
+  "environment": {
+    "operatingSystem": "REPLACE WITH OBSERVED OPERATING SYSTEM AND VERSION",
+    "shellOrBrowser": "REPLACE WITH OBSERVED SHELL, BROWSER, OR ASSISTIVE TECHNOLOGY AND VERSION",
+    "locale": "REPLACE WITH OBSERVED LOCALE",
+    "timezone": "REPLACE WITH OBSERVED TIMEZONE",
+    "context": "REPLACE WITH FRESH, INSTALLED, ORDINARY-BROWSER, OR OTHER EXACT CONTEXT"
+  },
+  "people": [
+    {
+      "participantCode": "REPLACE-CODE",
+      "role": "REPLACE WITH LEARNER, PARTICIPANT, ASSESSOR, REVIEWER, OR AUTOMATED-RECORD OWNER",
+      "relevantPriorExperience": "REPLACE; use NOT APPLICABLE only when genuinely not applicable",
+      "conflictOrAssistance": "REPLACE WITH ALL HELP, CONFLICTS, OR NONE OBSERVED"
+    }
+  ],
+  "task": {
+    "methodId": "C1-LVM-001",
+    "predefinedTask": "REPLACE WITH THE TASK FIXED BEFORE EXECUTION",
+    "passCriteria": "REPLACE WITH THE PASS CRITERIA FIXED BEFORE EXECUTION"
+  },
+  "observations": {
+    "result": "FAIL",
+    "help": "REPLACE WITH HELP GIVEN OR NONE",
+    "deviations": "REPLACE WITH DEVIATIONS OR NONE",
+    "defects": "REPLACE WITH DEFECTS OR NONE",
+    "retest": "REPLACE WITH RETEST RESULT OR NOT YET"
+  },
+  "privacy": {
+    "syntheticOnly": true,
+    "purposeAndExpectedTimeStated": false,
+    "voluntaryAndRightToStopStated": false,
+    "observationScopeStated": false,
+    "participationConsent": "NOT APPLICABLE",
+    "recordingConsent": "NOT PROPOSED",
+    "accessStatement": "REPLACE WITH WHO MAY ACCESS THE STRUCTURED RECORD",
+    "retentionDeletionDate": "NOT APPLICABLE",
+    "nonEvaluationDisclaimerStated": false,
+    "dataMinimisationStatement": "REPLACE WITH THE SYNTHETIC-ONLY AND MINIMISATION STATEMENT",
+    "prohibitedDataFound": false
+  },
+  "limitation": "REPLACE WITH WHAT THIS EVIDENCE DOES NOT PROVE",
+  "decision": {
+    "status": "FAIL",
+    "reviewerCode": "REPLACE-REVIEWER",
+    "reviewerRole": "REPLACE WITH REVIEWER ROLE",
+    "reason": "TEMPLATE ONLY — REPLACE EVERY VALUE, VALIDATE, HASH, AND BIND TO ONE IMMUTABLE CANDIDATE"
+  }
+}

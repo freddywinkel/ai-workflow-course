@@ -6,7 +6,9 @@
 - Workflow/intended-purpose version: low-stock review list 1.0
 - Adoption owner: fictional operations lead
 
-User Acceptance Testing (UAT) means trying realistic work scenarios.
+User Acceptance Testing (UAT) means another consenting intended user tries
+realistic work scenarios. The learner-only example is a role-simulated
+operational acceptance rehearsal and remains `EXTERNAL UAT NOT VERIFIED`.
 Artificial intelligence (AI) means the optional generated assistance whose
 limitations must still be taught even when the selected worked solution uses
 no AI.
@@ -16,7 +18,7 @@ no AI.
 | Group | Current work | New/changed work | Benefit to test | Burden/concern | Involvement before decision |
 |---|---|---|---|---|---|
 | inventory coordinator | manually filter every row | run checked list, trace issues, request review | less repeated scanning | more state/evidence checks | performs synthetic tasks |
-| operations lead | reviews manually prepared list | reviews exact source-linked draft | clearer evidence | explicit approval responsibility | approves rules and UAT |
+| operations lead | reviews manually prepared list | reviews exact source-linked draft | clearer evidence | explicit approval responsibility | role-simulates rule approval and review |
 | support role | helps with saved spreadsheet | owns tested version and restore | clearer recovery | new update duty | rehearses restore |
 
 ## Required behaviours
@@ -45,7 +47,7 @@ manual fallback; report a defect. Confidentiality, safe data handling,
 | When | Audience | Message/decision | Channel | Owner | Feedback route |
 |---|---|---|---|---|---|
 | Before design | coordinator/lead | problem, purpose, exclusions | synthetic workshop | lead | question log |
-| Before UAT | tester roles | release, cases, stop route | written briefing | UAT lead | defect log |
+| Before role-simulated rehearsal | learner acting through tester roles | release, cases, stop route | written briefing | rehearsal lead | defect log |
 | Before decision | all roles | observed results and limits | review | lead | decision comments |
 | After decision | support/operator | accepted scope or rework | handover | adoption owner | known-issue log |
 | At decision | owner | synthetic-only decision | record | operations lead | dated change request |
@@ -66,7 +68,7 @@ questions become a documented instruction or design change followed by retest.
 | eligible work routed correctly | correct state / test cases | 0% | 100% frozen cases | each change | process owner |
 | workaround/rejection rate | recorded manual/reject cases | unknown | observe, no target claim | each run | reviewer |
 | unresolved exception age | time until owner decision | unknown | record only | each run | operations lead |
-| usability | tasks without hidden help | 0/8 | at least 7/8 | UAT | adoption owner |
+| usability | tasks without hidden help | 0/8 | at least 7/8 | rehearsal | adoption owner |
 | unsafe-action rate | unauthorised effects / attempts | 0 | 0 | every test | process owner |
 
 ## Readiness

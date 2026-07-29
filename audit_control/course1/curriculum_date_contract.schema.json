@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/course1/curriculum-date-contract.schema.json",
+  "title": "Course 1 curriculum date semantics contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "courseId",
+    "fields"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "course1-curriculum-date-contract-v1"
+    },
+    "courseId": {
+      "const": "course-1-controlled-ai-workflow-foundations"
+    },
+    "fields": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceVerifiedThrough",
+        "contentRevisionThrough",
+        "verifiedThrough"
+      ],
+      "properties": {
+        "sourceVerifiedThrough": {
+          "$ref": "#/$defs/field"
+        },
+        "contentRevisionThrough": {
+          "$ref": "#/$defs/field"
+        },
+        "verifiedThrough": {
+          "$ref": "#/$defs/field"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "field": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "meaning",
+        "owner",
+        "evidenceSource",
+        "consumers"
+      ],
+      "properties": {
+        "meaning": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidenceSource": {
+          "type": "string",
+          "minLength": 1
+        },
+        "consumers": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}

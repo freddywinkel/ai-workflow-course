@@ -29,6 +29,20 @@ after the readiness recreation meets every pass criterion. Do not skip the
 foundations because an AI assistant can generate code. The professional skill
 is being able to explain, test, stop, and repair what was generated.
 
+## Study plan — two blocks of no more than 60 minutes
+
+**Time label: AUTHOR ESTIMATE — NOT BEGINNER MEASURED.** The published
+1–2-hour range is a planning estimate, not measured novice completion time.
+Use each row as a separate study segment. Stop when the row is complete or
+when 60 focused minutes have elapsed, whichever happens first. Record the last
+completed heading using synthetic wording, close the page, and take a break.
+Resume from that heading; never combine blocks to catch up.
+
+| Block | Maximum | Work and safe stopping point |
+|---:|---:|---|
+| 1 | 45 minutes | Read the practical, assessment, learning, health, employment, and Foundation gates. Stop after **Foundation gate**. |
+| 2 | 60 minutes | Complete the required readiness follow-along, different recreation, Codex check, and pass criteria. Stop after recording `READY` or `NOT READY` honestly. |
+
 ## Practical prerequisites
 
 Before starting, confirm:
@@ -59,6 +73,40 @@ interface (API) key, employer login, Node.js, and n8n are **not** prerequisites.
 A `Restricted` PowerShell execution policy is also acceptable: Course 1 calls
 the virtual environment's Python file directly and does not require you to
 activate it or weaken that policy.
+
+## Plan for the final human assessment
+
+You do not need an assessor to start or to complete the practice. The official
+status `COURSE 1 COMPETENCE: PASS`, however, requires at least two other
+eligible adults:
+
+- both independently complete the assessor-calibration cases;
+- one calibrated assessor reviews and scores the artifacts; and
+- one independent assessor hears the live oral assessment.
+
+The same two people may divide or share the artifact and oral roles. They must
+consent, must not create, edit, or correct your evidence, must be able to read
+the rubric and calibration cases, and must declare conflicts or help. The oral
+assessor must hear your answers live. Use synthetic course material only.
+
+Before any assessment or observed trial, state its purpose and expected time,
+that participation is voluntary and may stop at any time, exactly what will be
+observed, who can access the structured result, and the retention/deletion
+date. State that this is not employment, medical, or professional evaluation.
+Use participant/reviewer codes and collect no unnecessary names, employer
+details, health information, credentials, or client information. Screen,
+audio, video, or quotation recording is optional and requires separate
+explicit consent. No recording is needed for Course 1 assessment.
+
+Author planning estimate: reserve 30–45 minutes for the second calibrator and
+2–4 hours for the primary calibration, artifact review, and oral assessment.
+These estimates have not yet been measured with real beginner cohorts.
+
+- [ ] I understand that I can start alone.
+- [ ] I understand that Codex and self-reflection cannot award the competence
+      pass.
+- [ ] I expect to ask two eligible adults later, or I will honestly keep
+      `ASSESSMENT PENDING` while continuing to use the practice evidence.
 
 The exact storage, internet, write-access, browser, and source-folder checks are
 in [Windows Setup](SETUP_WINDOWS.md). Complete that preflight before

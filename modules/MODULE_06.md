@@ -71,7 +71,10 @@ needs_review
 - **Comma-separated values (CSV)** is a plain-text table.
 - **JavaScript Object Notation (JSON)** is structured plain text.
 - **User Acceptance Testing (UAT)** means intended users test whether a
-  workflow supports its intended task. Full UAT is taught in Module 9.
+  workflow supports its intended task. Module 9 teaches how to prepare a
+  candidate UAT script and perform a clearly labelled role-simulated
+  operational acceptance rehearsal. Real UAT requires another consenting
+  intended user and remains unverified during solo Course 1 practice.
 
 ## Official readings
 
@@ -539,6 +542,33 @@ Safe stopping points are after the worked export, after the isolated failure
 tests, after Recreation 2, and after Recreation 3. On return, rerun this start
 block and continue at the next unfinished stage. Do not replay a completed
 decision or revision merely to restore variables.
+
+Suggested sessions:
+
+1. trace, decide, and export the complete worked review package;
+2. run and explain every isolated non-approval and tamper failure;
+3. recreate the edit-to-new-revision-to-approval path;
+4. recreate reject/expire/external-action controls, then complete the
+   read-only check and correction gate.
+
+### How to use this long module
+
+Work in focused blocks of at most 60 minutes:
+
+- **UNDERSTAND:** explain what the reviewer sees, what exact revision is being
+  decided, why editing invalidates approval, and why no external action exists;
+- **RUN HELPER:** execute the protected copy, locator, hash, lock, and
+  preservation commands exactly. You need to understand their purpose and
+  stop conditions, not memorise the plumbing;
+- **DECIDE:** perform approve, edit, reject, and expire choices yourself;
+- **GATE:** check state, decision binding, audit evidence, local exports, and
+  zero external actions before continuing.
+
+Mini-gate A follows the worked export: trace one exported row to source,
+issue, summary, review, and approval. Mini-gate B follows the isolated failure
+tests: explain why each failure is safer than continuing. Mini-gate C follows
+Recreation 3: explain how revision 2 replaced rather than silently reused
+revision 1 approval.
 
 ## Follow along — I show you exactly how
 
@@ -1338,12 +1368,29 @@ $learnerCliHash -eq $courseCliHash
 Expected: `True` and `True`. If either is false, do not overwrite anything.
 Ask Codex to inspect the difference.
 
-Run all tests with the exact project Python:
+Read the maintained named-test manifest, then run all tests with the exact
+project Python. The manifest is the course's controlled list of expected test
+methods. Reading its length avoids a lesson number becoming stale when an
+intentional course revision adds or removes a named test.
 
 `Push-Location` temporarily moves into the course folder. `Pop-Location`
 returns to the learner project even when the paths contain spaces.
 
 ```powershell
+$testManifestPath = Join-Path $courseRoot 'course1_capstone\tests\test_manifest.json'
+$testManifest = Get-Content -LiteralPath $testManifestPath -Raw |
+    ConvertFrom-Json
+$declaredCourseOneTests = @($testManifest.tests)
+if (
+    $testManifest.schema_version -cne 'course1-unittest-manifest-v1' -or
+    $declaredCourseOneTests.Count -lt 1 -or
+    @($declaredCourseOneTests | Sort-Object -Unique).Count -ne
+        $declaredCourseOneTests.Count
+) {
+    throw 'STOP: the Course 1 named-test manifest is missing, empty, duplicated, or unsupported.'
+}
+$expectedCourseOneTests = $declaredCourseOneTests.Count
+$expectedCourseOneTests
 Push-Location -LiteralPath $courseRoot
 & $pythonExe -m unittest discover -s course1_capstone\tests -v
 $testExitCode = $LASTEXITCODE
@@ -1351,9 +1398,11 @@ Pop-Location
 $testExitCode
 ```
 
-**Expected result:** every test says `ok`, the final result is `OK`, and exit
-code is `0`. This course revision must say `Ran 61 tests`; a different count is
-a safe stop until the course owner intentionally updates this stated contract.
+**Expected result:** PowerShell first shows the non-zero manifest-declared
+test total. Every test then says `ok`, the final result is `OK`, exit code is
+`0`, and the `Ran ... tests` total equals that displayed manifest total. A
+different count is a safe stop until the course owner repairs the manifest or
+suite intentionally; do not edit the expected number yourself.
 The suite covers:
 
 - frozen and recreated accuracy;
@@ -1384,7 +1433,19 @@ copy outside the repository, and saves only a structured status, test count,
 result line, and exit code as course evidence.
 
 ```powershell
-$expectedCourseOneTests = 61
+$testManifestPath = Join-Path $courseRoot 'course1_capstone\tests\test_manifest.json'
+$testManifest = Get-Content -LiteralPath $testManifestPath -Raw |
+    ConvertFrom-Json
+$declaredCourseOneTests = @($testManifest.tests)
+if (
+    $testManifest.schema_version -cne 'course1-unittest-manifest-v1' -or
+    $declaredCourseOneTests.Count -lt 1 -or
+    @($declaredCourseOneTests | Sort-Object -Unique).Count -ne
+        $declaredCourseOneTests.Count
+) {
+    throw 'STOP: the Course 1 named-test manifest is missing, empty, duplicated, or unsupported.'
+}
+$expectedCourseOneTests = $declaredCourseOneTests.Count
 $attemptNumber = 1
 do {
     $acceptancePath = Join-Path $moduleFolder ('automated_acceptance_attempt_{0:D2}.json' -f $attemptNumber)
@@ -1477,9 +1538,10 @@ control safe-stop evidence;
 6. reject and explicit expire blocking export;
 7. canonical audit events, evaluation, manual fallback, and idempotent retry;
 8. every numbered path-neutral automated acceptance record, with the
-   highest-numbered attempt showing status PASS, exactly 61 of 61 expected
-   tests, result OK, and exit code 0; treat the learner-created record as
-   evidence of the run, not independent proof that the suite executed;
+   highest-numbered attempt showing status PASS, the same non-zero
+   manifest-declared value for `tests_run` and `expected_tests`, result OK,
+   and exit code 0; treat the learner-created record as evidence of the run,
+   not independent proof that the suite executed;
 9. whether the authorised artifacts are consistent with synthetic-only work
    and show any configured network call, provider key, paid service, or
    external action; say explicitly that non-detection is not proof of absence;
@@ -1504,7 +1566,8 @@ Remain read-only. Do not provide replacement files.
 - [ ] Worked export has 13 records; recreated revision 2 export has 5.
 - [ ] Audit events contain every required field and claim zero external actions.
 - [ ] Manual fallback is complete and role-owned.
-- [ ] Exactly 61 automated tests pass with result `OK` and exit code 0.
+- [ ] The manifest-declared automated test total passes with the same
+      `tests_run` and `expected_tests` values, result `OK`, and exit code 0.
 - [ ] All data is synthetic and secret-free.
 - [ ] Codex returns `PASS` in read-only mode.
 
@@ -1572,6 +1635,5 @@ introduced.
 
 ## Estimated time
 
-8-12 hours, best completed as three to five sessions.
-
-Suggested sessions: three to five sessions of about 2-3 hours.
+8–12 hours, best completed as 8–14 focused study blocks of 45–60 minutes.
+This is an **AUTHOR ESTIMATE — NOT BEGINNER MEASURED**.

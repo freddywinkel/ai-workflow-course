@@ -1,8 +1,9 @@
 schema_version: 2
 course_id: course-1-controlled-ai-workflow-foundations
-course_version: 2.5.0
-practice_revision: 4
+course_version: 2.6.0
+practice_revision: 5
 last_verified: "2026-07-28"
+content_revision_through: "2026-07-29"
 verification_timezone: Europe/Amsterdam
 purpose: private synthetic-data learning demonstration
 
@@ -27,7 +28,7 @@ required:
     role: deterministic rules, reports, and tests
     source: https://docs.python.org/3/using/windows.html
   pytest:
-    version_policy: "9.0.2"
+    version_policy: "9.1.1"
     role: local regression tests
     source: https://docs.pytest.org/
   jsonschema:

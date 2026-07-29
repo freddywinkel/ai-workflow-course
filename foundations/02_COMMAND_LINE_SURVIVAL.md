@@ -10,6 +10,25 @@ You will open PowerShell, identify the **prompt** that shows it is ready, move t
 one safe practice folder, run read and write commands one at a time, recognise
 an **error** message that says an action failed, and return to a ready prompt.
 
+## Study plan — seven blocks of no more than 60 minutes
+
+**Time label: AUTHOR ESTIMATE — NOT BEGINNER MEASURED.** The published
+6–7-hour range is a planning estimate, not measured novice completion time.
+Use each row as a separate study segment. Stop when the row is complete or
+when 60 focused minutes have elapsed, whichever happens first. Record the last
+completed part using synthetic wording, close PowerShell, and take a break.
+Use **Start or resume safely** at the next block; never combine blocks.
+
+| Block | Maximum | Work and safe stopping point |
+|---:|---:|---|
+| 1 | 60 minutes | Learn the required words and safety boundary. Stop before **Follow along**. |
+| 2 | 60 minutes | Open PowerShell, locate Documents, and complete Part A. Stop at a ready prompt. |
+| 3 | 60 minutes | Complete Part B and verify the selected lesson folder. |
+| 4 | 60 minutes | Apply the resume/retry decision and complete Part C. Stop after reading the synthetic file. |
+| 5 | 60 minutes | Complete Part D, compare the exact expected result, and troubleshoot only the named symptom. |
+| 6 | 60 minutes | Recreate the task in the different required folder and explain each command before running it. |
+| 7 | 60 minutes | Ask Codex for the bounded read-only check, correct only observed gaps, and apply every pass criterion. |
+
 ## Words you need first
 
 - A **terminal** is the window that hosts the shell.

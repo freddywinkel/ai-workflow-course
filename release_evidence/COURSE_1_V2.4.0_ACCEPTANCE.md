@@ -1,5 +1,11 @@
 # Course 1 version 2.4.0 acceptance record
 
+> **Historical record — `SUPERSEDED` for current-status purposes.** This file
+> preserves the decision and evidence available for version 2.4.0. It is not
+> the current Course 1 decision. Read
+> [`COURSE_1_AUDIT_STATUS_AND_REPAIR_LEDGER.md`](../COURSE_1_AUDIT_STATUS_AND_REPAIR_LEDGER.md)
+> before using any result below.
+
 - Verified: 2026-07-28
 - Reviewer: Codex, with two independent read-only acceptance passes
 - Decision: PASS — released and verified at the public PWA scope

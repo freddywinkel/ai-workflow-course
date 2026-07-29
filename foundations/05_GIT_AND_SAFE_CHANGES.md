@@ -9,6 +9,25 @@ You will create a local Git repository, inspect changes, make small commits, and
 return to a working state with no uncommitted changes, without deleting or
 publishing anything.
 
+## Study plan — six blocks of no more than 60 minutes
+
+**Time label: AUTHOR ESTIMATE — NOT BEGINNER MEASURED.** The published
+5–6-hour range is a planning estimate, not measured novice completion time.
+Use each row as a separate study segment. Stop when the row is complete or
+when 60 focused minutes have elapsed, whichever happens first. Record the last
+completed part using synthetic wording, close the tools, and take a break.
+Run **Start or resume safely** in every new PowerShell session; never combine
+blocks.
+
+| Block | Maximum | Work and safe stopping point |
+|---:|---:|---|
+| 1 | 60 minutes | Learn the Git words and safety boundary. Stop before **Follow along**. |
+| 2 | 60 minutes | Run the start/resume block, decide the exact attempt state, and complete Part A. |
+| 3 | 60 minutes | Complete Part B using only the fictional local identity. |
+| 4 | 60 minutes | Complete Part C and stop after inspecting the first local commit. |
+| 5 | 60 minutes | Complete Part D, compare the exact result, and troubleshoot only observed mismatches. |
+| 6 | 60 minutes | Recreate the local history with different synthetic content, ask Codex for the bounded check, and apply every pass criterion. |
+
 ## Words you need first
 
 - A **repository** is a project folder tracked by Git.
@@ -491,6 +510,23 @@ In the newly created `DECISIONS.md`:
 This uses a different file, record type, and commit message from the guided
 example.
 
+11. prove that this exercise has no configured remote:
+
+    ```powershell
+    $remoteNames = @(git remote)
+    if ($LASTEXITCODE -ne 0) {
+        throw "STOP: Git could not inspect configured remotes."
+    }
+    if ($remoteNames.Count -ne 0) {
+        throw "STOP: this local-only practice repository has a configured remote. Do not push, fetch, or delete it; preserve the attempt and ask for read-only diagnosis."
+    }
+    "PASS: no Git remote is configured"
+    ```
+
+    Expected output: `PASS: no Git remote is configured`. “I did not push” is
+    not enough evidence; the empty `git remote` result proves the stated local
+    practice condition.
+
 If the recreation commit reports nothing to commit or otherwise fails, leave
 the attempt unchanged and use a fresh retry. Do not create another file or
 invent a different commit merely to make the count reach three.
@@ -507,7 +543,7 @@ and no other location:
 
 Do not create, edit, move, rename, stage, commit, restore, reset, clean, delete,
 push, or change Git configuration. Run only read-only inspection commands such
-as git status, git diff, and git log.
+as git status, git diff, git log, and git remote.
 
 Report PASS or NOT YET for each criterion:
 1. The folder is a local Git repository.
@@ -515,7 +551,8 @@ Report PASS or NOT YET for each criterion:
 3. DECISIONS.md contains DEC-204 and Outcome: test again.
 4. The three expected commit messages exist in the correct order.
 5. git status --short is empty.
-6. No remote push or credential is required for this exercise.
+6. git remote prints no name and git remote -v prints no entry; the repository
+   has no configured remote.
 
 Explain NOT YET in beginner language and make no changes.
 I attest that I created this attempt with synthetic course data only and did
@@ -536,7 +573,9 @@ that an inspection proves the folder is free of secrets or real data.
 - [ ] I inspected status and the staged diff before every commit.
 - [ ] The repository contains exactly the three intended local commits.
 - [ ] `git status --short` prints nothing at the end.
-- [ ] I did not use a destructive Git command or remote. I attest that all
+- [ ] `git remote` prints nothing, so this practice repository is demonstrably
+      local-only.
+- [ ] I did not use a destructive Git command. I attest that all
       information I entered was synthetic and that I did not intentionally use
       a credential or real business data.
 - [ ] Codex reported PASS for every read-only criterion, or I corrected each

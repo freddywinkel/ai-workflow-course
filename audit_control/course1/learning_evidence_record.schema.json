@@ -1,0 +1,346 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://course1.invalid/schemas/learning-evidence-record-v1.json",
+  "title": "Course 1 candidate-bound learning evidence record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "evidenceId",
+    "requirementId",
+    "evidenceClass",
+    "candidate",
+    "recordedAt",
+    "environment",
+    "people",
+    "task",
+    "observations",
+    "privacy",
+    "limitation",
+    "decision"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "course1-learning-evidence-v1"
+    },
+    "evidenceId": {
+      "type": "string",
+      "pattern": "^C1-LV-EV-[A-Z0-9-]+-[0-9]{3}$"
+    },
+    "requirementId": {
+      "$ref": "#/$defs/requirementId"
+    },
+    "evidenceClass": {
+      "$ref": "#/$defs/evidenceClass"
+    },
+    "candidate": {
+      "$ref": "#/$defs/candidate"
+    },
+    "recordedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "environment": {
+      "$ref": "#/$defs/environment"
+    },
+    "people": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/person"
+      }
+    },
+    "task": {
+      "$ref": "#/$defs/task"
+    },
+    "observations": {
+      "$ref": "#/$defs/observations"
+    },
+    "privacy": {
+      "$ref": "#/$defs/privacy"
+    },
+    "limitation": {
+      "$ref": "#/$defs/nonEmpty"
+    },
+    "decision": {
+      "$ref": "#/$defs/decision"
+    }
+  },
+  "$defs": {
+    "nonEmpty": {
+      "type": "string",
+      "minLength": 1
+    },
+    "requirementId": {
+      "enum": [
+        "C1-LV-001",
+        "C1-LV-002",
+        "C1-LV-003",
+        "C1-LV-004",
+        "C1-LV-005",
+        "C1-LV-006",
+        "C1-LV-007",
+        "C1-LV-008",
+        "C1-LV-009",
+        "C1-LV-010",
+        "C1-LV-011",
+        "C1-LV-012",
+        "C1-LV-013",
+        "C1-LV-014",
+        "C1-LV-015",
+        "C1-LV-016",
+        "C1-LV-017"
+      ]
+    },
+    "evidenceClass": {
+      "enum": [
+        "AUTOMATED_ARTIFACT",
+        "LEARNER_SELF_REFLECTION",
+        "INDEPENDENT_ARTIFACT_ASSESSMENT",
+        "INDEPENDENT_ORAL_ASSESSMENT",
+        "ROLE_SIMULATED_ACCEPTANCE_REHEARSAL",
+        "REAL_SYNTHETIC_UAT",
+        "LITERAL_BEGINNER_TRIAL",
+        "DELAYED_RETENTION",
+        "UNSEEN_TRANSFER",
+        "ACCESSIBILITY_REVIEW"
+      ]
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "commit",
+        "courseVersion",
+        "practiceRevision",
+        "buildId",
+        "contentHash"
+      ],
+      "properties": {
+        "commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "courseVersion": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "practiceRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "buildId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{12}$"
+        },
+        "contentHash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "operatingSystem",
+        "shellOrBrowser",
+        "locale",
+        "timezone",
+        "context"
+      ],
+      "properties": {
+        "operatingSystem": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "shellOrBrowser": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "locale": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "timezone": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "context": {
+          "$ref": "#/$defs/nonEmpty"
+        }
+      }
+    },
+    "person": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "participantCode",
+        "role",
+        "relevantPriorExperience",
+        "conflictOrAssistance"
+      ],
+      "properties": {
+        "participantCode": {
+          "type": "string",
+          "pattern": "^[A-Z0-9-]{3,40}$"
+        },
+        "role": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "relevantPriorExperience": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "conflictOrAssistance": {
+          "$ref": "#/$defs/nonEmpty"
+        }
+      }
+    },
+    "task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "methodId",
+        "predefinedTask",
+        "passCriteria"
+      ],
+      "properties": {
+        "methodId": {
+          "type": "string",
+          "pattern": "^C1-LVM-[0-9]{3}$"
+        },
+        "predefinedTask": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "passCriteria": {
+          "$ref": "#/$defs/nonEmpty"
+        }
+      }
+    },
+    "observations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "result",
+        "help",
+        "deviations",
+        "defects",
+        "retest"
+      ],
+      "properties": {
+        "result": {
+          "enum": [
+            "PASS",
+            "FAIL"
+          ]
+        },
+        "help": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "deviations": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "defects": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "retest": {
+          "$ref": "#/$defs/nonEmpty"
+        }
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "syntheticOnly",
+        "purposeAndExpectedTimeStated",
+        "voluntaryAndRightToStopStated",
+        "observationScopeStated",
+        "participationConsent",
+        "recordingConsent",
+        "accessStatement",
+        "retentionDeletionDate",
+        "nonEvaluationDisclaimerStated",
+        "dataMinimisationStatement",
+        "prohibitedDataFound"
+      ],
+      "properties": {
+        "syntheticOnly": {
+          "type": "boolean"
+        },
+        "purposeAndExpectedTimeStated": {
+          "type": "boolean"
+        },
+        "voluntaryAndRightToStopStated": {
+          "type": "boolean"
+        },
+        "observationScopeStated": {
+          "type": "boolean"
+        },
+        "participationConsent": {
+          "enum": [
+            "YES",
+            "NO",
+            "NOT APPLICABLE"
+          ]
+        },
+        "recordingConsent": {
+          "enum": [
+            "NOT PROPOSED",
+            "DECLINED",
+            "GRANTED",
+            "NOT APPLICABLE"
+          ]
+        },
+        "accessStatement": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "retentionDeletionDate": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "const": "NOT APPLICABLE"
+            }
+          ]
+        },
+        "nonEvaluationDisclaimerStated": {
+          "type": "boolean"
+        },
+        "dataMinimisationStatement": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "prohibitedDataFound": {
+          "type": "boolean"
+        }
+      }
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "reviewerCode",
+        "reviewerRole",
+        "reason"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "PASS",
+            "FAIL"
+          ]
+        },
+        "reviewerCode": {
+          "type": "string",
+          "pattern": "^[A-Z0-9-]{3,40}$"
+        },
+        "reviewerRole": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "reason": {
+          "$ref": "#/$defs/nonEmpty"
+        }
+      }
+    }
+  }
+}

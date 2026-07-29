@@ -14,6 +14,25 @@ You will document a minimal fictional workflow architecture, separate source
 input from work state and audit events, assign ownership, and explain why the
 simplest maintainable tool is the correct starting point.
 
+## Study plan — six blocks of no more than 60 minutes
+
+**Time label: AUTHOR ESTIMATE — NOT BEGINNER MEASURED.** The published
+5–6-hour range is a planning estimate, not measured novice completion time.
+Use each row as a separate study segment. Stop when the row is complete or
+when 60 focused minutes have elapsed, whichever happens first. Record the last
+completed part using synthetic wording, save and close files, and take a break.
+Run **Start or resume safely** in every new PowerShell session; never combine
+blocks.
+
+| Block | Maximum | Work and safe stopping point |
+|---:|---:|---|
+| 1 | 60 minutes | Learn the architecture/tool words, four data categories, tool-selection rule, and safety boundary. |
+| 2 | 60 minutes | Run the start/resume block and make the explicit resume/retry decision. |
+| 3 | 60 minutes | Complete Part A and verify source input, workflow state, and audit events remain separate. |
+| 4 | 60 minutes | Complete Part B and stop after architecture, tool decision, ownership, and boundaries are explicit. |
+| 5 | 60 minutes | Complete Part C, compare the exact result, and troubleshoot only observed mismatches. |
+| 6 | 60 minutes | Recreate the architecture with different synthetic content, ask Codex for the bounded check, and apply every pass criterion. |
+
 ## Words you need first
 
 - A **trigger** is the event, schedule, or manual action that starts a workflow.

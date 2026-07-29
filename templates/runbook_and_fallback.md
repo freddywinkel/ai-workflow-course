@@ -28,7 +28,7 @@ What remains available:
 Verification:  
 Re-enable authority/criteria:  
 
-## Manual fallback SOP
+## Manual fallback Standard Operating Procedure (SOP)
 
 1. Stop new model/action calls.
 2. Preserve and re-hash originals.
@@ -48,7 +48,7 @@ Object storage:
 n8n volume/workflows/encryption key:  
 Git/prompts/schemas:  
 Restore order and hash verification:  
-RTO/RPO observed:  
+Recovery Time Objective (RTO) / Recovery Point Objective (RPO) observed:
 
 ## Incident
 

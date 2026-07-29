@@ -5,9 +5,10 @@
 You will calculate rule quality, inspect summary support, compare active time,
 model cost and capacity honestly, record usability evidence, and make a
 bounded **provisional pre-User Acceptance Testing (pre-UAT) recommendation**
-before claiming value. Module 9 adds User Acceptance Testing (UAT),
-defects/retests, adoption, and handover
-evidence before you finalise the Course 1 decision.
+before claiming value. Module 9 adds a candidate User Acceptance Testing (UAT)
+script, a role-simulated operational acceptance rehearsal, defects/retests,
+adoption, and handover evidence before you finalise the Course 1 decision.
+Real UAT requires another consenting intended user.
 
 ## Beginner checkpoint
 
@@ -30,8 +31,11 @@ prompt versions must be frozen for the evaluation run.
   Each is a valid pass when the recorded evidence supports it.
 - Module 8 records one of those labels as a
   `PROVISIONAL PRE-UAT` recommendation. It is not the final Course 1 decision.
-  Module 9 must reassess the recommendation after UAT, defect/retest, adoption,
-  and handover evidence and mark the resulting decision `FINAL POST-UAT`.
+  Module 9 must reassess the recommendation after the role-simulated
+  operational acceptance rehearsal, defect/retest, adoption, and handover
+  evidence and mark the resulting decision `FINAL POST-REHEARSAL`.
+  `FINAL POST-UAT` is permitted only when a separate record proves that another
+  consenting intended user performed the synthetic UAT tasks.
 
 ## Official readings
 
@@ -87,6 +91,20 @@ Suggested sessions:
    regression rule;
 3. evaluate the different capstone result, complete the decision worksheet,
    run the Codex check, and make the Git checkpoint.
+
+Use focused blocks of at most 60 minutes. In each block distinguish:
+
+- **UNDERSTAND:** explain the metric, evidence threshold, scenario assumption,
+  or decision rule in your own words;
+- **RUN HELPER:** execute the protected copy, provenance, timing, and arithmetic
+  commands exactly; understand their purpose but do not memorise their syntax;
+- **JUDGE:** decide whether the evidence supports accept, rework, or stop;
+- **GATE:** preserve the measured result and check it against the threshold.
+
+Safe mini-gates are after the worked metrics, after the worked decision, after
+the two valid timing attempts, and after the recreated final decision. Take a
+break at any mini-gate rather than continuing because a command block happens
+to be open.
 
 Save every file and note the last numbered step before stopping. A file reported
 as `SKIP CREATE` already exists and is left closed and unchanged. Open it
@@ -316,8 +334,8 @@ def load(path: Path) -> dict[tuple[str, str, str], str]:
     return result
 
 
-def ratio(numerator: int, denominator: int) -> float:
-    return 1.0 if denominator == 0 else numerator / denominator
+def ratio(numerator: int, denominator: int) -> float | None:
+    return None if denominator == 0 else numerator / denominator
 
 
 def main() -> None:
@@ -366,6 +384,65 @@ Run:
 **Expected result:** precision `0.75`, recall `0.75`, high-severity recall
 `1.0`, one false positive, one false negative, and no severity mismatch.
 
+`None` is written to JavaScript Object Notation (JSON) as `null`. It means the
+metric is **not applicable** because its denominator is empty; it never means a
+perfect score. Use these conventions:
+
+| Expected issues | Reported issues | Precision | Recall | Honest meaning |
+|---:|---:|---|---|---|
+| 0 | 0 | `null` | `null` | nothing existed and nothing was reported; neither ratio is defined |
+| 0 | more than 0 | `0.0` | `null` | every report is a false positive; there was nothing to recall |
+| more than 0 | 0 | `null` | `0.0` | nothing was reported; all expected issues were missed |
+
+The same rule applies to high-severity recall: if no high-severity issue exists
+in the expected set, record `null`, not `1.0`. A separate count or statement
+may say “no expected high-severity issues”; do not turn absence into accuracy.
+
+Now run the convention as code rather than only reading the table. Create
+`worked_empty_set_check.py`:
+
+```powershell
+Start-NewPracticeTextFile -Path .\worked_empty_set_check.py -RequiredPatterns `
+    'from evaluate_worked import ratio', `
+    '4 empty-denominator checks passed'
+```
+
+Paste the complete worked check below only when the helper created the file:
+
+```python
+from evaluate_worked import ratio
+
+cases = [
+    ("nothing expected or reported", 0, 0, 0, None, None),
+    ("nothing expected; two reported", 0, 2, 0, 0.0, None),
+    ("three expected; nothing reported", 0, 0, 3, None, 0.0),
+]
+
+for name, true_positive, found, expected, wanted_precision, wanted_recall in cases:
+    observed = (
+        ratio(true_positive, found),
+        ratio(true_positive, expected),
+    )
+    wanted = (wanted_precision, wanted_recall)
+    if observed != wanted:
+        raise AssertionError(f"{name}: expected {wanted}, observed {observed}")
+
+if ratio(0, 0) is not None:
+    raise AssertionError("No expected high-severity issues must be null")
+
+print("4 empty-denominator checks passed")
+```
+
+Run:
+
+```powershell
+& $pythonExe .\worked_empty_set_check.py
+```
+
+Expected output: `4 empty-denominator checks passed`. The first three checks
+cover precision and recall. The fourth applies the same zero-denominator rule
+to high-severity recall.
+
 **Troubleshooting:**
 
 - If a duplicate-key error appears, do not delete evidence blindly; identify
@@ -373,6 +450,9 @@ Run:
 - If precision and recall are confused, remember: precision asks “of what was
   reported, how much was right?” Recall asks “of what should be found, how much
   was found?”
+- If a metric is `null`, inspect its denominator and explain why the metric is
+  not applicable. Do not replace it with zero or one merely to simplify a
+  scorecard.
 
 ### Stage 3 — Complete the value and usefulness decision
 
@@ -500,8 +580,11 @@ cost scenarios do not override quality. Repair the missed/extra rule result and
 fallback wording, rerun the frozen set, then decide again.
 
 This provisional recommendation closes only this synthetic evaluation run.
-Module 9 must reassess it after UAT, defect/retest, adoption, and handover
-evidence. It does not authorize a client pilot, production use, or real data.
+Module 9 must reassess it after the role-simulated operational acceptance
+rehearsal, defect/retest, adoption, and handover evidence. It does not
+authorize a client pilot, production use, or real data. Real UAT remains
+unverified unless another consenting intended user performs the synthetic
+tasks and records the result separately.
 ```
 
 This is the complete decision logic: quality gates come before benefit claims.
@@ -787,6 +870,46 @@ Get-FileHash -LiteralPath $thresholdPath -Algorithm SHA256
 **Expected result:** 13 expected, 13 found, precision 1.0, recall 1.0,
 high-severity recall 1.0, no false positives, no false negatives, and no
 severity mismatches.
+
+Recreate the empty-set check with different counts. Create
+`recreated_empty_set_check.py` once:
+
+```powershell
+Start-NewPracticeTextFile -Path .\recreated_empty_set_check.py -RequiredPatterns `
+    'from evaluate_recreated import ratio', `
+    'RECREATED EMPTY-SET CHECKS: PASS'
+```
+
+Using the worked pattern, write four checks yourself:
+
+1. expected `0`, reported `0` gives precision `None` and recall `None`;
+2. expected `0`, reported `5` gives precision `0.0` and recall `None`;
+3. expected `4`, reported `0` gives precision `None` and recall `0.0`;
+4. expected high-severity count `0` gives high-severity recall `None`.
+
+Import `ratio` from `evaluate_recreated`, raise a visible error when a result
+differs, and print exactly `RECREATED EMPTY-SET CHECKS: PASS` only after all
+four checks pass. Then preserve a numbered run:
+
+```powershell
+$emptySetAttempt = 1
+do {
+    $emptySetOutput = Join-Path $moduleFolder (
+        'recreated_empty_set_attempt_{0:D2}.txt' -f $emptySetAttempt
+    )
+    $emptySetAttempt += 1
+} while (Test-Path -LiteralPath $emptySetOutput)
+
+& $pythonExe .\recreated_empty_set_check.py 2>&1 |
+    Tee-Object -FilePath $emptySetOutput
+if ($LASTEXITCODE -ne 0) {
+    throw 'The recreated empty-set check failed. Preserve this attempt and correct only the named issue.'
+}
+```
+
+The numbered output must end with
+`RECREATED EMPTY-SET CHECKS: PASS`. `None` is the Python value that becomes
+JSON `null`; neither means a perfect score.
 
 ### Recreation 2 — Measure matched manual and assisted work
 
@@ -1140,7 +1263,9 @@ remain visible as a limitation.
 
 Use the current synthetic evidence and manual fallback. You are the course
 learner acting in a separate tester role. This is self-testing, so record
-`EXTERNAL UAT NOT VERIFIED`; Module 9 handles User Acceptance Testing.
+`EXTERNAL UAT NOT VERIFIED`. Module 9 expands this into a candidate UAT script
+and a role-simulated operational acceptance rehearsal; it does not turn solo
+self-testing into real UAT.
 
 Run:
 
@@ -1198,9 +1323,10 @@ notepad .\recreated_evaluation_decision.md
 `SKIP COPY`, Notepad is opening your existing file only so you can continue
 unfinished fields; do not paste a fresh template over it.
 
-Set `Decision stage/status` to `PROVISIONAL PRE-UAT`. Mark the UAT,
-training/adoption, and handover gates `NOT YET — MODULE 9`; do not invent a
-pass. Complete every other relevant field. Include:
+Set `Decision stage/status` to `PROVISIONAL PRE-UAT`. Mark external UAT
+`NOT VERIFIED`; mark the operational rehearsal, training/adoption, and
+handover gates `NOT YET — MODULE 9`; do not invent a pass. Complete every
+other relevant field. Include:
 
 - the exact `recreated_precommitted_thresholds.md` path and SHA-256, proving
   the thresholds were locked before the recreated metrics;
@@ -1407,6 +1533,11 @@ matching the controlled course answer key; safe-stop instructions for a resume
 mismatch; frozen
 expected and found sets; unique keys; correct
 true-positive/false-positive/false-negative arithmetic; precision and recall;
+worked_empty_set_check.py demonstrates all three empty expected/reported cases
+plus empty high-severity recall; recreated_empty_set_check.py uses the
+different 0/5 and 4/0 counts and the latest numbered output ends
+`RECREATED EMPTY-SET CHECKS: PASS`; empty denominators are represented as
+null/not applicable rather than perfect;
 high-severity recall; severity match; statement-level support review; matched
 manual and assisted task boundaries; both times including equivalent human
 review; exact Module 1, Module 2, Module 3 data-and-rules, Module 5, and Module
@@ -1426,8 +1557,9 @@ expected and observed results, help/errors/time, pass/defect, evidence, tester
 role, and self-test limitation; thresholds locked before metrics; quality
 overriding attractive value; synthetic-portfolio-only boundary; regression
 triggers; gold-change control; Decision stage/status exactly PROVISIONAL
-PRE-UAT; UAT, adoption, and handover explicitly not yet verified; exactly one
-permitted provisional recommendation with evidence;
+PRE-UAT; external UAT explicitly not verified; operational rehearsal,
+adoption, and handover explicitly not yet completed; exactly one permitted
+provisional recommendation with evidence;
 3. the smallest corrections for me to make if NOT YET.
 
 Remain read-only and do not recalculate by changing files.
@@ -1436,6 +1568,12 @@ Remain read-only and do not recalculate by changing files.
 ## Pass criteria
 
 - [ ] Worked arithmetic produces 0.75 precision and recall and leads to REWORK.
+- [ ] I can explain all three empty-set cases and why an empty denominator is
+      `null`/not applicable rather than a perfect score.
+- [ ] The worked empty-set program prints `4 empty-denominator checks passed`;
+      my different recreated program covers 0/0, 0/5, 4/0, and empty
+      high-severity cases, and its numbered output ends
+      `RECREATED EMPTY-SET CHECKS: PASS`.
 - [ ] Rerunning Stage 1 first verifies the exact `COURSE_PROJECT.md` marker and
       resolved Git root, then restores the course, project, module,
       earlier-evidence, Python, copy, text-creation, and preservation
@@ -1479,8 +1617,9 @@ Remain read-only and do not recalculate by changing files.
       help/errors/time, pass or defect, evidence paths, tester role, and
       `EXTERNAL UAT NOT VERIFIED`.
 - [ ] The provisional recommendation follows thresholds, not enthusiasm.
-- [ ] Decision status is `PROVISIONAL PRE-UAT`; UAT, adoption, and handover are
-      explicitly not yet verified.
+- [ ] Decision status is `PROVISIONAL PRE-UAT`; external UAT is explicitly not
+      verified, while operational rehearsal, adoption, and handover are
+      explicitly not yet completed.
 - [ ] The provisional recommendation is exactly
       `ACCEPT FOR SYNTHETIC PORTFOLIO`, `REWORK`, or `DO NOT CONTINUE`; every
       outcome can pass when evidence-backed.
@@ -1522,6 +1661,7 @@ and regression policy.
 ## Required artifact
 
 The teaching contract creates worked and recreated datasets, metric reports,
+executable empty-denominator checks with numbered recreated evidence,
 evaluation decisions, and regression policies under `evidence/module-08`.
 
 ## Test gate
@@ -1544,4 +1684,5 @@ overridden, or synthetic evidence is used to claim production readiness.
 
 ## Estimated time
 
-8–12 hours.
+8–12 hours, best completed as 8–14 focused study blocks of 45–60 minutes.
+This is an **AUTHOR ESTIMATE — NOT BEGINNER MEASURED**.

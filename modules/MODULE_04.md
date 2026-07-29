@@ -1,8 +1,10 @@
-# Module 4 — Build and Test the Rule-based Workflow
+# Module 4 — Safely Assemble, Test, and Extend the Rule-based Workflow
 
 ## Outcome
 
-You will build the first working part of the Course 1 capstone. It will:
+You will safely assemble and test the first working part supplied by the
+course, then author one isolated deterministic rule and its tests. The supplied
+working part will:
 
 1. read only a fictional comma-separated values (CSV) file;
 2. reject unsafe or malformed input;
@@ -31,7 +33,7 @@ Start only after Module 3 passes and the Windows setup created:
 **Git** is the version-control tool that records file changes. **Python** is the
 programming language used by the runner.
 
-## What you are building, in normal language
+## What the supplied runner and your bounded extension do, in normal language
 
 Think of the runner as a guarded desk:
 
@@ -292,6 +294,35 @@ all three runner files against both the current course source and the durable
 Module 4 hash record, then reconstructs the worked, first-attempt, and
 corrected run folders from their saved relative locators. You do not need to
 replay a state-changing stage merely to restore variables.
+
+Suggested sessions:
+
+1. copy and verify the supplied runner, then complete the worked run;
+2. force and explain the four worked safe failures;
+3. predict and run the different synthetic recreation;
+4. preserve, diagnose, and correct the different attempt;
+5. author the isolated R012 rule and its normal/boundary/failure tests;
+6. complete the read-only check and correction gate.
+
+### How to use this long module
+
+Work in focused blocks of at most 60 minutes and stop at the named safe points.
+Label each block in your notes:
+
+- **UNDERSTAND:** explain the input gate, three-part issue identity,
+  deterministic fallback, safe failure, and why a retry has one logical effect;
+- **RUN HELPER:** execute the protected copy, hash, locator, and preservation
+  commands exactly. You do not need to memorise their syntax, but you must know
+  their stated purpose and stop if their result differs;
+- **MAKE:** create the prediction, architecture explanation, and isolated
+  learner-authored rule yourself;
+- **GATE:** compare the observed result with the exact expected state before
+  continuing.
+
+Mini-gate A is after Stage 4: explain source → input validation → rule result →
+review wait. Mini-gate B is after Stage 7: name all four failures and their
+manual route. Mini-gate C is after Recreation 5: connect every learner-authored
+test to its requirement.
 
 ## Follow along — I show you exactly how
 
@@ -593,7 +624,7 @@ Expected: `SAFE STOP: missing_file...` and exit code `1`.
 
 Do not “fix” a safe stop by weakening validation.
 
-### Stage 8 — Record the worked design evidence
+### Stage 8 — Record evidence about the supplied design
 
 Run this create-once guard:
 
@@ -895,7 +926,7 @@ Expected: detected `5`, true positive `5`, false positive `0`, false negative
 `0`. The first-attempt workspace remains evidence of what you initially
 predicted; the corrected workspace is the Module 4 acceptance evidence.
 
-### Recreation 4 — Explain your design
+### Recreation 4 — Explain the supplied design and your configuration
 
 Create `evidence\module-04\recreated_architecture.md` in your own words. This
 command creates a blank heading once and keeps a prior version unchanged:
@@ -927,6 +958,177 @@ Complete that file with:
 - human-review wait;
 - all four failure routes you ran;
 - why external actions remain impossible.
+
+### Recreation 5 — Author one bounded deterministic rule
+
+Until this point you assembled, operated, and challenged a controlled runner
+supplied by the course. That is important implementation work, but it is not
+the same as independently authoring workflow logic. This small isolated task is
+the exact boundary of the Course 1 “build” claim. Do not edit the supplied
+runner.
+
+First study this complete worked pattern. Imagine this first block is saved as
+`follow_up_rule.py`:
+
+```python
+def follow_up_due(days_open, maximum_days):
+    if (
+        type(days_open) is not int
+        or type(maximum_days) is not int
+        or days_open < 0
+        or maximum_days < 0
+    ):
+        raise ValueError("days_open and maximum_days must be non-negative integers")
+    return days_open > maximum_days
+```
+
+For this worked rule:
+
+- `2, 5` is a normal non-match;
+- `5, 5` is the exact boundary and is still a non-match;
+- `6, 5` is immediately beyond the boundary and matches;
+- text, a Boolean value such as `True`, or a negative number is invalid and
+  raises a visible error;
+- the function returns a value and has no file, network, or other side effect.
+
+This is the complete worked test pattern for that first rule:
+
+```python
+import unittest
+
+from follow_up_rule import follow_up_due
+
+
+class FollowUpDueTests(unittest.TestCase):
+    def test_normal_non_match(self):
+        self.assertFalse(follow_up_due(2, 5))
+
+    def test_exact_boundary(self):
+        self.assertFalse(follow_up_due(5, 5))
+
+    def test_one_beyond_boundary(self):
+        self.assertTrue(follow_up_due(6, 5))
+
+    def test_text_is_invalid(self):
+        with self.assertRaises(ValueError):
+            follow_up_due("six", 5)
+
+    def test_boolean_is_invalid(self):
+        with self.assertRaises(ValueError):
+            follow_up_due(True, 5)
+
+    def test_negative_is_invalid(self):
+        with self.assertRaises(ValueError):
+            follow_up_due(-1, 5)
+
+
+if __name__ == "__main__":
+    unittest.main()
+```
+
+`unittest` is Python's built-in test framework. The second import line brings
+`follow_up_due` from the separate `follow_up_rule.py` file into the test file;
+without that line, the test would stop with a `NameError`, which means Python
+does not know the name being called. Each method whose name begins with
+`test_` is one check. `assertFalse` and `assertTrue` compare the returned result
+with the expected Boolean value. `assertRaises` passes only when the named
+error occurs inside its indented block. The final two lines let the file run
+the tests when opened as a program. The exact-type check deliberately rejects
+`True` and `False`: Python otherwise treats Boolean values as a special kind of
+integer, but the business requirement permits quantities only. Study this
+pattern; do not save it as your recreation.
+
+Now author a different rule from this requirement:
+
+> Given `remaining_units` and `reorder_floor`, return reason code `R012` only
+> when remaining units are below the floor. Equality is not an issue. Both
+> inputs must be non-negative quantity integers; text, Boolean values, other
+> wrong types, and negative values must raise `ValueError`. The function must
+> not read or write a file, use the network, or change another value.
+
+Create three files once:
+
+```powershell
+$learnerRuleFiles = @{
+    'learner_stock_rule.py' = '# Learner-authored deterministic rule'
+    'test_learner_stock_rule.py' = '# Learner-authored rule tests'
+    'learner_stock_rule_evidence.md' = '# Learner-authored rule evidence'
+}
+foreach ($entry in $learnerRuleFiles.GetEnumerator()) {
+    $path = Join-Path $moduleFolder $entry.Key
+    if (Test-Path -LiteralPath $path) {
+        if (-not (Test-Path -LiteralPath $path -PathType Leaf) -or
+            (Get-Content -LiteralPath $path -TotalCount 1) -cne $entry.Value) {
+            throw "Existing learner-rule path is unfamiliar. Preserve it and stop: $path"
+        }
+        Write-Host "KEEPING existing $($entry.Key)"
+    } else {
+        $entry.Value | Set-Content -LiteralPath $path -Encoding utf8
+        Write-Host "CREATED $($entry.Key)"
+    }
+}
+notepad (Join-Path $moduleFolder 'learner_stock_rule.py')
+notepad (Join-Path $moduleFolder 'test_learner_stock_rule.py')
+```
+
+Write the function yourself. Name it `stock_floor_reason_code`. Write at least
+six `unittest` tests yourself:
+
+1. a normal value above the floor returns `None`;
+2. equality at the exact boundary returns `None`;
+3. one unit below the boundary returns `R012`;
+4. text input raises `ValueError`;
+5. a Boolean input raises `ValueError`;
+6. a negative input raises `ValueError`.
+
+In `test_learner_stock_rule.py`, keep the required heading as the first line.
+Then make these the first two non-comment code lines:
+
+```python
+import unittest
+from learner_stock_rule import stock_floor_reason_code
+```
+
+The second line imports your function from `learner_stock_rule.py`. Both files
+must be in the same Module 4 folder. If you omit that line, the tests cannot
+call your function.
+
+Do not copy the worked function and only rename it. Your code must return the
+reason code rather than a Boolean value and your tests must call your function.
+Run the tests and preserve a numbered result:
+
+```powershell
+$learnerTestNumber = 1
+do {
+    $learnerTestOutput = Join-Path $moduleFolder (
+        'learner_rule_test_attempt_{0:D2}.txt' -f $learnerTestNumber
+    )
+    $learnerTestNumber += 1
+} while (Test-Path -LiteralPath $learnerTestOutput)
+
+& $pythonExe -m unittest -v test_learner_stock_rule.py 2>&1 |
+    Tee-Object -FilePath $learnerTestOutput
+$learnerTestExit = $LASTEXITCODE
+if ($learnerTestExit -ne 0) {
+    throw "Learner-authored rule tests did not pass. Preserve this attempt and correct only the named problem."
+}
+"PASS: learner-authored rule tests"
+```
+
+Expected output includes `Ran 6 tests`, `OK`, and
+`PASS: learner-authored rule tests`. If you add more useful tests, the count may
+be higher but never lower.
+
+Complete `learner_stock_rule_evidence.md` with:
+
+- the requirement in your own words;
+- the input, output, invalid-input behavior, and side-effect boundary;
+- a table linking every test to normal, exact-boundary, beyond-boundary, or
+  failure behavior;
+- the relative path to the passing numbered test output;
+- one limitation;
+- an explanation of why this one isolated rule does not mean you built the
+  supplied capstone runner independently.
 
 ## Ask Codex to check your work
 
@@ -970,7 +1172,14 @@ fallback, and zero recorded external actions;
 5. safe-stop evidence for duplicate ID, header mismatch, malformed input, and
 missing file;
 6. worked and recreated architecture records;
-7. the smallest learner-made corrections if NOT YET.
+7. learner_stock_rule.py implements the stated R012 requirement without a side
+effect; test_learner_stock_rule.py explicitly imports
+stock_floor_reason_code from learner_stock_rule and has at least six
+learner-authored normal, exact-boundary, beyond-boundary, text-input,
+Boolean-input, and negative-input tests; the latest numbered output reports OK;
+learner_stock_rule_evidence.md connects the tests to the requirement and states
+the build limitation;
+8. the smallest learner-made corrections if NOT YET.
 
 Remain read-only. Do not provide replacement files.
 ```
@@ -991,6 +1200,14 @@ Remain read-only. Do not provide replacement files.
 - [ ] AI remains disabled and deterministic fallback is usable.
 - [ ] No outbox exists and external actions equal 0.
 - [ ] Both architecture records explain the controls.
+- [ ] My isolated `stock_floor_reason_code` implements the written R012
+      requirement and has no side effect.
+- [ ] `test_learner_stock_rule.py` imports `stock_floor_reason_code` from
+      `learner_stock_rule` before calling it.
+- [ ] At least six normal, boundary, and failure tests pass and the numbered
+      output is preserved.
+- [ ] My evidence links each test to the requirement and says honestly that the
+      supplied runner was assembled rather than independently authored.
 - [ ] Codex returns `PASS` in read-only mode.
 
 ### Record your Module 4 PASS in Git
@@ -1022,16 +1239,19 @@ language, designing safe failures, and proving what a retry does.
 
 ## Capstone increment
 
-The capstone now has one runnable input-to-review workflow, exact rule results,
-source-linked evidence, audit events, evaluation, idempotency, failure routes,
-and deterministic fallback. It still cannot export because no human approval
-exists.
+The capstone now has one supplied runnable input-to-review workflow, exact rule
+results, source-linked evidence, audit events, evaluation, idempotency, failure
+routes, and deterministic fallback. Separately, you authored one bounded rule
+with normal, boundary, and failure tests. The capstone still cannot export
+because no human approval exists.
 
 ## Required artifact
 
 `evidence/module-04` contains the worked run, the safely copied recreated
 synthetic input, recreated run, unchanged first prediction, optional prediction
 notes and corrected copy, four failure results, and both architecture records.
+It also contains the isolated learner-authored stock rule, its tests, numbered
+test output, and evidence record.
 `src/course1_capstone` contains the unchanged reference runner.
 
 ## Test gate
@@ -1056,6 +1276,5 @@ external actions are not zero.
 
 ## Estimated time
 
-12-16 hours, best completed as four to six sessions.
-
-Suggested sessions: four to six sessions of about 2-3 hours.
+12–16 hours, best completed as 12–18 focused study blocks of 45–60 minutes.
+This is an **AUTHOR ESTIMATE — NOT BEGINNER MEASURED**.

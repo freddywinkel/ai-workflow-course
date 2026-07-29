@@ -1,5 +1,9 @@
 # Course 1 Evaluation Decision Record
 
+**User Acceptance Testing (UAT)** means another consenting intended user
+performs realistic synthetic tasks. A learner working alone records a
+role-simulated operational acceptance rehearsal, not real UAT.
+
 Artifact ID:
 Version/date:
 Author:
@@ -7,7 +11,7 @@ Decision owner/reviewers:
 Workflow/release:
 Synthetic evaluation period:
 Evaluation type: COURSE 1 SYNTHETIC PORTFOLIO WORK ONLY
-Decision stage/status: PROVISIONAL PRE-UAT / FINAL POST-UAT
+Decision stage/status: PROVISIONAL PRE-UAT / FINAL POST-REHEARSAL / FINAL POST-UAT
 
 Completing Course 1 supports a portfolio demonstration. It does not establish
 production readiness, permission to use real business data, or permission to
@@ -34,7 +38,8 @@ Versions frozen:
 | Data dictionary/rules accepted | | | |
 | Risk/escalation screen accepted | | | |
 | Tool ownership assigned | | | |
-| UAT entry criteria met | | | |
+| Operational-rehearsal entry criteria met | | | |
+| External synthetic UAT status | | | |
 | Training/support ready | | | |
 
 ## Results against thresholds
@@ -80,8 +85,11 @@ Value claim supported, weakened, or untested:
 
 First record one evidence-backed recommendation in Module 8 with
 `Decision stage/status: PROVISIONAL PRE-UAT`. In Module 9, preserve that
-pre-UAT record, add UAT/defect/adoption/handover evidence, reassess the result,
-and set the copied closeout record to `Decision stage/status: FINAL POST-UAT`.
+pre-UAT record, add technical and operator rehearsal, defect, adoption, and
+handover evidence, reassess the result, and set the copied closeout record to
+`Decision stage/status: FINAL POST-REHEARSAL`. Use `FINAL POST-UAT` only when
+another consenting intended user actually completes the candidate synthetic
+tasks and the separate record says `REAL SYNTHETIC UAT: VERIFIED`.
 
 Choose one label:
 
@@ -96,8 +104,9 @@ supports them and the closeout is documented.
 
 Decision stage/status:
 Module 8 provisional recommendation:
-Module 9 change after UAT, defects/retests, adoption, and handover:
-Final post-UAT decision:
+Module 9 change after rehearsal, defects/retests, adoption, and handover:
+Final post-rehearsal decision:
+External synthetic UAT status:
 Evidence that most influenced it:
 Conditions and owners:
 Next cheapest evidence-producing action:

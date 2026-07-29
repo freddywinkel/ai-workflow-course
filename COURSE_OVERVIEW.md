@@ -17,8 +17,9 @@ This course is for a learner who:
 
 ## Course promise
 
-You will take one fictional, low-risk administrative process from an unclear
-problem to a tested, documented, human-controlled demonstration.
+You will take one fictional, low-risk administrative process through a
+synthetic discovery rehearsal to a tested, documented, human-controlled
+demonstration.
 
 You will not merely assemble an automation. You will produce the evidence a
 responsible implementation consultant needs:
@@ -27,18 +28,27 @@ responsible implementation consultant needs:
 - what the current process costs or delays;
 - what is **authoritative data**, meaning the agreed official source, and what
   is not;
-- which steps are rules, AI, or human judgment;
+- which steps are rules, optional artificial intelligence (AI), or human
+  judgment;
 - how failures become visible;
 - what the workflow does when AI is unavailable;
 - who reviews the output;
 - whether the measured result supports `ACCEPT FOR SYNTHETIC PORTFOLIO`,
   `REWORK`, or `DO NOT CONTINUE`;
-- how another person could operate and stop it.
+- how another person could operate and stop it, expressed as a candidate
+  acceptance script until another consenting person actually tests it.
 
 All three final decisions can pass when supported by evidence.
 `ACCEPT FOR SYNTHETIC PORTFOLIO` means only that the fictional demonstration
 is suitable to show as portfolio evidence. No Course 1 outcome authorizes a
 client pilot, real data, production use, or an external action.
+
+Official course competence is a separate human-assessment result. You may
+complete all learning alone, but `COURSE 1 COMPETENCE: PASS` requires at least
+two other eligible adults to complete independent calibration, with a
+calibrated artifact review and a live independent oral assessment between
+them. The same two adults may perform those roles. Until they are available,
+the correct result is `ASSESSMENT PENDING`, not a self-awarded pass.
 
 ## The practice method
 
@@ -72,7 +82,7 @@ obvious safety concerns and whether existing software already fits the need.
 | Capability | After Course 1 |
 |---|---|
 | Explain a bounded workflow | Yes |
-| Build and test with synthetic data | Yes |
+| Safely assemble the supplied workflow and author one bounded rule with synthetic tests | Yes |
 | Produce a portfolio case study | Yes |
 | Run a basic risk and tool-fit pre-screen | Yes |
 | Offer legal or compliance conclusions | No |
@@ -134,28 +144,30 @@ Terms used in the evidence table:
 - a **risk screen** is an early check for obvious safety or legal concerns; a
   **tool-fit decision** compares the need with available software; and a
   **regression report** confirms that previously passing cases still pass;
-- **user acceptance testing (UAT)** lets intended users check that the workflow
-  meets their needs, while a **runbook** gives operating, stopping, and recovery
-  instructions.
+- a **role-simulated operational acceptance rehearsal** lets the learner test
+  operator tasks with synthetic data; **user acceptance testing (UAT)** exists
+  only when another consenting intended user performs the candidate tasks,
+  while a **runbook** gives operating, stopping, and recovery instructions.
 
 | Module | Consultant capability | Main evidence |
 |---:|---|---|
 | 1 | Observe before proposing | As-is map, stakeholder map, manual baseline |
 | 2 | Select and bound a worthwhile opportunity | Scorecard, intended purpose, module selection |
 | 3 | Identify authoritative data and rules | Data dictionary, contract, expected issues |
-| 4 | Build reliable logic without AI | Rule-first workflow, to-be map, architecture diagram, and failure tests |
-| 5 | Design a bounded AI contract and test it offline | Mock summary supported by issue identifiers (IDs); no live model call |
+| 4 | Assemble reliable logic and author one bounded rule without AI | Supplied rule-first workflow, learner-authored rule, normal/boundary/failure tests, architecture diagram |
+| 5 | Design a bounded AI contract and test its controls offline | Mock summary plus a different learner-designed contract supported by issue identifiers (IDs); no live model call |
 | 6 | Preserve meaningful human control | Review package, approval lifecycle, local outbox |
 | 7 | Screen risk and existing-tool fit | Data flow, risk screen, tool-fit decision |
 | 8 | Evaluate utility and value | Regression report and evidence-backed Course 1 decision |
-| 9 | Prepare people and handover | UAT evidence, runbook, training, change log, and demonstration |
+| 9 | Rehearse operation and handover | role-simulated operator evidence, candidate UAT script, runbook, training, change log, unseen transfer, and independent assessment |
 
 ### Layer 3 — Capstone acceptance
 
-The final demonstration is assessed on discovery, data and rules, the boundary
-and offline testing of a possible bounded AI contribution, human control,
-Dutch SME **guardrails** (stated limits that prevent unsafe use), evaluation,
-adoption, and handover.
+The final demonstration is assessed on synthetic discovery rehearsal, data and
+rules, one learner-authored deterministic rule, the boundary and offline
+testing of a possible bounded AI contribution, human control, Dutch SME
+**guardrails** (stated limits that prevent unsafe use), evaluation, adoption,
+handover, and transfer to a second unseen synthetic work area.
 
 ## The fictional scenario
 
@@ -246,9 +258,10 @@ real data in Git.
 ## Gates, not calendar pressure
 
 Each **gate** is a pass checklist that must be satisfied before you continue.
-The 137–181 hour estimate is the sum of all 21 required page ranges. It is a
-planning range, not a deadline. The time covers following a worked example,
-recreating the skill independently, and correcting your own work after
+The 137–181 hour estimate is the sum of all 21 required page ranges. It is an
+author estimate, not yet measured full-course beginner completion time, and is
+a planning range rather than a deadline. The time covers following a worked
+example, recreating the skill independently, and correcting your own work after
 read-only review.
 
 At roughly 20 hours per week, a literal beginner may need 7–10 calendar weeks.

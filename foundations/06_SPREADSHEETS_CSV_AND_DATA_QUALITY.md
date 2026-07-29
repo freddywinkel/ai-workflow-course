@@ -8,6 +8,26 @@ practice tables in this lesson.
 You will create a small CSV table, import it safely with PowerShell, detect two
 data-quality issues using exact rules, and create a traceable issue file.
 
+## Study plan — seven blocks of no more than 60 minutes
+
+**Time label: AUTHOR ESTIMATE — NOT BEGINNER MEASURED.** The published
+6–7-hour range is a planning estimate, not measured novice completion time.
+Use each row as a separate study segment. Stop when the row is complete or
+when 60 focused minutes have elapsed, whichever happens first. Record the last
+completed part using synthetic wording, save and close files, and take a break.
+Run **Start or resume safely** in every new PowerShell session; never combine
+blocks.
+
+| Block | Maximum | Work and safe stopping point |
+|---:|---:|---|
+| 1 | 60 minutes | Learn the tabular-data and quality words plus the safety boundary. |
+| 2 | 60 minutes | Run the start/resume block and make the explicit resume/retry decision. |
+| 3 | 60 minutes | Complete Part A and inspect the source Comma-Separated Values (CSV) file as plain text. |
+| 4 | 60 minutes | Complete Part B and confirm the imported row count. |
+| 5 | 60 minutes | Complete Part C and explain both exact checks before accepting their output. |
+| 6 | 60 minutes | Complete Part D, compare the exact result, and troubleshoot only observed mismatches. |
+| 7 | 60 minutes | Recreate the task with different rows/rules, ask Codex for the bounded check, and apply every pass criterion. |
+
 ## Words you need first
 
 - A **spreadsheet** is a grid used to organise and calculate tabular data.

@@ -175,8 +175,8 @@ Purpose: build workflows whose statements remain tied to source evidence for
 recurring business documents.
 
 The available **Controlled Document Intake** capstone is not the recommended
-next step for a certified beginner immediately after Course 1. First complete
-Course 1 and gain the Course 3-equivalent skills needed to understand cloud
+next step for a learner immediately after Course 1. First complete Course 1
+and gain the Course 3-equivalent skills needed to understand cloud
 deployment, permissions, secrets, retries, and rollback. Then the capstone can
 be used to combine those skills in one bounded Google Cloud demonstration.
 

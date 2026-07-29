@@ -50,8 +50,10 @@ and practical-task self-checks are separate revision-aware records. Even 100%
 reading is never labelled as course competence, and a practical self-check is
 explicitly described as the learner's record rather than an independent
 assessment. Stable lesson IDs and revisions let a materially revised lesson
-reopen both records without losing its private note. State is migrated from the
-earlier course bundle when possible.
+reopen both records without losing its learner note. A learner note is local
+to the browser profile but is not private from other applications served from
+the same website origin. State is migrated from the earlier course bundle when
+possible.
 
 The PWA stores page-read marks, practical self-checks, notes, theme, and reading
 size only in browser `localStorage`. Export and import include all of that

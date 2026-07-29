@@ -1,0 +1,125 @@
+name: Course 1 controlled Pages rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      last_known_good_commit:
+        description: Full 40-character commit SHA of the last accepted PASS release
+        required: true
+        type: string
+      rollback_record:
+        description: Rollback authorization JSON path inside release_evidence/
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: course1-pages-production
+  cancel-in-progress: false
+
+jobs:
+  verify-and-prepare:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    steps:
+      - name: Check out current release controls
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: control
+          persist-credentials: false
+
+      - name: Reject a branch, tag, or abbreviated rollback reference
+        shell: bash
+        env:
+          LAST_KNOWN_GOOD_COMMIT: ${{ inputs.last_known_good_commit }}
+        run: |
+          if [[ ! "$LAST_KNOWN_GOOD_COMMIT" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "last_known_good_commit must be a full lower-case 40-character Git SHA"
+            exit 1
+          fi
+
+      - name: Check out the immutable last-known-good source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.last_known_good_commit }}
+          path: candidate
+          persist-credentials: false
+
+      - name: Set up the pinned Python runtime
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14.6"
+          cache: pip
+          cache-dependency-path: candidate/requirements-course.txt
+
+      - name: Recheck the last-known-good Course 1 clean-room path
+        working-directory: candidate
+        run: |
+          python -m pip install --require-hashes -r requirements-course.txt
+          python -m pip check
+          python tools/accept_course1_cleanroom.py
+
+      - name: Set up the pinned Node runtime
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24.18.0"
+          cache: npm
+          cache-dependency-path: candidate/app/package-lock.json
+
+      - name: Recheck and rebuild the last-known-good Pages artifact
+        working-directory: candidate/app
+        env:
+          LAST_KNOWN_GOOD_COMMIT: ${{ inputs.last_known_good_commit }}
+        run: |
+          npm ci
+          env -u GITHUB_SHA npm test
+          BASE_PATH=/ai-workflow-course/ \
+            COURSE1_BUILD_MODE=candidate \
+            GITHUB_SHA="$LAST_KNOWN_GOOD_COMMIT" \
+            npm run build
+          npm run smoke:browser
+          if [[ -f dist/asset-manifest.json ]]; then
+            npm run smoke:update
+          else
+            echo "Pinned legacy artifact has no asset manifest; current candidate validation owns the immutable v2.5 old-client regression."
+          fi
+
+      - name: Verify rollback authorization and exact artifact identity
+        env:
+          ROLLBACK_RECORD: ${{ inputs.rollback_record }}
+          LAST_KNOWN_GOOD_COMMIT: ${{ inputs.last_known_good_commit }}
+        run: >-
+          python control/tools/verify_course1_promotion.py
+          --operation rollback
+          --record "$ROLLBACK_RECORD"
+          --expected-commit "$LAST_KNOWN_GOOD_COMMIT"
+          --dist candidate/app/dist
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+
+      - name: Upload the accepted rollback artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: candidate/app/dist
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-24.04
+    needs:
+      - verify-and-prepare
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: Restore the exact accepted last-known-good release
+        id: deployment
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0

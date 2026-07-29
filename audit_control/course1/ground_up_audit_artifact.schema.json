@@ -1,0 +1,1069 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/course1/ground-up-audit-artifact.schema.json",
+  "title": "Course 1 ground-up audit machine artifact",
+  "oneOf": [
+    {"$ref": "#/$defs/scopeAndAuthority"},
+    {"$ref": "#/$defs/baselineFileInventory"},
+    {"$ref": "#/$defs/normativeIdInventory"},
+    {"$ref": "#/$defs/requirementTestEvidenceGraph"},
+    {"$ref": "#/$defs/testAndScenarioManifest"},
+    {"$ref": "#/$defs/changeToEvidenceMap"},
+    {"$ref": "#/$defs/environmentAndToolchain"},
+    {"$ref": "#/$defs/rawEvidenceIndex"},
+    {"$ref": "#/$defs/auditAssuranceResult"}
+  ],
+  "$defs": {
+    "status": {
+      "enum": ["PASS", "FAIL", "UNVERIFIED", "NOT APPLICABLE"]
+    },
+    "productStatus": {
+      "enum": ["PASS", "REPAIR REQUIRED", "UNVERIFIED", "SUPERSEDED"]
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "common": {
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "artifactType",
+        "auditId",
+        "courseId",
+        "courseVersion",
+        "auditDate"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "course1-ground-up-audit-artifact-v1"
+        },
+        "artifactType": {
+          "enum": [
+            "SCOPE_AND_AUTHORITY",
+            "BASELINE_FILE_INVENTORY",
+            "NORMATIVE_ID_INVENTORY",
+            "REQUIREMENT_TEST_EVIDENCE_GRAPH",
+            "TEST_AND_SCENARIO_MANIFEST",
+            "CHANGE_TO_EVIDENCE_MAP",
+            "ENVIRONMENT_AND_TOOLCHAIN",
+            "RAW_EVIDENCE_INDEX",
+            "AUDIT_ASSURANCE_RESULT"
+          ]
+        },
+        "auditId": {
+          "type": "string",
+          "pattern": "^C1-GROUND-UP-[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "courseId": {
+          "const": "course-1-controlled-ai-workflow-foundations"
+        },
+        "courseVersion": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "auditDate": {
+          "type": "string",
+          "format": "date"
+        }
+      }
+    },
+    "fileReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "sharedSurface": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "classification", "rationale"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "classification": {
+          "enum": ["SHARED_COURSE_READER", "SHARED_GOVERNANCE"]
+        },
+        "rationale": {"type": "string", "minLength": 1}
+      }
+    },
+    "scopeAndAuthority": {
+      "allOf": [
+        {"$ref": "#/$defs/common"},
+        {
+          "type": "object",
+          "properties": {
+            "artifactType": {"const": "SCOPE_AND_AUTHORITY"},
+            "mode": {"const": "APPROVED_REPAIR_EVIDENCE"},
+            "authority": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "repairAndEvidenceWrites",
+                "candidateFreeze",
+                "commitPushDeploy",
+                "cloudBillingOrRealData"
+              ],
+              "properties": {
+                "repairAndEvidenceWrites": {"const": true},
+                "candidateFreeze": {"const": false},
+                "commitPushDeploy": {"const": false},
+                "cloudBillingOrRealData": {"const": false}
+              }
+            },
+            "scope": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["included", "excluded", "sharedSurfaces"],
+              "properties": {
+                "included": {
+                  "type": "array",
+                  "minItems": 1,
+                  "uniqueItems": true,
+                  "items": {"type": "string", "minLength": 1}
+                },
+                "excluded": {
+                  "type": "array",
+                  "minItems": 1,
+                  "uniqueItems": true,
+                  "items": {"type": "string", "minLength": 1}
+                },
+                "sharedSurfaces": {
+                  "type": "array",
+                  "items": {"$ref": "#/$defs/sharedSurface"}
+                }
+              }
+            },
+            "prohibitedActions": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {"type": "string", "minLength": 1}
+            },
+            "baselineLimitations": {
+              "type": "array",
+              "minItems": 1,
+              "items": {"type": "string", "minLength": 1}
+            },
+            "status": {"$ref": "#/$defs/status"}
+          },
+          "required": [
+            "mode",
+            "authority",
+            "scope",
+            "prohibitedActions",
+            "baselineLimitations",
+            "status"
+          ]
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "inventoryFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "classification",
+        "workingTreeStatus",
+        "headSha256",
+        "currentSha256",
+        "currentSizeBytes"
+      ],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "classification": {
+          "enum": [
+            "COURSE1_ONLY",
+            "COURSE4_ONLY",
+            "SHARED_COURSE_READER",
+            "SHARED_GOVERNANCE"
+          ]
+        },
+        "workingTreeStatus": {
+          "enum": [
+            "TRACKED_UNCHANGED",
+            "TRACKED_MODIFIED",
+            "TRACKED_DELETED",
+            "UNTRACKED"
+          ]
+        },
+        "headSha256": {
+          "oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]
+        },
+        "currentSha256": {
+          "oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]
+        },
+        "currentSizeBytes": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        }
+      }
+    },
+    "baselineFileInventory": {
+      "allOf": [
+        {"$ref": "#/$defs/common"},
+        {
+          "type": "object",
+          "properties": {
+            "artifactType": {"const": "BASELINE_FILE_INVENTORY"},
+            "snapshotBoundary": {"type": "string", "minLength": 1},
+            "git": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "branch",
+                "headCommit",
+                "headTree",
+                "dirty",
+                "trackedChangeCount",
+                "untrackedCount"
+              ],
+              "properties": {
+                "branch": {"type": "string", "minLength": 1},
+                "headCommit": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{40}$"
+                },
+                "headTree": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{40}$"
+                },
+                "dirty": {"type": "boolean"},
+                "trackedChangeCount": {"type": "integer", "minimum": 0},
+                "untrackedCount": {"type": "integer", "minimum": 0}
+              }
+            },
+            "course": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "practiceRevision",
+                "sourceVerifiedThrough",
+                "contentRevisionThrough",
+                "workingBuildIdentity"
+              ],
+              "properties": {
+                "practiceRevision": {"type": "integer", "minimum": 1},
+                "sourceVerifiedThrough": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "contentRevisionThrough": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "workingBuildIdentity": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["status", "buildId", "contentHash", "reason"],
+                  "properties": {
+                    "status": {"$ref": "#/$defs/status"},
+                    "buildId": {
+                      "type": ["string", "null"],
+                      "pattern": "^[a-f0-9]{12}$"
+                    },
+                    "contentHash": {
+                      "oneOf": [
+                        {"$ref": "#/$defs/sha256"},
+                        {"type": "null"}
+                      ]
+                    },
+                    "reason": {"type": "string", "minLength": 1}
+                  }
+                }
+              }
+            },
+            "preRepairBaseline": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["captured", "status", "reason"],
+              "properties": {
+                "captured": {"const": false},
+                "status": {"const": "UNVERIFIED"},
+                "reason": {"type": "string", "minLength": 1}
+              }
+            },
+            "excludedPaths": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {"type": "string", "minLength": 1}
+            },
+            "files": {
+              "type": "array",
+              "minItems": 1,
+              "items": {"$ref": "#/$defs/inventoryFile"}
+            },
+            "status": {"const": "UNVERIFIED"}
+          },
+          "required": [
+            "snapshotBoundary",
+            "git",
+            "course",
+            "preRepairBaseline",
+            "excludedPaths",
+            "files",
+            "status"
+          ]
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "idFamily": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["family", "pattern", "authorityPath", "count", "ids"],
+      "properties": {
+        "family": {"type": "string", "pattern": "^[A-Z0-9_-]+$"},
+        "pattern": {"type": "string", "minLength": 1},
+        "authorityPath": {"type": "string", "minLength": 1},
+        "count": {"type": "integer", "minimum": 1},
+        "ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "resourceGroup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "paths"],
+      "properties": {
+        "kind": {"type": "string", "pattern": "^[A-Z0-9_]+$"},
+        "paths": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "normativeIdInventory": {
+      "allOf": [
+        {"$ref": "#/$defs/common"},
+        {
+          "type": "object",
+          "properties": {
+            "artifactType": {"const": "NORMATIVE_ID_INVENTORY"},
+            "authorities": {
+              "type": "array",
+              "minItems": 1,
+              "items": {"$ref": "#/$defs/fileReference"}
+            },
+            "idFamilies": {
+              "type": "array",
+              "minItems": 1,
+              "items": {"$ref": "#/$defs/idFamily"}
+            },
+            "resourceGroups": {
+              "type": "array",
+              "minItems": 1,
+              "items": {"$ref": "#/$defs/resourceGroup"}
+            },
+            "duplicateIds": {
+              "type": "array",
+              "maxItems": 0
+            },
+            "unparsedOrMalformedIds": {
+              "type": "array",
+              "maxItems": 0
+            },
+            "structuralStatus": {"const": "PASS"},
+            "candidateEvidenceStatus": {"const": "UNVERIFIED"}
+          },
+          "required": [
+            "authorities",
+            "idFamilies",
+            "resourceGroups",
+            "duplicateIds",
+            "unparsedOrMalformedIds",
+            "structuralStatus",
+            "candidateEvidenceStatus"
+          ]
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "procedure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["locator", "selector", "command", "expected"],
+      "properties": {
+        "locator": {"type": "string", "minLength": 1},
+        "selector": {"type": "string", "minLength": 1},
+        "command": {"type": "string", "minLength": 1},
+        "expected": {"type": "string", "minLength": 1}
+      }
+    },
+    "technicalTest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "owner",
+        "type",
+        "environments",
+        "evidenceClass",
+        "requirements",
+        "procedures",
+        "currentEvidenceStatus"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^C1-TST-(?:[A-Z0-9]+-)+[0-9]{3}$"
+        },
+        "owner": {"type": "string", "minLength": 1},
+        "type": {"enum": ["automated", "manual", "hybrid"]},
+        "environments": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "evidenceClass": {"type": "string", "minLength": 1},
+        "requirements": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^C1-TA-(?:[A-Z0-9]+-)+[0-9]{3}$"
+          }
+        },
+        "procedures": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/procedure"}
+        },
+        "currentEvidenceStatus": {"const": "UNVERIFIED"}
+      }
+    },
+    "learningMethod": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "requirementId",
+        "type",
+        "locator",
+        "selector",
+        "environment",
+        "passCondition"
+      ],
+      "properties": {
+        "id": {"type": "string", "pattern": "^C1-LVM-[0-9]{3}$"},
+        "requirementId": {
+          "type": "string",
+          "pattern": "^C1-LV-[0-9]{3}$"
+        },
+        "type": {"enum": ["automated", "manual", "hybrid"]},
+        "locator": {"type": "string", "minLength": 1},
+        "selector": {"type": "string", "minLength": 1},
+        "environment": {"type": "string", "minLength": 1},
+        "passCondition": {"type": "string", "minLength": 1}
+      }
+    },
+    "requirementTestEvidenceGraph": {
+      "allOf": [
+        {"$ref": "#/$defs/common"},
+        {
+          "type": "object",
+          "properties": {
+            "artifactType": {"const": "REQUIREMENT_TEST_EVIDENCE_GRAPH"},
+            "canonicalReferences": {
+              "type": "array",
+              "minItems": 1,
+              "items": {"$ref": "#/$defs/fileReference"}
+            },
+            "technicalRequirements": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["id", "family", "owner", "testIds"],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^C1-TA-(?:[A-Z0-9]+-)+[0-9]{3}$"
+                  },
+                  "family": {"type": "string", "pattern": "^[A-Z0-9]+$"},
+                  "owner": {"type": "string", "minLength": 1},
+                  "testIds": {
+                    "type": "array",
+                    "minItems": 1,
+                    "uniqueItems": true,
+                    "items": {
+                      "type": "string",
+                      "pattern": "^C1-TST-(?:[A-Z0-9]+-)+[0-9]{3}$"
+                    }
+                  }
+                }
+              }
+            },
+            "technicalTests": {
+              "type": "array",
+              "minItems": 1,
+              "items": {"$ref": "#/$defs/technicalTest"}
+            },
+            "learningRequirements": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "owner",
+                  "claim",
+                  "methodIds",
+                  "evidenceClasses",
+                  "limitation",
+                  "currentEvidenceStatus"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^C1-LV-[0-9]{3}$"
+                  },
+                  "owner": {"type": "string", "minLength": 1},
+                  "claim": {"type": "string", "minLength": 1},
+                  "methodIds": {
+                    "type": "array",
+                    "minItems": 1,
+                    "uniqueItems": true,
+                    "items": {
+                      "type": "string",
+                      "pattern": "^C1-LVM-[0-9]{3}$"
+                    }
+                  },
+                  "evidenceClasses": {
+                    "type": "array",
+                    "minItems": 1,
+                    "uniqueItems": true,
+                    "items": {"type": "string", "minLength": 1}
+                  },
+                  "limitation": {"type": "string", "minLength": 1},
+                  "currentEvidenceStatus": {"const": "UNVERIFIED"}
+                }
+              }
+            },
+            "learningMethods": {
+              "type": "array",
+              "minItems": 1,
+              "items": {"$ref": "#/$defs/learningMethod"}
+            },
+            "technicalEdgeCount": {"type": "integer", "minimum": 1},
+            "structuralStatus": {"const": "PASS"},
+            "candidateEvidenceStatus": {"const": "UNVERIFIED"}
+          },
+          "required": [
+            "canonicalReferences",
+            "technicalRequirements",
+            "technicalTests",
+            "learningRequirements",
+            "learningMethods",
+            "technicalEdgeCount",
+            "structuralStatus",
+            "candidateEvidenceStatus"
+          ]
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "testAndScenarioManifest": {
+      "allOf": [
+        {"$ref": "#/$defs/common"},
+        {
+          "type": "object",
+          "properties": {
+            "artifactType": {"const": "TEST_AND_SCENARIO_MANIFEST"},
+            "sourceManifests": {
+              "type": "array",
+              "minItems": 1,
+              "items": {"$ref": "#/$defs/fileReference"}
+            },
+            "technicalTests": {
+              "type": "array",
+              "minItems": 1,
+              "items": {"$ref": "#/$defs/technicalTest"}
+            },
+            "learningMethods": {
+              "type": "array",
+              "minItems": 1,
+              "items": {"$ref": "#/$defs/learningMethod"}
+            },
+            "namedUnitTests": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {"type": "string", "minLength": 1}
+            },
+            "negativeControls": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["id", "family", "target"],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^C1-NEG-[A-Z0-9-]+-[0-9]{3}$"
+                  },
+                  "family": {"type": "string", "minLength": 1},
+                  "target": {"type": "string", "minLength": 1}
+                }
+              }
+            },
+            "mutations": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["id", "family", "target"],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^C1-MUT-[A-Z0-9-]+-[0-9]{3}$"
+                  },
+                  "family": {"type": "string", "minLength": 1},
+                  "target": {"type": "string", "minLength": 1}
+                }
+              }
+            },
+            "requiredExternalEvidenceClasses": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {"type": "string", "minLength": 1}
+            },
+            "currentAcceptanceStatus": {"const": "UNVERIFIED"}
+          },
+          "required": [
+            "sourceManifests",
+            "technicalTests",
+            "learningMethods",
+            "namedUnitTests",
+            "negativeControls",
+            "mutations",
+            "requiredExternalEvidenceClasses",
+            "currentAcceptanceStatus"
+          ]
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "changeRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "workingTreeStatus",
+        "classification",
+        "invalidatedEvidenceFamilies",
+        "rerunRequired"
+      ],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "workingTreeStatus": {
+          "enum": ["TRACKED_MODIFIED", "TRACKED_DELETED", "UNTRACKED"]
+        },
+        "classification": {
+          "enum": [
+            "COURSE1_ONLY",
+            "COURSE4_ONLY",
+            "SHARED_COURSE_READER",
+            "SHARED_GOVERNANCE"
+          ]
+        },
+        "invalidatedEvidenceFamilies": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^[A-Z0-9_]+$"}
+        },
+        "rerunRequired": {"type": "boolean"}
+      }
+    },
+    "changeToEvidenceMap": {
+      "allOf": [
+        {"$ref": "#/$defs/common"},
+        {
+          "type": "object",
+          "properties": {
+            "artifactType": {"const": "CHANGE_TO_EVIDENCE_MAP"},
+            "baseline": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["headCommit", "dirty"],
+              "properties": {
+                "headCommit": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{40}$"
+                },
+                "dirty": {"type": "boolean"}
+              }
+            },
+            "changes": {
+              "type": "array",
+              "minItems": 1,
+              "items": {"$ref": "#/$defs/changeRow"}
+            },
+            "priorEvidenceDisposition": {"const": "INVALIDATED"},
+            "lastMaterialChangeFrozen": {"const": false},
+            "integratedRerunAfterLastMaterialChange": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["status", "evidenceIds", "reason"],
+              "properties": {
+                "status": {"const": "UNVERIFIED"},
+                "evidenceIds": {
+                  "type": "array",
+                  "maxItems": 0
+                },
+                "reason": {"type": "string", "minLength": 1}
+              }
+            }
+          },
+          "required": [
+            "baseline",
+            "changes",
+            "priorEvidenceDisposition",
+            "lastMaterialChangeFrozen",
+            "integratedRerunAfterLastMaterialChange"
+          ]
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "environmentComponent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "status", "version", "pathRedacted", "reason"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "status": {"$ref": "#/$defs/status"},
+        "version": {"type": ["string", "null"]},
+        "pathRedacted": {"const": true},
+        "reason": {"type": "string", "minLength": 1}
+      }
+    },
+    "environmentAndToolchain": {
+      "allOf": [
+        {"$ref": "#/$defs/common"},
+        {
+          "type": "object",
+          "properties": {
+            "artifactType": {"const": "ENVIRONMENT_AND_TOOLCHAIN"},
+            "host": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "operatingSystem",
+                "release",
+                "version",
+                "machine",
+                "hostnameRedacted",
+                "filesystem",
+                "timezone",
+                "locale"
+              ],
+              "properties": {
+                "operatingSystem": {"type": "string", "minLength": 1},
+                "release": {"type": "string", "minLength": 1},
+                "version": {"type": "string", "minLength": 1},
+                "machine": {"type": "string", "minLength": 1},
+                "hostnameRedacted": {"const": true},
+                "filesystem": {"type": "string", "minLength": 1},
+                "timezone": {"const": "Europe/Amsterdam"},
+                "locale": {"type": "string", "minLength": 1}
+              }
+            },
+            "components": {
+              "type": "array",
+              "minItems": 1,
+              "items": {"$ref": "#/$defs/environmentComponent"}
+            },
+            "learnerEnvironment": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["status", "reason"],
+              "properties": {
+                "status": {"const": "UNVERIFIED"},
+                "reason": {"type": "string", "minLength": 1}
+              }
+            },
+            "cleanEnvironment": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["status", "reason"],
+              "properties": {
+                "status": {"const": "UNVERIFIED"},
+                "reason": {"type": "string", "minLength": 1}
+              }
+            },
+            "networkBoundary": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["status", "reason"],
+              "properties": {
+                "status": {"const": "UNVERIFIED"},
+                "reason": {"type": "string", "minLength": 1}
+              }
+            }
+          },
+          "required": [
+            "host",
+            "components",
+            "learnerEnvironment",
+            "cleanEnvironment",
+            "networkBoundary"
+          ]
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "rawEvidenceInputRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "path",
+        "result",
+        "candidateBinding",
+        "candidateCommit",
+        "commandOrProcedure",
+        "environment",
+        "reviewer",
+        "recordedAt",
+        "reason"
+      ],
+      "properties": {
+        "id": {"type": "string", "pattern": "^C1-RAW-[A-Z0-9-]+$"},
+        "path": {"type": "string", "minLength": 1},
+        "result": {"enum": ["PASS", "FAIL", "UNVERIFIED"]},
+        "candidateBinding": {
+          "enum": [
+            "UNBOUND_WORKING_COPY",
+            "IMMUTABLE_CANDIDATE",
+            "PUBLIC_ARTIFACT"
+          ]
+        },
+        "candidateCommit": {
+          "type": ["string", "null"],
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "commandOrProcedure": {"type": "string", "minLength": 1},
+        "environment": {"type": "string", "minLength": 1},
+        "reviewer": {"type": "string", "minLength": 1},
+        "recordedAt": {"type": "string", "format": "date-time"},
+        "reason": {"type": "string", "minLength": 1}
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "candidateBinding": {"const": "UNBOUND_WORKING_COPY"}
+            }
+          },
+          "then": {"properties": {"candidateCommit": {"type": "null"}}},
+          "else": {
+            "properties": {
+              "candidateCommit": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{40}$"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "rawEvidenceInputManifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "entries"],
+      "properties": {
+        "schemaVersion": {"const": "course1-ground-up-raw-input-v1"},
+        "entries": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/rawEvidenceInputRow"}
+        }
+      }
+    },
+    "evidenceEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label",
+        "evidenceClass",
+        "result",
+        "path",
+        "exists",
+        "sha256",
+        "candidateBinding",
+        "commandOrProcedure",
+        "environment",
+        "reviewer",
+        "recordedAt",
+        "reason"
+      ],
+      "properties": {
+        "id": {"type": "string", "pattern": "^C1-RAW-[A-Z0-9-]+$"},
+        "label": {"type": "string", "minLength": 1},
+        "evidenceClass": {
+          "enum": [
+            "AUTOMATED_LOCAL",
+            "NATIVE_WINDOWS",
+            "REAL_BROWSER",
+            "AI_ASSISTED_REVIEW",
+            "LEARNER",
+            "ASSESSOR_UAT",
+            "PRACTITIONER_LEGAL_SECURITY",
+            "ACCESSIBILITY_DEVICE",
+            "REPOSITORY",
+            "MANUAL_SOURCE",
+            "INSTALLED_CLIENT",
+            "PRODUCTION"
+          ]
+        },
+        "result": {"$ref": "#/$defs/status"},
+        "path": {"type": ["string", "null"]},
+        "exists": {"type": "boolean"},
+        "sha256": {
+          "oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]
+        },
+        "candidateBinding": {
+          "enum": [
+            "UNBOUND_WORKING_COPY",
+            "IMMUTABLE_CANDIDATE",
+            "PUBLIC_ARTIFACT",
+            "NOT APPLICABLE"
+          ]
+        },
+        "commandOrProcedure": {"type": ["string", "null"]},
+        "environment": {"type": ["string", "null"]},
+        "reviewer": {"type": ["string", "null"]},
+        "recordedAt": {
+          "type": ["string", "null"],
+          "format": "date-time"
+        },
+        "reason": {"type": "string", "minLength": 1}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"exists": {"const": false}}},
+          "then": {
+            "properties": {
+              "result": {"const": "UNVERIFIED"},
+              "path": {"type": "null"},
+              "sha256": {"type": "null"}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"exists": {"const": true}}},
+          "then": {
+            "properties": {
+              "path": {"type": "string", "minLength": 1},
+              "sha256": {"$ref": "#/$defs/sha256"}
+            }
+          }
+        }
+      ]
+    },
+    "rawEvidenceIndex": {
+      "allOf": [
+        {"$ref": "#/$defs/common"},
+        {
+          "type": "object",
+          "properties": {
+            "artifactType": {"const": "RAW_EVIDENCE_INDEX"},
+            "entries": {
+              "type": "array",
+              "minItems": 1,
+              "items": {"$ref": "#/$defs/evidenceEntry"}
+            },
+            "candidateBindingStatus": {"const": "UNVERIFIED"},
+            "missingEvidenceClasses": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {"type": "string", "minLength": 1}
+            }
+          },
+          "required": [
+            "entries",
+            "candidateBindingStatus",
+            "missingEvidenceClasses"
+          ]
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "assuranceRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "status", "evidenceIds", "exclusions", "reason"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^C1-AA-[0-9]{3}$"},
+        "status": {"$ref": "#/$defs/status"},
+        "evidenceIds": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "exclusions": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "reason": {"type": "string", "minLength": 1}
+      }
+    },
+    "auditAssuranceResult": {
+      "allOf": [
+        {"$ref": "#/$defs/common"},
+        {
+          "type": "object",
+          "properties": {
+            "artifactType": {"const": "AUDIT_ASSURANCE_RESULT"},
+            "rules": {
+              "type": "array",
+              "minItems": 16,
+              "maxItems": 16,
+              "items": {"$ref": "#/$defs/assuranceRule"}
+            },
+            "overallAuditStatus": {"const": "UNVERIFIED"},
+            "productStatusAtGeneration": {"$ref": "#/$defs/productStatus"},
+            "allMandatoryRulesPassed": {"const": false},
+            "unverifiedExternalGates": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {"type": "string", "minLength": 1}
+            },
+            "decisionReason": {"type": "string", "minLength": 1}
+          },
+          "required": [
+            "rules",
+            "overallAuditStatus",
+            "productStatusAtGeneration",
+            "allMandatoryRulesPassed",
+            "unverifiedExternalGates",
+            "decisionReason"
+          ]
+        }
+      ],
+      "unevaluatedProperties": false
+    }
+  }
+}

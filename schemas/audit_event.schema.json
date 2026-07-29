@@ -23,8 +23,22 @@
       "pattern": "^RUN-[A-F0-9]{12}$"
     },
     "event_type": {
-      "type": "string",
-      "pattern": "^[a-z_]+$"
+      "enum": [
+        "run_received",
+        "input_validated",
+        "no_verified_issues",
+        "issues_created",
+        "summary_fallback",
+        "mock_summary_validated",
+        "human_review_required",
+        "duplicate_retry_ignored",
+        "review_decision_recorded",
+        "draft_revision_created",
+        "candidate_summary_validated",
+        "local_export_created",
+        "review_expired",
+        "safe_stop_recorded"
+      ]
     },
     "state": {
       "enum": [
@@ -47,10 +61,415 @@
       "format": "date-time"
     },
     "actor_type": {
-      "enum": ["system", "mock_ai", "ai", "reviewer"]
+      "enum": ["system", "mock_ai", "reviewer"]
     },
     "details": {
       "type": "object"
     }
-  }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "decisionId": {
+      "type": "string",
+      "pattern": "^DEC-[A-F0-9]{12}$"
+    },
+    "positiveInteger": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "runReceivedDetails": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["input_sha256", "run_config_sha256", "dataset_kind"],
+      "properties": {
+        "input_sha256": {"$ref": "#/$defs/sha256"},
+        "run_config_sha256": {"$ref": "#/$defs/sha256"},
+        "dataset_kind": {"const": "synthetic"}
+      }
+    },
+    "inputValidatedDetails": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["row_count", "header_count"],
+      "properties": {
+        "row_count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2000
+        },
+        "header_count": {"const": 12}
+      }
+    },
+    "noVerifiedIssuesDetails": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["issue_count", "external_actions"],
+      "properties": {
+        "issue_count": {"const": 0},
+        "external_actions": {"const": 0}
+      }
+    },
+    "issuesCreatedDetails": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["issue_count", "identity_fields"],
+      "properties": {
+        "issue_count": {"$ref": "#/$defs/positiveInteger"},
+        "identity_fields": {
+          "const": ["work_item_id", "rule_code", "field"]
+        }
+      }
+    },
+    "summaryFallbackDetails": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reason", "generator"],
+      "properties": {
+        "reason": {
+          "enum": [
+            "ai_disabled",
+            "ai_timeout",
+            "ai_refusal",
+            "malformed_ai_json",
+            "unknown_ai_issue_reference"
+          ]
+        },
+        "generator": {"const": "deterministic-fallback"}
+      }
+    },
+    "mockSummaryValidatedDetails": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["generator", "issue_reference_count"],
+      "properties": {
+        "generator": {"const": "offline-mock"},
+        "issue_reference_count": {"$ref": "#/$defs/positiveInteger"}
+      }
+    },
+    "humanReviewRequiredDetails": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "draft_revision",
+        "draft_sha256",
+        "review_manifest_sha256"
+      ],
+      "properties": {
+        "draft_revision": {"const": 1},
+        "draft_sha256": {"$ref": "#/$defs/sha256"},
+        "review_manifest_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "duplicateRetryIgnoredDetails": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "input_sha256",
+        "run_config_sha256",
+        "no_duplicate_effect"
+      ],
+      "properties": {
+        "input_sha256": {"$ref": "#/$defs/sha256"},
+        "run_config_sha256": {"$ref": "#/$defs/sha256"},
+        "no_duplicate_effect": {"const": true}
+      }
+    },
+    "reviewDecisionRecordedDetails": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decision_id",
+        "decision",
+        "draft_revision",
+        "draft_sha256",
+        "review_manifest_sha256",
+        "evidence_reviewed",
+        "integrity_scope"
+      ],
+      "properties": {
+        "decision_id": {"$ref": "#/$defs/decisionId"},
+        "decision": {
+          "enum": ["approve", "edit", "reject", "expire"]
+        },
+        "draft_revision": {"$ref": "#/$defs/positiveInteger"},
+        "draft_sha256": {"$ref": "#/$defs/sha256"},
+        "review_manifest_sha256": {"$ref": "#/$defs/sha256"},
+        "evidence_reviewed": {"type": "boolean"},
+        "integrity_scope": {
+          "const": "local_tamper_detection_not_authentication"
+        }
+      }
+    },
+    "draftRevisionCreatedDetails": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "previous_revision",
+        "draft_revision",
+        "previous_sha256",
+        "draft_sha256",
+        "review_manifest_sha256"
+      ],
+      "properties": {
+        "previous_revision": {"$ref": "#/$defs/positiveInteger"},
+        "draft_revision": {"$ref": "#/$defs/positiveInteger"},
+        "previous_sha256": {"$ref": "#/$defs/sha256"},
+        "draft_sha256": {"$ref": "#/$defs/sha256"},
+        "review_manifest_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "candidateSummaryValidatedDetails": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_sha256",
+        "draft_revision",
+        "issue_reference_count",
+        "prose_support_status",
+        "human_support_review_required"
+      ],
+      "properties": {
+        "candidate_sha256": {"$ref": "#/$defs/sha256"},
+        "draft_revision": {"$ref": "#/$defs/positiveInteger"},
+        "issue_reference_count": {"$ref": "#/$defs/positiveInteger"},
+        "prose_support_status": {"const": "controlled_templates_only"},
+        "human_support_review_required": {"const": true}
+      }
+    },
+    "localExportCreatedDetails": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decision_id",
+        "draft_revision",
+        "files",
+        "external_actions"
+      ],
+      "properties": {
+        "decision_id": {"$ref": "#/$defs/decisionId"},
+        "draft_revision": {"$ref": "#/$defs/positiveInteger"},
+        "files": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "string",
+              "pattern": "^approved-r[1-9][0-9]*\\.json$"
+            },
+            {
+              "type": "string",
+              "pattern": "^approved-r[1-9][0-9]*\\.csv$"
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "external_actions": {"const": 0}
+      }
+    },
+    "reviewExpiredDetails": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decision_id", "draft_revision"],
+      "properties": {
+        "decision_id": {"$ref": "#/$defs/decisionId"},
+        "draft_revision": {"$ref": "#/$defs/positiveInteger"}
+      }
+    },
+    "safeStopRecordedDetails": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "attempt_id",
+        "error_code",
+        "command",
+        "external_actions"
+      ],
+      "properties": {
+        "attempt_id": {
+          "type": "string",
+          "pattern": "^A[0-9]{4,}$"
+        },
+        "error_code": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,63}$"
+        },
+        "command": {
+          "enum": [
+            "prepare",
+            "decide",
+            "revise",
+            "validate-summary",
+            "export",
+            "status"
+          ]
+        },
+        "external_actions": {"const": 0}
+      }
+    }
+  },
+  "allOf": [
+    {
+      "oneOf": [
+        {
+          "properties": {
+            "event_type": {"const": "run_received"},
+            "state": {"const": "received"},
+            "actor_type": {"const": "system"},
+            "details": {"$ref": "#/$defs/runReceivedDetails"}
+          }
+        },
+        {
+          "properties": {
+            "event_type": {"const": "input_validated"},
+            "state": {"const": "validated"},
+            "actor_type": {"const": "system"},
+            "details": {"$ref": "#/$defs/inputValidatedDetails"}
+          }
+        },
+        {
+          "properties": {
+            "event_type": {"const": "no_verified_issues"},
+            "state": {"const": "no_action_needed"},
+            "actor_type": {"const": "system"},
+            "details": {"$ref": "#/$defs/noVerifiedIssuesDetails"}
+          }
+        },
+        {
+          "properties": {
+            "event_type": {"const": "issues_created"},
+            "state": {"const": "issues_ready"},
+            "actor_type": {"const": "system"},
+            "details": {"$ref": "#/$defs/issuesCreatedDetails"}
+          }
+        },
+        {
+          "properties": {
+            "event_type": {"const": "summary_fallback"},
+            "state": {"const": "summary_ready"},
+            "actor_type": {"const": "system"},
+            "details": {"$ref": "#/$defs/summaryFallbackDetails"}
+          }
+        },
+        {
+          "properties": {
+            "event_type": {"const": "mock_summary_validated"},
+            "state": {"const": "summary_ready"},
+            "actor_type": {"const": "mock_ai"},
+            "details": {"$ref": "#/$defs/mockSummaryValidatedDetails"}
+          }
+        },
+        {
+          "properties": {
+            "event_type": {"const": "human_review_required"},
+            "state": {"const": "needs_review"},
+            "actor_type": {"const": "system"},
+            "details": {"$ref": "#/$defs/humanReviewRequiredDetails"}
+          }
+        },
+        {
+          "properties": {
+            "event_type": {"const": "duplicate_retry_ignored"},
+            "state": {
+              "enum": [
+                "needs_review",
+                "changes_requested",
+                "approved_for_local_export",
+                "approved_draft",
+                "rejected",
+                "expired",
+                "no_action_needed"
+              ]
+            },
+            "actor_type": {"const": "system"},
+            "details": {"$ref": "#/$defs/duplicateRetryIgnoredDetails"}
+          }
+        },
+        {
+          "properties": {
+            "event_type": {"const": "review_decision_recorded"},
+            "actor_type": {"const": "reviewer"},
+            "details": {"$ref": "#/$defs/reviewDecisionRecordedDetails"}
+          },
+          "oneOf": [
+            {
+              "properties": {
+                "state": {"const": "approved_for_local_export"},
+                "details": {
+                  "properties": {"decision": {"const": "approve"}}
+                }
+              }
+            },
+            {
+              "properties": {
+                "state": {"const": "changes_requested"},
+                "details": {
+                  "properties": {"decision": {"const": "edit"}}
+                }
+              }
+            },
+            {
+              "properties": {
+                "state": {"const": "rejected"},
+                "details": {
+                  "properties": {"decision": {"const": "reject"}}
+                }
+              }
+            },
+            {
+              "properties": {
+                "state": {"const": "expired"},
+                "details": {
+                  "properties": {"decision": {"const": "expire"}}
+                }
+              }
+            }
+          ]
+        },
+        {
+          "properties": {
+            "event_type": {"const": "draft_revision_created"},
+            "state": {"const": "needs_review"},
+            "actor_type": {"const": "system"},
+            "details": {"$ref": "#/$defs/draftRevisionCreatedDetails"}
+          }
+        },
+        {
+          "properties": {
+            "event_type": {"const": "candidate_summary_validated"},
+            "state": {"const": "needs_review"},
+            "actor_type": {"const": "system"},
+            "details": {"$ref": "#/$defs/candidateSummaryValidatedDetails"}
+          }
+        },
+        {
+          "properties": {
+            "event_type": {"const": "local_export_created"},
+            "state": {"const": "approved_draft"},
+            "actor_type": {"const": "system"},
+            "details": {"$ref": "#/$defs/localExportCreatedDetails"}
+          }
+        },
+        {
+          "properties": {
+            "event_type": {"const": "review_expired"},
+            "state": {"const": "expired"},
+            "actor_type": {"const": "system"},
+            "details": {"$ref": "#/$defs/reviewExpiredDetails"}
+          }
+        },
+        {
+          "properties": {
+            "event_type": {"const": "safe_stop_recorded"},
+            "state": {"const": "failed_manual"},
+            "actor_type": {"const": "system"},
+            "details": {"$ref": "#/$defs/safeStopRecordedDetails"}
+          }
+        }
+      ]
+    }
+  ]
 }

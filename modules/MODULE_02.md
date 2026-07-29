@@ -2,10 +2,11 @@
 
 ## Outcome
 
-You will select a small, measurable, reversible workflow opportunity and write
-an intended purpose, negative scope, value hypothesis, success measures, and
-stop conditions. You will learn that “do not automate this yet” can be the
-correct consulting result.
+Using only fictional evidence, you will rehearse how to select a small,
+measurable, reversible workflow opportunity and write an intended purpose,
+negative scope, value hypothesis, success measures, and stop conditions. You
+will learn that “do not automate this yet” can be the correct result; this is
+not a claim that real client discovery occurred.
 
 ## Beginner checkpoint
 
@@ -64,9 +65,34 @@ steps deliberately leave an existing learner file unchanged.
 
 Suggested sessions:
 
-1. complete and check the worked brief and worked scorecard;
-2. screen and score the three different recreation candidates;
-3. run the Codex check, correct the records, and make the Git checkpoint.
+Use eight focused blocks of 45–60 minutes. Never continue a block past 60
+minutes or join two blocks because you feel behind.
+
+- **UNDERSTAND** means you must explain the evidence, assumption, hard stop,
+  score, decision, and smallest next step in your own words.
+- **PROTECTED PLUMBING — RUN AND OBSERVE** means you may run the supplied
+  path, create-once, hash-lock, and Git commands without memorising syntax. You
+  must understand what each protects, inspect its result, and stop on an error.
+
+1. **PROTECTED PLUMBING — RUN AND OBSERVE:** run Stage 1, verify the project
+   boundary, and safely create or resume the Module 2 evidence folder.
+2. **UNDERSTAND:** read the worked brief in Stage 2 and identify its evidence,
+   assumptions, hard stops, intended purpose, exclusions, and fallback.
+3. **UNDERSTAND:** complete the worked scorecard and explain why hard stops
+   override its maximum-27 total and why every score needs evidence.
+4. **UNDERSTAND:** study Stage 3's completed worksheet mapping, then read the
+   three different synthetic recreation candidates without scoring yet.
+5. **UNDERSTAND:** screen and score all three candidates, including existing
+   tools, costs, reversibility, owner, success measure, and stop conditions.
+6. **UNDERSTAND + PROTECTED PLUMBING:** decide between Candidates A and B
+   before feedback, save the record, and create its Secure Hash Algorithm
+   256-bit (SHA-256) lock.
+7. **UNDERSTAND:** open the separate calibration only after the lock, preserve
+   the first decision, write any reassessment separately, and finish the
+   recreated opportunity brief and scorecard.
+8. **UNDERSTAND + PROTECTED PLUMBING:** run the bounded Codex review, make your
+   own corrections without altering locked evidence, check the pass criteria,
+   and run only the supplied Module 2 Git checkpoint commands.
 
 Before stopping, save every file and note the last completed numbered step.
 After reopening PowerShell, rerun Stage 1 and continue with the next step.
@@ -403,6 +429,99 @@ notepad.exe .\workflow_opportunity_scorecard.md
 `Copy-Item` preserves the blank source template and gives your completed
 capstone record the exact required name.
 
+### Independent decision lab — lock your judgment before calibration
+
+This decision lab is separate from the fixed capstone teaching vehicle. There
+is deliberately no single preferred label. Do not read the calibration rules
+below until you have recorded and fingerprinted your decision.
+
+Assess these two previously unused fictional candidates:
+
+**Candidate A — internal training-material review dates**
+
+- a 40-row shared spreadsheet lists fictional material IDs, owner roles, and
+  review dates;
+- a coordinator spends about 25 active minutes each week checking due dates;
+- the list contains no people, customer, medical, or financial decisions;
+- Microsoft 365 is already available, but its native reminder capability has
+  not been inspected;
+- two weeks of measured volume exist; missed review means a stale internal
+  handout, not an external action.
+
+**Candidate B — repair-part photo description draft**
+
+- a fictional workshop receives about 12 part photos per day;
+- staff say descriptions are inconsistent, but no timed baseline or error count
+  exists;
+- a possible AI step would draft a short internal description from a synthetic
+  image;
+- a technician would review every draft and no order or message would be sent;
+- image quality, allowed vocabulary, current system capability, and failure
+  consequence remain unknown.
+
+Create and complete the decision record before reading further:
+
+```powershell
+$independentDecision = Join-Path $moduleFolder 'independent_opportunity_decision.md'
+if (Test-Path -LiteralPath $independentDecision) {
+    if (-not (Test-Path -LiteralPath $independentDecision -PathType Leaf) -or
+        (Get-Content -LiteralPath $independentDecision -TotalCount 1) -cne '# Independent opportunity decision') {
+        throw 'Existing independent decision is unfamiliar. Preserve it and ask for read-only diagnosis.'
+    }
+    Write-Host "KEEPING existing $independentDecision"
+} else {
+    @'
+# Independent opportunity decision
+
+Decision made before calibration: YES / NO
+
+| Candidate | Hard stop and reason | Evidence versus assumption | Existing-tool question | Reversibility and failure consequence | SELECT / DISCOVER FURTHER / DISCARD | Smallest next evidence |
+|---|---|---|---|---|---|---|
+| A | | | | | | |
+| B | | | | | | |
+
+Preferred next step and why:
+What evidence could change it:
+What I deliberately did not assume:
+'@ | Set-Content -LiteralPath $independentDecision -Encoding utf8
+}
+notepad $independentDecision
+```
+
+After completing and closing the file, lock its current bytes:
+
+```powershell
+$independentDecisionHash = (
+    Get-FileHash -LiteralPath $independentDecision -Algorithm SHA256
+).Hash
+$independentHashPath = Join-Path $moduleFolder 'independent_opportunity_decision.sha256'
+if (Test-Path -LiteralPath $independentHashPath) {
+    $lockedHash = (Get-Content -Raw -LiteralPath $independentHashPath).Trim()
+    if ($lockedHash -cne $independentDecisionHash) {
+        throw 'The locked independent decision changed. Preserve it and write only a separate reassessment.'
+    }
+    Write-Host 'PASS: existing decision lock still matches'
+} else {
+    $independentDecisionHash |
+        Set-Content -LiteralPath $independentHashPath -Encoding ascii
+    Write-Host 'CREATED: independent decision lock'
+}
+$independentDecisionHash
+```
+
+Do not edit the locked record after this point.
+
+#### Open the separate calibration page only now
+
+Only after the hash is saved and confirmed, open
+[Module 2 Opportunity-Decision Calibration](../OPPORTUNITY_DECISION_CALIBRATION.md).
+That separate page contains the calibration criteria and reassessment
+instructions. Keeping it off this decision page prevents you from seeing the
+criteria before the original record is locked.
+
+Never replace the original decision to make it look as though you knew the
+calibration first.
+
 Create or reopen the brief before writing:
 
 ```powershell
@@ -421,7 +540,7 @@ if (Test-Path -LiteralPath $briefPath) {
 notepad.exe $briefPath
 ```
 
-Assess:
+Now assess the fixed capstone teaching candidates:
 
 1. the Synthetic SME Operations Exception Assistant using
    `practice_data/work_items.csv`;
@@ -430,7 +549,10 @@ Assess:
 
 Use the same nine scoring factors, but write your own evidence note beside
 every score. Candidate 2 must hit the course hard stop because it ranks people
-for employment-related use. Select Candidate 1 and include:
+for employment-related use. The course continues with Candidate 1 as the fixed
+technical teaching vehicle; that is not evidence that you independently chose
+it. Give Candidate 1 your own `SELECT FOR SYNTHETIC PROOF`,
+`DISCOVER FURTHER`, or `DISCARD` judgment and include:
 
 - the Module 1 baseline;
 - the exact user, reviewer, owner, trigger, input, function, and output;
@@ -490,6 +612,9 @@ stop. If none is noticed, say that non-detection is not proof that none exists.
 
 Review worked_opportunity_brief.md,
 worked_workflow_opportunity_scorecard.md,
+independent_opportunity_decision.md,
+independent_opportunity_decision.sha256,
+and independent_opportunity_reassessment.md when it exists,
 recreated_opportunity_brief.md, and workflow_opportunity_scorecard.md. Return:
 1. PASS or NOT YET;
 2. a checklist for: evidence-backed problem; hard-stop screen; scores with
@@ -499,7 +624,12 @@ misuse protection; value labelled as a hypothesis; costs included; measurable
 thresholds; scope-change triggers; dated decision and owners;
 completed scorecard evidence statuses; all six improvement options; score
 evidence; the scorecard and brief use the same selection decision;
-3. the smallest corrections for me to make if NOT YET.
+3. a separate check that the saved SHA-256 matches the unchanged independent
+decision; both multi-outcome candidate decisions distinguish evidence from
+assumption, existing-tool fit, reversibility, failure consequence, and next
+evidence; no particular label is required when reasoning is supported; any
+post-calibration correction is preserved separately;
+4. the smallest corrections for me to make if NOT YET.
 
 Remain read-only. Do not rewrite the brief. Do not request or use any real
 business information.
@@ -508,6 +638,12 @@ business information.
 ## Pass criteria
 
 - [ ] Only synthetic scenarios are used.
+- [ ] I locked the independent record containing both candidate decisions
+      before calibration, the SHA-256 still matches, and any correction is a
+      separate reassessment.
+- [ ] The independent decision uses evidence, uncertainty, existing-tool fit,
+      reversibility, consequence, and next evidence; it does not depend on one
+      prescribed label.
 - [ ] Three candidates are screened and scored with evidence.
 - [ ] The employment-ranking candidate is stopped regardless of score.
 - [ ] The selected opportunity is small, internal, measurable, and reversible.
@@ -540,6 +676,7 @@ and change triggers.
 
 The teaching contract produces `worked_opportunity_brief.md`,
 `worked_workflow_opportunity_scorecard.md`,
+the locked independent opportunity decision and optional reassessment,
 `recreated_opportunity_brief.md`, and
 `workflow_opportunity_scorecard.md` in `evidence\module-02`.
 
@@ -585,4 +722,4 @@ approved, or value depends on removing human review.
 
 ## Estimated time
 
-6–8 hours.
+6–8 hours. This is an **AUTHOR ESTIMATE — NOT BEGINNER MEASURED**.

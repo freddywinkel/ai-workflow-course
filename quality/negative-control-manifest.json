@@ -1,0 +1,203 @@
+{
+  "schemaVersion": 1,
+  "manifestId": "course1-family-negative-controls-v1",
+  "controls": [
+    {
+      "id": "C1-NEG-DATA-001",
+      "family": "DATA",
+      "target": "course1_capstone/workflow.py",
+      "find": "    if synthetic_confirmation != SYNTHETIC_CONFIRMATION:",
+      "replace": "    if False and synthetic_confirmation != SYNTHETIC_CONFIRMATION:",
+      "workingDirectory": ".",
+      "command": [
+        "{python}",
+        "-m",
+        "pytest",
+        "-q",
+        "course1_capstone/tests/test_workflow.py",
+        "-k",
+        "synthetic_confirmation_is_mandatory"
+      ],
+      "expectedFailurePattern": "synthetic_confirmation_is_mandatory"
+    },
+    {
+      "id": "C1-NEG-FS-001",
+      "family": "FS",
+      "target": "course1_capstone/workflow.py",
+      "find": "        if stem in WINDOWS_RESERVED_NAMES:",
+      "replace": "        if False and stem in WINDOWS_RESERVED_NAMES:",
+      "workingDirectory": ".",
+      "command": [
+        "{python}",
+        "-m",
+        "pytest",
+        "-q",
+        "quality/test_runner_properties.py",
+        "-k",
+        "reserved_device_names"
+      ],
+      "expectedFailurePattern": "reserved_device_names"
+    },
+    {
+      "id": "C1-NEG-IO-001",
+      "family": "IO",
+      "target": "course1_capstone/workflow.py",
+      "find": "    if before.st_size > max_bytes:",
+      "replace": "    if before.st_size >= max_bytes:",
+      "workingDirectory": ".",
+      "command": [
+        "{python}",
+        "-m",
+        "pytest",
+        "-q",
+        "course1_capstone/tests/test_workflow.py",
+        "-k",
+        "runner_resource_limits_stop_before_materialising_oversized_input"
+      ],
+      "expectedFailurePattern": "runner_resource_limits"
+    },
+    {
+      "id": "C1-NEG-CAP-001",
+      "family": "CAP",
+      "target": "course1_capstone/workflow.py",
+      "find": "import stat\n",
+      "replace": "import stat\nimport socket\n",
+      "workingDirectory": ".",
+      "command": [
+        "{python}",
+        "-m",
+        "pytest",
+        "-q",
+        "course1_capstone/tests/test_workflow.py",
+        "-k",
+        "runtime_has_no_network_or_process_connector_import"
+      ],
+      "expectedFailurePattern": "runtime_has_no_network"
+    },
+    {
+      "id": "C1-NEG-PWA-001",
+      "family": "PWA",
+      "target": "app/src/state.js",
+      "find": "    if (noteLength > MAX_NOTE_CODE_POINTS) {\n      throw new Error(\"A progress-backup note is too long.\");",
+      "replace": "    if (noteLength >= MAX_NOTE_CODE_POINTS) {\n      throw new Error(\"A progress-backup note is too long.\");",
+      "workingDirectory": "app",
+      "command": [
+        "{node}",
+        "--test",
+        "--test-name-pattern=PWA-PROP-005",
+        "tests/property-security.test.mjs"
+      ],
+      "expectedFailurePattern": "PWA-PROP-005"
+    },
+    {
+      "id": "C1-NEG-WEB-001",
+      "family": "WEB",
+      "target": "app/src/markdown.js",
+      "find": "      url.protocol === \"https:\" &&",
+      "replace": "      (url.protocol === \"https:\" || url.protocol === \"http:\") &&",
+      "workingDirectory": "app",
+      "command": [
+        "{node}",
+        "--test",
+        "--test-name-pattern=PWA-PROP-001",
+        "tests/property-security.test.mjs"
+      ],
+      "expectedFailurePattern": "PWA-PROP-001"
+    },
+    {
+      "id": "C1-NEG-SW-001",
+      "family": "SW",
+      "target": "app/src/sw.js",
+      "find": "    manifest.contentHash !== CONTENT_HASH ||",
+      "replace": "    false ||",
+      "workingDirectory": "app",
+      "command": [
+        "{node}",
+        "--test",
+        "--test-name-pattern=PWA-PROP-009",
+        "tests/property-security.test.mjs"
+      ],
+      "expectedFailurePattern": "ERR_ASSERTION|manifest\\.contentHash"
+    },
+    {
+      "id": "C1-NEG-SC-001",
+      "family": "SC",
+      "target": "requirements-course.txt",
+      "find": "--require-hashes",
+      "replace": "--require-hashes-disabled",
+      "workingDirectory": ".",
+      "command": [
+        "{python}",
+        "tools/audit_course1_supply_chain.py"
+      ],
+      "expectedFailurePattern": "FAIL|required global options|require-hashes"
+    },
+    {
+      "id": "C1-NEG-TEST-001",
+      "family": "TEST",
+      "target": "course1_capstone/tests/test_manifest.json",
+      "find": "test_schema_contracts.SchemaContractTests.test_all_schemas_are_valid_draft_2020_12",
+      "replace": "test_schema_contracts.SchemaContractTests.test_all_schemas_are_valid_draft_2020_12_REMOVED",
+      "workingDirectory": ".",
+      "command": [
+        "{python}",
+        "tools/accept_course1_cleanroom.py"
+      ],
+      "expectedFailurePattern": "Named unittest inventory mismatch|unexpected"
+    },
+    {
+      "id": "C1-NEG-WIN-001",
+      "family": "WIN",
+      "target": "SETUP_WINDOWS.md",
+      "find": "Do not install Node.js or n8n",
+      "replace": "Install Node.js or n8n",
+      "workingDirectory": ".",
+      "command": [
+        "{python}",
+        "-m",
+        "pytest",
+        "-q",
+        "tools/tests/test_course1_quality_controls.py",
+        "-k",
+        "windows_setup_preserves_beginner_dependency_boundary"
+      ],
+      "expectedFailurePattern": "windows_setup_preserves"
+    },
+    {
+      "id": "C1-NEG-BR-001",
+      "family": "BR",
+      "target": "app/scripts/browser-smoke.mjs",
+      "find": "      { width: 320, height: 568, label: \"small phone portrait\" },",
+      "replace": "      { width: 321, height: 568, label: \"small phone portrait\" },",
+      "workingDirectory": ".",
+      "command": [
+        "{python}",
+        "-m",
+        "pytest",
+        "-q",
+        "tools/tests/test_course1_quality_controls.py",
+        "-k",
+        "browser_smoke_keeps_exact_responsive_viewport_matrix"
+      ],
+      "expectedFailurePattern": "browser_smoke_keeps"
+    },
+    {
+      "id": "C1-NEG-REC-001",
+      "family": "REC",
+      "target": "course1_capstone/workflow.py",
+      "find": "                _restore_controlled_file(controlled_path, snapshot)",
+      "replace": "                pass  # negative control: snapshot restore omitted",
+      "workingDirectory": ".",
+      "command": [
+        "{python}",
+        "-m",
+        "pytest",
+        "-q",
+        "course1_capstone/tests/test_workflow.py",
+        "-k",
+        "failed_export_rollback_leaves_a_blocking_incomplete_marker"
+      ],
+      "expectedFailurePattern": "failed_export_rollback"
+    }
+  ]
+}

@@ -25,7 +25,7 @@ Data-minimisation changes:
 Controller/processor rationale by activity:  
 Article 28 agreement requirements:  
 International-transfer mechanism/assessment:  
-DPIA screen and AP-list result:  
+Data Protection Impact Assessment (DPIA) screen and Accounts Payable (AP) list result:
 Prior consultation question:  
 
 ## Rights and lifecycle
@@ -56,4 +56,3 @@ Reassessment triggers:
 - [ ] intended purpose/branding/substantial modification changed
 
 Decision and reviewer:  
-

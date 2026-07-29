@@ -5,6 +5,28 @@
 You will create and run a small Python program, use three exact checks, and
 explain its input, decision, output, and failure risk.
 
+## Study plan — nine blocks of no more than 60 minutes
+
+**Time label: AUTHOR ESTIMATE — NOT BEGINNER MEASURED.** The published
+8–9-hour range is a planning estimate, not measured novice completion time.
+Use each row as a separate study segment. Stop when the row is complete or
+when 60 focused minutes have elapsed, whichever happens first. Record the last
+completed part using synthetic wording, save and close files, and take a break.
+Run **Start or resume safely** in every new PowerShell session; never combine
+blocks.
+
+| Block | Maximum | Work and safe stopping point |
+|---:|---:|---|
+| 1 | 60 minutes | Learn the required Python words and safety boundary. Stop before **Follow along**. |
+| 2 | 60 minutes | Run the start/resume block, inspect the selected attempt, and make the explicit resume/retry decision. |
+| 3 | 60 minutes | Write the first function in Part B and explain input, condition, and output. |
+| 4 | 60 minutes | Add and inspect the exact Part B tests. Stop after predicting their results. |
+| 5 | 60 minutes | Complete Part C and explain the list and membership check. |
+| 6 | 60 minutes | Complete Part D, run the program, and inspect observed output. |
+| 7 | 60 minutes | Compare the exact expected result and troubleshoot only an observed mismatch. |
+| 8 | 60 minutes | Recreate the program and checks with the required different values. |
+| 9 | 60 minutes | Ask Codex for the bounded read-only check, explain failure risk, and apply every pass criterion. |
+
 ## Words you need first
 
 - **Code** is a precise set of instructions written for a computer.

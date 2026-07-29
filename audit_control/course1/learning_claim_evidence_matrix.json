@@ -1,0 +1,509 @@
+{
+  "schemaVersion": "course1-learning-claim-evidence-matrix-v1",
+  "courseId": "course-1-controlled-ai-workflow-foundations",
+  "contractPath": "COURSE_1_LEARNING_VALIDATION_CONTRACT.md",
+  "evidenceRecordSchemaPath": "audit_control/course1/learning_evidence_record.schema.json",
+  "evidenceRecordTemplatePath": "release_evidence/templates/COURSE_1_LEARNING_EVIDENCE_RECORD.template.json",
+  "releaseEvidenceRoot": "release_evidence/course1_learning_validation",
+  "requirements": [
+    {
+      "requirementId": "C1-LV-001",
+      "owner": "Course maintainer",
+      "observableCapability": "Every Course 1 teaching, preparation, validation, and readiness claim is bounded by an observable capability, evidence class, assessment method, pass condition, limitation, and later boundary.",
+      "claim": "The Course 1 promise and release language do not exceed the evidence that is actually recorded.",
+      "evidenceClasses": [
+        "INDEPENDENT_ARTIFACT_ASSESSMENT"
+      ],
+      "assessmentMethods": [
+        {
+          "methodId": "C1-LVM-001",
+          "type": "hybrid",
+          "locator": "COURSE_1_REQUIREMENTS_TRACEABILITY.md",
+          "selector": "## Learning and evidence map",
+          "environment": "maintainer validation followed by independent release review",
+          "passCondition": "A signed candidate-bound review maps every learner-facing and release claim to this closed matrix and finds no overclaim or missing boundary."
+        }
+      ],
+      "limitation": "A complete matrix proves traceability, not that the learner or product passed the underlying methods.",
+      "laterBoundary": "Course 2 discovery, client work, production use, and consulting readiness remain separately gated.",
+      "currentEvidence": {
+        "status": "UNVERIFIED",
+        "records": []
+      },
+      "learningDecision": {
+        "status": "NOT YET",
+        "reason": "No signed candidate-bound claim review exists."
+      }
+    },
+    {
+      "requirementId": "C1-LV-002",
+      "owner": "Course validation maintainer",
+      "observableCapability": "Automated checks state the exact structural or behavioural property they test and reject positive, negative, missing, malformed, and contradictory cases where applicable.",
+      "claim": "Automated validation is reported as artifact or technical evidence and never as proof of comprehension or independent judgment.",
+      "evidenceClasses": [
+        "AUTOMATED_ARTIFACT"
+      ],
+      "assessmentMethods": [
+        {
+          "methodId": "C1-LVM-002",
+          "type": "automated",
+          "locator": "tools/validate_package.py",
+          "selector": "def validate_beginner_practice_contract",
+          "environment": "fresh exact package-validation environment",
+          "passCondition": "The candidate-bound report names each exact property and its negative controls; missing, malformed, contradictory, unknown, or skipped cases fail closed."
+        }
+      ],
+      "limitation": "Artifact checks cannot prove understanding, usability, oral ability, independent judgment, transfer, or retention.",
+      "laterBoundary": "Human learning evidence remains mandatory and non-substitutable.",
+      "currentEvidence": {
+        "status": "UNVERIFIED",
+        "records": []
+      },
+      "learningDecision": {
+        "status": "NOT YET",
+        "reason": "No candidate-bound learning artifact report with the required semantic negative evidence exists."
+      }
+    },
+    {
+      "requirementId": "C1-LV-003",
+      "owner": "Assessment owner",
+      "observableCapability": "Learner confidence, difficulty, time, fatigue, confusion, and help are recorded separately from scored competence.",
+      "claim": "Course 1 preserves useful self-reflection without allowing it to raise a score or replace independent evidence.",
+      "evidenceClasses": [
+        "LEARNER_SELF_REFLECTION"
+      ],
+      "assessmentMethods": [
+        {
+          "methodId": "C1-LVM-003",
+          "type": "manual",
+          "locator": "modules/MODULE_09.md",
+          "selector": "learner_self_reflection.md",
+          "environment": "synthetic learner project",
+          "passCondition": "The learner reflection records the required experience fields and remains visibly separate from every assessor score and competence decision."
+        }
+      ],
+      "limitation": "Self-reflection records what the learner reports; it does not prove an action occurred or that competence exists.",
+      "laterBoundary": "Independent artifact and oral gates remain required for Course 1 competence.",
+      "currentEvidence": {
+        "status": "UNVERIFIED",
+        "records": []
+      },
+      "learningDecision": {
+        "status": "NOT YET",
+        "reason": "No candidate-bound learner reflection record exists."
+      }
+    },
+    {
+      "requirementId": "C1-LV-004",
+      "owner": "Independent artifact assessment owner",
+      "observableCapability": "A calibrated person who did not create or edit the work applies the fixed rubric, cites evidence, declares conflicts and help, and does not repair during scoring.",
+      "claim": "A Course 1 artifact competence result is independently evidence-calibrated rather than self-awarded.",
+      "evidenceClasses": [
+        "INDEPENDENT_ARTIFACT_ASSESSMENT"
+      ],
+      "assessmentMethods": [
+        {
+          "methodId": "C1-LVM-004",
+          "type": "manual",
+          "locator": "ASSESSMENT_AND_RUBRIC.md",
+          "selector": "## Assessment roles and separate results",
+          "environment": "live independent assessment of one frozen synthetic learner package",
+          "passCondition": "Every prerequisite and scored area has an assessor-supported result, evidence path, reason, conflict/help declaration, and no unsupported or disputed pass."
+        }
+      ],
+      "limitation": "Artifact assessment does not prove speech, real-user acceptance, production readiness, or long-term retention.",
+      "laterBoundary": "Oral, UAT, retention, and later-course readiness remain separately gated.",
+      "currentEvidence": {
+        "status": "UNVERIFIED",
+        "records": []
+      },
+      "learningDecision": {
+        "status": "NOT YET",
+        "reason": "No complete candidate-bound independent artifact assessment exists."
+      }
+    },
+    {
+      "requirementId": "C1-LV-005",
+      "owner": "Independent oral assessment owner",
+      "observableCapability": "The learner answers live, one question at a time, without prepared wording, handles evidence-based follow-ups, and can say I do not know while naming a safe next step.",
+      "claim": "Verified oral competence means independently observed explanation in the learner's own words.",
+      "evidenceClasses": [
+        "INDEPENDENT_ORAL_ASSESSMENT"
+      ],
+      "assessmentMethods": [
+        {
+          "methodId": "C1-LVM-005",
+          "type": "manual",
+          "locator": "ASSESSMENT_AND_RUBRIC.md",
+          "selector": "## Oral demonstration questions",
+          "environment": "live one-question-at-a-time oral assessment",
+          "passCondition": "All required concepts are accurately explained; at least one weak, vague, or unsupported answer receives an evidence follow-up; unsafe overclaims are rejected; unknowns lead to a safe next step."
+        }
+      ],
+      "limitation": "A written answer, self-attestation, recording alone, or model review cannot verify live oral competence.",
+      "laterBoundary": "Oral competence does not prove production readiness, customer demand, or real UAT.",
+      "currentEvidence": {
+        "status": "UNVERIFIED",
+        "records": []
+      },
+      "learningDecision": {
+        "status": "NOT YET",
+        "reason": "No candidate-bound independently observed oral assessment exists."
+      }
+    },
+    {
+      "requirementId": "C1-LV-006",
+      "owner": "Curriculum and rehearsal owner",
+      "observableCapability": "The learner performs synthetic operator, reviewer, failure, evidence, approval, fallback, defect, and retest tasks while acting in explicitly separated roles.",
+      "claim": "Solo operational practice is a role-simulated acceptance rehearsal and always retains EXTERNAL UAT NOT VERIFIED.",
+      "evidenceClasses": [
+        "ROLE_SIMULATED_ACCEPTANCE_REHEARSAL"
+      ],
+      "assessmentMethods": [
+        {
+          "methodId": "C1-LVM-006",
+          "type": "manual",
+          "locator": "modules/MODULE_09.md",
+          "selector": "### Recreation 3B — Perform the six operator tasks",
+          "environment": "local synthetic learner project with no external actions",
+          "passCondition": "Every predefined role-simulated task records evidence, help, defects, correction, and retest and is never titled or summarised as completed real UAT."
+        }
+      ],
+      "limitation": "The learner acting in another role is not another intended user and cannot verify external acceptance.",
+      "laterBoundary": "Another consenting person is required for REAL SYNTHETIC UAT; production acceptance remains out of scope.",
+      "currentEvidence": {
+        "status": "UNVERIFIED",
+        "records": []
+      },
+      "learningDecision": {
+        "status": "NOT YET",
+        "reason": "No complete candidate-bound role-simulated rehearsal record exists."
+      }
+    },
+    {
+      "requirementId": "C1-LV-007",
+      "owner": "Real synthetic UAT owner",
+      "observableCapability": "Another consenting intended user performs predefined realistic tasks with synthetic data and without the answer key while the facilitator records observed use and retest.",
+      "claim": "REAL SYNTHETIC UAT VERIFIED is used only for valid independent observed task evidence.",
+      "evidenceClasses": [
+        "REAL_SYNTHETIC_UAT"
+      ],
+      "assessmentMethods": [
+        {
+          "methodId": "C1-LVM-007",
+          "type": "manual",
+          "locator": "templates/uat_script.md",
+          "selector": "### Required participant briefing — complete before consent",
+          "environment": "observed synthetic intended-user session with a person other than the learner",
+          "passCondition": "The valid pre-briefed participant completes predefined tasks; completion, time, errors, help, comments, interventions, defects, correction, retest, and synthetic limitation are recorded."
+        }
+      ],
+      "limitation": "Synthetic UAT does not establish production usability, real-data fitness, organisational adoption, or client acceptance.",
+      "laterBoundary": "Production or client acceptance requires later authorised work with separate legal, privacy, security, and organisational gates.",
+      "currentEvidence": {
+        "status": "UNVERIFIED",
+        "records": []
+      },
+      "learningDecision": {
+        "status": "NOT YET",
+        "reason": "No valid candidate-bound other-person synthetic UAT record exists."
+      }
+    },
+    {
+      "requirementId": "C1-LV-008",
+      "owner": "Beginner trial owner",
+      "observableCapability": "Eligible literal beginners can follow the required path under observed conditions with every hint, correction, intervention, confusion, recovery, duration, and fatigue recorded.",
+      "claim": "A beginner-validated claim requires two sampled beginners and one full eligible beginner completion, not author inspection.",
+      "evidenceClasses": [
+        "LITERAL_BEGINNER_TRIAL"
+      ],
+      "assessmentMethods": [
+        {
+          "methodId": "C1-LVM-008",
+          "type": "manual",
+          "locator": "BEGINNER_READINESS_CHECK.md",
+          "selector": "## Required readiness exercise — complete before Foundation 1",
+          "environment": "fresh supported Windows beginner trial with distinct participant and facilitator roles",
+          "passCondition": "Two eligible beginners complete onboarding, Foundations 1–3, and a representative long-module segment; one completes the full sequence; no hidden expert intervention remains."
+        }
+      ],
+      "limitation": "A small recorded sample cannot prove that every beginner, device, language, health condition, or accessibility need will have the same result.",
+      "laterBoundary": "Until the full sample exists, the product must say FULL BEGINNER COMPLETION NOT VERIFIED.",
+      "currentEvidence": {
+        "status": "UNVERIFIED",
+        "records": []
+      },
+      "learningDecision": {
+        "status": "NOT YET",
+        "reason": "No candidate-bound eligible beginner trial set or full beginner completion exists."
+      }
+    },
+    {
+      "requirementId": "C1-LV-009",
+      "owner": "Learner-computer execution owner",
+      "observableCapability": "The official setup, fresh-session commands, Foundation 3, representative runner workflow/test, and restart/resume path actually work on the learner's computer.",
+      "claim": "Computer compatibility is claimed only after execution, not from software detection or instructions.",
+      "evidenceClasses": [
+        "LITERAL_BEGINNER_TRIAL"
+      ],
+      "assessmentMethods": [
+        {
+          "methodId": "C1-LVM-009",
+          "type": "hybrid",
+          "locator": "SETUP_WINDOWS.md",
+          "selector": "## Pass criteria",
+          "environment": "learner-approved native Windows setup and new PowerShell session",
+          "passCondition": "Setup, Foundation 3, one runner workflow/test, and restart/resume pass with exact versions, environment, deviations, and limitations recorded."
+        }
+      ],
+      "limitation": "Detection and maintainer runtimes do not prove the learner setup; one machine does not prove the entire support matrix.",
+      "laterBoundary": "Installation or configuration requires learner approval; production environments remain out of scope.",
+      "currentEvidence": {
+        "status": "UNVERIFIED",
+        "records": []
+      },
+      "learningDecision": {
+        "status": "NOT YET",
+        "reason": "The full learner-computer execution gate has not produced candidate-bound evidence."
+      }
+    },
+    {
+      "requirementId": "C1-LV-010",
+      "owner": "Delayed retention assessment owner",
+      "observableCapability": "Seven through fourteen elapsed days after a locked transfer, the learner completes the answer-free explanation and bounded task with machine times, hashes, help, restudy, and assessor result.",
+      "claim": "Delayed retention is measured in the defined window and is not inferred from same-session recreation.",
+      "evidenceClasses": [
+        "DELAYED_RETENTION"
+      ],
+      "assessmentMethods": [
+        {
+          "methodId": "C1-LVM-010",
+          "type": "manual",
+          "locator": "modules/MODULE_09.md",
+          "selector": "### Recreation 7 — Complete delayed retention when it becomes due",
+          "environment": "answer-free delayed check within the machine-calculated 7–14-day window",
+          "passCondition": "Hashes and machine times match; the learner explains boundaries/evidence/fallback/approval, performs the bounded task, records help/restudy, and receives the independent result."
+        }
+      ],
+      "limitation": "One delayed check does not prove indefinite retention or arbitrary-platform competence.",
+      "laterBoundary": "Missed, early, answer-opened, or unsupported attempts remain PARTIAL or NOT YET.",
+      "currentEvidence": {
+        "status": "UNVERIFIED",
+        "records": []
+      },
+      "learningDecision": {
+        "status": "NOT YET",
+        "reason": "No candidate-bound delayed-retention result exists."
+      }
+    },
+    {
+      "requirementId": "C1-LV-011",
+      "owner": "Unseen transfer assessment owner",
+      "observableCapability": "The learner independently applies the controlled-workflow method to a new synthetic non-document scenario whose exact answer is absent from teaching.",
+      "claim": "Course 1 tests transfer beyond renamed copies of the taught example.",
+      "evidenceClasses": [
+        "UNSEEN_TRANSFER"
+      ],
+      "assessmentMethods": [
+        {
+          "methodId": "C1-LVM-011",
+          "type": "manual",
+          "locator": "modules/MODULE_09.md",
+          "selector": "### Recreation 6 — Complete the unseen second-domain transfer",
+          "environment": "answer-locked unseen synthetic scenario with independent assessor",
+          "passCondition": "The learner independently identifies boundary, owner, authoritative evidence, rules, optional AI, human authority, failure/fallback/escalation, evaluation, and a justified multi-outcome decision."
+        }
+      ],
+      "limitation": "A single synthetic transfer does not establish unrestricted consulting or production implementation competence.",
+      "laterBoundary": "Real discovery, platform implementation, regulated work, and client authority remain later-course gates.",
+      "currentEvidence": {
+        "status": "UNVERIFIED",
+        "records": []
+      },
+      "learningDecision": {
+        "status": "NOT YET",
+        "reason": "No candidate-bound independently assessed unseen-transfer result exists."
+      }
+    },
+    {
+      "requirementId": "C1-LV-012",
+      "owner": "Dutch communication review owner",
+      "observableCapability": "The learner gives a short plain-Dutch explanation of the fictional problem, boundary, rule/AI/human split, failure/fallback, evidence, limitation, and safe next step.",
+      "claim": "Course 1 rehearses bounded Dutch SME communication without claiming client experience or client readiness.",
+      "evidenceClasses": [
+        "INDEPENDENT_ORAL_ASSESSMENT"
+      ],
+      "assessmentMethods": [
+        {
+          "methodId": "C1-LVM-012",
+          "type": "manual",
+          "locator": "modules/MODULE_09.md",
+          "selector": "Create `recreated_dutch_explanation.md` for a two-minute plain-Dutch",
+          "environment": "live or observed rehearsal with a Dutch-speaking reviewer",
+          "passCondition": "The reviewer records comprehension questions, unclear jargon, overclaims, corrections, and whether the bounded explanation was understood."
+        }
+      ],
+      "limitation": "A short synthetic explanation is communication rehearsal, not demonstrated consulting or real client discovery.",
+      "laterBoundary": "Until reviewed, use DUTCH CLIENT COMMUNICATION: REHEARSED OR UNVERIFIED, never client-ready.",
+      "currentEvidence": {
+        "status": "UNVERIFIED",
+        "records": []
+      },
+      "learningDecision": {
+        "status": "NOT YET",
+        "reason": "No candidate-bound Dutch-speaking reviewer result exists."
+      }
+    },
+    {
+      "requirementId": "C1-LV-013",
+      "owner": "Beginner learning-load owner",
+      "observableCapability": "Every long lesson exposes sub-goals, prerequisite order, understanding versus helper execution, safe stopping/resume points, and planned study segments of no more than 60 focused minutes.",
+      "claim": "Published duration is labelled AUTHOR ESTIMATE — NOT BEGINNER MEASURED until measured full beginner evidence exists.",
+      "evidenceClasses": [
+        "LITERAL_BEGINNER_TRIAL"
+      ],
+      "assessmentMethods": [
+        {
+          "methodId": "C1-LVM-013",
+          "type": "manual",
+          "locator": "COURSE_1_LEARNING_VALIDATION_CONTRACT.md",
+          "selector": "### `C1-LV-013`",
+          "environment": "observed eligible beginner sessions using the complete required sequence",
+          "passCondition": "Every planned segment stays within 60 focused minutes or stops explicitly; active/elapsed time, help, errors, retries, fatigue, abandonment, sample, and method are recorded."
+        }
+      ],
+      "limitation": "Word counts and author estimates support planning only and are not novice-time evidence.",
+      "laterBoundary": "Measured ranges may replace the author label only after valid full-beginner completion evidence and sample/method disclosure.",
+      "currentEvidence": {
+        "status": "UNVERIFIED",
+        "records": []
+      },
+      "learningDecision": {
+        "status": "NOT YET",
+        "reason": "Learner-visible block plans exist, but no candidate-bound measured beginner timing/fatigue evidence exists."
+      }
+    },
+    {
+      "requirementId": "C1-LV-014",
+      "owner": "Accessibility review owner",
+      "observableCapability": "Critical course-reader flows are manually exercised with named screen readers, keyboard, forced colours, zoom/reflow, and enlarged reader text in the declared browser/device context.",
+      "claim": "Accessibility claims name the exact tested technologies and retain finite-test and screen-reader-user limitations.",
+      "evidenceClasses": [
+        "ACCESSIBILITY_REVIEW"
+      ],
+      "assessmentMethods": [
+        {
+          "methodId": "C1-LVM-014",
+          "type": "manual",
+          "locator": "COURSE_1_LEARNING_VALIDATION_CONTRACT.md",
+          "selector": "### `C1-LV-014`",
+          "environment": "current NVDA/Chrome or Firefox, Narrator/Edge, keyboard, forced colours, and 200 percent zoom",
+          "passCondition": "Every named critical flow records technology versions, task, announcement/focus result, defect, limitation, and retest."
+        }
+      ],
+      "limitation": "Automated markup or finite manual checks do not prove universal accessibility or screen-reader-user validation.",
+      "laterBoundary": "Without a screen-reader user, retain SCREEN-READER USER VALIDATION NOT VERIFIED.",
+      "currentEvidence": {
+        "status": "UNVERIFIED",
+        "records": []
+      },
+      "learningDecision": {
+        "status": "NOT YET",
+        "reason": "No candidate-bound assistive-technology manual-review record exists."
+      }
+    },
+    {
+      "requirementId": "C1-LV-015",
+      "owner": "Assessor calibration owner",
+      "observableCapability": "At least two assessors independently score the blinded fixed anchors, lock their evidence before discussion, and resolve disagreements against written anchors rather than averaging.",
+      "claim": "Independent scoring becomes a pass gate only after observable rubric anchors and exact calibration conditions are met.",
+      "evidenceClasses": [
+        "INDEPENDENT_ARTIFACT_ASSESSMENT"
+      ],
+      "assessmentMethods": [
+        {
+          "methodId": "C1-LVM-015",
+          "type": "manual",
+          "locator": "ASSESSMENT_AND_RUBRIC.md",
+          "selector": "## Calibration anchors and evidence caps",
+          "environment": "two independent assessors using blinded calibration cases",
+          "passCondition": "Both records are locked before discussion; automatic failure/rework and pass versus NOT YET agree exactly; any same-result one-level difference is documented."
+        }
+      ],
+      "limitation": "Calibration aligns assessors; it does not itself assess the learner or remove area-specific evidence requirements.",
+      "laterBoundary": "If the second assessor is unavailable or ambiguity remains, scoring stays PENDING.",
+      "currentEvidence": {
+        "status": "UNVERIFIED",
+        "records": []
+      },
+      "learningDecision": {
+        "status": "NOT YET",
+        "reason": "No candidate-bound two-assessor calibration record exists."
+      }
+    },
+    {
+      "requirementId": "C1-LV-016",
+      "owner": "Human-trial privacy and consent owner",
+      "observableCapability": "Every human trial uses synthetic data, a pre-briefed voluntary choice, precise observation scope, separate recording consent, access and deletion rules, participant codes, minimisation, and the non-evaluation disclaimer.",
+      "claim": "Missing consent, prohibited data, or unconsented recording invalidates rather than upgrades human evidence.",
+      "evidenceClasses": [
+        "INDEPENDENT_ARTIFACT_ASSESSMENT",
+        "INDEPENDENT_ORAL_ASSESSMENT",
+        "REAL_SYNTHETIC_UAT",
+        "LITERAL_BEGINNER_TRIAL",
+        "DELAYED_RETENTION",
+        "UNSEEN_TRANSFER",
+        "ACCESSIBILITY_REVIEW"
+      ],
+      "assessmentMethods": [
+        {
+          "methodId": "C1-LVM-016",
+          "type": "manual",
+          "locator": "templates/uat_script.md",
+          "selector": "### Separate consent choices",
+          "environment": "every observed human learning, assessment, UAT, retention, transfer, and accessibility session",
+          "passCondition": "Every applicable evidence class has a valid synthetic-only privacy/consent record; prohibited data is absent; temporary notes are deleted by the stated date; recording exists only with separate consent."
+        }
+      ],
+      "limitation": "A consent form does not make unsafe data collection necessary, lawful, or valid and cannot substitute for minimisation or deletion.",
+      "laterBoundary": "Real/confidential data is prohibited and never becomes authorised by this Course 1 record.",
+      "currentEvidence": {
+        "status": "UNVERIFIED",
+        "records": []
+      },
+      "learningDecision": {
+        "status": "NOT YET",
+        "reason": "No candidate-bound consent, minimisation, retention, and deletion evidence set exists for all applicable human methods."
+      }
+    },
+    {
+      "requirementId": "C1-LV-017",
+      "owner": "Learning release decision owner",
+      "observableCapability": "The final learning decision enumerates all seventeen stable requirements and distinguishes PASS, NOT YET, and contract-supported NOT APPLICABLE without averaging or substitution.",
+      "claim": "Course 1 learning acceptance passes only when every mandatory evidence class is current and candidate-bound.",
+      "evidenceClasses": [
+        "INDEPENDENT_ARTIFACT_ASSESSMENT"
+      ],
+      "assessmentMethods": [
+        {
+          "methodId": "C1-LVM-017",
+          "type": "hybrid",
+          "locator": "COURSE_1_LEARNING_VALIDATION_CONTRACT.md",
+          "selector": "## Before-final-release evidence set",
+          "environment": "independent final review of one immutable candidate and all matrix evidence",
+          "passCondition": "Every C1-LV row has an exact valid record and decision; all mandatory rows pass; every unperformed human check remains NOT YET."
+        }
+      ],
+      "limitation": "A technical pass, score, majority, confidence statement, or narrative summary cannot average away a missing mandatory learning class.",
+      "laterBoundary": "Learning acceptance does not authorise production use, client work, regulated work, or consultant-readiness claims.",
+      "currentEvidence": {
+        "status": "UNVERIFIED",
+        "records": []
+      },
+      "learningDecision": {
+        "status": "NOT YET",
+        "reason": "All seventeen rows currently lack a complete candidate-bound final learning evidence set."
+      }
+    }
+  ]
+}

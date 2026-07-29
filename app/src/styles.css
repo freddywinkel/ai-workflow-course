@@ -421,6 +421,7 @@ a {
 }
 
 .progress-track {
+  --progress: 0;
   height: 0.42rem;
   margin-top: 0.8rem;
   overflow: hidden;
@@ -430,7 +431,7 @@ a {
 
 .progress-track span {
   display: block;
-  width: 0;
+  width: calc(var(--progress) * 1%);
   height: 100%;
   border-radius: inherit;
   background: linear-gradient(90deg, var(--mint), var(--gold));
@@ -1088,6 +1089,7 @@ a {
 }
 
 .progress-ring {
+  --progress: 0;
   position: relative;
   display: grid;
   width: 94px;
@@ -1154,6 +1156,7 @@ a {
 }
 
 .mini-progress {
+  --progress: 0;
   height: 0.38rem;
   grid-column: 1 / -1;
   overflow: hidden;
@@ -1163,6 +1166,7 @@ a {
 
 .mini-progress span {
   display: block;
+  width: calc(var(--progress) * 1%);
   height: 100%;
   border-radius: inherit;
   background: var(--mint-strong);

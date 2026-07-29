@@ -32,7 +32,7 @@ out the exact record where it is first needed; the first four mappings are:
 | 7 | [`tool_fit_and_ownership_record.md`](tool_fit_and_ownership_record.md) | compare the simplest tool options and assign lifecycle ownership |
 | 9 | [`uat_script.md`](uat_script.md) | let representative users test business scenarios and exception routes |
 | 9 | [`adoption_and_training_plan.md`](adoption_and_training_plan.md) | prepare users, support, training, feedback, and adoption measures |
-| 8 and 9 | [Course 1 decision record](pilot_decision_record.md) | record the Module 8 `PROVISIONAL PRE-UAT` recommendation, then preserve and reassess it as `FINAL POST-UAT` in Module 9; neither authorizes a client pilot |
+| 8 and 9 | [Course 1 decision record](pilot_decision_record.md) | record the Module 8 `PROVISIONAL PRE-UAT` recommendation, then preserve and reassess it as `FINAL POST-REHEARSAL`; use `FINAL POST-UAT` only with separate real synthetic UAT evidence; neither authorizes a client pilot |
 
 The sequence is logical, not rigid. Revisit earlier records when evidence
 changes the process, data, risk, or value hypothesis.

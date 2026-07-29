@@ -1,8 +1,94 @@
 # Course Changelog
 
-## 2.5.0 — 2026-07-28
+## 2.6.0 — 2026-07-28
 
-### Literal beginner completion pass
+### Full Course 1 repair candidate
+
+> **Current-status note — 2026-07-29:** This section records the initial 2.6.0
+> repair work, not a current acceptance decision. A later audit-of-the-audit
+> opened or partially reopened `C1-GOV-011`, `C1-GOV-012`, and `C1-GOV-013`;
+> the subsequent local repairs closed `C1-GOV-012`, `C1-GOV-013`, and
+> `C1-GOV-015`. `C1-GOV-007` and `C1-GOV-011` are `EVIDENCE PENDING`; the
+> all-33-test gate for `C1-GOV-011` is implemented, but its immutable
+> candidate-bound records do not yet exist. The authoritative ledger currently
+> records `UNVERIFIED`; follow
+> `COURSE_1_AUDIT_STATUS_AND_REPAIR_LEDGER.md`.
+
+- Reconciled the Course 1 promise with the work the learner actually authors:
+  the supplied runner is assembled and challenged, one bounded deterministic
+  rule is authored and tested, and one different artificial-intelligence (AI)
+  contract is designed offline.
+- Added independent opportunity calibration, observable Level 1–4 evidence
+  anchors, a live oral-assessment protocol, an unseen second-domain transfer
+  task, delayed-retention evidence, and an early two-assessor disclosure.
+- Split long beginner modules into study blocks of no more than 60 minutes and
+  labelled what the learner must understand versus protected plumbing they may
+  run and observe.
+- Replaced the weak rule-example matrix check with 44 rule-specific cases,
+  meaningful learner explanations, and preserved deliberate-failure and
+  corrected-retest evidence.
+
+### Runner and evidence integrity
+
+- Enforced strictly ordered audit timestamps and rejected decisions that
+  predate or equal the evidence they claim to review.
+- Added event-specific audit schemas, streaming input limits, bounded
+  identity-checked file reads, owned export staging, no-overwrite publication,
+  and beginner-safe command-line failure evidence.
+- Preserved the exact 67-test manifest and clean-room negative control across
+  Python 3.12, 3.13, and 3.14.
+
+### Progressive web app state and update safety
+
+- Replaced native browser confirmations with an accessible in-app dialog that
+  supports focus, cancellation, and Escape without triggering browser dialogue
+  suppression.
+- Added per-window writer identities, deterministic multi-window merge and
+  conflict handling, revisioned reset barriers, pending-note recovery,
+  unsupported-state quarantine, hostile-backup validation, and verified
+  import/reset rollback through storage and visible rendering.
+- Preserved concurrent recovery evidence in the tested simultaneous-reset
+  case. The broader exact-rollback versus external-write contract remains open
+  under `C1-GOV-013`.
+- Bound each service-worker cache to commit and manifest provenance, verified
+  every cached response before use, rejected asset or manifest tampering with a
+  safe error, and preserved the last valid offline release when a candidate
+  update fails.
+
+### Release and maintenance controls
+
+- Separated Course 1 validation from Course 4 implementation acceptance,
+  removed direct-push publishing, and added controlled candidate, promotion,
+  rollback, dependency, licence, vulnerability, Software Bill of Materials
+  (SBOM), and claim-source checks.
+- Separated bundled-page revision metadata from research/source verification:
+  content is revised through `2026-07-29`, while source evidence remains
+  verified through `2026-07-28`. The old `verifiedThrough` field remains only
+  as a PWA compatibility alias for the source date, never as a content-revision
+  ceiling.
+- Added initial fail-closed promotion controls for exact six-column
+  audit-ledger rows: the tested unknown-severity/status, shifted, duplicate,
+  open, reopened, and partially implemented cases are rejected, and pending
+  evidence is allowed only for the three named live-promotion gates.
+  At the time of this initial candidate, additional malformed-ID,
+  rollback-status, closed-JSON, and evidence-locator bypasses remained
+  `PARTIAL` under `C1-GOV-012`; the later audit-control repair closed them.
+  That repair also rejects quoted finding rows, replaces self-authored
+  command/environment summaries with hash-bound raw artifact coverage for
+  every declared procedure and environment, and binds normal rollback to the
+  complete prior accepted promotion record for the exact target. The legacy
+  v2.5 exception is pinned to its exact historical acceptance path and hash.
+- This entry records a repair candidate, not a product acceptance decision.
+  Literal-beginner completion, human assessment, installed-device/browser,
+  repository-control, and public promotion evidence remain separate gates.
+
+## 2.5.0 — 2026-07-28 — historical, superseded
+
+### Historical literal-beginner completion decision
+
+This dated entry is retained as history. Later audits superseded its release
+decision; follow the current audit ledger rather than treating the wording
+below as a current product pass.
 
 - Reworked readiness and Foundations 1–9 so a learner can close every window,
   return later, and make an explicit resume-or-retry decision without
@@ -237,7 +323,7 @@
 
 ### Progressive web app product fixes
 
-- Prevented private notes from being lost during immediate navigation and
+- Prevented learner notes from being lost during immediate navigation and
   report storage failures truthfully.
 - Made Resume choose the next incomplete actionable lesson.
 - Added an actionable learning sequence so Resume and previous/next insert the
@@ -256,7 +342,7 @@
 
 ## 2.1.0 — 2026-07-26
 
-### Certified-beginner practice
+### Literal-beginner practice
 
 - Rebuilt every foundation and module exercise around a four-part
   **follow → recreate → ask Codex to check → pass** method.

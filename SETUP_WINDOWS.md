@@ -6,6 +6,25 @@ Create a local learning environment for the **Synthetic Small and Medium-sized
 Enterprise (SME) Operations Exception Assistant**. It uses only fictional data
 and remains separate from employer or client systems.
 
+## Study plan — five blocks of no more than 60 minutes
+
+**Time label: AUTHOR ESTIMATE — NOT BEGINNER MEASURED.** The published
+4–5-hour range is a planning estimate, not measured novice completion time.
+Use each row as a separate study segment. Stop when the row is complete or
+when 60 focused minutes have elapsed, whichever happens first. Record the last
+completed numbered heading using synthetic wording, close open files, and take
+a break. At the next block, use **Start or resume every later setup session**.
+Never combine blocks to catch up. Download or installation waiting time is
+elapsed time, not a reason to extend focused work beyond 60 minutes.
+
+| Block | Maximum | Work and safe stopping point |
+|---:|---:|---|
+| 1 | 60 minutes | Read the boundary, complete the File Explorer/PowerShell rehearsal, and run the read-only computer preflight. Stop after recording the preflight result. |
+| 2 | 60 minutes | Install or verify Visual Studio Code, Git for Windows, and the stable Python version exactly as instructed. Stop after the three version checks; ask for help instead of substituting versions. |
+| 3 | 60 minutes | Create the real synthetic learner project, initialise local Git, create the virtual environment, and prove the resume block works. Stop after the Python version prints from the virtual environment. |
+| 4 | 60 minutes | Create the controlled folders and ignore file, copy the supplied synthetic requirements/data, install the pinned packages, and create configuration with no real secret. Stop after the configuration check. |
+| 5 | 60 minutes | Run smoke tests, record dependencies and the Git checkpoint, request the bounded Codex check, and apply the pass criteria. Use **Clean removal** only if you deliberately choose to remove the synthetic project later. |
+
 ## Before you begin
 
 Finish Foundations 1 and 2 first. They teach folders, paths, plain text, and
@@ -977,12 +996,12 @@ window. Then run one command at a time:
 
 ```powershell
 & $pythonExe -m pip --version
-& $pythonExe -m pip install -r requirements-course.txt
+& $pythonExe -m pip install --require-hashes -r requirements-course.txt
 & $pythonExe -m pytest --version
 & $pythonExe -c "import importlib.metadata; print('jsonschema', importlib.metadata.version('jsonschema'))"
 ```
 
-Expected result: pip prints its path inside `.venv`, pytest prints `9.0.2`, and
+Expected result: pip prints its path inside `.venv`, pytest prints `9.1.1`, and
 jsonschema prints `4.26.0`. Do not run an unpinned pip upgrade. Do not install
 requirements from the archived future course. OpenAI provider software is not
 in the required file; the bounded artificial-intelligence lesson uses an
@@ -1072,9 +1091,11 @@ Expected result:
 2 passed
 ```
 
-If the result says `failed` or `error`, stop. Copy the complete error into your
-private course notes and ask Codex to explain it. Do not ask Codex to hide or
-skip the test.
+If the result says `failed` or `error`, stop. Copy the complete synthetic error
+into your learner notes and ask Codex to explain it. Browser or installed-app
+notes are not private from other applications served from the same website
+origin, so never copy personal, employer, client, medical, confidential, or
+credential information into them. Do not ask Codex to hide or skip the test.
 
 ### 9. Freeze and record the setup in Git
 
@@ -1110,7 +1131,7 @@ if ($LASTEXITCODE -ne 0) {
     throw "STOP: Python could not produce the dependency list."
 }
 if (
-    $currentDependencyLines -notcontains "pytest==9.0.2" -or
+    $currentDependencyLines -notcontains "pytest==9.1.1" -or
     $currentDependencyLines -notcontains "jsonschema==4.26.0"
 ) {
     throw "STOP: the current environment does not contain the two required exact versions."
@@ -1152,7 +1173,7 @@ else {
 }
 $recordedDependencyLines = @(Get-Content -LiteralPath $dependencyEvidencePath)
 if (
-    $recordedDependencyLines -notcontains "pytest==9.0.2" -or
+    $recordedDependencyLines -notcontains "pytest==9.1.1" -or
     $recordedDependencyLines -notcontains "jsonschema==4.26.0"
 ) {
     throw "STOP: the saved dependency evidence is incomplete."
@@ -1195,7 +1216,7 @@ requirements-course.txt with exact version pins,
 data/input/work_items.csv, tests/expected_issues.csv, .env.example with
 EVALUATION_DATE=2026-07-26, AI_MODE=offline, and
 EXTERNAL_ACTIONS_ENABLED=false, tests/test_smoke.py, evidence/setup-check.txt,
-and evidence/setup-dependencies.txt containing pytest 9.0.2 and jsonschema
+and evidence/setup-dependencies.txt containing pytest 9.1.1 and jsonschema
 4.26.0.
 Confirm that .env and .venv are not tracked by Git without opening or printing
 .env. Confirm that .venv\Scripts\python.exe exists and reports a stable Python

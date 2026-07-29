@@ -10,7 +10,9 @@ All names, roles, records, results, and decisions are synthetic. None of these
 examples authorizes real data, a client trial, production use, or an external
 action.
 
-Module 9 includes a completed assessment record as well as the UAT, adoption,
-and handover examples. The assessment example demonstrates the required
-six-area calculation and ten oral answers; it is not permission to copy its
-scores or answers into your different capstone.
+Module 9 includes a completed independent-assessor record as well as the
+candidate User Acceptance Testing (UAT), role-simulated acceptance, adoption,
+and handover examples. The assessment example demonstrates calibration,
+evidence scoring, and how an assessor records ten oral results without
+publishing reusable answer scripts. It is not permission to copy scores,
+observations, or answers into your different capstone.

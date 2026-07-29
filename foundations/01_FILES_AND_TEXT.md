@@ -7,6 +7,24 @@ plain-text files, reopen them, and verify their exact contents.
 
 This lesson assumes no technical experience.
 
+## Study plan — six blocks of no more than 60 minutes
+
+**Time label: AUTHOR ESTIMATE — NOT BEGINNER MEASURED.** The published
+5–6-hour range is a planning estimate, not measured novice completion time.
+Use each row as a separate study segment. Stop when the row is complete or
+when 60 focused minutes have elapsed, whichever happens first. Record the last
+completed part using synthetic wording, close every file, and take a break.
+Use **Start or resume safely** at the next block; never combine blocks.
+
+| Block | Maximum | Work and safe stopping point |
+|---:|---:|---|
+| 1 | 60 minutes | Learn the required words and safety boundary. Stop before **Follow along**. |
+| 2 | 60 minutes | Complete **Start or resume safely**, Part A, and Part B. Stop after file extensions are visible. |
+| 3 | 60 minutes | Complete Part C and verify the Markdown filename and text. |
+| 4 | 60 minutes | Complete Part D and verify the JavaScript Object Notation (JSON) filename and text. |
+| 5 | 60 minutes | Complete Part E, compare the exact expected result, and use troubleshooting if needed. |
+| 6 | 60 minutes | Recreate the task with different content, ask Codex for the bounded check, and apply every pass criterion. |
+
 ## Words you need first
 
 - A **folder** is a container for files and other folders.

@@ -1,158 +1,124 @@
-# Completed Example — Course 1 Assessment Record
+# Completed Example — Independent Course 1 Assessment Record
 
-This is a fictional worked example, not a learner answer key. It shows how to
-turn evidence into the mandatory six-area score and ten plain-language oral
-answers. The selected low-stock workflow is synthetic, local, and rule-only.
+This fictional example demonstrates the assessor's record format. It does not
+contain reusable oral-answer scripts and it is not a learner answer key.
 
 ## Assessment identity and boundary
 
-- Artifact ID: WORKED-M09-ASSESSMENT
-- Version/date: 1.0 / 2026-07-28
-- Assessor role: course learner performing a documented self-assessment
-- Workflow: fictional low-stock review list 1.0
+- Artifact ID: `WORKED-M09-ASSESSMENT`
+- Version/date: `2.0 / 2026-07-28`
+- Learner code: `WORKED-LEARNER`
+- Independent assessor code: `WORKED-ASSESSOR`
+- Independent calibration assessor codes: `WORKED-CAL-A` and `WORKED-CAL-B`
+- Assessor conflict/help declaration: did not create or edit the evidence;
+  provided no correction during assessment
+- Workflow: fictional low-stock review list
 - Data: synthetic only
-- External actions: none
-- UAT status: `EXTERNAL UAT NOT VERIFIED`
+- Acceptance status: role-simulated operational acceptance rehearsal;
+  `EXTERNAL UAT NOT VERIFIED`
+- Scope: Course 1 learning evidence only; no certification, client acceptance,
+  production approval, legal compliance, security assurance, or accessibility
+  assurance
 
-This assessment supports a Course 1 learning result only. It is not a
-professional certification, client acceptance, production approval, or legal,
-privacy, security, or accessibility assurance.
+## Calibration record — two assessors only
+
+Both calibration assessors independently classified the four shuffled
+vignettes in `ASSESSOR_CALIBRATION_CASES.md` before either opened the learner
+result or `ASSESSOR_CALIBRATION_KEY.md`. They recorded their judgments before
+discussion:
+
+| Case | Required classification | WORKED-CAL-A | WORKED-CAL-B | Exact agreement |
+|---|---:|---:|---:|:---:|
+| Cedar | 3 | 3 | 3 | yes |
+| Harbor | 1 | 1 | 1 | yes |
+| Linden | 4 | 4 | 4 | yes |
+| Maple | 2 | 2 | 2 | yes |
+
+Both assessors declared no role in creating or correcting the evidence.
+Their separate pre-discussion records were locked first:
+
+- `calibration_assessor_a.md` / SHA-256 `WORKED-CAL-A-HASH`;
+- `calibration_assessor_b.md` / SHA-256 `WORKED-CAL-B-HASH`.
+
+The separate `calibration_resolution.md` cited both locked hashes and recorded
+the exact agreement above. Neither original calibration record was edited
+after comparison.
+
+Automatic failure/rework and pass/`NOT YET` calibration:
+`ASSESSOR CALIBRATION: PASS`. `WORKED-CAL-A`, also identified as
+`WORKED-ASSESSOR`, then performed the artifact assessment.
 
 ## Pass prerequisites
 
-| Prerequisite | Result | Example evidence |
-|---|:---:|---|
-| only synthetic data used | PASS | `worked/source-register.md` |
-| no secrets in code, notes, screenshots, or Git | PASS | `worked/secret-check.txt` |
-| deterministic report works with AI disabled | PASS | `worked/rule-test.txt` |
-| every run has a named last valid workflow state and every stopped command has a named attempt outcome | PASS | `worked/state-results.md` |
-| expected exceptions tested | PASS | `worked/frozen-metrics.json` |
-| unsupported AI claims cannot pass silently | PASS | AI excluded; boundary in `worked/tool-decision.md` |
-| no send, payment, deletion, or source update exists | PASS | `worked/safety-drill.md` |
-| editing invalidates approval | PASS | `worked/review-drill.md` |
-| manual fallback demonstrated | PASS | `worked/fallback-rehearsal.md` |
-| limitations and assumptions explicit | PASS | `worked/handover.md` |
-| learner explains the system without generated wording | PASS | ten oral answers below |
+| Prerequisite | Assessor result | Example evidence | Assessor reason |
+|---|:---:|---|---|
+| synthetic data only | PASS | `worked/source-register.md` | source inventory is fictional and bounded |
+| no secrets or external action | PASS | `worked/safety-drill.md` | prohibited paths are absent and control evidence is present |
+| deterministic path works without AI | PASS | `worked/rule-test.txt` | frozen expected cases pass |
+| learner-authored bounded rule and tests | PASS | `worked/learner-rule-test.txt` | normal, boundary, and failure cases are present |
+| supported claims and visible failures | PASS | `worked/failure-evidence.md` | unsupported and malformed cases stop |
+| approval invalidation and fallback | PASS | `worked/review-drill.md` | changed revision cannot reuse approval |
+| limitations and assumptions explicit | PASS | `worked/handover.md` | synthetic and external-UAT limits are prominent |
+| unseen transfer and delayed retention | PASS | `worked/transfer-and-retention.md` | different work area and delayed result passed |
 
-Every prerequisite passes, so scoring may continue.
+All prerequisites pass, so official scoring may continue.
 
-## Six-area rubric
+## Six-area rubric — assessor only
 
-| Area | Weight | Level (1-4) | Points = weight x level / 4 | Evidence and reason |
+| Area | Weight | Assessor level | Points | Evidence, cap, and reason |
 |---|---:|---:|---:|---|
-| Process discovery and opportunity selection | 20 | 3 | 15 | Trigger, owner, users, two walkthroughs, baseline, alternatives, and selection are in the worked discovery pack. The evidence is synthetic rather than client-validated. |
-| Data quality and deterministic controls | 20 | 3 | 15 | Dictionary, IDs, rule table, frozen expected results, source links, and fixed date all pass. Reproduction is local and small-volume only. |
-| Bounded AI and evidence | 15 | 3 | 11.25 | AI was deliberately excluded because it added no justified value; the rule-based output and boundary are evidenced. |
-| Human control and failure behaviour | 15 | 3 | 11.25 | Review, changed-output invalidation, stop states, external-action block, and fallback are demonstrated in the synthetic drill. |
-| Dutch SME risk and tool-fit screen | 15 | 3 | 11.25 | Data sensitivity, retention, access, vendor, existing-tool fit, ownership, recurring effort, escalation, and exit were screened without a compliance claim. |
-| Evaluation, adoption, and handover | 15 | 3 | 11.25 | Metrics, scenarios, role training, UAT, defect/retest, runbook, owners, and final decision exist. Solo testing remains `EXTERNAL UAT NOT VERIFIED`, so Strong is not claimed. |
+| Process discovery and opportunity selection | 20 | 3 | 15 | Locked multi-outcome decision and unseen transfer are supported. Synthetic evidence caps the claim. |
+| Data quality and deterministic controls | 20 | 3 | 15 | Dictionary, full rule-example matrix, expected issues, and learner-authored rule tests pass. |
+| Bounded AI and evidence | 15 | 3 | 11.25 | Optional AI remains replaceable; a different offline contract has citations, validators, fallback, and adversarial cases. |
+| Human control and failure behaviour | 15 | 3 | 11.25 | Exact-revision approval, edit/reject/expire, safe failures, fallback, and zero actions are evidenced. |
+| Dutch SME risk and tool-fit screen | 15 | 3 | 11.25 | Risk, existing-tool, ownership, cost, escalation, and exit questions are explicit without a compliance claim. |
+| Evaluation, adoption, and handover | 15 | 3 | 11.25 | Operator rehearsal, defect/retest, retention, runbook, owners, and handover pass; external UAT remains unverified. |
 
-Calculation:
+- Official total: `75`
+- Every area at least level 3: `yes`
+- Artifact-assessment result: `PASS`
+- Level 4 not awarded because no other intended user performed real synthetic
+  UAT in this example.
 
-- points: `15 + 15 + 11.25 + 11.25 + 11.25 + 11.25`;
-- total: `75`;
-- every area is at least level `3`;
-- score gate: `PASS`.
+## Independent oral result — assessor only
 
-The score is exactly the minimum pass. It does not turn missing independent
-user evidence into a Strong result.
+The assessor asked the ten fixed questions one at a time without showing a
+prepared answer. This example records results and reasons, not answer wording:
 
-## Ten oral demonstration answers
+| Question topic | Result | Evidence | Assessor observation |
+|---|:---:|---|---|
+| business problem and boundary | SUPPORTED | `worked/process-map.md` | learner separated internal review from external action |
+| evidence that it is worth investigating | SUPPORTED | `worked/baseline.md` | learner called the value provisional |
+| authoritative data | SUPPORTED | `worked/data-dictionary.md` | source and derived output were distinguished |
+| deterministic decisions | SUPPORTED | `worked/rule-register.md` | learner named rule and boundary examples |
+| optional AI contribution | SUPPORTED | `worked/ai-contract.md` | learner kept AI optional and source-bound |
+| AI failure | SUPPORTED | `worked/fallback-rehearsal.md` | deterministic fallback was described |
+| exact reviewer decision | SUPPORTED | `worked/review-drill.md` | exact revision and evidence were named |
+| forbidden capability | SUPPORTED | `worked/safety-drill.md` | no send, order, payment, deletion, or write-back |
+| regression detection | SUPPORTED | `worked/regression-policy.md` | frozen expected cases and failure routes were named |
+| final decision | SUPPORTED | `worked/final-decision.md` | evidence and limitation matched the label |
 
-Each answer below is short enough to say naturally. The learner would still
-need to say it aloud without reading this example.
+Follow-ups on evidence versus assumption, approval invalidation, and the unseen
+transfer were all `SUPPORTED`.
 
-### 1. What business problem are you solving?
+`LEARNER ORAL COMPETENCE: VERIFIED`
 
-A fictional inventory coordinator repeatedly scans a stock sheet to find
-quantities below agreed thresholds. The workflow makes that review list; it
-does not order anything. Evidence: `worked/process-map.md`.
+## Transfer, retention, and communication
 
-`ANSWERED ALOUD WITHOUT READING GENERATED TEXT: YES`
-
-### 2. What evidence says it is worth solving?
-
-Two synthetic walkthroughs show the same repeated scan and a timed baseline.
-That suggests a practice opportunity, not proven client demand or savings.
-Evidence: `worked/baseline.md`.
-
-`ANSWERED ALOUD WITHOUT READING GENERATED TEXT: YES`
-
-### 3. Which data is authoritative?
-
-The preserved synthetic source rows and the approved threshold table are
-authoritative. The exception list is derived and can be regenerated.
-Evidence: `worked/data-dictionary.md`.
-
-`ANSWERED ALOUD WITHOUT READING GENERATED TEXT: YES`
-
-### 4. Which decisions are deterministic?
-
-Header checks, value checks, threshold comparisons, issue identities, and
-named states follow written rules and must give the same result on the same
-input. Evidence: `worked/rule-register.md`.
-
-`ANSWERED ALOUD WITHOUT READING GENERATED TEXT: YES`
-
-### 5. What does AI contribute?
-
-Nothing in this selected worked solution. The evidence did not justify adding
-AI, so a rule-only workflow is the safer fit. Evidence:
-`worked/tool-decision.md`.
-
-`ANSWERED ALOUD WITHOUT READING GENERATED TEXT: YES`
-
-### 6. What happens when AI fails?
-
-There is no AI dependency here. If a later optional summary were unavailable
-or unsupported, the reviewer would use the deterministic issue list and
-manual fallback. Evidence: `worked/fallback-rehearsal.md`.
-
-`ANSWERED ALOUD WITHOUT READING GENERATED TEXT: YES`
-
-### 7. What exactly does the reviewer approve?
-
-The reviewer approves one exact, source-linked internal review list after
-checking its rules, source values, version, and limitations. Any change
-requires a new review. Evidence: `worked/review-drill.md`.
-
-`ANSWERED ALOUD WITHOUT READING GENERATED TEXT: YES`
-
-### 8. What can the system never do?
-
-It cannot send, order, pay, delete, update the source, choose a supplier, or
-make an external decision. Evidence: `worked/safety-drill.md`.
-
-`ANSWERED ALOUD WITHOUT READING GENERATED TEXT: YES`
-
-### 9. How would you detect regression?
-
-I would rerun the frozen normal, edge, failure, review, and fallback cases
-after a change and compare the named states and exact issue identities with
-the approved expected results. Evidence: `worked/regression-policy.md`.
-
-`ANSWERED ALOUD WITHOUT READING GENERATED TEXT: YES`
-
-### 10. Why is your final Course 1 decision justified?
-
-The frozen synthetic checks, safe failures, role-simulated UAT, defect retest,
-training, and handover meet the practice thresholds, so
-`ACCEPT FOR SYNTHETIC PORTFOLIO` is supported. The label stays limited to a
-synthetic demonstration because no client, real data, production operation, or
-independent user acceptance exists. Evidence: `worked/final-decision.md`.
-
-`ANSWERED ALOUD WITHOUT READING GENERATED TEXT: YES`
+- unseen second-domain transfer: `PASS`;
+- delayed retention after 9 days: `PASS`;
+- Dutch explanation: bounded rehearsal reviewed by a Dutch-speaking fictional
+  reviewer; no client-readiness claim;
+- real external UAT: `NOT VERIFIED`.
 
 ## Assessment result and limitations
 
-- Prerequisites: PASS
-- Rubric total: 75/100
-- Every area at least Competent: yes
-- Ten supported oral answers: yes
-- Oral delivery without reading generated wording: yes
-- Course 1 assessment: PASS
-- Separate final prototype decision: `ACCEPT FOR SYNTHETIC PORTFOLIO`
+- Independent artifact assessment: `PASS`
+- Independent oral assessment: `VERIFIED`
+- Course 1 competence: `PASS`
+- Separate workflow decision: `ACCEPT FOR SYNTHETIC PORTFOLIO`
 
-Limitations: self-assessed fictional example, synthetic data, tiny volume,
-role-separated solo UAT, no independent user, no production environment, and
-no professional certification or legal/compliance assurance.
+Limitations: fictional assessor example, synthetic data, small volume,
+role-simulated acceptance only, no real client discovery, no production
+environment, no market-demand proof, and no professional certification or
+legal/compliance assurance.

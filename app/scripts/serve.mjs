@@ -20,12 +20,18 @@ const mimeTypes = {
   ".svg": "image/svg+xml",
   ".webmanifest": "application/manifest+json; charset=utf-8",
 };
+const securityHeaders = {
+  "Content-Security-Policy":
+    "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; manifest-src 'self'; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+  "Referrer-Policy": "no-referrer",
+  "X-Content-Type-Options": "nosniff",
+};
 
 const server = createServer(async (request, response) => {
   try {
     const url = new URL(request.url || "/", `http://${request.headers.host}`);
     if (!url.pathname.startsWith(basePath)) {
-      response.writeHead(302, { Location: basePath });
+      response.writeHead(302, { ...securityHeaders, Location: basePath });
       response.end();
       return;
     }
@@ -38,13 +44,14 @@ const server = createServer(async (request, response) => {
       requestedPath !== outputRoot &&
       !requestedPath.startsWith(`${outputRoot}${sep}`)
     ) {
-      response.writeHead(403);
+      response.writeHead(403, securityHeaders);
       response.end("Forbidden");
       return;
     }
     const fileStat = await stat(requestedPath);
     if (!fileStat.isFile()) throw new Error("Not a file");
     const headers = {
+      ...securityHeaders,
       "Content-Type": mimeTypes[extname(requestedPath)] || "application/octet-stream",
       "Cache-Control": requestedPath.endsWith("version.json")
         ? "no-store"
@@ -57,7 +64,10 @@ const server = createServer(async (request, response) => {
     if (request.method === "HEAD") response.end();
     else createReadStream(requestedPath).pipe(response);
   } catch {
-    response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+    response.writeHead(404, {
+      ...securityHeaders,
+      "Content-Type": "text/plain; charset=utf-8",
+    });
     response.end("Not found");
   }
 });

@@ -3,13 +3,35 @@
 A **function** is a named, reusable block of code. A **claim** is a statement
 presented as true, **evidence** is material that supports it, and a
 **limitation** states what the evidence does not establish. **Codex** is the AI
-assistant used for the final read-only check.
+assistant used first to propose one bounded change and later to perform the
+final read-only check.
 
 ## Outcome
 
-You will create and test one small data-quality function, record the evidence
-for its claim, and then transfer the method to a different rule. Codex will
+You will create and test one small data-quality function, ask Codex for one
+bounded change proposal, inspect and narrow its diff, apply only the accepted
+part yourself, test it, and record the evidence and limitations. Codex will
 inspect the final practice folder without changing it.
+
+## Study plan — seven blocks of no more than 60 minutes
+
+**Time label: AUTHOR ESTIMATE — NOT BEGINNER MEASURED.** The published
+6–7-hour range is a planning estimate, not measured novice completion time.
+Use each row as a separate study segment. Stop when the row is complete or
+when 60 focused minutes have elapsed, whichever happens first. Record the last
+completed part using synthetic wording, save and close files, and take a break.
+Run **Start or resume safely** in every new PowerShell session; never combine
+blocks.
+
+| Block | Maximum | Work and safe stopping point |
+|---:|---:|---|
+| 1 | 60 minutes | Learn the required words, safe change loop, and safety boundary. |
+| 2 | 60 minutes | Run the start/resume block and make the explicit resume/retry decision. |
+| 3 | 60 minutes | Complete Part A and Part B; stop after the smallest program passes its original tests. |
+| 4 | 60 minutes | Complete Part C, compare the exact result, and troubleshoot only observed mismatches. |
+| 5 | 60 minutes | Recreate Step 1 and Step 2: request a bounded proposal, inspect it, and reject or narrow unsafe hunks. |
+| 6 | 60 minutes | Recreate Step 3 and Step 4: apply only the accepted part yourself and test it. |
+| 7 | 60 minutes | Ask Codex for the bounded read-only check, explain every accepted change, and apply every pass criterion. |
 
 ## Words you need first
 
@@ -84,8 +106,9 @@ Never give an unapproved AI service:
 - database exports, private source code, or unredacted logs;
 - confidential prompts, contracts, or screenshots.
 
-This lesson uses only built-in Python and fictional dictionaries. It installs
-nothing and makes no network call.
+The practice programs use only built-in Python and fictional dictionaries.
+They install nothing and make no network call. The bounded Codex conversation
+is the AI-assisted part; never place a secret or real work data in it.
 
 ## Follow along — I show you exactly how
 
@@ -218,6 +241,7 @@ Apply this decision before Part A and after every interruption:
 
 1. An empty attempt continues at Part A.
 2. The only expected names are `title_check.py`, `title_check_evidence.md`,
+   `ai_priority_change_proposal.md`, `ai_priority_change_decision.md`,
    `priority_check.py`, and `priority_check_evidence.md`. For an attempt
    containing only those names, use each guarded step:
    - `EXISTING` plus exactly complete synthetic content means leave the file
@@ -381,6 +405,111 @@ check.
 
 ## Now recreate it yourself
 
+### Step 1 — Ask for a bounded proposal, not an automatic edit
+
+Run `(Get-Location).Path` and copy the full Foundation 8 attempt path. Send this
+prompt to Codex. **pandas** is a third-party Python data package; this small
+rule does not need it.
+
+```text
+BOUNDED AI-ASSISTED CHANGE PROPOSAL — DO NOT EDIT FILES.
+
+You may inspect READ-ONLY only this full synthetic practice folder:
+[PASTE THE EXACT FOUNDATION-08 ATTEMPT PATH]
+
+Read title_check.py only as a small style example. Do not create, edit, move,
+rename, or delete anything. Do not inspect another path, use a network tool,
+install a package, or run code.
+
+Propose a unified diff that creates priority_check.py for this requirement:
+- return R003 unless priority is exactly low, medium, or high;
+- return None for those three values;
+- have no file, log, database, package, or network side effect;
+- include five assertions: low, medium, high, urgent, and missing;
+- print exactly 5 priority checks passed.
+
+Keep the diff minimal. After the diff, list any tempting optional expansions
+that were deliberately excluded, including file logging, pandas, telemetry,
+and network lookup. Do not claim the proposal works; it has not been run.
+```
+
+Codex's response is a proposal, not accepted code. Create the evidence file:
+
+```powershell
+Open-GuardedPracticeFile -AttemptPath $lessonPath -FileName "ai_priority_change_proposal.md"
+```
+
+Only after `CREATED ONCE`, paste the complete proposal beneath the heading
+`# AI priority-change proposal`. Save and close it.
+
+### Step 2 — Inspect, challenge, and narrow the proposal
+
+Before making your decision, inspect this fixed unsafe alternative as well.
+It is deliberately over-scoped so that every learner has real lines to reject,
+even when Codex produced a perfectly bounded proposal. **Do not apply any line
+from this block.**
+
+```diff
+# UNSAFE-HUNK-01 — unnecessary dependency
++import pandas as pd
+
+# UNSAFE-HUNK-02 — forbidden file side effect
++with open("priority-audit.log", "a") as log_file:
++    log_file.write(str(record))
+
+# UNSAFE-HUNK-03 — forbidden network action
++import requests
++requests.post("https://example.invalid/lookup", json=record)
+
+# UNSAFE-HUNK-04 — unrelated refactor
+-def title_reason_code(record):
++def shared_reason_code(record, field_name):
+```
+
+The comments are hunk labels for this exercise. They are not a valid program
+and are not suggestions. Reject all four because they add an unnecessary
+dependency, file writing, a network action, and an unrelated change.
+
+Create the decision file:
+
+```powershell
+Open-GuardedPracticeFile -AttemptPath $lessonPath -FileName "ai_priority_change_decision.md"
+```
+
+Only after `CREATED ONCE`, complete:
+
+```markdown
+# AI priority-change decision
+
+Requested outcome:
+Must not change:
+
+| Proposed part | Accept / narrow / reject | Evidence-based reason |
+|---|---|---|
+| actual Codex diff hunk/lines: [cite exact part] | | |
+| actual Codex assertions/print hunk: [cite exact part] | | |
+| UNSAFE-HUNK-01 — pandas dependency | REJECT | |
+| UNSAFE-HUNK-02 — file logging | REJECT | |
+| UNSAFE-HUNK-03 — network action | REJECT | |
+| UNSAFE-HUNK-04 — unrelated refactor | REJECT | |
+
+Diff inspected line by line: YES / NO
+Accepted lines can be explained: YES / NO
+All fixed unsafe hunks rejected: YES / NO
+Actual proposal hunk accepted, narrowed, or rejected:
+Test still required:
+```
+
+You must record a decision on at least one exact hunk or group of lines from
+the actual Codex diff and reject all four fixed unsafe hunks. Optional ideas
+that Codex already excluded do not count as rejection evidence. If the actual
+diff itself includes file writing, a package, telemetry, network access,
+unrelated refactoring, or a changed acceptance criterion, cite and reject
+those lines too. Do not apply the proposal unchanged merely because Codex
+produced it.
+
+### Step 3 — Apply only the accepted bounded part yourself
+
 Run the recreation program's create-once guard:
 
 ```powershell
@@ -389,8 +518,8 @@ Open-GuardedPracticeFile -AttemptPath $lessonPath -FileName "priority_check.py"
 
 If it reports `EXISTING`, leave the file unchanged only when it already meets
 every requirement and assertion below; otherwise use a fresh retry attempt and
-do not execute it. After `CREATED ONCE`, create the program for a meaningfully
-different requirement:
+do not execute it. After `CREATED ONCE`, type only the lines you accepted from
+the proposal. The meaningfully different requirement is:
 
 > Return reason code `R003` unless `priority` is exactly `low`, `medium`, or
 > `high`. Return `None` for those three allowed values. Have no side effects.
@@ -404,6 +533,15 @@ Include five assertions:
 Print exactly `5 priority checks passed`. Do not copy the title function and
 merely rename the file. Explain why a list membership check is appropriate for
 this new rule.
+
+Before running it, display the exact applied file and compare it line by line
+with `ai_priority_change_decision.md`:
+
+```powershell
+Get-Content -LiteralPath ".\priority_check.py"
+```
+
+### Step 4 — Test the accepted change
 
 Run the recreation with the exact project interpreter:
 
@@ -419,7 +557,8 @@ Open-GuardedPracticeFile -AttemptPath $lessonPath -FileName "priority_check_evid
 
 Leave an `EXISTING` file unchanged only when it is complete; otherwise use a
 fresh retry attempt. After `CREATED ONCE`, record the claim, exact observed
-output, side-effect assessment, and one honest limitation.
+output, side-effect assessment, one honest limitation, the accepted diff
+boundary, and the rejected or narrowed expansion.
 
 ## Ask Codex to check your work
 
@@ -449,8 +588,14 @@ Report PASS or NOT YET for each criterion:
    5 priority checks passed
 5. Both functions have no file, database, package-installation, or network side
    effect.
-6. Both evidence files state claim, observed evidence, side effects, and a
-   limitation.
+6. Both function evidence files state claim, observed evidence, side effects,
+   and a limitation.
+7. ai_priority_change_proposal.md preserves the actual AI proposal and does not
+   claim it passed before execution.
+8. ai_priority_change_decision.md records a line-by-line inspection, a decision
+   on at least one exact hunk or line group from the actual Codex proposal,
+   rejection of UNSAFE-HUNK-01 through UNSAFE-HUNK-04 with a plain-language
+   reason for each, accepted bounded lines, and the remaining test requirement.
 
 First inspect each local Python file. If a file could change a file, setting, or
 external system, do not execute it; report NOT YET. Otherwise, you may use only
@@ -478,6 +623,12 @@ that an inspection proves the folder is free of secrets or real data.
 - [ ] I can explain each function's input, output, and absence of side effects.
 - [ ] I can connect every assertion to one acceptance criterion.
 - [ ] Both evidence files distinguish claim, evidence, and limitation.
+- [ ] The actual bounded AI proposal and my inspection decision are preserved.
+- [ ] I cited and decided at least one exact hunk or line group from the actual
+      Codex proposal, rejected UNSAFE-HUNK-01 through UNSAFE-HUNK-04, and can
+      explain every accepted line.
+- [ ] I tested the applied file after inspection; the proposal itself is not
+      recorded as proof.
 - [ ] I can explain why generated code and commands remain proposals.
 - [ ] No dependency or network call was introduced. I attest that all
       information I entered was synthetic and that I did not intentionally add
