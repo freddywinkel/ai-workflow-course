@@ -400,7 +400,11 @@ class Course1QualityControlTests(unittest.TestCase):
             "--require-hashes",
         ):
             with self.subTest(required=required):
-                self.assertIn(required, text)
+                if required not in text:
+                    self.fail(
+                        "windows_setup_preserves: missing required setup text "
+                        f"{required!r}"
+                    )
 
     def test_browser_smoke_keeps_exact_responsive_viewport_matrix(self) -> None:
         text = (ROOT / "app" / "scripts" / "browser-smoke.mjs").read_text(
