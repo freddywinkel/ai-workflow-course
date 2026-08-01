@@ -367,6 +367,11 @@ jobs:
         with:
           python-version: "3.14.6"
 
+      - name: Set up the pinned public-browser runtime
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24.18.0"
+
       - name: Download the exact tested personal-study artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -384,12 +389,26 @@ jobs:
           --expected-commit "$ACCEPTED_COMMIT"
           --report audit-evidence/personal-study-live.json
 
+      - name: Prove fresh-profile installation and offline control in Chrome
+        working-directory: app
+        env:
+          ACCEPTED_COMMIT: ${{ inputs.accepted_commit }}
+          PUBLIC_URL: ${{ needs.deploy-personal-study.outputs.page_url }}
+        run: >-
+          npm run smoke:public --
+          --dist dist
+          --public-url "$PUBLIC_URL"
+          --expected-commit "$ACCEPTED_COMMIT"
+          --report ../audit-evidence/personal-study-live-browser.json
+
       - name: Preserve public byte-verification evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: course1-personal-study-live-${{ github.sha }}
-          path: audit-evidence/personal-study-live.json
+          path: |
+            audit-evidence/personal-study-live.json
+            audit-evidence/personal-study-live-browser.json
           if-no-files-found: error
           retention-days: 30
 

@@ -18,6 +18,11 @@
   serves. `.nojekyll` remains inside the uploaded artifact as a deployment
   control file and is recorded separately because GitHub Pages does not expose
   it as a public file.
+- Corrected the installed-client update boundary after the first public v2.6
+  study deployment exposed GitHub Pages' `application/javascript` media type.
+  The service worker now accepts that one production alias for manifest-declared
+  `text/javascript`, the old-client rehearsal simulates it, and live verification
+  rejects every incompatible public media type.
 - Advanced bundled content revision to `2026-08-02` without changing the
   independent `2026-07-28` source-verification claim or Course 1 practice
   revision.

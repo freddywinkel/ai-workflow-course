@@ -163,10 +163,13 @@ identity. See [`ROLLBACK_RUNBOOK.md`](ROLLBACK_RUNBOOK.md).
 
 The deployed study job then runs
 `tools/verify_course1_public_artifact.py`: it redownloads the learner-facing
-root and exact public file set, compares their bytes with the tested artifact,
-recomputes the public-served-tree hash, and records the expected public 404 for
-the uploaded `.nojekyll` control. A mismatch fails the release run and invokes
-the rollback decision; deployment alone is not completion.
+root and exact public file set, compares their bytes and production media types
+with the tested artifact, recomputes the public-served-tree hash, and records
+the expected public 404 for the uploaded `.nojekyll` control. The same job then
+runs `app/scripts/browser-public-smoke.mjs` in a new Chrome profile, requires
+the exact service worker and cache to activate, and reopens the course offline.
+A mismatch fails the release run and invokes the rollback decision; deployment
+alone is not completion.
 
 This version 2.6.0 artifact is intentionally not eligible for the accepted
 `promote` lane because its purpose is `personal-synthetic-study`. A future

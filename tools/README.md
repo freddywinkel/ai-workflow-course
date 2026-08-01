@@ -169,9 +169,13 @@ completion, or Course 2 readiness.
 [`verify_course1_public_artifact.py`](verify_course1_public_artifact.py) runs
 after that artifact is deployed. It redownloads and byte-compares the exact 16
 public-served files, recomputes their tree SHA-256, rechecks the public version
-identity, and records `.nojekyll` separately as an uploaded control that is
-expected to return HTTP 404. It retries normal GitHub Pages propagation and
-writes machine-readable live evidence.
+identity, checks every production media type (including the narrow GitHub Pages
+JavaScript alias), and records `.nojekyll` separately as an uploaded control
+that is expected to return HTTP 404. It retries normal GitHub Pages propagation
+and writes machine-readable live evidence. The deployment workflow follows it
+with `app/scripts/browser-public-smoke.mjs`, which uses a new Chrome profile to
+prove exact service-worker activation, exact cache membership, the persistent
+study boundary, and an offline reopen.
 
 [`verify_course1_promotion.py`](verify_course1_promotion.py) is an intended
 fail-closed workflow gate, not a learner command. Its currently tested cases

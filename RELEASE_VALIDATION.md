@@ -202,6 +202,9 @@ python tools\accept_course1_quality.py --node $nodeExe --report C:\path\to\cours
 - [ ] A controlled previous-to-current service-worker update preserves
       reading, practical checks, notes, and unrelated caches through
       **Later**, **Update now**, and cold reopen.
+- [ ] The update rehearsal serves JavaScript as GitHub Pages does
+      (`application/javascript`), while the service worker accepts only that
+      production alias or the manifest-declared `text/javascript` value.
 - [ ] Course 4 implementation tests are absent from the Course 1 deployment
       dependency chain.
 - [ ] A genuine shared-reader change runs the shared PWA tests in both product
@@ -402,8 +405,14 @@ The uploaded manifest-v1 tree contains `.nojekyll`, but GitHub Pages treats it
 as a publication-control file rather than a public asset. Public byte
 verification must therefore compare the manifest-listed assets plus
 `asset-manifest.json` and `sw.js` exactly, record that public-served-tree hash,
-and separately require `.nojekyll` in the uploaded artifact. A public 404 for
-`.nojekyll` is expected and must not be misreported as an artifact mismatch.
+verify production-compatible media types for every served file, and separately
+require `.nojekyll` in the uploaded artifact. A public 404 for `.nojekyll` is
+expected and must not be misreported as an artifact mismatch.
+
+The post-deployment workflow must also run
+`app/scripts/browser-public-smoke.mjs` in a new Chrome profile. It must observe
+the exact service worker in `activated` control, the exact manifest-bound cache,
+the visible `UNVERIFIED` study boundary, and a successful offline reopen.
 
 If the controlled pre-promotion update rehearsal cannot be performed, label the
 candidate `UNVERIFIED` and do not promote it. If the real public

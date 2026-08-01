@@ -795,6 +795,35 @@ test("service worker preserves a learner-controlled waiting update", () => {
   assert.match(serviceWorkerSource, /course-content\.json/);
   assert.match(serviceWorkerSource, /markdown\.js/);
 
+  const mediaTypeMatcherSource = serviceWorkerSource.match(
+    /function responseMediaTypeMatches\([\s\S]+?^\}/m,
+  )?.[0];
+  assert.ok(mediaTypeMatcherSource);
+  const responseMediaTypeMatches = Function(
+    `${mediaTypeMatcherSource}; return responseMediaTypeMatches;`,
+  )();
+  assert.equal(
+    responseMediaTypeMatches("text/javascript", "text/javascript"),
+    true,
+  );
+  assert.equal(
+    responseMediaTypeMatches("application/javascript", "text/javascript"),
+    true,
+  );
+  assert.equal(
+    responseMediaTypeMatches("text/javascript", "application/javascript"),
+    false,
+  );
+  for (const rejected of [
+    "",
+    "text/plain",
+    "text/html",
+    "application/json",
+    "application/javascript+json",
+  ]) {
+    assert.equal(responseMediaTypeMatches(rejected, "text/javascript"), false);
+  }
+
   const activationHandler = serviceWorkerSource.match(
     /self\.addEventListener\("activate"[\s\S]+?\n}\);/,
   )?.[0];
@@ -1017,6 +1046,7 @@ test("mobile and accessibility essentials are present", () => {
   assert.match(htmlSource, /class="skip-link"/);
   assert.match(htmlSource, /viewport-fit=cover/);
   assert.match(htmlSource, /apple-mobile-web-app-capable/);
+  assert.match(htmlSource, /name="mobile-web-app-capable" content="yes"/);
   assert.match(htmlSource, /aria-live="polite"/);
   assert.match(htmlSource, /aria-label="Check for course updates"/);
   assert.match(htmlSource, /aria-label="Search the course"/);
@@ -1667,6 +1697,7 @@ test("built JavaScript is syntactically valid and required artifacts exist", asy
     "scripts/serve.mjs",
     "scripts/browser-smoke.mjs",
     "scripts/browser-update-smoke.mjs",
+    "scripts/browser-public-smoke.mjs",
   ]) {
     execFileSync(nodeExecutable, ["--check", join(appRoot, file)], {
       stdio: "pipe",
