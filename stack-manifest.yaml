@@ -1,11 +1,13 @@
 schema_version: 2
 course_id: course-1-controlled-ai-workflow-foundations
 course_version: 2.6.0
+product_status: UNVERIFIED
+distribution_purpose: personal-synthetic-study
 practice_revision: 5
-last_verified: "2026-07-28"
-content_revision_through: "2026-07-29"
+source_verified_through: "2026-07-28"
+content_revision_through: "2026-08-02"
 verification_timezone: Europe/Amsterdam
-purpose: private synthetic-data learning demonstration
+purpose: public UNVERIFIED personal-study course using synthetic data only
 
 runtime:
   operating_system: Windows 11

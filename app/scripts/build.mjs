@@ -120,6 +120,14 @@ async function readCurriculum() {
     "course.version must be semantic version text",
   );
   assertMetadata(
+    curriculum.course?.productStatus === "UNVERIFIED",
+    "course.productStatus must be UNVERIFIED for this personal-study edition",
+  );
+  assertMetadata(
+    curriculum.course?.distributionPurpose === "personal-synthetic-study",
+    "course.distributionPurpose must be personal-synthetic-study",
+  );
+  assertMetadata(
     isIsoDate(curriculum.course?.sourceVerifiedThrough),
     "course.sourceVerifiedThrough must be an ISO date",
   );
@@ -571,6 +579,8 @@ async function build() {
     ["__BASE_PATH__", basePath],
     ["__BUILD_ID__", buildId],
     ["__COURSE_VERSION__", bundle.course.version],
+    ["__PRODUCT_STATUS__", bundle.course.productStatus],
+    ["__DISTRIBUTION_PURPOSE__", bundle.course.distributionPurpose],
     ["__SOURCE_VERIFIED_THROUGH__", bundle.course.sourceVerifiedThrough],
     ["__CONTENT_REVISION_THROUGH__", bundle.course.contentRevisionThrough],
     ["__VERIFIED_THROUGH__", bundle.course.verifiedThrough],
@@ -636,6 +646,8 @@ async function build() {
         programId: bundle.program.id,
         courseId: bundle.course.id,
         courseVersion: bundle.course.version,
+        productStatus: bundle.course.productStatus,
+        distributionPurpose: bundle.course.distributionPurpose,
         sourceVerifiedThrough: bundle.course.sourceVerifiedThrough,
         contentRevisionThrough: bundle.course.contentRevisionThrough,
         verifiedThrough: bundle.course.verifiedThrough,

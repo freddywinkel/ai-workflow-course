@@ -20,7 +20,10 @@
     "publicBuildId": "REPLACE_WITH_PUBLIC_VERSION_JSON_VALUE",
     "publicContentHash": "REPLACE_WITH_PUBLIC_VERSION_JSON_VALUE",
     "publicAssetManifestSha256": "REPLACE_WITH_PUBLIC_ASSET_MANIFEST_SHA256",
-    "publicArtifactTreeSha256": "REPLACE_WITH_REDOWNLOADED_PUBLIC_TREE_SHA256"
+    "publicServedTreeSha256": "REPLACE_WITH_EXACT_REDOWNLOADED_PUBLIC_SERVED_TREE_SHA256",
+    "nonPublicArtifactFiles": [
+      ".nojekyll"
+    ]
   },
   "adjudicatedAt": "REPLACE_WITH_ISO_8601_TIMESTAMP_AND_TIMEZONE",
   "reviewer": {

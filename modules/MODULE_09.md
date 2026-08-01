@@ -2189,10 +2189,14 @@ competence pass.
 - [ ] Codex returns `LEARNER ARTIFACTS: READY FOR ASSESSMENT` read-only; this is
       not treated as the competence decision.
 
-### Record the final Course 1 PASS in Git
+### Prepare the final Course 1 PASS checkpoint in Git
 
 Do this only after Codex reports artifact readiness and the independent artifact
-and oral assessment records say `COURSE 1 COMPETENCE: PASS`. Rerun the complete
+and oral assessment records support `COURSE 1 COMPETENCE: PASS`, and only after
+the named course-product release itself has an evidence-backed `PASS`. Version
+2.6.0 personal study is still product `UNVERIFIED`; while that remains true,
+keep the learner result `ASSESSMENT PENDING` and do not run this final-pass
+checkpoint. Rerun the complete
 Stage 1 block first,
 even if this PowerShell window is still open. Stop if its project-marker,
 Git-root, or path-length guard fails. The first commit records Module 9 just

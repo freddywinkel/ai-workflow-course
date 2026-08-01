@@ -62,7 +62,7 @@ class CurriculumDateMetadataTests(unittest.TestCase):
         )
         self.assertEqual(
             self.curriculum["course"]["contentRevisionThrough"],
-            "2026-07-29",
+            "2026-08-02",
         )
 
     def test_content_revision_can_advance_without_source_claim(self) -> None:
@@ -70,14 +70,14 @@ class CurriculumDateMetadataTests(unittest.TestCase):
         changed = False
         for group in curriculum["groups"]:
             for document in group["documents"]:
-                if document["revision"] == "2026-07-29":
-                    document["revision"] = "2026-07-30"
+                if document["revision"] == "2026-08-02":
+                    document["revision"] = "2026-08-03"
                     changed = True
                     break
             if changed:
                 break
         self.assertTrue(changed)
-        curriculum["course"]["contentRevisionThrough"] = "2026-07-30"
+        curriculum["course"]["contentRevisionThrough"] = "2026-08-03"
 
         self.assertEqual(self.failures(curriculum), [])
         self.assertEqual(
@@ -122,7 +122,7 @@ class CurriculumDateMetadataTests(unittest.TestCase):
 
     def test_content_summary_must_equal_latest_document_revision(self) -> None:
         curriculum = copy.deepcopy(self.curriculum)
-        curriculum["course"]["contentRevisionThrough"] = "2026-07-30"
+        curriculum["course"]["contentRevisionThrough"] = "2026-08-03"
 
         failures = self.failures(curriculum)
         self.assert_failure_contains(

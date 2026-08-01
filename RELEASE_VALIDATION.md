@@ -11,9 +11,9 @@ requirements, repair closure evidence, and status precedence are in
 The version 2.5.0 acceptance record is preserved as dated evidence and is
 currently `SUPERSEDED`. The ledger currently records version 2.6.0 as
 `UNVERIFIED`: the known local implementation defects are repaired, but the
-working copy is not an immutable accepted candidate and required human,
-repository-control, installed-client, device, promotion, and live-verification
-evidence is still missing. `C1-GOV-007` and `C1-GOV-011` are
+personal-study release is not an accepted candidate and required human,
+repository-control, installed-client, device, accepted-promotion, and final
+live-verification evidence is still missing. `C1-GOV-007` and `C1-GOV-011` are
 `EVIDENCE PENDING`; the all-33-test final-adjudication gate is implemented, but
 its 33 candidate-bound acceptance records do not yet exist. `C1-GOV-013` and
 `C1-GOV-015` are `CLOSED`. Always read the ledger rather than carrying this
@@ -26,9 +26,19 @@ real installed-client result after deployment.
 
 ## Release rule
 
-Do not publish merely because the build succeeds. A release passes only when
-course structure, content, learner state, PWA behavior, responsive layout, and
-installed-update behavior have been checked.
+Do not treat publication as acceptance merely because the build succeeds. A
+release passes only when course structure, content, learner state, PWA
+behavior, responsive layout, and installed-update behavior have been checked.
+
+Version 2.6.0 has a separately authorized **personal synthetic study** lane.
+That lane may publish the exact tested artifact only while its product status
+remains `UNVERIFIED`, its distribution purpose remains
+`personal-synthetic-study`, every known implementation defect is closed, the
+automated release gates pass, and the fixed boundary notice remains visible.
+It permits reading and synthetic exercises only. It cannot award Course 1
+completion, support Course 2 progression, prove consulting ability, or
+authorize client, production, real, employer, medical, personal,
+confidential, or credential data.
 
 A known failure is `REPAIR REQUIRED`; missing evidence is `UNVERIFIED`. Neither
 may be reported as `PASS`. Follow the ledger's candidate → acceptance for
@@ -44,9 +54,11 @@ release decisions. Course 1 may verify only that Course 4 remains structurally
 non-core. A Course 4 implementation failure must not block or support a Course
 1 decision unless a genuinely shared PWA contract changed.
 
-Ordinary pull requests and pushes validate but cannot publish. Candidate
-preservation, post-build acceptance, manual promotion, live verification, and
-emergency rollback are defined in
+Ordinary pull requests and pushes validate but cannot publish. An explicitly
+authorized manual `personal-study` dispatch may publish the separate study
+artifact; it is not a promotion or acceptance decision. Candidate
+preservation, post-build acceptance, manual accepted promotion, live
+verification, and emergency rollback are defined in
 [`ROLLBACK_RUNBOOK.md`](ROLLBACK_RUNBOOK.md). Repository branch, environment,
 Pages, alert, and notification settings remain owner-controlled evidence; the
 workflow files cannot prove those settings are enabled.
@@ -297,15 +309,23 @@ Use an installed or controlled Course 1 version 2.5.0 client:
 8. confirm the new service worker activates;
 9. verify the version 2.6.0 Overview, 21-page practice loop, Course 4 link, and
    Career tab;
-10. verify state migration;
-11. cold reload and reopen the installed PWA.
+10. verify the persistent `UNVERIFIED` personal-study boundary on Home, a
+    lesson, Career, and Settings;
+11. verify state migration;
+12. cold reload and reopen the installed PWA.
 
 - [ ] new precache resources were fetched with `cache: "reload"`;
 - [ ] no broad cache deletion occurred;
 - [ ] local state was not erased;
+- [ ] the product status is still `UNVERIFIED` and distribution purpose is
+      still `personal-synthetic-study` after activation and cold reopen;
 - [ ] Course 1 version 2.6.0 is still present after cold reopen.
 
 ## 10. Final release record
+
+This section is the accepted-release path. A personal-study publication does
+not create this record, close its evidence gaps, or change the product to
+`PASS`.
 
 Create a new version-specific acceptance record under `release_evidence/`
 from
@@ -340,7 +360,8 @@ that all 33 tests passed for one immutable candidate. Record:
 - candidate commit and accepted tag or immutable artifact;
 - build ID;
 - content hash;
-- asset-manifest SHA-256 and complete artifact-tree SHA-256;
+- asset-manifest SHA-256, complete uploaded artifact-tree SHA-256, and exact
+  public-served-tree SHA-256;
 - content-revision-through date;
 - research/source-verified-through date;
 - current ledger status and every finding ID claimed closed;
@@ -376,6 +397,13 @@ complete evidence, and rejects a future or non-independent decision. The
 legacy v2.5 exception accepts only the pinned historical Markdown record.
 Record the rehearsal or live outcome with
 `release_evidence/templates/course1-rollback-evidence.template.json`.
+
+The uploaded manifest-v1 tree contains `.nojekyll`, but GitHub Pages treats it
+as a publication-control file rather than a public asset. Public byte
+verification must therefore compare the manifest-listed assets plus
+`asset-manifest.json` and `sw.js` exactly, record that public-served-tree hash,
+and separately require `.nojekyll` in the uploaded artifact. A public 404 for
+`.nojekyll` is expected and must not be misreported as an artifact mismatch.
 
 If the controlled pre-promotion update rehearsal cannot be performed, label the
 candidate `UNVERIFIED` and do not promote it. If the real public

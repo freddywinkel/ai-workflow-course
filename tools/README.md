@@ -157,6 +157,22 @@ evidence.
 
 ## Promotion and rollback controls
 
+[`verify_course1_study_release.py`](verify_course1_study_release.py) is the
+separate fail-closed gate for the authorized version 2.6.0 personal-study
+publication. It requires product status `UNVERIFIED`, distribution purpose
+`personal-synthetic-study`, the exact full commit and artifact identity, no
+known open/partial/reopened defect, only the explicitly allowlisted missing
+human/live evidence, and the fixed synthetic-only boundary in the PWA. Passing
+it permits study distribution only; it is not accepted promotion, Course 1
+completion, or Course 2 readiness.
+
+[`verify_course1_public_artifact.py`](verify_course1_public_artifact.py) runs
+after that artifact is deployed. It redownloads and byte-compares the exact 16
+public-served files, recomputes their tree SHA-256, rechecks the public version
+identity, and records `.nojekyll` separately as an uploaded control that is
+expected to return HTTP 404. It retries normal GitHub Pages propagation and
+writes machine-readable live evidence.
+
 [`verify_course1_promotion.py`](verify_course1_promotion.py) is an intended
 fail-closed workflow gate, not a learner command. Its currently tested cases
 match an immutable post-review JSON record to the built commit, course version,

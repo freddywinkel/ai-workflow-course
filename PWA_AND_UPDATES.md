@@ -30,17 +30,18 @@ It does not:
 
 ## Current Course 1 status
 
-The current local version 2.6.0 working copy is **`UNVERIFIED`**, not `PASS`.
-The known local implementation defects are repaired, but this is not yet an
-immutable accepted candidate and required human, repository,
-installed-client, device, and live evidence is missing. `C1-GOV-007` and
+The current version 2.6.0 personal-study edition is **`UNVERIFIED`**, not
+`PASS`, and its separate distribution purpose is
+`personal-synthetic-study`. The known local implementation defects are
+repaired, but required human, installed-client, wider device, and final
+acceptance evidence is missing. `C1-GOV-007` and
 `C1-GOV-011` are `EVIDENCE PENDING`; the all-33-test final-adjudication gate is
 implemented, but its 33 candidate-bound acceptance records do not yet exist.
 `C1-GOV-013` and `C1-GOV-015` are `CLOSED`. The authoritative current decision
 and evidence boundaries are in
 [`COURSE_1_AUDIT_STATUS_AND_REPAIR_LEDGER.md`](COURSE_1_AUDIT_STATUS_AND_REPAIR_LEDGER.md).
-The separately deployed public PWA must be identified and verified rather than
-assumed to match this working copy.
+Public availability permits only the labelled synthetic study use. It does not
+close any finding, award Course 1 completion, or establish Course 2 readiness.
 
 ## Canonical structure
 
@@ -132,23 +133,48 @@ operation, backup/import/reset, blocked storage, old-state migration, offline
 reload/search, and a controlled previous-to-current service-worker update. The
 update check rebuilds the pinned accepted v2.5 source commit instead of
 relabelling current code. It proves that v2.5 **Update now** can activate the
-current verified worker while preserving and migrating learner state.
+version 2.6 service worker after its asset bytes pass integrity checks while
+preserving and migrating learner state. This is technical update evidence, not
+a product `PASS`.
 
 ## Controlled publication
 
 The GitHub Pages workflow treats ordinary pull requests and pushes as
-validation only. They cannot deploy. A maintainer manually chooses either:
+validation only. They cannot deploy. A maintainer manually chooses one of:
 
 - `validate`, which freezes and retains the tested candidate; or
+- `personal-study`, which requires the exact full commit and the explicit
+  `UNVERIFIED-SYNTHETIC-STUDY-ONLY` acknowledgement, runs the isolated study
+  verifier, and publishes only the already tested artifact; or
 - `promote`, which requires the candidate's full commit, an immutable
   post-review acceptance-record commit, and an exact matching acceptance
   record.
 
-The deployment job downloads the tested artifact instead of rebuilding it.
-It is expected to stop again at a reviewer-protected `github-pages`
-environment. A separate manual rollback workflow restores only a named full
-last-known-good commit after checking its authorization and rebuilt identity.
-See [`ROLLBACK_RUNBOOK.md`](ROLLBACK_RUNBOOK.md).
+Both publication jobs download the tested artifact instead of rebuilding it
+and target the main-only `github-pages` environment. Required-reviewer
+protection is an owner-controlled repository setting and remains
+`EVIDENCE PENDING` until its live setting is recorded. The personal-study
+verifier rejects a known defect, a new unclassified pending
+finding, missing status/purpose metadata, or weakened learner boundary. The
+accepted-release verifier remains separate and still requires all human and
+candidate-bound evidence. A separate manual rollback workflow restores only a
+named full last-known-good commit after checking its authorization and rebuilt
+identity. See [`ROLLBACK_RUNBOOK.md`](ROLLBACK_RUNBOOK.md).
+
+The deployed study job then runs
+`tools/verify_course1_public_artifact.py`: it redownloads the learner-facing
+root and exact public file set, compares their bytes with the tested artifact,
+recomputes the public-served-tree hash, and records the expected public 404 for
+the uploaded `.nojekyll` control. A mismatch fails the release run and invokes
+the rollback decision; deployment alone is not completion.
+
+This version 2.6.0 artifact is intentionally not eligible for the accepted
+`promote` lane because its purpose is `personal-synthetic-study`. A future
+accepted release requires a new reviewed commit that explicitly changes the
+closed metadata and validators to `accepted-release-candidate`, reruns every
+candidate and human gate, and produces a new exact artifact identity. Never
+flip the purpose at deployment time or relabel this study artifact as
+accepted.
 
 Local and audit builds use `COURSE1_BUILD_MODE=development` by default and
 record `working-copy`; that identity cannot be promoted. The candidate workflow
@@ -260,7 +286,11 @@ separate authorized release action.
     vulnerability, and claim-level source gates.
 12. Preserve the last `PASS` artifact, acceptance identity, learner-state
     backup, and rollback authorization path.
-13. Publish only through the manual controlled-promotion workflow after
-    `RELEASE_VALIDATION.md` passes.
-14. Immediately verify the public identity and prior installed client; keep
-    the release `UNVERIFIED` until that evidence passes.
+13. Publish only through the explicitly authorized `personal-study` lane or
+    the stricter accepted-release promotion lane. Never convert study
+    publication into acceptance by wording.
+14. Immediately verify the served manifest assets, asset manifest, service
+    worker, browser behavior, offline reopen, and prior installed client. The
+    uploaded `.nojekyll` control file is not expected to be served by GitHub
+    Pages. Keep product and competence status `UNVERIFIED` until all later
+    evidence passes.

@@ -2,9 +2,11 @@
 
 Document ID: `C1-TM`
 
-Version: `1.0`
+Version: `1.1`
 
 Effective date: `2026-07-28`
+
+Personal-study publication amendment: `2026-08-02`
 
 Status: **Normative threat baseline; implementation conformance is not yet
 verified**
@@ -177,6 +179,8 @@ file loss, code execution, data disclosure, or false approval.
 | `C1-THR-020` | External link leaks state, opens an insecure scheme, retains opener authority, or disguises a repository path escape | Medium | HTTPS-only external allowlist, `noopener`, `noreferrer`, safe repository-path construction | Link corpus and browser navigation tests | `C1-TA-WEB-005`–`008` |
 | `C1-THR-021` | Maintainer or compromised account publishes artifacts that do not correspond to reviewed source and evidence | High | Protected branch/review, least-privilege workflow, deterministic identity, provenance, post-deploy comparison | Roll back to prior release; publish incident note | `C1-TA-SC-007`–`012`, `C1-TA-REC-009`–`010` |
 
+| `C1-THR-022` | Public availability, local progress, a generated evidence pack, or assessor preparation is misrepresented as Course 1 acceptance, learner completion, Course 2 readiness, consulting ability, client readiness, or production fitness | High | Machine-readable `UNVERIFIED` status and `personal-synthetic-study` purpose; persistent non-dismissible PWA boundary; separate study and accepted-release verifiers | Reject accepted promotion, preserve pending evidence, and require product plus human learner gates before any final pass | `C1-TA-SC-007`–`012`, `C1-TA-PWA-001`–`014` |
+
 ## 8. Abuse and misuse cases that must become tests
 
 | ID | Required test idea | Expected safe result |
@@ -227,6 +231,15 @@ not provide opener authority and should not send a referrer. Opening an
 external link is an explicit learner action, not a Course 1 business action.
 
 ## 10. Security claims and their limits
+
+The public version 2.6.0 personal-study release may claim only that its named
+automated technical gates and exact public-byte check passed for one synthetic
+study artifact. It MUST remain labelled `UNVERIFIED` and
+`personal-synthetic-study`. It MUST NOT claim Course 1 product acceptance,
+learner completion, Course 2 readiness, consulting ability, client readiness,
+production fitness, or permission to use real data. Local reading progress,
+self-checks, generated files, and assessor preparation do not change that
+boundary.
 
 The accepted release may make only these bounded claims:
 

@@ -182,6 +182,13 @@ MANIFEST_ASSET_PATHS = {
     "icons/icon-maskable-512.png",
     "icons/apple-touch-icon.png",
 }
+PUBLIC_SERVED_PATHS = MANIFEST_ASSET_PATHS | {
+    "asset-manifest.json",
+    "sw.js",
+}
+STUDY_PRODUCT_STATUS = "UNVERIFIED"
+STUDY_DISTRIBUTION_PURPOSE = "personal-synthetic-study"
+PROMOTION_DISTRIBUTION_PURPOSE = "accepted-release-candidate"
 
 
 def reject_duplicate_json_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
@@ -217,6 +224,23 @@ def artifact_tree_sha256(root: Path) -> str:
         raise ValueError(f"artifact directory contains no files: {root}")
     for path in files:
         relative = path.relative_to(root).as_posix()
+        digest.update(relative.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(hashlib.sha256(path.read_bytes()).digest())
+        digest.update(b"\n")
+    return digest.hexdigest()
+
+
+def selected_tree_sha256(root: Path, relative_paths: set[str]) -> str:
+    """Hash an exact named set using the same framing as the artifact tree."""
+
+    digest = hashlib.sha256()
+    if not relative_paths:
+        raise ValueError("selected artifact tree contains no files")
+    for relative in sorted(relative_paths):
+        path = root / Path(*PurePosixPath(relative).parts)
+        if not path.is_file():
+            raise ValueError(f"selected artifact file is missing: {relative}")
         digest.update(relative.encode("utf-8"))
         digest.update(b"\0")
         digest.update(hashlib.sha256(path.read_bytes()).digest())
@@ -269,24 +293,28 @@ def inspect_artifact_identity(
         "sourceVerifiedThrough",
         "contentRevisionThrough",
     }
+    release_version_keys = separated_date_version_keys | {
+        "productStatus",
+        "distributionPurpose",
+    }
     actual_version_keys = set(version)
     if (
         actual_version_keys != legacy_version_keys
         and actual_version_keys != separated_date_version_keys
+        and actual_version_keys != release_version_keys
     ):
         raise ValueError(
-            "version.json keys must be exactly the current separated-date "
-            "shape or the legacy compatibility shape"
+            "version.json keys must be exactly the current release shape, "
+            "the earlier separated-date shape, or the legacy compatibility shape"
         )
     if (
-        actual_version_keys == legacy_version_keys
-        and operation != "rollback"
+        actual_version_keys != release_version_keys
+        and operation in {"promote", "personal-study"}
     ):
         raise ValueError(
-            "promotion version.json must contain separated source-verification "
-            "and content-revision dates"
+            f"{operation} version.json must contain separated dates and release metadata"
         )
-    if actual_version_keys == separated_date_version_keys:
+    if actual_version_keys in (separated_date_version_keys, release_version_keys):
         if (
             not re.fullmatch(
                 r"\d{4}-\d{2}-\d{2}",
@@ -303,6 +331,23 @@ def inspect_artifact_identity(
                 "version.json separated date metadata is malformed or "
                 "contradictory"
             )
+    if actual_version_keys == release_version_keys:
+        if version.get("productStatus") != STUDY_PRODUCT_STATUS:
+            raise ValueError("version.json productStatus must be UNVERIFIED")
+        purpose = version.get("distributionPurpose")
+        expected_purpose = {
+            "personal-study": STUDY_DISTRIBUTION_PURPOSE,
+            "promote": PROMOTION_DISTRIBUTION_PURPOSE,
+        }.get(operation)
+        if expected_purpose is not None and purpose != expected_purpose:
+            raise ValueError(
+                f"{operation} requires distributionPurpose {expected_purpose}"
+            )
+        if operation == "rollback" and purpose not in {
+            STUDY_DISTRIBUTION_PURPOSE,
+            PROMOTION_DISTRIBUTION_PURPOSE,
+        }:
+            raise ValueError("rollback version.json has an unsupported distributionPurpose")
     if version.get("courseId") != "course-1-controlled-ai-workflow-foundations":
         raise ValueError("version.json is not Course 1")
     if not re.fullmatch(r"[0-9a-f]{12}", str(version.get("buildId", ""))):
@@ -417,6 +462,10 @@ def inspect_artifact_identity(
         "artifactFormat": MANIFEST_ARTIFACT_FORMAT,
         "assetManifestSha256": manifest_hash,
         "artifactTreeSha256": tree_hash,
+        "publicServedTreeSha256": selected_tree_sha256(
+            artifact_root,
+            PUBLIC_SERVED_PATHS,
+        ),
     }
 
 

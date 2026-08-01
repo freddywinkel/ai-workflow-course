@@ -6,13 +6,15 @@ Course version: `2.6.0`
 
 Research and sources verified through: `2026-07-28`
 
-Course content revised through: `2026-07-29`
+Course content revised through: `2026-08-02`
 
 Deterministic package result: **PASS**
 
 Current Course 1 product status: **`UNVERIFIED`**
 
-Checks: 42; failures: 0; warnings: 0
+Distribution purpose: **`personal-synthetic-study`**
+
+Checks: 43; failures: 0; warnings: 0
 
 ## Scope
 
@@ -28,15 +30,16 @@ this deterministic validation.
 | Status | Check | Detail |
 |---|---|---|
 | PASS | strategic-focus-guardrail | standing instructions, decision rule, and project overview enforce PASS/PAUSE/REJECT and explicit goal changes |
-| PASS | current-product-status-consumers | the ledger and four active human-facing consumers agree on UNVERIFIED |
+| PASS | current-product-status-consumers | the ledger and four active human-facing consumers agree on product status UNVERIFIED and distribution purpose personal-synthetic-study |
+| PASS | personal-study-learning-boundary | product acceptance and independent learner evidence both remain required for a final competence pass |
 | PASS | curriculum-load | curriculum.json parsed as a JSON object |
-| PASS | curriculum-metadata | Course 1 metadata separates source verification through 2026-07-28 from content revision through 2026-07-29 |
+| PASS | curriculum-metadata | Course 1 metadata separates source verification through 2026-07-28 from content revision through 2026-08-02 |
 | PASS | curriculum-groups | 7 configured groups have stable IDs and valid structure |
 | PASS | curriculum-stable-ids | 86 unique current IDs and 34 unique legacy IDs |
 | PASS | curriculum-documents | 86 unique configured lesson paths and revisions are valid |
 | PASS | curriculum-core-groups | only foundations and modules are configured as progress groups |
 | PASS | career-metadata | 6 ordered career courses; Course 1 is current and the Course 4 prototype is optional |
-| PASS | curriculum-date-separation | content revised through 2026-07-29; research and sources verified through 2026-07-28; compatibility alias, evidence sources, owners, and consumers match the closed contract |
+| PASS | curriculum-date-separation | content revised through 2026-08-02; research and sources verified through 2026-07-28; compatibility alias, evidence sources, owners, and consumers match the closed contract |
 | PASS | release-metadata-sync | Course 1 version 2.6.0, practice revision 5, app metadata, manifest, and release documents agree |
 | PASS | course4-structural-isolation | Course 4 remains non-core, outside the Course 1 sequence, and readable by the shared PWA; Course 4 lesson and implementation acceptance was not run |
 | PASS | progress-foundations | exactly 9 ordered foundation progress lessons |
@@ -68,7 +71,7 @@ this deterministic validation.
 | PASS | practice-rule-register | R001-R011 are documented and covered using fixed date 2026-07-26 |
 | PASS | practice-synthetic-safety | fixed fictional identifiers, role-only ownership, no personal-data columns, and explicit no-real-data guarantees |
 | PASS | practice-rule-oracle | standard-library evaluator reproduces all 13 frozen issues, including both R010 duplicates and fixed-date R011 |
-| PASS | internal-links | 99 current local targets exist; 5 archived/generated targets ignored |
+| PASS | internal-links | 102 current local targets exist; 5 archived/generated targets ignored |
 
 ## Limits
 
@@ -79,4 +82,4 @@ layout, accessibility, or a learner's implementation. Those require the live
 source audit, PWA tests and visual review, and the course evaluation and UAT
 gates. Follow `COURSE_1_AUDIT_STATUS_AND_REPAIR_LEDGER.md`; missing
 immutable, human, repository, installed-client, device, or live evidence
-keeps the current working copy `UNVERIFIED` rather than `PASS`.
+keeps the current personal-study release `UNVERIFIED` rather than `PASS`.

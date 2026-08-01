@@ -123,8 +123,10 @@ def validate_final_record(
     version: dict[str, Any],
     *,
     expected_commit: str,
+    expected_promotion_run_id: str,
     asset_manifest_sha256: str | None,
     artifact_tree_sha256_value: str,
+    public_served_tree_sha256_value: str,
     ledger_text: str,
     evidence_repository_root: Path | None,
 ) -> list[str]:
@@ -201,7 +203,8 @@ def validate_final_record(
             "publicBuildId",
             "publicContentHash",
             "publicAssetManifestSha256",
-            "publicArtifactTreeSha256",
+            "publicServedTreeSha256",
+            "nonPublicArtifactFiles",
         },
         "deployment",
         failures,
@@ -211,6 +214,10 @@ def validate_final_record(
         deployment.get("promotionWorkflowRunId"), str
     ) or not re.fullmatch(r"[1-9][0-9]*", deployment["promotionWorkflowRunId"]):
         failures.append("deployment.promotionWorkflowRunId must be a positive run ID")
+    elif deployment["promotionWorkflowRunId"] != expected_promotion_run_id:
+        failures.append(
+            "deployment.promotionWorkflowRunId does not match the verified workflow run"
+        )
     if not isinstance(deployment.get("deploymentId"), str) or not re.fullmatch(
         r"[A-Za-z0-9][A-Za-z0-9._:-]*",
         deployment["deploymentId"],
@@ -221,11 +228,15 @@ def validate_final_record(
         "publicBuildId": candidate.get("buildId"),
         "publicContentHash": candidate.get("contentHash"),
         "publicAssetManifestSha256": candidate.get("assetManifestSha256"),
-        "publicArtifactTreeSha256": candidate.get("artifactTreeSha256"),
+        "publicServedTreeSha256": public_served_tree_sha256_value,
     }
     for field, expected in public_comparisons.items():
         if deployment.get(field) != expected:
             failures.append(f"deployment.{field} does not match the candidate")
+    if deployment.get("nonPublicArtifactFiles") != [".nojekyll"]:
+        failures.append(
+            "deployment.nonPublicArtifactFiles must exactly record .nojekyll"
+        )
 
     deployed_at: dt.datetime | None = None
     adjudicated_at: dt.datetime | None = None
@@ -322,6 +333,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--record", required=True)
     parser.add_argument("--expected-commit", required=True)
+    parser.add_argument("--promotion-run-id", required=True)
     parser.add_argument("--dist", type=Path, default=ROOT / "app" / "dist")
     parser.add_argument(
         "--evidence-root",
@@ -340,8 +352,11 @@ def main() -> int:
 
     failures: list[str] = []
     expected_commit = args.expected_commit.strip().casefold()
+    expected_promotion_run_id = args.promotion_run_id.strip()
     if not HEX_40.fullmatch(expected_commit):
         failures.append("expected commit must be a full 40-character Git SHA")
+    if not re.fullmatch(r"[1-9][0-9]*", expected_promotion_run_id):
+        failures.append("promotion run ID must be a positive integer")
     try:
         record_path = resolve_record(args.record, args.evidence_root)
         record = read_object(record_path)
@@ -356,8 +371,12 @@ def main() -> int:
                 record,
                 identity["version"],
                 expected_commit=expected_commit,
+                expected_promotion_run_id=expected_promotion_run_id,
                 asset_manifest_sha256=identity["assetManifestSha256"],
                 artifact_tree_sha256_value=identity["artifactTreeSha256"],
+                public_served_tree_sha256_value=identity[
+                    "publicServedTreeSha256"
+                ],
                 ledger_text=ledger_text,
                 evidence_repository_root=args.evidence_root.resolve(),
             )

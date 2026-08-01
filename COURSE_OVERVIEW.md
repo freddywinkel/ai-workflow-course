@@ -49,6 +49,9 @@ two other eligible adults to complete independent calibration, with a
 calibrated artifact review and a live independent oral assessment between
 them. The same two adults may perform those roles. Until they are available,
 the correct result is `ASSESSMENT PENDING`, not a self-awarded pass.
+The current personal-study course product is also `UNVERIFIED`, so final
+competence remains `ASSESSMENT PENDING` until both the course product and the
+learner's independent human assessment have evidence-backed passing results.
 
 ## The practice method
 

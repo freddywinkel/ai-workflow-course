@@ -63,6 +63,12 @@ post-deployment workflow then require the exact prior promotion record, exact
 public/candidate identities, a valid deployment chronology, and all 33
 candidate-bound evidence records. The current test manifest still reports all
 33 tests as `UNVERIFIED`: implementing the gate does not create the evidence.
+The separately authorized personal-study lane instead uses
+`tools/verify_course1_study_release.py` before deployment and
+`tools/verify_course1_public_artifact.py` afterward. Those controls prove the
+labelled study artifact and served bytes only; they do not satisfy or replace
+the 32-test promotion record, the 33-test final record, learner evidence, or a
+Course 1 `PASS`.
 Rollback requires the declared provenance, recovery, and old-client records
 plus a hash-checked prior accepted promotion record for the exact rollback
 target.

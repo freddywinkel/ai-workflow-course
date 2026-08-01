@@ -343,7 +343,7 @@ class GroundUpAuditArtifactTests(unittest.TestCase):
             self.assertFalse(tools["exists"])
             self.assertEqual(tools["result"], "UNVERIFIED")
 
-    def test_generic_json_validation_ignores_only_generator_owned_raw_evidence(
+    def test_generic_json_validation_ignores_the_unbundled_audit_package(
         self,
     ) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -372,7 +372,7 @@ class GroundUpAuditArtifactTests(unittest.TestCase):
                 for path in iter_current_files(root, ".json")
             }
 
-            self.assertIn(
+            self.assertNotIn(
                 "release_evidence/course1_ground_up_audit/2.6.0/"
                 "2026-07-29/audit-assurance-result.json",
                 observed,

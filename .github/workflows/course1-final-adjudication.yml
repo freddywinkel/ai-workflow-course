@@ -35,6 +35,7 @@ jobs:
       - name: Check out the trusted final-adjudication controls
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.sha }}
           path: control
           persist-credentials: false
 
@@ -44,7 +45,12 @@ jobs:
           CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
           PROMOTION_RUN_ID: ${{ inputs.promotion_run_id }}
           FINAL_RECORD_COMMIT: ${{ inputs.final_record_commit }}
+          CONTROL_REF: ${{ github.ref }}
         run: |
+          if [[ "$CONTROL_REF" != "refs/heads/main" ]]; then
+            echo "final adjudication must be dispatched from main"
+            exit 1
+          fi
           if [[ ! "$CANDIDATE_COMMIT" =~ ^[0-9a-f]{40}$ ]]; then
             echo "candidate_commit must be a full lower-case 40-character Git SHA"
             exit 1
@@ -57,6 +63,32 @@ jobs:
             echo "promotion_run_id must be a positive numeric GitHub Actions run ID"
             exit 1
           fi
+
+      - name: Prove the referenced run deployed this accepted candidate
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
+          PROMOTION_RUN_ID: ${{ inputs.promotion_run_id }}
+        run: |
+          set -euo pipefail
+          run_json="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$PROMOTION_RUN_ID")"
+          jq -e \
+            --arg commit "$CANDIDATE_COMMIT" \
+            '.conclusion == "success" and
+             .event == "workflow_dispatch" and
+             .head_branch == "main" and
+             .head_sha == $commit and
+             .path == ".github/workflows/pages.yml"' \
+            <<<"$run_json" >/dev/null
+          jobs_json="$(gh api --paginate \
+            "repos/$GITHUB_REPOSITORY/actions/runs/$PROMOTION_RUN_ID/jobs?per_page=100")"
+          for required_job in prepare-accepted-pages-artifact deploy; do
+            jq -e \
+              --arg name "$required_job" \
+              '.jobs | any(.name == $name and .conclusion == "success")' \
+              <<<"$jobs_json" >/dev/null
+          done
 
       - name: Check out the immutable post-deployment evidence commit
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -82,6 +114,7 @@ jobs:
         shell: bash
         env:
           CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
+          PROMOTION_RUN_ID: ${{ inputs.promotion_run_id }}
           FINAL_RECORD: ${{ inputs.final_record }}
         run: |
           set -o pipefail
@@ -89,6 +122,7 @@ jobs:
           python control/tools/verify_course1_final_acceptance.py \
             --record "$FINAL_RECORD" \
             --expected-commit "$CANDIDATE_COMMIT" \
+            --promotion-run-id "$PROMOTION_RUN_ID" \
             --dist app/dist \
             --evidence-root acceptance-control \
             --ledger acceptance-control/COURSE_1_AUDIT_STATUS_AND_REPAIR_LEDGER.md \

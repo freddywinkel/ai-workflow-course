@@ -15,8 +15,10 @@
     "subtitle": "From zero technical knowledge to one safe, evidence-backed small and medium-sized enterprise (SME) workflow",
     "version": "2.6.0",
     "practiceRevision": 5,
+    "productStatus": "UNVERIFIED",
+    "distributionPurpose": "personal-synthetic-study",
     "sourceVerifiedThrough": "2026-07-28",
-    "contentRevisionThrough": "2026-07-29",
+    "contentRevisionThrough": "2026-08-02",
     "verifiedThrough": "2026-07-28",
     "learnerStartingPoint": "No coding, automation, consulting, or AI implementation knowledge is assumed.",
     "outcome": "Using synthetic evidence, you can rehearse investigation of a small operational workflow, decide what should and should not be automated, safely assemble the supplied prototype, author and test one bounded deterministic rule, design one different bounded offline AI contract, and transfer the control method to an unseen second work area. This does not prove real discovery, external user acceptance, production use, or consulting readiness.",
@@ -72,7 +74,7 @@
       "documents": [
         {
           "id": "course-1-guide",
-          "revision": "2026-07-28",
+          "revision": "2026-08-02",
           "sourcePath": "README.md",
           "legacyIds": [
             "index"
@@ -80,7 +82,7 @@
         },
         {
           "id": "course-1-readiness-check",
-          "revision": "2026-07-28",
+          "revision": "2026-08-02",
           "sourcePath": "BEGINNER_READINESS_CHECK.md",
           "estimatedPracticeHours": {
             "minimum": 1,
@@ -102,7 +104,7 @@
         },
         {
           "id": "course-1-overview",
-          "revision": "2026-07-28",
+          "revision": "2026-08-02",
           "sourcePath": "COURSE_OVERVIEW.md",
           "legacyIds": [
             "course-overview"
@@ -335,7 +337,7 @@
         },
         {
           "id": "course-1-module-09",
-          "revision": "2026-07-28",
+          "revision": "2026-08-02",
           "sourcePath": "modules/MODULE_09.md",
           "title": "Module 9 — Rehearse Operational Acceptance, Hand Over, and Pass the Course 1 Assessment",
           "estimatedPracticeHours": {
@@ -495,7 +497,7 @@
         },
         {
           "id": "course-1-assessment-rubric",
-          "revision": "2026-07-28",
+          "revision": "2026-08-02",
           "sourcePath": "ASSESSMENT_AND_RUBRIC.md",
           "legacyIds": [
             "assessment-and-rubric"
@@ -544,7 +546,7 @@
         },
         {
           "id": "course-1-glossary",
-          "revision": "2026-07-28",
+          "revision": "2026-07-30",
           "sourcePath": "foundations/GLOSSARY.md",
           "legacyIds": [
             "foundations-glossary"
@@ -622,7 +624,7 @@
         },
         {
           "id": "course-1-worked-example-module-09-assessment",
-          "revision": "2026-07-28",
+          "revision": "2026-08-02",
           "sourcePath": "worked_examples/module_09_assessment_record.md",
           "title": "Completed Module 9 Example — Course 1 Assessment Record",
           "legacyIds": []
@@ -787,7 +789,7 @@
       "documents": [
         {
           "id": "course-1-pwa-updates",
-          "revision": "2026-07-29",
+          "revision": "2026-08-02",
           "sourcePath": "PWA_AND_UPDATES.md",
           "legacyIds": [
             "pwa-and-updates"
@@ -803,7 +805,7 @@
         },
         {
           "id": "course-1-changelog",
-          "revision": "2026-07-29",
+          "revision": "2026-08-02",
           "sourcePath": "COURSE_CHANGELOG.md",
           "legacyIds": [
             "course-changelog"
@@ -811,7 +813,7 @@
         },
         {
           "id": "course-1-release-validation",
-          "revision": "2026-07-29",
+          "revision": "2026-08-02",
           "sourcePath": "RELEASE_VALIDATION.md",
           "legacyIds": [
             "release-validation"
@@ -819,7 +821,7 @@
         },
         {
           "id": "course-1-validation-report",
-          "revision": "2026-07-29",
+          "revision": "2026-08-02",
           "sourcePath": "VALIDATION_REPORT.md",
           "legacyIds": [
             "validation-report"

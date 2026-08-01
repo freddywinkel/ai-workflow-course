@@ -338,7 +338,10 @@ A Course 1 release may be called technically accepted only in this order:
 6. Run PWA unit, adversarial security, storage, browser, accessibility,
    offline, and controlled-update tests.
 7. Produce dependency scan, licence inventory, SBOM, and provenance manifest.
-8. Build once from the accepted source and publish that exact artifact.
+8. Build once from the controlled source and publish that exact artifact only
+   through its declared lane: `personal-synthetic-study` or accepted-release
+   promotion. Personal-study publication is not technical or learning
+   acceptance.
 9. Re-read the public artifact and verify hashes, policy, browser behaviour,
    old-client update, and rollback path.
 10. Record every requirement as `PASS`, `FAIL`, or a permitted

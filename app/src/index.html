@@ -32,10 +32,11 @@
           <img src="__BASE_PATH__favicon.svg" width="38" height="38" alt="">
           <span>
             <strong>Controlled artificial intelligence</strong>
-            <small>Course 1 · Dutch small-business consulting path</small>
+            <small>Course 1 · UNVERIFIED personal-study edition</small>
           </span>
         </a>
         <div class="topbar-actions">
+          <span class="release-pill" aria-label="Product status: UNVERIFIED personal-study release">UNVERIFIED</span>
           <span class="connection-pill" id="connection-pill" role="status">
             <span class="status-dot" aria-hidden="true"></span>
             <span id="connection-text">Online</span>
@@ -48,6 +49,11 @@
           </button>
         </div>
       </header>
+
+      <aside class="release-boundary" id="release-boundary" role="note" aria-labelledby="release-boundary-title">
+        <strong id="release-boundary-title">UNVERIFIED personal-study release</strong>
+        <span>Use synthetic data only. This published study copy cannot award Course 1 completion or prove Course 2, consulting, client, or production readiness.</span>
+      </aside>
 
       <div class="workspace">
         <aside class="sidebar" id="course-sidebar" aria-label="Course navigation">
@@ -237,6 +243,8 @@
                 <h2>Course updates</h2>
                 <dl>
                   <div><dt>Course version</dt><dd id="settings-course-version">—</dd></div>
+                  <div><dt>Product status</dt><dd id="settings-product-status">—</dd></div>
+                  <div><dt>Distribution purpose</dt><dd id="settings-distribution-purpose">—</dd></div>
                   <div><dt>Research and sources verified through</dt><dd id="settings-source-verified-date">—</dd></div>
                   <div><dt>Course content revised through</dt><dd id="settings-content-revision-date">—</dd></div>
                   <div><dt>Installed release</dt><dd><code id="settings-build-id">—</code></dd></div>
@@ -306,8 +314,8 @@
 
     <div class="update-banner" id="update-banner" role="status" aria-live="polite" hidden>
       <div>
-        <strong>A revised Course 1 is ready</strong>
-        <p>Your progress will stay on this device.</p>
+        <strong>A revised personal-study version is ready</strong>
+        <p>Status remains UNVERIFIED. Your progress will stay on this device.</p>
       </div>
       <div class="button-row">
         <button class="button button-quiet" id="update-later" type="button">Later</button>

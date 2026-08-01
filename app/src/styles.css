@@ -259,6 +259,64 @@ a {
   margin-left: auto;
 }
 
+.release-pill {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  padding: 0.3rem 0.58rem;
+  border: 1px solid color-mix(in srgb, var(--coral) 65%, var(--line));
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--coral-soft) 78%, var(--paper));
+  color: var(--ink);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+}
+
+.release-boundary {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.65rem;
+  padding: 0.62rem calc(1rem + var(--safe-right)) 0.62rem calc(1rem + var(--safe-left));
+  border-bottom: 1px solid color-mix(in srgb, var(--coral) 55%, var(--line));
+  background: color-mix(in srgb, var(--coral-soft) 58%, var(--paper));
+  color: var(--ink);
+  font-size: 0.82rem;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.release-boundary strong {
+  flex: 0 0 auto;
+  color: var(--forest);
+}
+
+@media (max-width: 720px) {
+  .release-boundary {
+    display: grid;
+    gap: 0.18rem;
+    justify-items: start;
+    text-align: left;
+  }
+}
+
+@media (max-width: 520px) {
+  .release-pill {
+    min-height: 28px;
+    padding-inline: 0.42rem;
+    font-size: 0.6rem;
+    letter-spacing: 0.04em;
+  }
+}
+
+@media (forced-colors: active) {
+  .release-pill,
+  .release-boundary {
+    border: 1px solid CanvasText;
+  }
+}
+
 .icon-button,
 .button,
 .sidebar-link,

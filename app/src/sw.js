@@ -300,6 +300,8 @@ function assertStructurallyValidNetworkVersion(version) {
     !/^[a-f0-9]{12}$/.test(version.buildId || "") ||
     !/^[a-f0-9]{64}$/.test(version.contentHash || "") ||
     !/^\d+\.\d+\.\d+$/.test(version.courseVersion || "") ||
+    version.productStatus !== "UNVERIFIED" ||
+    version.distributionPurpose !== "personal-synthetic-study" ||
     !/^\d{4}-\d{2}-\d{2}$/.test(sourceVerifiedThrough || "") ||
     (version.verifiedThrough !== undefined &&
       version.verifiedThrough !== sourceVerifiedThrough) ||

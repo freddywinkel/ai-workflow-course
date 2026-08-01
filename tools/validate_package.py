@@ -390,6 +390,14 @@ CURRENT_PRODUCT_STATUS_RE = re.compile(
     r"^- Current status: \*\*`(?P<status>[^`\r\n]+)`\*\*$",
     re.MULTILINE,
 )
+DISTRIBUTION_PURPOSES = {
+    "personal-synthetic-study",
+    "accepted-release-candidate",
+}
+CURRENT_DISTRIBUTION_PURPOSE_RE = re.compile(
+    r"^- Distribution purpose: \*\*`(?P<purpose>[^`\r\n]+)`\*\*$",
+    re.MULTILINE,
+)
 
 
 @dataclass
@@ -434,6 +442,30 @@ def read_authoritative_product_status(root: Path) -> tuple[str | None, list[str]
     return status, failures
 
 
+def read_authoritative_distribution_purpose(
+    root: Path,
+) -> tuple[str | None, list[str]]:
+    """Read the one exact distribution marker from the authoritative ledger."""
+
+    path = root / "COURSE_1_AUDIT_STATUS_AND_REPAIR_LEDGER.md"
+    try:
+        text = path.read_text(encoding="utf-8", errors="strict")
+    except (OSError, UnicodeError) as exc:
+        return None, [f"could not read authoritative Course 1 ledger: {exc}"]
+    matches = list(CURRENT_DISTRIBUTION_PURPOSE_RE.finditer(text))
+    if len(matches) != 1:
+        return None, [
+            "authoritative Course 1 ledger must contain exactly one exact "
+            "'- Distribution purpose: **`...`**' marker"
+        ]
+    purpose = matches[0].group("purpose")
+    if purpose not in DISTRIBUTION_PURPOSES:
+        return None, [
+            f"unsupported authoritative Course 1 distribution purpose: {purpose}"
+        ]
+    return purpose, []
+
+
 def validate_current_status_consumers(root: Path, report: Report) -> None:
     """Keep active human-facing status consumers aligned with the ledger."""
 
@@ -441,44 +473,133 @@ def validate_current_status_consumers(root: Path, report: Report) -> None:
     if status is None:
         report.failed("current-product-status-consumers", compact(failures))
         return
-
+    purpose, purpose_failures = read_authoritative_distribution_purpose(root)
+    failures.extend(purpose_failures)
+    if purpose is None:
+        report.failed("current-product-status-consumers", compact(failures))
+        return
     consumer_patterns = {
-        "README.md": re.compile(
-            rf"Current product status:\s+\*\*`{re.escape(status)}`\*\*"
+        "README.md": (
+            re.compile(
+                rf"Current product status:\s+\*\*`{re.escape(status)}`\*\*"
+            ),
+            re.compile(rf"Distribution purpose:\s+\*\*`{purpose}`\*\*"),
         ),
-        "RELEASE_VALIDATION.md": re.compile(
-            rf"ledger currently records version 2\.6\.0 as\s+`{re.escape(status)}`",
-            re.DOTALL,
+        "RELEASE_VALIDATION.md": (
+            re.compile(
+                rf"ledger currently records version 2\.6\.0 as\s+`{re.escape(status)}`",
+                re.DOTALL,
+            ),
+            re.compile(rf"distribution purpose remains\s+`{purpose}`", re.DOTALL),
         ),
-        "PWA_AND_UPDATES.md": re.compile(
-            rf"current local version 2\.6\.0 working copy is "
-            rf"\*\*`{re.escape(status)}`\*\*",
-            re.IGNORECASE,
+        "PWA_AND_UPDATES.md": (
+            re.compile(
+                rf"current version 2\.6\.0 personal-study edition is "
+                rf"\*\*`{re.escape(status)}`\*\*",
+                re.IGNORECASE,
+            ),
+            re.compile(rf"distribution purpose is\s+`{purpose}`", re.DOTALL),
         ),
-        "COURSE_CHANGELOG.md": re.compile(
-            rf"authoritative ledger currently\s+(?:>\s*)?"
-            rf"records `{re.escape(status)}`;",
-            re.IGNORECASE,
+        "COURSE_CHANGELOG.md": (
+            re.compile(
+                rf"authoritative ledger currently\s+(?:>\s*)?"
+                rf"records `{re.escape(status)}`;",
+                re.IGNORECASE,
+            ),
+            re.compile(rf"distribution purpose `{purpose}`"),
         ),
     }
-    for relative, pattern in consumer_patterns.items():
+    for relative, patterns in consumer_patterns.items():
         path = root / relative
         try:
             text = path.read_text(encoding="utf-8", errors="strict")
         except (OSError, UnicodeError) as exc:
             failures.append(f"{relative} could not be read: {exc}")
             continue
-        if pattern.search(text) is None:
-            failures.append(
-                f"{relative} does not present authoritative product status {status}"
-            )
+        labels = (f"authoritative product status {status}", f"distribution purpose {purpose}")
+        for pattern, label in zip(patterns, labels, strict=True):
+            if pattern.search(text) is None:
+                failures.append(f"{relative} does not present {label}")
 
     if failures:
         report.failed("current-product-status-consumers", compact(failures))
     else:
         report.passed(
             "current-product-status-consumers",
-            f"the ledger and four active human-facing consumers agree on {status}",
+            "the ledger and four active human-facing consumers agree on "
+            f"product status {status} and distribution purpose {purpose}",
+        )
+
+
+def validate_personal_study_learning_boundary(root: Path, report: Report) -> None:
+    """Prevent study publication from being presented as a final learner pass."""
+
+    purpose, failures = read_authoritative_distribution_purpose(root)
+    if purpose != "personal-synthetic-study":
+        if failures:
+            report.failed("personal-study-learning-boundary", compact(failures))
+        else:
+            report.passed(
+                "personal-study-learning-boundary",
+                "not applicable to the accepted-release distribution purpose",
+            )
+        return
+
+    required_fragments = {
+        "README.md": (
+            "recorded only after both the course product",
+            "ASSESSMENT PENDING",
+        ),
+        "BEGINNER_READINESS_CHECK.md": (
+            "do not record the final competence pass until",
+            "course-product `PASS`",
+        ),
+        "COURSE_OVERVIEW.md": (
+            "both the course product and the",
+            "independent human assessment",
+        ),
+        "ASSESSMENT_AND_RUBRIC.md": (
+            "course product also has an evidence-backed `PASS`",
+            "product gate or learner gate is missing",
+        ),
+        "modules/MODULE_09.md": (
+            "Prepare the final Course 1 PASS checkpoint in Git",
+            "do not run this final-pass",
+        ),
+        "worked_examples/module_09_assessment_record.md": (
+            "fictional calibration example",
+            "named course-product release",
+        ),
+        "COURSE_1_PRODUCT_THREAT_MODEL.md": (
+            "C1-THR-022",
+            "MUST NOT claim Course 1 product acceptance",
+        ),
+    }
+    texts: dict[str, str] = {}
+    for relative, fragments in required_fragments.items():
+        path = root / relative
+        try:
+            text = path.read_text(encoding="utf-8", errors="strict")
+        except (OSError, UnicodeError) as exc:
+            failures.append(f"{relative} could not be read: {exc}")
+            continue
+        texts[relative] = text
+        for fragment in fragments:
+            if fragment not in text:
+                failures.append(
+                    f"{relative} lacks personal-study boundary {fragment!r}"
+                )
+    module_text = texts.get("modules/MODULE_09.md", "")
+    if "### Record the final Course 1 PASS in Git" in module_text:
+        failures.append(
+            "modules/MODULE_09.md still gives an unconditional final-pass instruction"
+        )
+    if failures:
+        report.failed("personal-study-learning-boundary", compact(failures))
+    else:
+        report.passed(
+            "personal-study-learning-boundary",
+            "product acceptance and independent learner evidence both remain required for a final competence pass",
         )
 
 
@@ -509,16 +630,13 @@ def path_is_ignored(relative: Path) -> bool:
     if parts[0] in IGNORED_TOP_LEVEL_DIRECTORIES:
         return True
     if (
-        len(parts) >= 5
+        len(parts) >= 2
         and parts[0] == "release_evidence"
         and parts[1] == "course1_ground_up_audit"
-        and SEMVER_RE.fullmatch(parts[2])
-        and valid_revision(parts[3])
-        and parts[4] == "raw"
     ):
-        # Generator-owned raw evidence is opaque, hash-indexed audit input.
-        # It may itself be JSON, but it is not a current package source and
-        # must not alter the generated learner report or PWA build identity.
+        # Ground-up audit packages are unbundled, candidate-specific evidence,
+        # not current course source. Their JSON and raw files must not change
+        # the learner validation report or PWA build identity.
         return True
     return any(part in IGNORED_DIRECTORY_NAMES for part in parts)
 
@@ -944,6 +1062,14 @@ def validate_curriculum(root: Path, report: Report) -> dict[str, Any] | None:
         course.get("version", "")
     ):
         metadata_failures.append("course.version must use x.y.z")
+    if course.get("productStatus") != "UNVERIFIED":
+        metadata_failures.append(
+            "course.productStatus must be UNVERIFIED for personal study"
+        )
+    if course.get("distributionPurpose") != "personal-synthetic-study":
+        metadata_failures.append(
+            "course.distributionPurpose must be personal-synthetic-study"
+        )
     if (
         not isinstance(course.get("practiceRevision"), int)
         or course.get("practiceRevision") < 1
@@ -1358,6 +1484,8 @@ def validate_release_metadata_sync(
     practice_revision = course.get("practiceRevision")
     source_verified_through = course.get("sourceVerifiedThrough")
     content_revision_through = course.get("contentRevisionThrough")
+    product_status = course.get("productStatus")
+    distribution_purpose = course.get("distributionPurpose")
     course_id = course.get("id")
     failures: list[str] = []
 
@@ -1369,8 +1497,10 @@ def validate_release_metadata_sync(
         expected_stack_lines = (
             f"course_id: {course_id}",
             f"course_version: {version}",
+            f"product_status: {product_status}",
+            f"distribution_purpose: {distribution_purpose}",
             f"practice_revision: {practice_revision}",
-            f'last_verified: "{source_verified_through}"',
+            f'source_verified_through: "{source_verified_through}"',
             f'content_revision_through: "{content_revision_through}"',
         )
         for line in expected_stack_lines:
@@ -5681,6 +5811,7 @@ def write_report(
     course_version = course.get("version", "unknown")
     source_verified_through = course.get("sourceVerifiedThrough", "unknown")
     content_revision_through = course.get("contentRevisionThrough", "unknown")
+    distribution_purpose = course.get("distributionPurpose", "unknown")
 
     lines = [
         "# Course 1 Package Validation Report",
@@ -5696,6 +5827,8 @@ def write_report(
         f"Deterministic package result: **{result}**",
         "",
         f"Current Course 1 product status: **`{rendered_product_status}`**",
+        "",
+        f"Distribution purpose: **`{distribution_purpose}`**",
         "",
         f"Checks: {len(report.checks)}; failures: {len(report.errors)}; warnings: {len(report.warnings)}",
         "",
@@ -5742,7 +5875,7 @@ def write_report(
             "source audit, PWA tests and visual review, and the course evaluation and UAT",
             "gates. Follow `COURSE_1_AUDIT_STATUS_AND_REPAIR_LEDGER.md`; missing",
             "immutable, human, repository, installed-client, device, or live evidence",
-            "keeps the current working copy `UNVERIFIED` rather than `PASS`.",
+            "keeps the current personal-study release `UNVERIFIED` rather than `PASS`.",
             "",
         ]
     )
@@ -5791,6 +5924,7 @@ def main() -> int:
     report = Report()
     validate_strategic_focus_guardrail(root, report)
     validate_current_status_consumers(root, report)
+    validate_personal_study_learning_boundary(root, report)
     curriculum = validate_curriculum(root, report)
     validate_curriculum_date_metadata(root, curriculum, report)
     validate_release_metadata_sync(root, curriculum, report)
@@ -5832,6 +5966,9 @@ def main() -> int:
     summary = {
         "result": "PASS" if not report.errors else "FAIL",
         "product_status": read_authoritative_product_status(root)[0] or "INVALID",
+        "distribution_purpose": (
+            read_authoritative_distribution_purpose(root)[0] or "INVALID"
+        ),
         "checks": len(report.checks),
         "failures": report.errors,
         "warnings": report.warnings,

@@ -49,10 +49,15 @@ Before auditing, repairing, releasing, or declaring Course 1 complete, read
 - Do not close a finding without its named reproducible closure evidence.
 - Do not call a release `PASS` while a High or Medium Course 1 finding is open.
 - Keep Course 1 and Course 4 statuses, tests, and release decisions separate.
-- Never restore direct-push publishing. Use candidate validation, independent
-  post-build acceptance, manual exact-artifact promotion, immediate live
-  verification, and the separate controlled rollback path in
-  `ROLLBACK_RUNBOOK.md`.
+- Never restore direct-push publishing. An accepted Course 1 release requires
+  candidate validation, independent post-build acceptance, manual
+  exact-artifact promotion, immediate live verification, and the separate
+  controlled rollback path in `ROLLBACK_RUNBOOK.md`.
+- A separately authorized `UNVERIFIED` personal-study publication may omit
+  learner-completion and competence evidence only when it remains visibly
+  limited to synthetic personal study, runs the complete automated technical
+  gates, deploys the exact tested artifact, preserves rollback and learner
+  state, and cannot be mistaken for Course 1 `PASS` or Course 2 readiness.
 
 ## Course 1 ground-up audit gate
 

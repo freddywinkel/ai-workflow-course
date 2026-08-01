@@ -1,5 +1,27 @@
 # Course Changelog
 
+## 2.6.0 personal-study publication — 2026-08-02
+
+- Added a separately authorized publication lane for **personal synthetic
+  study** with distribution purpose `personal-synthetic-study`. The product
+  status remains **`UNVERIFIED`**; public availability is not Course 1
+  acceptance or evidence that the learner passed.
+- Added the same persistent boundary to the course metadata, built Progressive
+  Web App (PWA), update experience, Settings, release workflow, and study
+  verifier. The release cannot claim Course 2, consulting, client, or
+  production readiness and never authorizes real, employer, client, medical,
+  personal, confidential, or credential data.
+- Kept the accepted-release promotion and final 33-test adjudication separate.
+  Missing learner, assessor, device, installed-client, repository, and live
+  acceptance evidence therefore remains visible rather than being waived.
+- Corrected public-byte verification to compare the exact files GitHub Pages
+  serves. `.nojekyll` remains inside the uploaded artifact as a deployment
+  control file and is recorded separately because GitHub Pages does not expose
+  it as a public file.
+- Advanced bundled content revision to `2026-08-02` without changing the
+  independent `2026-07-28` source-verification claim or Course 1 practice
+  revision.
+
 ## 2.6.0 — 2026-07-28
 
 ### Full Course 1 repair candidate
@@ -13,6 +35,19 @@
 > candidate-bound records do not yet exist. The authoritative ledger currently
 > records `UNVERIFIED`; follow
 > `COURSE_1_AUDIT_STATUS_AND_REPAIR_LEDGER.md`.
+
+### Beginner glossary reference — 2026-07-30
+
+- Expanded the existing optional Beginner Glossary with the supplied common
+  artificial-intelligence and programming abbreviations plus short forms that
+  actually occur in Course 1.
+- Kept the glossary outside the 21-page required learning sequence, explained
+  ambiguous terms such as `AP` and `NN`, and distinguished abbreviations from
+  product names, command names, variable names, and ordinary shortenings.
+- Advanced bundled content revision to `2026-07-30` without changing the
+  separate `2026-07-28` research/source-verification claim. This content
+  change requires a new exact candidate and does not establish release
+  acceptance.
 
 - Reconciled the Course 1 promise with the work the learner actually authors:
   the supplied runner is assembled and challenged, one bounded deterministic
@@ -62,7 +97,7 @@
   rollback, dependency, licence, vulnerability, Software Bill of Materials
   (SBOM), and claim-source checks.
 - Separated bundled-page revision metadata from research/source verification:
-  content is revised through `2026-07-29`, while source evidence remains
+  content is revised through `2026-07-30`, while source evidence remains
   verified through `2026-07-28`. The old `verifiedThrough` field remains only
   as a PWA compatibility alias for the source date, never as a content-revision
   ceiling.

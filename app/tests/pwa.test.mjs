@@ -79,8 +79,10 @@ test("schema-v2 bundle contains nine foundations and nine implementation modules
   assert.equal(bundle.course.foundationCount, 9);
   assert.equal(bundle.course.moduleCount, 9);
   assert.equal(bundle.course.coreLessonCount, 18);
+  assert.equal(bundle.course.productStatus, "UNVERIFIED");
+  assert.equal(bundle.course.distributionPurpose, "personal-synthetic-study");
   assert.equal(bundle.course.sourceVerifiedThrough, "2026-07-28");
-  assert.equal(bundle.course.contentRevisionThrough, "2026-07-29");
+  assert.equal(bundle.course.contentRevisionThrough, "2026-08-02");
   assert.equal(
     bundle.course.verifiedThrough,
     bundle.course.sourceVerifiedThrough,
@@ -115,6 +117,221 @@ test("every bundled course page has stable revisioned metadata and content", () 
   for (const id of ids) assert.equal(aliases.has(id), false, `id also used as alias ${id}`);
   for (const group of bundle.groups) {
     for (const id of group.documents) assert.ok(ids.has(id), `missing grouped id ${id}`);
+  }
+});
+
+test("beginner glossary is complete, searchable, and outside required progress", () => {
+  const glossary = bundle.documents.find(
+    (document) => document.id === "course-1-glossary",
+  );
+  const referenceGroup = bundle.groups.find((group) => group.id === "reference");
+  const suppliedReferenceTerms = [
+    "API",
+    "SDK",
+    "IDE",
+    "CLI",
+    "GUI",
+    "UI",
+    "UX",
+    "OS",
+    "DB",
+    "SQL",
+    "JSON",
+    "HTML",
+    "CSS",
+    "JS",
+    "TS",
+    "URL",
+    "HTTP",
+    "HTTPS",
+    "DNS",
+    "IP",
+    "PWA",
+    "SPA",
+    "MVP",
+    "PoC",
+    "QA",
+    "AI",
+    "ML",
+    "DL",
+    "NN",
+    "LLM",
+    "SLM",
+    "GPT",
+    "GenAI",
+    "NLP",
+    "NLU",
+    "NLG",
+    "CV",
+    "VLM",
+    "MLLM",
+    "RAG",
+    "MCP",
+    "AGI",
+    "ANI",
+    "ASI",
+    "RL",
+    "RLHF",
+    "RLAIF",
+    "SFT",
+    "DPO",
+    "LoRA",
+    "PEFT",
+    "MoE",
+    "GAN",
+    "OCR",
+    "ASR",
+    "STT",
+    "TTS",
+    "DOM",
+    "REST",
+    "CRUD",
+    "SSR",
+    "CSR",
+    "SSG",
+    "CDN",
+    "CORS",
+    "JWT",
+    "OAuth",
+    "MFA",
+    "2FA",
+    "SSL",
+    "TLS",
+    "TCP",
+    "UDP",
+    "RPC",
+    "URI",
+    "WASM",
+    "VCS",
+    "DVCS",
+    "repo",
+    "PR",
+    "MR",
+    "SHA",
+    "SSH",
+    "CI",
+    "CD",
+    "CI/CD",
+    "CSV",
+    "XML",
+    "YAML",
+    "DBMS",
+    "RDBMS",
+    "ORM",
+    "ETL",
+    "ELT",
+    "ACID",
+    "NoSQL",
+    "CPU",
+    "GPU",
+    "NPU",
+    "TPU",
+    "RAM",
+    "VRAM",
+    "SSD",
+    "HDD",
+    "I/O",
+    "VM",
+    "VPS",
+    "SaaS",
+    "PaaS",
+    "IaaS",
+    "FaaS",
+    "AWS",
+    "GCP",
+    "LTS",
+    "TDD",
+    "BDD",
+    "E2E",
+    "UAT",
+    "SLA",
+    "SLO",
+    "KPI",
+    "WCAG",
+    "a11y",
+    "i18n",
+    "npm",
+    "npx",
+    "JSX",
+    "TSX",
+    "ES",
+    "ESM",
+    "CJS",
+    "NVM",
+  ];
+  const courseSpecificTerms = [
+    "SME",
+    "ID",
+    "IO",
+    "PS",
+    "JSONL",
+    "SHA-256 / SHA256",
+    "UTF-8 / UTF8",
+    "GB",
+    "EUR / USD",
+    "UTC",
+    "EU / UK / NL",
+    "AVG",
+    "GDPR",
+    "ISO",
+    "CBS",
+    "AP",
+    "NCSC",
+    "DTC",
+    "NIST",
+    "RMF",
+    "OECD",
+    "UWV",
+    "IT",
+    "BV",
+    "B2B",
+    "ADR",
+    "SBOM",
+    "PyPI",
+    "PDF",
+    "DOCX",
+    "GUID",
+    "MSI",
+    "MSIX",
+    "DPIA",
+    "DPA",
+    "SCC",
+    "SSRF",
+    "ERP",
+    "CRM",
+    "DMS",
+    "eQMS",
+    "SOP",
+    "RTO",
+    "RPO",
+    "CAPA",
+    "BSN",
+    "ROI",
+    "ZDR",
+    "MAM",
+    "OSV",
+    "N/A",
+  ];
+
+  assert.ok(glossary);
+  assert.equal(glossary.sourcePath, "foundations/GLOSSARY.md");
+  assert.equal(glossary.revision, "2026-07-30");
+  assert.equal(glossary.group, "reference");
+  assert.equal(glossary.core, false);
+  assert.ok(referenceGroup?.documents.includes(glossary.id));
+  assert.equal(bundle.course.learningSequenceIds.includes(glossary.id), false);
+  assert.match(glossary.markdown, /You do \*\*not\*\* need to memorise/);
+  assert.match(glossary.markdown, /Git is a product name, not an abbreviation/);
+  assert.match(glossary.markdown, /AP.*Autoriteit Persoonsgegevens or Accounts Payable/);
+  assert.match(glossary.markdown, /NN.*replace this with a number/);
+
+  const glossaryRows = new Set(
+    [...glossary.markdown.matchAll(/^\| \*\*([^*]+)\*\* \|/gm)].map(
+      (match) => match[1],
+    ),
+  );
+  for (const term of [...suppliedReferenceTerms, ...courseSpecificTerms]) {
+    assert.ok(glossaryRows.has(term), `missing glossary row for ${term}`);
   }
 });
 
@@ -339,6 +556,8 @@ test("content hashes and build ids are stable for identical inputs", async () =>
   assert.equal(secondVersion.programId, bundle.program.id);
   assert.equal(secondVersion.courseId, bundle.course.id);
   assert.match(secondVersion.courseVersion, /^\d+\.\d+\.\d+$/);
+  assert.equal(secondVersion.productStatus, "UNVERIFIED");
+  assert.equal(secondVersion.distributionPurpose, "personal-synthetic-study");
   assert.equal(
     secondVersion.sourceVerifiedThrough,
     bundle.course.sourceVerifiedThrough,
@@ -365,7 +584,7 @@ test("legacy schema-v2 curriculum dates migrate without changing source currency
 
   assert.equal(migrated.schemaVersion, 3);
   assert.equal(migrated.course.sourceVerifiedThrough, "2026-07-28");
-  assert.equal(migrated.course.contentRevisionThrough, "2026-07-29");
+  assert.equal(migrated.course.contentRevisionThrough, "2026-08-02");
   assert.equal(
     migrated.course.verifiedThrough,
     migrated.course.sourceVerifiedThrough,
@@ -491,6 +710,34 @@ test("career metadata separates the current course from the later consultant pat
     true,
   );
   assert.match(bundle.course.capstone.title, /SME Operations Exception Assistant/);
+});
+
+test("personal-study publication is persistently visible and cannot imply competence", () => {
+  assert.match(htmlSource, /UNVERIFIED personal-study release/);
+  assert.match(htmlSource, /Use synthetic data only/);
+  assert.match(htmlSource, /cannot award Course 1 completion/);
+  assert.match(htmlSource, /Course 2, consulting, client, or production readiness/);
+  assert.match(htmlSource, /id="settings-product-status"/);
+  assert.match(htmlSource, /id="settings-distribution-purpose"/);
+  assert.match(htmlSource, /Product status: UNVERIFIED personal-study release/);
+  assert.match(appSource, /Start personal study/);
+  assert.match(appSource, /assemble, test, and extend one/);
+  assert.match(appSource, /candidate\.course\.productStatus !== "UNVERIFIED"/);
+  assert.match(
+    appSource,
+    /An UNVERIFIED personal-study update is available/,
+  );
+  assert.match(appSource, /Course 1 · taught here/);
+  assert.match(
+    appSource,
+    /candidate\.course\.distributionPurpose !== "personal-synthetic-study"/,
+  );
+  assert.match(bootstrapSource, /productStatus: "UNVERIFIED"/);
+  assert.match(
+    bootstrapSource,
+    /distributionPurpose: "personal-synthetic-study"/,
+  );
+  assert.doesNotMatch(htmlSource, /Course 1 (?:competence )?PASS awarded/i);
 });
 
 test("GitHub Pages base path is used everywhere it must be", () => {
@@ -1217,7 +1464,7 @@ test("first visible abbreviations are expanded in beginner language", () => {
   assert.match(appSource, /progressive web app \(PWA\)/);
   assert.doesNotMatch(htmlSource, /<strong>Controlled AI Workflow<\/strong>/);
   assert.doesNotMatch(htmlSource, /Dutch SME consulting path/);
-  assert.match(appSource, /build fixed, rule-based checks/);
+  assert.match(appSource, /author and test one fixed rule/);
   assert.match(appSource, /Made-up practice data only/);
   assert.match(appSource, /Made-up final practice project/);
   assert.match(appSource, /Problems found by fixed rules/);

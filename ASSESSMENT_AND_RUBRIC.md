@@ -57,6 +57,11 @@ independent oral verification. If no independent assessor is available, keep
 `ASSESSMENT PENDING`; completing files or speaking alone cannot self-award
 competence.
 
+This version 2.6.0 course product remains `UNVERIFIED`. The learner may prepare
+and receive assessment records, but the final competence pass may be recorded
+only after the course product also has an evidence-backed `PASS`. Keep
+`ASSESSMENT PENDING` while either the product gate or learner gate is missing.
+
 ## Pass prerequisites
 
 All prerequisites must pass before scoring:
@@ -456,6 +461,10 @@ Missing transfer or delayed-retention evidence keeps the affected area at level
 2 and the competence result at `NOT YET`.
 
 ## Course 1 competence gate
+
+Before this learner gate can award the final competence result, the named
+Course 1 course-product release must also have an evidence-backed `PASS`. Then
+all of the following learner conditions must be true.
 
 Course 1 passes only when all of the following are true:
 

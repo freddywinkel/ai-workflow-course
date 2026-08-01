@@ -1,4 +1,4 @@
-name: Course 1 candidate validation and controlled Pages promotion
+name: Course 1 candidate validation and controlled Pages publication
 
 on:
   pull_request:
@@ -16,12 +16,13 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: Validate a candidate or promote an already accepted candidate
+        description: Validate, publish for personal study, or promote an accepted candidate
         required: true
         type: choice
         default: validate
         options:
           - validate
+          - personal-study
           - promote
       accepted_commit:
         description: Full 40-character commit SHA recorded by the acceptance reviewer
@@ -35,13 +36,17 @@ on:
         description: Full commit SHA that stores the post-review acceptance record
         required: false
         type: string
+      study_boundary_acknowledgement:
+        description: Required exact text for personal-study publication
+        required: false
+        type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: course1-pages-${{ inputs.mode == 'promote' && 'production' || github.ref }}
-  cancel-in-progress: ${{ inputs.mode != 'promote' }}
+  group: course1-pages-${{ (inputs.mode == 'promote' || inputs.mode == 'personal-study') && 'production' || github.ref }}
+  cancel-in-progress: ${{ inputs.mode != 'promote' && inputs.mode != 'personal-study' }}
 
 jobs:
   validate-and-build:
@@ -237,6 +242,154 @@ jobs:
         with:
           name: course1-quality-evidence-${{ github.sha }}
           path: audit-evidence/course1-quality.json
+          if-no-files-found: error
+          retention-days: 30
+
+  prepare-personal-study-pages-artifact:
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      inputs.mode == 'personal-study' &&
+      github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    needs:
+      - validate-and-build
+      - test-course1-offline
+      - audit-course1-supply-and-sources
+      - test-course1-quality-controls
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    steps:
+      - name: Check out the exact personal-study source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Require exact commit and explicit study boundary
+        shell: bash
+        env:
+          ACCEPTED_COMMIT: ${{ inputs.accepted_commit }}
+          STUDY_ACKNOWLEDGEMENT: ${{ inputs.study_boundary_acknowledgement }}
+          WORKFLOW_COMMIT: ${{ github.sha }}
+        run: |
+          if [[ ! "$ACCEPTED_COMMIT" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "accepted_commit must be a full lower-case 40-character Git SHA"
+            exit 1
+          fi
+          if [[ "$ACCEPTED_COMMIT" != "$WORKFLOW_COMMIT" ]]; then
+            echo "accepted_commit must exactly match the checked-out workflow commit"
+            exit 1
+          fi
+          if [[ "$STUDY_ACKNOWLEDGEMENT" != "UNVERIFIED-SYNTHETIC-STUDY-ONLY" ]]; then
+            echo "study boundary acknowledgement is missing or incorrect"
+            exit 1
+          fi
+
+      - name: Set up the personal-study verifier Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14.6"
+
+      - name: Download the already tested personal-study artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: course1-candidate-${{ github.sha }}
+          path: app/dist
+
+      - name: Verify exact artifact and UNVERIFIED study boundary
+        env:
+          ACCEPTED_COMMIT: ${{ inputs.accepted_commit }}
+        run: >-
+          python tools/verify_course1_study_release.py
+          --dist app/dist
+          --expected-commit "$ACCEPTED_COMMIT"
+          --report audit-evidence/personal-study-release.json
+
+      - name: Preserve personal-study authorization evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: course1-personal-study-release-${{ github.sha }}
+          path: audit-evidence/personal-study-release.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+
+      - name: Upload the exact tested personal-study artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: app/dist
+
+  deploy-personal-study:
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      inputs.mode == 'personal-study' &&
+      github.ref == 'refs/heads/main'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-24.04
+    needs:
+      - prepare-personal-study-pages-artifact
+    permissions:
+      pages: write
+      id-token: write
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy the exact UNVERIFIED personal-study artifact
+        id: deployment
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0
+
+  verify-personal-study-live:
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      inputs.mode == 'personal-study' &&
+      github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    needs:
+      - deploy-personal-study
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the exact deployed source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up the public verifier Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14.6"
+
+      - name: Download the exact tested personal-study artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: course1-candidate-${{ github.sha }}
+          path: app/dist
+
+      - name: Redownload and compare the exact public-served file set
+        env:
+          ACCEPTED_COMMIT: ${{ inputs.accepted_commit }}
+          PUBLIC_URL: ${{ needs.deploy-personal-study.outputs.page_url }}
+        run: >-
+          python tools/verify_course1_public_artifact.py
+          --dist app/dist
+          --public-url "$PUBLIC_URL"
+          --expected-commit "$ACCEPTED_COMMIT"
+          --report audit-evidence/personal-study-live.json
+
+      - name: Preserve public byte-verification evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: course1-personal-study-live-${{ github.sha }}
+          path: audit-evidence/personal-study-live.json
           if-no-files-found: error
           retention-days: 30
 

@@ -216,6 +216,45 @@ async function main() {
           })()`),
         `${label} automatic update check`,
       );
+    const assertReleaseBoundary = async (label) => {
+      const release = await evaluate(`(() => {
+        const boundary = document.querySelector("#release-boundary");
+        const pill = document.querySelector(".release-pill");
+        const boundaryStyle = boundary ? getComputedStyle(boundary) : null;
+        const pillStyle = pill ? getComputedStyle(pill) : null;
+        return {
+          boundaryText: boundary?.textContent?.replace(/\\s+/g, " ").trim() || "",
+          boundaryVisible: Boolean(
+            boundary &&
+            !boundary.hidden &&
+            boundaryStyle.display !== "none" &&
+            boundaryStyle.visibility !== "hidden" &&
+            boundary.getClientRects().length
+          ),
+          pillText: pill?.textContent?.trim() || "",
+          pillLabel: pill?.getAttribute("aria-label") || "",
+          pillVisible: Boolean(
+            pill &&
+            !pill.hidden &&
+            pillStyle.display !== "none" &&
+            pillStyle.visibility !== "hidden" &&
+            pill.getClientRects().length
+          ),
+          productStatus: window.__COURSE_APP__?.productStatus || "",
+          distributionPurpose:
+            window.__COURSE_APP__?.distributionPurpose || "",
+        };
+      })()`);
+      assert.equal(release.boundaryVisible, true, `${label}: release boundary hidden`);
+      assert.match(release.boundaryText, /UNVERIFIED personal-study release/);
+      assert.match(release.boundaryText, /Use synthetic data only/);
+      assert.match(release.boundaryText, /cannot award Course 1 completion/);
+      assert.equal(release.pillVisible, true, `${label}: release pill hidden`);
+      assert.equal(release.pillText, "UNVERIFIED");
+      assert.match(release.pillLabel, /UNVERIFIED personal-study release/);
+      assert.equal(release.productStatus, "UNVERIFIED");
+      assert.equal(release.distributionPurpose, "personal-synthetic-study");
+    };
     const approveActionDialog = async (label) => {
       try {
         await waitFor(
@@ -345,6 +384,7 @@ async function main() {
       "Stable course home",
     );
     await waitForAutomaticUpdateCheckOn(evaluate, "Primary startup");
+    await assertReleaseBoundary("Home");
 
     const mainWriterBeforeDuplicate = await evaluate(`(() => {
       const envelope = JSON.parse(
@@ -427,6 +467,7 @@ async function main() {
         )),
       "Two-window lesson routes",
     );
+    await assertReleaseBoundary("Lesson");
     await Promise.all([
       evaluate(`document.querySelector("#complete-button").click()`),
       evaluateSecond(`document.querySelector("#complete-button").click()`),
@@ -777,6 +818,7 @@ async function main() {
             Boolean(document.querySelector('[data-home-action="resume"]'))`),
         `${viewport.label} home`,
       );
+      await assertReleaseBoundary(`${viewport.label} home`);
       const viewportLayout = await evaluate(`(async () => {
         const primary = document.querySelector('[data-home-action="resume"]');
         primary.scrollIntoView({ block: "center", behavior: "instant" });
@@ -941,6 +983,13 @@ async function main() {
     assert.equal(forcedColourFocus.focused, true);
     assert.equal(forcedColourFocus.visible, true);
     assert.notEqual(forcedColourFocus.colour, forcedColourFocus.background);
+    await assertReleaseBoundary("Forced colours");
+    assert.notEqual(
+      await evaluate(
+        `getComputedStyle(document.querySelector("#release-boundary")).borderBottomStyle`,
+      ),
+      "none",
+    );
     await client.call("Emulation.setEmulatedMedia", { features: [] });
 
     await client.call("Emulation.setEmulatedMedia", {
@@ -1259,6 +1308,7 @@ async function main() {
         ),
       "Career path",
     );
+    await assertReleaseBoundary("Career");
     assert.equal(
       await evaluate(
         `document.querySelector(".later-course-disclosure") instanceof HTMLDetailsElement`,
@@ -1327,6 +1377,19 @@ async function main() {
             document.querySelector("#settings-view")?.hidden === false`,
         ),
       "Keyboard navigation to Settings",
+    );
+    await assertReleaseBoundary("Settings");
+    assert.deepEqual(
+      await evaluate(`({
+        productStatus:
+          document.querySelector("#settings-product-status")?.textContent?.trim(),
+        distributionPurpose:
+          document.querySelector("#settings-distribution-purpose")?.textContent?.trim()
+      })`),
+      {
+        productStatus: "UNVERIFIED",
+        distributionPurpose: "Personal study with synthetic data only",
+      },
     );
     await waitFor(
       () =>
@@ -2528,6 +2591,7 @@ async function main() {
         ),
       "Offline lesson navigation",
     );
+    await assertReleaseBoundary("Offline lesson");
     await evaluate(`location.hash = "#search"`);
     await waitFor(
       () => evaluate(`document.querySelector("#search-view")?.hidden === false`),

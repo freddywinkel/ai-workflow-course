@@ -177,8 +177,11 @@ and prohibited environment names. Seed a failure in every supply-chain gate.
 
 Bind source commit/tree, workflow run, dependency lock and Software Bill of
 Materials hashes, build/content/asset/tree identities, deployment ID, and
-public URL. Redownload and compare public bytes, verify scheduled advisory
-history, then rehearse an exact last-known-good rollback. Create the closed
+public URL. Redownload the exact public-served set (the manifest-listed assets,
+`asset-manifest.json`, and `sw.js`) and compare its tree hash. Separately prove
+that `.nojekyll` exists in the uploaded artifact and record its expected public
+404; do not falsely require that control file to be served. Verify scheduled
+advisory history, then rehearse an exact last-known-good rollback. Create the closed
 post-deployment final record from the tracked template and run
 `tools/verify_course1_final_acceptance.py` (or the dedicated final-adjudication
 workflow) against the preserved promotion artifact, prior promotion record,

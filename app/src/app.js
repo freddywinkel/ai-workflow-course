@@ -914,11 +914,11 @@ function renderHome() {
     <section class="hero">
       <div class="hero-copy">
         <span class="hero-kicker"><span aria-hidden="true"></span>Course 1 of the consultant path</span>
-        <h1>Learn to build one <em>controlled business workflow.</em></h1>
-        <p>Start from zero technical knowledge. Learn to inspect the work, choose a small problem with clear limits, build fixed, rule-based checks, design a bounded artificial intelligence (AI) contribution, test its controls with an offline stand-in, and keep a human responsible for every consequential decision. Course 1 makes no live AI call.</p>
+        <h1>Learn to assemble, test, and extend one <em>controlled business workflow.</em></h1>
+        <p>Start from zero technical knowledge. Learn to inspect the work, choose a small problem with clear limits, assemble the supplied workflow, author and test one fixed rule, design a bounded artificial intelligence (AI) contribution, test its controls with an offline stand-in, and keep a human responsible for every consequential decision. Course 1 makes no live AI call.</p>
         <div class="hero-actions">
           <button class="button" type="button" data-home-action="resume">
-            <span>${resume ? `Continue: ${escapeHtml(resume.title)}` : "Start the course"}</span>
+            <span>${resume ? `Continue: ${escapeHtml(resume.title)}` : "Start personal study"}</span>
             ${iconSvg("arrow")}
           </button>
           <button class="button button-quiet" type="button" data-home-action="career">See the full career sequence</button>
@@ -1111,7 +1111,7 @@ function renderCareer() {
     : rawCareerSummary.replace(/\bPWA\b/, "progressive web app (PWA)");
   const nextLesson = resumeDocument();
   const careerStatusLabel = (course) => {
-    if (course.status === "current") return "Current · taught here";
+    if (course.status === "current") return "Course 1 · taught here";
     if (course.status === "prototype-capstone-available") {
       return "Optional advanced capstone available";
     }
@@ -1566,6 +1566,12 @@ function renderSettings() {
   currentDocument = null;
   document.querySelector("#settings-course-version").textContent =
     `Version ${courseBundle.course.version}`;
+  document.querySelector("#settings-product-status").textContent =
+    courseBundle.course.productStatus;
+  document.querySelector("#settings-distribution-purpose").textContent =
+    courseBundle.course.distributionPurpose === "personal-synthetic-study"
+      ? "Personal study with synthetic data only"
+      : courseBundle.course.distributionPurpose;
   document.querySelector("#settings-source-verified-date").textContent =
     courseBundle.course.sourceVerifiedThrough;
   document.querySelector("#settings-content-revision-date").textContent =
@@ -2536,10 +2542,14 @@ async function checkForUpdates({ manual = false } = {}) {
       });
       const latest = response.ok ? await response.json() : null;
       if (latest?.buildId && latest.buildId !== config.buildId) {
-        showToast("A published course update is available; preparing it…");
+        showToast(
+          "An UNVERIFIED personal-study update is available; preparing it…",
+        );
         await serviceWorkerRegistration.update();
       } else {
-        showToast(`You have the latest published course (Version ${config.courseVersion}).`);
+        showToast(
+          `You have the latest published personal-study version (Version ${config.courseVersion}; status ${config.productStatus}).`,
+        );
       }
     }
     if (!views.settings.hidden) renderSettings();
@@ -2920,6 +2930,10 @@ function validateCourseBundle(candidate) {
   if (
     candidate.course.id !== "course-1-controlled-ai-workflow-foundations" ||
     candidate.course.version !== config.courseVersion ||
+    candidate.course.productStatus !== "UNVERIFIED" ||
+    candidate.course.productStatus !== config.productStatus ||
+    candidate.course.distributionPurpose !== "personal-synthetic-study" ||
+    candidate.course.distributionPurpose !== config.distributionPurpose ||
     candidate.course.contentHash !== config.contentHash ||
     !/^[a-f0-9]{64}$/.test(candidate.course.contentHash)
   ) {

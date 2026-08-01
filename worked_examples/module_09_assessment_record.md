@@ -118,6 +118,11 @@ transfer were all `SUPPORTED`.
 - Course 1 competence: `PASS`
 - Separate workflow decision: `ACCEPT FOR SYNTHETIC PORTFOLIO`
 
+This is a fictional calibration example, not a result awarded by the current
+`UNVERIFIED` personal-study release. A real learner must keep
+`ASSESSMENT PENDING` until both the named course-product release and the
+independent learner assessment have evidence-backed passing results.
+
 Limitations: fictional assessor example, synthetic data, small volume,
 role-simulated acceptance only, no real client discovery, no production
 environment, no market-demand proof, and no professional certification or

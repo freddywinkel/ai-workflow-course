@@ -290,6 +290,18 @@ async function main() {
   const currentVersion = JSON.parse(
     await readFile(join(currentSnapshot, "version.json"), "utf8"),
   );
+  assert.equal(currentVersion.courseVersion, "2.6.0");
+  assert.equal(currentVersion.productStatus, "UNVERIFIED");
+  assert.equal(
+    currentVersion.distributionPurpose,
+    "personal-synthetic-study",
+  );
+  const workflowCommit = String(process.env.GITHUB_SHA || "").toLowerCase();
+  if (/^[0-9a-f]{40}$/.test(workflowCommit)) {
+    assert.equal(currentVersion.commit, workflowCommit);
+  } else {
+    assert.match(currentVersion.commit, /^(?:working-copy|[0-9a-f]{40})$/);
+  }
   const currentBuildId = currentVersion.buildId;
   const previousBuildId = legacyV25.buildId;
   assert.notEqual(currentBuildId, previousBuildId);
@@ -404,6 +416,54 @@ async function main() {
         throw new Error(result.exceptionDetails.text || "Browser evaluation failed.");
       }
       return result.result.value;
+    };
+    const assertCurrentStudyRelease = async (label, checkSettings = false) => {
+      const release = await evaluate(`(() => {
+        const boundary = document.querySelector("#release-boundary");
+        const pill = document.querySelector(".release-pill");
+        return {
+          boundaryText: boundary?.textContent?.replace(/\\s+/g, " ").trim() || "",
+          boundaryVisible: Boolean(
+            boundary &&
+            !boundary.hidden &&
+            getComputedStyle(boundary).display !== "none" &&
+            getComputedStyle(boundary).visibility !== "hidden" &&
+            boundary.getClientRects().length
+          ),
+          pillText: pill?.textContent?.trim() || "",
+          pillLabel: pill?.getAttribute("aria-label") || "",
+          pillVisible: Boolean(
+            pill &&
+            !pill.hidden &&
+            getComputedStyle(pill).display !== "none" &&
+            getComputedStyle(pill).visibility !== "hidden" &&
+            pill.getClientRects().length
+          ),
+          productStatus: window.__COURSE_APP__?.productStatus || "",
+          distributionPurpose:
+            window.__COURSE_APP__?.distributionPurpose || "",
+          settingsProductStatus:
+            document.querySelector("#settings-product-status")?.textContent?.trim() || "",
+          settingsDistributionPurpose:
+            document.querySelector("#settings-distribution-purpose")?.textContent?.trim() || "",
+        };
+      })()`);
+      assert.equal(release.boundaryVisible, true, `${label}: release boundary hidden`);
+      assert.match(release.boundaryText, /UNVERIFIED personal-study release/);
+      assert.match(release.boundaryText, /Use synthetic data only/);
+      assert.match(release.boundaryText, /cannot award Course 1 completion/);
+      assert.equal(release.pillVisible, true, `${label}: release pill hidden`);
+      assert.equal(release.pillText, "UNVERIFIED");
+      assert.match(release.pillLabel, /UNVERIFIED personal-study release/);
+      assert.equal(release.productStatus, "UNVERIFIED");
+      assert.equal(release.distributionPurpose, "personal-synthetic-study");
+      if (checkSettings) {
+        assert.equal(release.settingsProductStatus, "UNVERIFIED");
+        assert.equal(
+          release.settingsDistributionPurpose,
+          "Personal study with synthetic data only",
+        );
+      }
     };
 
     await client.call("Page.navigate", { url: previewUrl });
@@ -520,6 +580,12 @@ async function main() {
       "Activated current release",
       20000,
     );
+    await evaluate(`location.hash = "#settings"`);
+    await waitFor(
+      () => evaluate(`document.querySelector("#settings-view")?.hidden === false`),
+      "Current personal-study Settings",
+    );
+    await assertCurrentStudyRelease("Activated current release", true);
 
     const retainedState = await evaluate(
       storedStateExpression(storageKey),
@@ -562,6 +628,7 @@ async function main() {
             .notes["course-1-foundation-01"] === "Update test note."`),
       "Cold reopen after update",
     );
+    await assertCurrentStudyRelease("Cold reopen after update", true);
 
     const tamperedAssetUrl = `${previewUrl}course-content.json`;
     const tamperResult = await evaluate(`(async () => {
@@ -654,6 +721,7 @@ async function main() {
             .notes["course-1-foundation-01"] === "Update test note."`),
       "Verified offline shell and version fallback",
     );
+    await assertCurrentStudyRelease("Offline reopen", true);
 
     process.stdout.write(
       `Update smoke passed: immutable v2.5 ${previousBuildId} sent its legacy explicit Update now message and activated ${currentBuildId}; a mismatched candidate was rejected; Later kept v2.5 active; reading, practice, notes, and unrelated caches survived schema migration; obsolete release caches were removed; asset and manifest cache mutations returned 503 and were restored from verified network bytes; the verified offline shell and cached version fallback reopened with the server unavailable.\n`,

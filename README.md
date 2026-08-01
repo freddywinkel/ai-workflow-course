@@ -1,23 +1,33 @@
 # Course 1 — Controlled Artificial Intelligence (AI) Workflow Foundations for Dutch Small and Medium-sized Enterprises (SMEs)
 
-- Version: 2.6.0 repair working copy
+- Version: 2.6.0 personal-study edition
 - Current product status: **`UNVERIFIED`**; follow
   `COURSE_1_AUDIT_STATUS_AND_REPAIR_LEDGER.md`
+- Distribution purpose: **`personal-synthetic-study`** (personal study with
+  synthetic data only)
 - Research and source claims verified through: 2026-07-28
-- Course content revised through: 2026-07-29
+- Course content revised through: 2026-08-02
 - Language: English, with Dutch and European Union (EU) terms where useful
 - Format: self-paced, gate-based learning—you continue after proving a skill,
   not merely after spending a set number of days
 - Author estimate for a literal beginner: 137–181 hours, equal to the sum of
   the 21 required page ranges. This is not yet measured full-course beginner
   completion time.
-- End result: a private, **reproducible** portfolio demonstration—someone can
+- Personal-study result, if completed: a private, **reproducible** portfolio
+  demonstration—someone can
   repeat the documented steps and obtain the same result—using fictional
   practice data
 
-The known local implementation defects have been repaired, but this working
-copy is not an immutable accepted candidate and the required human,
-repository, installed-client, device, and live evidence does not yet exist.
+> **UNVERIFIED personal-study release.** You may use this version to read the
+> course and run its synthetic exercises. It has not passed the complete Course
+> 1 learner, assessor, device, installed-client, and live-release gates. It
+> cannot award Course 1 completion or prove Course 2, consulting, client, or
+> production readiness. Never enter real employer, client, medical, personal,
+> confidential, or credential data.
+
+The known local implementation defects have been repaired, but the required
+human, full support-matrix, installed-client, and final acceptance evidence does
+not yet exist.
 `C1-GOV-007` and `C1-GOV-011` are therefore `EVIDENCE PENDING`;
 the all-33-test final-adjudication gate for `C1-GOV-011` is implemented, but
 its 33 candidate-bound acceptance records do not yet exist. `C1-GOV-013` and
@@ -25,8 +35,9 @@ its 33 candidate-bound acceptance records do not yet exist. `C1-GOV-013` and
 `UNVERIFIED`, not `PASS`.
 
 Public course reader: [open the currently deployed progressive web app (PWA)](https://freddywinkel.github.io/ai-workflow-course/).
-That public deployment is a separate artifact; verify the version shown there
-and do not assume it contains this local 2.6.0 repair working copy.
+That public deployment is a separate artifact. Before studying, verify that it
+shows version 2.6.0, product status `UNVERIFIED`, and the personal synthetic
+study purpose; public availability is not Course 1 acceptance.
 A PWA is a website that can also be installed and used like an app.
 
 Course repository: [freddywinkel/ai-workflow-course](https://github.com/freddywinkel/ai-workflow-course).
@@ -39,6 +50,12 @@ You can study every lesson, run every synthetic exercise, and prepare the full
 evidence pack alone. You do **not** need an assessor to begin. However, the
 official result `COURSE 1 COMPETENCE: PASS` cannot be self-awarded or assigned
 by Codex.
+
+This published version is also an `UNVERIFIED` course-product release. You may
+prepare every learner record now, but the final competence result may be
+recorded only after both the course product has a later evidence-backed `PASS`
+and your own independent human assessment passes. Until then, use
+`ASSESSMENT PENDING`.
 
 The final gate requires:
 
@@ -193,6 +210,10 @@ If a lesson names a technical term before it makes sense to you, stop and ask:
 The course spells out abbreviations at their first use. Product names are also
 introduced before use. For example, **Git** is the name of a version-control
 tool that records changes to files; it is not an abbreviation.
+Use the searchable
+[Beginner Glossary](foundations/GLOSSARY.md) whenever you meet an unfamiliar
+abbreviation, short form, product name, or course term. It is an optional
+lookup page and does not add another required lesson.
 
 ## What completing Course 1 proves
 

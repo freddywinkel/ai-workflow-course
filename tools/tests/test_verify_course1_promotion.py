@@ -416,6 +416,7 @@ class AcceptanceRecordTests(unittest.TestCase):
     CONTENT_HASH = "c" * 64
     ASSET_HASH = "d" * 64
     TREE_HASH = "e" * 64
+    PUBLIC_SERVED_HASH = "f" * 64
 
     def setUp(self) -> None:
         self.temporary = tempfile.TemporaryDirectory()
@@ -695,7 +696,8 @@ class AcceptanceRecordTests(unittest.TestCase):
                 "publicBuildId": "123456789abc",
                 "publicContentHash": self.CONTENT_HASH,
                 "publicAssetManifestSha256": self.ASSET_HASH,
-                "publicArtifactTreeSha256": self.TREE_HASH,
+                "publicServedTreeSha256": self.PUBLIC_SERVED_HASH,
+                "nonPublicArtifactFiles": [".nojekyll"],
             },
             "adjudicatedAt": "2026-07-29T02:00:00+02:00",
             "reviewer": {
@@ -757,8 +759,10 @@ class AcceptanceRecordTests(unittest.TestCase):
             record,
             self.version,
             expected_commit=self.EXPECTED_COMMIT,
+            expected_promotion_run_id="123456789",
             asset_manifest_sha256=self.ASSET_HASH,
             artifact_tree_sha256_value=self.TREE_HASH,
+            public_served_tree_sha256_value=self.PUBLIC_SERVED_HASH,
             ledger_text=ledger_text
             or ledger(
                 ("C1-GOV-002", "EVIDENCE PENDING"),
@@ -1297,6 +1301,28 @@ class AcceptanceRecordTests(unittest.TestCase):
             "publicContentHash does not match",
         )
 
+        record = self.final_record()
+        record["deployment"]["publicServedTreeSha256"] = "0" * 64
+        self.assert_failure_contains(
+            self.run_final_validate(record),
+            "publicServedTreeSha256 does not match",
+        )
+
+        record = self.final_record()
+        record["deployment"]["nonPublicArtifactFiles"] = []
+        self.assert_failure_contains(
+            self.run_final_validate(record),
+            "must exactly record .nojekyll",
+        )
+
+    def test_final_adjudication_binds_the_publication_run_id(self) -> None:
+        record = self.final_record()
+        record["deployment"]["promotionWorkflowRunId"] = "987654321"
+        self.assert_failure_contains(
+            self.run_final_validate(record),
+            "does not match the verified workflow run",
+        )
+
     def test_final_adjudication_rejects_unsafe_or_wrong_scope_url(self) -> None:
         for url in (
             "http://example.github.io/ai-workflow-course/",
@@ -1346,14 +1372,26 @@ class AcceptanceRecordTests(unittest.TestCase):
             {Path(item["path"]).stem for item in template["evidence"]},
             DECLARED_TECHNICAL_TEST_IDS,
         )
+        self.assertEqual(
+            template["deployment"]["nonPublicArtifactFiles"],
+            [".nojekyll"],
+        )
         self.assertEqual(template["decision"], FINAL_DECISION)
 
         workflow = (
             ROOT / ".github" / "workflows" / "course1-final-adjudication.yml"
         ).read_text(encoding="utf-8")
         self.assertIn("permissions:\n  actions: read\n  contents: read", workflow)
+        self.assertIn("ref: ${{ github.sha }}", workflow)
+        self.assertNotIn("ref: main", workflow)
+        self.assertIn('CONTROL_REF: ${{ github.ref }}', workflow)
+        self.assertIn("final adjudication must be dispatched from main", workflow)
         self.assertIn("run-id: ${{ inputs.promotion_run_id }}", workflow)
+        self.assertIn("actions/runs/$PROMOTION_RUN_ID", workflow)
+        self.assertIn('.head_branch == "main"', workflow)
+        self.assertIn("prepare-accepted-pages-artifact deploy", workflow)
         self.assertIn("verify_course1_final_acceptance.py", workflow)
+        self.assertIn('--promotion-run-id "$PROMOTION_RUN_ID"', workflow)
         self.assertIn("--evidence-root acceptance-control", workflow)
         self.assertNotIn("actions/deploy-pages@", workflow)
 

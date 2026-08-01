@@ -84,6 +84,11 @@ eligible adults:
 - one calibrated assessor reviews and scores the artifacts; and
 - one independent assessor hears the live oral assessment.
 
+Version 2.6.0 is also an `UNVERIFIED` personal-study product release. Prepare
+the assessment evidence now, but do not record the final competence pass until
+both a later course-product `PASS` and your independent human assessment exist.
+Keep `ASSESSMENT PENDING` while either is missing.
+
 The same two people may divide or share the artifact and oral roles. They must
 consent, must not create, edit, or correct your evidence, must be able to read
 the rubric and calibration cases, and must declare conflicts or help. The oral

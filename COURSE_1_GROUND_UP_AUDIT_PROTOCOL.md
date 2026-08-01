@@ -35,7 +35,8 @@ Use these authorities together without allowing one to substitute for another:
 5. `COURSE_1_LEARNING_VALIDATION_CONTRACT.md` owns learning, beginner,
    assessment, accessibility, and human-evidence requirements.
 6. `COURSE_1_AUDIT_STATUS_AND_REPAIR_LEDGER.md` owns current product status,
-   finding status, and reopen decisions.
+   finding status, reopen decisions, and the narrow separation between
+   personal-study publication and accepted-release promotion.
 7. `EVERGREEN_UPDATE_PROMPT.md` is a time-sensitive market, source, legal,
    security, and software-delta module. It is not a substitute for this
    protocol and cannot silently turn diagnosis into repair.
@@ -100,6 +101,11 @@ candidate evidence. Deployment must use the tested promotion artifact without
 another rebuild. Complete public, installed-client, accessibility/device, and
 rollback evidence. Local technical success alone cannot become product
 `PASS`.
+
+An explicitly authorized `UNVERIFIED` personal-study publication is not Mode D
+acceptance. It may distribute an exact technically checked artifact so a
+literal beginner can study it, but it cannot close a finding, award competence,
+satisfy Course 2 entry, or bypass the later Mode D evidence.
 
 ## 5. Required ground-up sequence
 
@@ -325,7 +331,7 @@ These stable rules test whether the audit itself is trustworthy.
 | `C1-AA-001` | Frozen authority and scope | Clean full commit; exact in-scope file/hash inventory; explicit exclusions; every shared Course 1/Course 4 file classified; add/delete/rename/move negative controls fail. |
 | `C1-AA-002` | Complete normative inventory | Every technical, learning, threat, abuse, finding, and test ID is uniquely machine-enumerated; unknown, duplicate, malformed, unparsed, or retired-ID reuse fails. |
 | `C1-AA-003` | Requirement-test-evidence graph | Every requirement maps to a named executable or manual procedure, environment, owner, evidence class, and locator; every test maps back; no missing, contradictory, orphaned, skipped, or nonexistent scenario. |
-| `C1-AA-004` | Status semantics | Product, finding, technical-evidence, and learning-result vocabularies remain separate and closed; `CLOSED` requires current candidate-bound evidence; `PARTIAL` always blocks; promotion permits `EVIDENCE PENDING` only where the ledger explicitly allows it. |
+| `C1-AA-004` | Status semantics | Product, distribution-purpose, finding, technical-evidence, and learning-result vocabularies remain separate and closed; `CLOSED` requires current candidate-bound evidence; `PARTIAL` always blocks; personal-study publication and accepted-release promotion each permit `EVIDENCE PENDING` only where the ledger explicitly allows it. |
 | `C1-AA-005` | Evidence provenance and freshness | Each result records candidate identity, command/procedure, exit/result, raw-log or artifact hash, tool/runtime/environment, reviewer, timestamp, evidence class, expiry, and rerun trigger; narrative prose alone cannot close. |
 | `C1-AA-006` | Adversarial negative controls | A known defect is seeded in every critical product and audit-control family; the expected gate fails for the expected reason, including missing/skipped tests, stale evidence, wrong hashes, scope escape, dirty tree, malformed status records, and concurrency-harness side effects. |
 | `C1-AA-007` | Exact candidate identity | Bind commit/tree, course/practice versions, content/build IDs, full artifact tree, asset manifest, requirement/test manifests, schemas, fixtures/oracle, locks/SBOM, source claims, workflows, and audit-tool hashes; compare public bytes after deployment. |

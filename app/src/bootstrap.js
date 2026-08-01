@@ -16,6 +16,8 @@
     basePath: "__BASE_PATH__",
     buildId: "__BUILD_ID__",
     courseVersion: "__COURSE_VERSION__",
+    productStatus: "__PRODUCT_STATUS__",
+    distributionPurpose: "__DISTRIBUTION_PURPOSE__",
     sourceVerifiedThrough: "__SOURCE_VERIFIED_THROUGH__",
     contentRevisionThrough: "__CONTENT_REVISION_THROUGH__",
     verifiedThrough: "__VERIFIED_THROUGH__",

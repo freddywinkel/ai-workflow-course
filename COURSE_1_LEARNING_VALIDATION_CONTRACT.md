@@ -393,12 +393,15 @@ The following is mandatory for `COURSE 1 LEARNING ACCEPTANCE: PASS`:
 | `C1-LV-016` | consent, minimisation, retention, and deletion evidence |
 | `C1-LV-017` | final requirement-by-requirement decision |
 
-The repaired course may be used locally or in an explicitly unpromoted
-evidence-collection trial as a `LEARNING VALIDATION CANDIDATE` when its
-applicable technical safety gates pass. “Candidate” does not authorize public
-publishing, promotion, completion awards, or a current product `PASS`.
-Every missing human check remains a visible limitation. The candidate must not
-be described as fully beginner-validated or as proof of consultant readiness.
+The repaired course may be used locally, in an explicitly unpromoted
+evidence-collection trial, or through the separately authorized
+`personal-synthetic-study` publication lane when its applicable technical
+safety gates pass. Public personal-study availability is distribution, not
+learning validation: it cannot authorize completion awards, accepted-release
+promotion, a current product `PASS`, Course 2 readiness, or consultant claims.
+Every missing human check remains a visible limitation. The candidate or study
+edition must not be described as fully beginner-validated or as proof of
+consultant readiness.
 
 ## Evidence-record minimum fields
 

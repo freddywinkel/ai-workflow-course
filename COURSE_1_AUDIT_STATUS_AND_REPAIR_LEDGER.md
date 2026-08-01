@@ -6,19 +6,20 @@ This is the authoritative current product-status and repair-control record for
 Course 1. Dated release acceptance records remain historical evidence, but this
 file takes precedence when a later audit reopens a requirement.
 
-- Course release under review: `2.6.0 repair working copy` (not yet an
-  immutable candidate)
+- Course release under review: `2.6.0 UNVERIFIED personal-study edition`
 - Audit window: `2026-07-28` to `2026-07-29` (`Europe/Amsterdam`)
+- Personal-study release amendment and regression date: `2026-08-02`
 - Current status: **`UNVERIFIED`**
+- Distribution purpose: **`personal-synthetic-study`**
 - Status owner: Course maintainer
 - Audit-method authority:
   `COURSE_1_GROUND_UP_AUDIT_PROTOCOL.md`
 - Historical record affected:
   `release_evidence/COURSE_1_V2.5.0_ACCEPTANCE.md`
-- Learner consequence: version 2.6.0 may be used for synthetic study and a
-  literal-beginner trial, but it must not yet be presented as an accepted
-  release, used to award Course 1 completion, or treated as proof of Course 2
-  readiness.
+- Learner consequence: version 2.6.0 may be published only through the
+  separately controlled personal-study lane and used for synthetic study and a
+  literal-beginner trial. Public availability is not acceptance: it must not be
+  used to award Course 1 completion or treated as proof of Course 2 readiness.
 - Scope: Course 1 curriculum, local synthetic runner, assessment, shared
   course-reader Progressive Web App (PWA), release controls, and the Course 1
   to Course 2 handoff. Course 4 content and implementation quality are outside
@@ -33,10 +34,12 @@ all-33 final-adjudication gate now fail closed; rollback now uses one
 non-contradictory per-key compare-and-preserve contract; content revision and
 research/source verification have separate fields and evidence; and the
 release/audit parsers reject the reproduced bypasses. The complete local
-integration matrix passes. This working tree is nevertheless not a clean,
-immutable candidate, and required literal-beginner, human specialist,
-repository, public-release, installed-client, and device evidence does not yet
-exist. The authoritative status is therefore `UNVERIFIED`, not `PASS`.
+integration matrix passes. This personal-study edition is not an
+accepted-release candidate: required literal-beginner, human specialist,
+accepted-promotion, installed-client, and wider-device evidence does not yet
+exist. The authoritative status is therefore `UNVERIFIED`, not `PASS`. The
+separate distribution purpose is `personal-synthetic-study`; it is not a fifth
+product status.
 
 ## Status rules
 
@@ -46,7 +49,7 @@ These are the only authoritative product-status values:
 |---|---|---|
 | `PASS` | Every required High and Medium finding is closed with reproducible evidence; all required tests are current; the accepted artifact matches production; independent review and the installed-client check passed. | The named release may be used as the current Course 1 release within its stated synthetic-learning boundary. |
 | `REPAIR REQUIRED` | One or more known requirements fail, a required implementation is missing, or a reproducible High or Medium defect remains. | Repair and retest. Do not promote, award a new Course 1 pass, or claim next-course readiness. |
-| `UNVERIFIED` | Required evidence is missing, unavailable, expired, or could not be reproduced. No failure is being inferred. | Stop at the affected gate until evidence exists. `UNVERIFIED` must never be converted to `PASS` by assumption. |
+| `UNVERIFIED` | Required evidence is missing, unavailable, expired, or could not be reproduced. No failure is being inferred. | Stop at the affected acceptance, completion, and progression gates until evidence exists. A separately authorized exact-artifact publication may still permit visibly labelled personal synthetic study. `UNVERIFIED` must never be converted to `PASS` by assumption. |
 | `SUPERSEDED` | A historical decision was replaced by a later dated audit status or release. It may have been correct when recorded. | Keep the record unchanged as history and follow the newer authoritative status. |
 
 `NO CHANGE` is a maintenance-run outcome, not a product status. A maintenance
@@ -126,7 +129,7 @@ File existence or a learner self-attestation alone is not closure.
 | ID | Severity | Requirement | Closure test and evidence | Status | Owner |
 |---|---|---|---|---|---|
 | `C1-GOV-001` | High | Current status must supersede stale historical acceptance without rewriting history. | This ledger is linked from release governance and version 2.5.0 is visibly marked historical and superseded. | CLOSED | Course maintainer |
-| `C1-GOV-002` | High | Production publishing must use a controlled candidate, acceptance, promotion, live-verification, and rollback process; direct unreviewed pushes must not publish. | Local controls now inspect and bind the exact candidate artifact, require a closed acceptance record, support the exact manifest format, and permit only the byte-verified legacy 2.5 rollback exception. Protected `main`, required checks, Pages reviewers, an accepted public artifact, live old-client update, and production rollback evidence remain repository-owner actions. | EVIDENCE PENDING | Repository owner |
+| `C1-GOV-002` | High | Publishing must be controlled and direct unreviewed pushes must not publish. An accepted release requires candidate acceptance, promotion, live verification, and rollback; a personal-study publication must remain separately labelled and cannot close acceptance or competence gates. | The accepted-release controls inspect and bind the exact candidate and evidence. The isolated personal-study verifier accepts only `UNVERIFIED` plus `personal-synthetic-study`, rejects known defects or unclassified pending findings, deploys the exact tested artifact, and preserves the byte-verified legacy 2.5 rollback exception. Protected `main`, required checks, Pages review, live old-client update, and production rollback evidence remain repository-owner actions. | EVIDENCE PENDING | Repository owner |
 | `C1-GOV-003` | High | Every product finding needs an ID, requirement, severity, owner, closure test, status, and reproducible evidence; independent-review disagreements must be retained and resolved. | This ledger and the version 2.6.0 evidence report retain the independent runner/PWA/content reviews and their adjudicated statuses. | CLOSED | Audit owner |
 | `C1-GOV-004` | High | A literal beginner must complete the required journey on a clean supported Windows setup matching the declared learner environment. | The curriculum and machine preflight are ready; a fresh literal-beginner run must still record installation, every exercise, restarts, errors, corrections, duration, and final assessment without hidden state. | EVIDENCE PENDING | Beginner tester and audit owner |
 | `C1-GOV-005` | Medium | Installation, browser, device, accessibility, offline, and update claims must match a declared support matrix. | Local current Chrome/Edge browser checks pass. The earlier target-size flake recurred in Edge with a measured `43.999969` pixels for a control styled at the required 44 pixels, proving browser sub-pixel reporting rather than a product undersize. The harness now retains the raw measurement and permits only an exact 0.01-pixel rounding tolerance for the 44-pixel minimum; a regression freezes both values, and final current-version plus old-client update runs pass in Chrome and Edge. Installed desktop/phone old-client, assistive-technology, and wider support-matrix evidence remain required. | EVIDENCE PENDING | PWA release reviewer |
@@ -138,8 +141,8 @@ File existence or a learner self-attestation alone is not closure.
 | `C1-GOV-011` | High | Every normative requirement and named test must appear in one complete, current, machine-checked, bidirectional requirement-test-evidence graph with no missing, contradictory, duplicate, malformed, unparsed, or orphaned row. | The technical contract declares all 33 `C1-TST-*` IDs. A closed machine-readable graph binds all 118 `C1-TA-*` requirements to those tests in both directions through 133 edges; a closed manifest binds every test to an existing procedure or selector; and adversarial controls reject missing, contradictory, duplicate, unknown, orphaned, malformed, summary-only, candidate-mismatched, and incomplete evidence. A separate final-adjudication workflow downloads the exact already-promoted artifact and requires all 33 candidate-bound results, including provenance, before a final decision. Local native, browser, supply-chain, and quality executions pass, but all 33 acceptance records remain honestly `UNVERIFIED` until those results and the required independent executions are bound to one clean immutable candidate. | EVIDENCE PENDING | Technical-contract and audit owners |
 | `C1-GOV-012` | High | Audit and release parsers must inventory records broadly, use closed schemas and ID families, parse only the exact authoritative structure, and fail closed on unknown, duplicate, malformed, or misleading data. | The package validator and promotion/rollback verifier require the exact current ledger inventory and reject missing or quoted finding rows, duplicate JSON keys, unknown fields, unsupported identifier families, malformed or unbackticked finding IDs, shifted cells, duplicate rows, orphaned graph nodes, non-authoritative status text, unsafe or missing evidence paths, hash mismatches, duplicate evidence, evidence bound to another candidate, self-authored summary-only evidence, incomplete declared procedure/environment artifact coverage, and incomplete operation-specific test evidence. Rollback additionally hash-validates the complete prior accepted promotion record for the exact target, with only the byte-pinned historical v2.5 exception. During the final integrated rerun, a missing Python coverage dependency exposed a quality-aggregator path whose layer was `FAIL` while the old overall result was `PASS`; the aggregator now treats every failed/nonzero command and every failed, unknown, or `NOT RUN` evidence layer as blocking, checks its maintainer runtime, and retains the reproduced false-pass regression. The ground-up artifact generator now validates all nine machine artifacts against its closed schema before writing, inventories all 30 ledger findings, detects threat/invariant and raw-evidence duplicates before mapping, rejects malformed/unknown/extra raw input, and removes only its exact owned stale-raw directory. Its exact version/date `raw/` output is also treated as opaque, hash-indexed evidence rather than generic package JSON, so adding a raw JSON record cannot silently change the learner validation report or PWA build identity; a regression test keeps unrelated `raw/` folders in scope. Closed schemas and adversarial regression tests cover every reproduced parser and aggregate-status bypass. | CLOSED | Audit-tool owner |
 | `C1-GOV-013` | Medium | Rollback requirements must preserve transaction-owned prior state without overwriting an external concurrent write, and the test harness must not create the mutation it claims to detect. | `C1-TA-PWA-013` and `C1-TA-REC-007` now use one per-key compare-and-preserve contract: restore only a transaction-owned value, accept an already-restored snapshot, and preserve a third-party value for reconciliation. Primary state, reset barrier, recovery record, runtime state, route, visible render, and overall verification are reported separately. Deterministic tests distinguish application and harness actions, and real Chrome and Edge smoke tests exercise an opener-inherited `sessionStorage` writer identity plus rollback and external-write cases. A reproduced harness race showed the automatic update check changing state and replacing the expected failure toast during forced storage denial; the harness now waits on each page's own completed automatic check, records every denied storage call and raw transaction dimension, and restores the storage stub in `finally`. Three final consecutive Chrome current-version runs pass, as do the final Chrome and Edge current-version and old-client update runs. | CLOSED | PWA contract and test owners |
-| `C1-GOV-014` | High | Normative audit, status, maintenance, learning, release, rollback, and historical-record authorities and their rendered consumers must not contradict each other or retain stale current-state language. | The ground-up protocol defines the authority hierarchy and `C1-AA-014`; current-status consumers defer to this ledger, historical records are visibly superseded, Evergreen is an explicitly authorized delta-repair procedure rather than a ground-up diagnosis, candidate publication is defined as local/unpromoted evidence collection, and promotion/rebuild wording matches the controlled workflow. | CLOSED | Governance and release owners |
-| `C1-GOV-015` | Medium | A content revision date and a research/source verification date must be separate claims with separate evidence; changing governance or release wording must not force a false source-currentness claim. | Curriculum schema 3 declares `contentRevisionThrough: 2026-07-29` and `sourceVerifiedThrough: 2026-07-28`; the generated PWA bundle remains schema 2 and retains `verifiedThrough` only as an equal source-date compatibility alias. The closed date contract names meanings, owners, evidence sources, and consumers. The PWA labels both claims separately. Package validation binds the content date to the latest page revision and the source date to `source_claims.json` plus its oldest entry review date, with no cross-date ceiling. Focused negative tests prove a content-only advance passes while a false source advance, alias drift, content-summary drift, or contract widening fails; the current Course 1 package validation passes. | CLOSED | Curriculum-schema and validator owners |
+| `C1-GOV-014` | High | Normative audit, status, maintenance, learning, release, rollback, and historical-record authorities and their rendered consumers must not contradict each other or retain stale current-state language. | The ground-up protocol defines the authority hierarchy and `C1-AA-014`; current-status consumers defer to this ledger, historical records are visibly superseded, Evergreen is an explicitly authorized delta-repair procedure rather than a ground-up diagnosis, personal-study publication is separated from accepted-release promotion, and both exact-artifact paths preserve their own claims and gates. | CLOSED | Governance and release owners |
+| `C1-GOV-015` | Medium | A content revision date and a research/source verification date must be separate claims with separate evidence; changing governance or release wording must not force a false source-currentness claim. | Curriculum schema 3 declares `contentRevisionThrough: 2026-08-02` and `sourceVerifiedThrough: 2026-07-28`; the generated PWA bundle remains schema 2 and retains `verifiedThrough` only as an equal source-date compatibility alias. The closed date contract names meanings, owners, evidence sources, and consumers. The PWA labels both claims separately. Package validation binds the content date to the latest page revision and the source date to `source_claims.json` plus its oldest entry review date, with no cross-date ceiling. Focused negative tests prove a content-only advance passes while a false source advance, alias drift, content-summary drift, or contract widening fails; the current Course 1 package validation passes. | CLOSED | Curriculum-schema and validator owners |
 
 ### Current 2.6.0 candidate evidence and remaining limits
 
@@ -158,7 +161,8 @@ authority; the local audit package is not release evidence for promotion.
   `C1-GOV-015` are repaired. `C1-GOV-011` remains `EVIDENCE PENDING` because
   its 33 results have not been bound to one clean immutable candidate and
   independently executed through the final gate. No local suite or
-  self-authored summary can make the working copy promotable.
+  self-authored summary can make this study edition eligible for
+  accepted-release promotion.
 - The independently rechecked runner passes all 67 declared tests and
   clean-room acceptance. Fresh exact installations also pass on Python
   3.12.13, 3.13.14, and 3.14.6.
@@ -195,7 +199,37 @@ authority; the local audit package is not release evidence for promotion.
   with no reported vulnerability or advisory finding, and 26 automated source
   checks. The OECD market source still requires the recorded manual review.
 
-## Release lifecycle
+## Personal-study publication lane
+
+The user explicitly authorized this lane on 2026-08-02 so that the literal
+beginner can access the repaired course before producing the human evidence
+that the course is designed to collect. It is a distribution decision, not an
+acceptance decision.
+
+A personal-study publication must:
+
+1. retain product status `UNVERIFIED` and distribution purpose
+   `personal-synthetic-study` as separate machine-readable fields;
+2. contain a persistent learner notice limiting use to synthetic personal
+   study and denying Course 1 completion, Course 2 readiness, consulting,
+   client, and production claims;
+3. come from a pull request and an exact clean full commit;
+4. pass the complete package, runner, Python matrix, PWA, browser-update,
+   quality, source, and supply-chain jobs;
+5. fail when any High or Medium finding is `OPEN`, `PARTIAL`, or `REOPENED`, or
+   when an evidence-pending finding is outside the explicit study allowlist;
+6. deploy the already tested artifact without rebuilding it;
+7. preserve the prior learner state and the exact version 2.5 rollback target;
+8. verify the public manifest-listed assets, asset manifest, and service worker
+   byte-for-byte. `.nojekyll` is verified in the uploaded artifact but is not
+   expected to be served by GitHub Pages;
+9. leave every human learning, assessment, external-user, device,
+   installed-client, final-acceptance, and Course 2 gate unchanged.
+
+Publishing under this lane closes no ledger finding and cannot produce
+`COURSE 1 COMPETENCE: PASS` or product `PASS`.
+
+## Accepted-release lifecycle
 
 ### 1. Candidate
 
