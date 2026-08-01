@@ -234,6 +234,8 @@ class ArtifactIdentityTests(unittest.TestCase):
         )
         self.assertIn("ACCEPTED_COMMIT: ${{ inputs.accepted_commit }}", live)
         self.assertIn("verify_course1_public_artifact.py", live)
+        self.assertIn("npm run smoke:public", live)
+        self.assertIn("personal-study-live-browser.json", live)
         self.assertIn("if-no-files-found: error", live)
 
     def test_manifest_v1_requires_and_returns_one_full_commit(self) -> None:

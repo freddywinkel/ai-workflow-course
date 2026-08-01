@@ -11,6 +11,7 @@
     "check": "npm test && npm run build",
     "smoke:browser": "node scripts/browser-smoke.mjs",
     "smoke:update": "node scripts/browser-update-smoke.mjs",
+    "smoke:public": "node scripts/browser-public-smoke.mjs",
     "preview": "node scripts/serve.mjs"
   },
   "engines": {

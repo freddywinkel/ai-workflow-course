@@ -71,6 +71,14 @@ function responseMediaType(response) {
     .toLowerCase();
 }
 
+function responseMediaTypeMatches(actualContentType, expectedContentType) {
+  return (
+    actualContentType === expectedContentType ||
+    (expectedContentType === "text/javascript" &&
+      actualContentType === "application/javascript")
+  );
+}
+
 function assertResponseIdentity(requestUrl, response, expectedContentType) {
   const expectedUrl = new URL(requestUrl, self.location.origin);
   const finalUrl = new URL(response.url);
@@ -81,7 +89,10 @@ function assertResponseIdentity(requestUrl, response, expectedContentType) {
     response.redirected ||
     finalUrl.origin !== self.location.origin ||
     finalUrl.href !== expectedUrl.href ||
-    responseMediaType(response) !== expectedContentType.toLowerCase()
+    !responseMediaTypeMatches(
+      responseMediaType(response),
+      expectedContentType.toLowerCase(),
+    )
   ) {
     throw new Error(`Asset response failed release checks: ${expectedUrl.pathname}`);
   }

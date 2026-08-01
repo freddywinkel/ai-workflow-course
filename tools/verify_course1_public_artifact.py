@@ -72,7 +72,45 @@ def same_public_target(requested_url: str, final_url: str) -> bool:
     )
 
 
-def fetch_bytes(url: str, *, timeout: float) -> tuple[int, bytes, str]:
+def media_type(value: str | None) -> str:
+    return (value or "").split(";", 1)[0].strip().casefold()
+
+
+def accepted_media_types(expected: str) -> set[str]:
+    checked = media_type(expected)
+    if not checked:
+        raise ValueError("expected media type is empty")
+    if checked == "text/javascript":
+        return {"text/javascript", "application/javascript"}
+    return {checked}
+
+
+def expected_public_media_types(dist: Path) -> dict[str, set[str]]:
+    try:
+        manifest = json.loads((dist / "asset-manifest.json").read_text(encoding="utf-8"))
+        assets = manifest["assets"]
+    except (OSError, UnicodeError, ValueError, KeyError, json.JSONDecodeError) as exc:
+        raise ValueError(f"candidate asset manifest media types are invalid: {exc}") from exc
+    if not isinstance(assets, dict):
+        raise ValueError("candidate asset manifest assets must be one object")
+
+    expected: dict[str, set[str]] = {
+        "asset-manifest.json": {"application/json"},
+        "sw.js": accepted_media_types("text/javascript"),
+    }
+    for relative, metadata in assets.items():
+        if not isinstance(relative, str) or not isinstance(metadata, dict):
+            raise ValueError("candidate asset manifest media metadata is malformed")
+        content_type = metadata.get("contentType")
+        if not isinstance(content_type, str):
+            raise ValueError(f"candidate media type is missing: {relative}")
+        expected[relative] = accepted_media_types(content_type)
+    if set(expected) != PUBLIC_SERVED_PATHS:
+        raise ValueError("candidate media types do not cover the exact public-served set")
+    return expected
+
+
+def fetch_bytes(url: str, *, timeout: float) -> tuple[int, bytes, str, str]:
     request = urllib.request.Request(
         url,
         headers={
@@ -83,9 +121,19 @@ def fetch_bytes(url: str, *, timeout: float) -> tuple[int, bytes, str]:
     )
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:
-            return response.status, response.read(), response.geturl()
+            return (
+                response.status,
+                response.read(),
+                response.geturl(),
+                media_type(response.headers.get("Content-Type")),
+            )
     except urllib.error.HTTPError as exc:
-        return exc.code, exc.read(), exc.geturl()
+        return (
+            exc.code,
+            exc.read(),
+            exc.geturl(),
+            media_type(exc.headers.get("Content-Type") if exc.headers else None),
+        )
 
 
 def verify_once(
@@ -110,6 +158,7 @@ def verify_once(
     downloaded: dict[str, bytes] = {}
     file_records: list[dict[str, Any]] = []
     failures: list[str] = []
+    expected_media_types = expected_public_media_types(dist)
 
     requested_urls = {
         relative: urllib.parse.urljoin(public_url, relative) + f"?{cache_key}"
@@ -122,14 +171,24 @@ def verify_once(
         }
     for relative in sorted(PUBLIC_SERVED_PATHS):
         url = requested_urls[relative]
-        status, body, final_url = responses[relative].result()
+        status, body, final_url, actual_media_type = responses[relative].result()
         expected = (dist / Path(*relative.split("/"))).read_bytes()
         target_matches = same_public_target(url, final_url)
-        matches = status == 200 and body == expected and target_matches
+        allowed_media_types = expected_media_types[relative]
+        media_type_matches = actual_media_type in allowed_media_types
+        matches = (
+            status == 200
+            and body == expected
+            and target_matches
+            and media_type_matches
+        )
         file_records.append(
             {
                 "path": relative,
                 "status": status,
+                "contentType": actual_media_type,
+                "expectedContentTypes": sorted(allowed_media_types),
+                "contentTypeMatches": media_type_matches,
                 "sha256": hashlib.sha256(body).hexdigest(),
                 "expectedSha256": hashlib.sha256(expected).hexdigest(),
                 "byteLength": len(body),
@@ -140,13 +199,14 @@ def verify_once(
         )
         if not matches:
             failures.append(
-                f"{relative} returned status {status}, redirected, or did not match the tested bytes"
+                f"{relative} returned status {status}, redirected, did not match the tested bytes, "
+                f"or used incompatible media type {actual_media_type or '<missing>'}"
             )
         else:
             downloaded[relative] = body
 
     nojekyll_url = urllib.parse.urljoin(public_url, ".nojekyll") + f"?{cache_key}"
-    nojekyll_status, _, nojekyll_final_url = fetch_bytes(
+    nojekyll_status, _, nojekyll_final_url, _ = fetch_bytes(
         nojekyll_url,
         timeout=timeout,
     )
@@ -160,7 +220,7 @@ def verify_once(
         )
 
     root_url = f"{public_url}?{cache_key}"
-    root_status, root_body, root_final_url = fetch_bytes(
+    root_status, root_body, root_final_url, root_media_type = fetch_bytes(
         root_url,
         timeout=timeout,
     )
@@ -169,6 +229,7 @@ def verify_once(
         root_status == 200
         and root_body == (dist / "index.html").read_bytes()
         and root_target_matches
+        and root_media_type == "text/html"
     )
     if not root_matches:
         failures.append(
@@ -210,6 +271,8 @@ def verify_once(
         "publicFiles": file_records,
         "learnerFacingRoot": {
             "status": root_status,
+            "contentType": root_media_type,
+            "expectedContentTypes": ["text/html"],
             "matchesIndexHtml": root_matches,
             "targetMatches": root_target_matches,
             "finalUrl": root_final_url,
