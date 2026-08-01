@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
+import { createHash } from "node:crypto";
 import { createReadStream, existsSync } from "node:fs";
 import {
   cp,
+  mkdir,
   mkdtemp,
   readFile,
+  readdir,
   rm,
   stat,
   writeFile,
@@ -12,13 +15,23 @@ import {
 import { createServer } from "node:http";
 import { createServer as createPortProbe } from "node:net";
 import { tmpdir } from "node:os";
-import { extname, join, resolve, sep } from "node:path";
+import { dirname, extname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const scriptDirectory = resolve(fileURLToPath(new URL(".", import.meta.url)));
 const appRoot = resolve(scriptDirectory, "..");
+const courseRoot = resolve(appRoot, "..");
 const basePath = "/ai-workflow-course/";
 const storageKey = "ai-workflow-course-state-v1";
+const legacyV25 = Object.freeze({
+  commit: "69d868a713d42b19b12ec11c64898b29e829be71",
+  courseVersion: "2.5.0",
+  buildId: "ad5f59e8f800",
+  contentHash:
+    "ddc88ff3b2a9ac9080b05abebad5f578de122406a6bab00bb52b28a92353258a",
+  artifactTreeSha256:
+    "df958cd62ff5ddd76cace021d86c46eb6f4a252215467487170639d72d84462d",
+});
 
 function chromeExecutable() {
   const candidates = [
@@ -103,27 +116,151 @@ async function createCdpClient(webSocketUrl) {
   };
 }
 
-async function makePreviousSnapshot(currentRoot, previousRoot) {
-  await cp(currentRoot, previousRoot, { recursive: true });
-  const versionPath = join(previousRoot, "version.json");
-  const version = JSON.parse(await readFile(versionPath, "utf8"));
-  const currentBuildId = version.buildId;
-  const previousBuildId = "000000000000";
-  assert.notEqual(currentBuildId, previousBuildId);
+function gitBlob(commit, relativePath) {
+  return execFileSync("git", ["show", `${commit}:${relativePath}`], {
+    cwd: courseRoot,
+    encoding: null,
+    maxBuffer: 32 * 1024 * 1024,
+    stdio: ["ignore", "pipe", "pipe"],
+    windowsHide: true,
+  });
+}
 
-  for (const relativePath of ["index.html", "sw.js"]) {
-    const path = join(previousRoot, relativePath);
-    const source = await readFile(path, "utf8");
-    assert.ok(source.includes(currentBuildId));
-    await writeFile(
-      path,
-      source.replaceAll(currentBuildId, previousBuildId),
-      "utf8",
-    );
+function assertSafeFixturePath(relativePath) {
+  assert.equal(typeof relativePath, "string");
+  assert.ok(relativePath.length > 0);
+  assert.equal(relativePath.includes("\\"), false);
+  assert.equal(relativePath.startsWith("/"), false);
+  assert.equal(/^[a-zA-Z]:/.test(relativePath), false);
+  assert.equal(relativePath.split("/").includes(".."), false);
+}
+
+async function artifactTreeSha256(root) {
+  const relativeFiles = [];
+  async function walk(directory, prefix = "") {
+    const entries = await readdir(directory, { withFileTypes: true });
+    for (const entry of entries) {
+      const relativePath = prefix ? `${prefix}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) {
+        await walk(join(directory, entry.name), relativePath);
+      } else if (entry.isFile()) {
+        relativeFiles.push(relativePath);
+      }
+    }
   }
-  version.buildId = previousBuildId;
-  await writeFile(versionPath, `${JSON.stringify(version, null, 2)}\n`, "utf8");
-  return { currentBuildId, previousBuildId };
+  await walk(root);
+  relativeFiles.sort();
+  const digest = createHash("sha256");
+  for (const relativePath of relativeFiles) {
+    const bytes = await readFile(
+      join(root, ...relativePath.split("/")),
+    );
+    digest.update(relativePath);
+    digest.update("\0");
+    digest.update(createHash("sha256").update(bytes).digest());
+    digest.update("\n");
+  }
+  return digest.digest("hex");
+}
+
+async function materialiseLegacyV25(previousRoot) {
+  execFileSync("git", ["cat-file", "-e", `${legacyV25.commit}^{commit}`], {
+    cwd: courseRoot,
+    stdio: "ignore",
+    windowsHide: true,
+  });
+  const curriculumBytes = gitBlob(legacyV25.commit, "curriculum.json");
+  const curriculum = JSON.parse(curriculumBytes.toString("utf8"));
+  const paths = new Set([
+    "curriculum.json",
+    "app/scripts/build.mjs",
+    "app/src/index.html",
+    "app/src/styles.css",
+    "app/src/app.js",
+    "app/src/markdown.js",
+    "app/src/sw.js",
+    "app/src/favicon.svg",
+  ]);
+  for (const group of curriculum.groups || []) {
+    for (const document of group.documents || []) {
+      assertSafeFixturePath(document.sourcePath);
+      paths.add(document.sourcePath);
+    }
+  }
+  for (const relativePath of paths) {
+    assertSafeFixturePath(relativePath);
+    const destination = join(previousRoot, ...relativePath.split("/"));
+    await mkdir(dirname(destination), { recursive: true });
+    const bytes =
+      relativePath === "curriculum.json"
+        ? curriculumBytes
+        : gitBlob(legacyV25.commit, relativePath);
+    await writeFile(destination, bytes);
+  }
+  const legacyAppRoot = join(previousRoot, "app");
+  execFileSync(process.execPath, ["scripts/build.mjs"], {
+    cwd: legacyAppRoot,
+    env: {
+      ...process.env,
+      BASE_PATH: basePath,
+      GITHUB_SHA: legacyV25.commit,
+    },
+    encoding: "utf8",
+    maxBuffer: 8 * 1024 * 1024,
+    stdio: ["ignore", "pipe", "pipe"],
+    windowsHide: true,
+  });
+  const dist = join(legacyAppRoot, "dist");
+  const version = JSON.parse(await readFile(join(dist, "version.json"), "utf8"));
+  assert.deepEqual(
+    {
+      commit: version.commit,
+      courseVersion: version.courseVersion,
+      buildId: version.buildId,
+      contentHash: version.contentHash,
+    },
+    {
+      commit: legacyV25.commit.slice(0, 12),
+      courseVersion: legacyV25.courseVersion,
+      buildId: legacyV25.buildId,
+      contentHash: legacyV25.contentHash,
+    },
+    "The pinned legacy source did not reproduce the accepted v2.5 identity.",
+  );
+  assert.equal(
+    existsSync(join(dist, "asset-manifest.json")),
+    false,
+    "The v2.5 fixture must retain its historical no-manifest artifact format.",
+  );
+  assert.equal(
+    await artifactTreeSha256(dist),
+    legacyV25.artifactTreeSha256,
+    "The pinned legacy source did not reproduce the accepted v2.5 artifact tree.",
+  );
+  return dist;
+}
+
+async function releaseCacheName(snapshotRoot) {
+  const version = JSON.parse(
+    await readFile(join(snapshotRoot, "version.json"), "utf8"),
+  );
+  if (!existsSync(join(snapshotRoot, "asset-manifest.json"))) {
+    return `ai-workflow-course-${version.buildId}`;
+  }
+  const manifestBytes = await readFile(
+    join(snapshotRoot, "asset-manifest.json"),
+  );
+  const manifestHash = createHash("sha256")
+    .update(manifestBytes)
+    .digest("hex");
+  return `ai-workflow-course-${version.buildId}-${manifestHash}`;
+}
+
+function storedStateExpression(key) {
+  return `(() => {
+    const record = JSON.parse(localStorage.getItem(${JSON.stringify(key)}));
+    return record?.state || record;
+  })()`;
 }
 
 function mimeType(path) {
@@ -145,20 +282,58 @@ async function main() {
     join(tmpdir(), "course1-pwa-update-smoke-"),
   );
   const currentSnapshot = join(temporaryDirectory, "current");
-  const previousSnapshot = join(temporaryDirectory, "previous");
+  const legacySource = join(temporaryDirectory, "legacy-v2.5-source");
+  const failedSnapshot = join(temporaryDirectory, "failed-candidate");
   const profileDirectory = join(temporaryDirectory, "chrome-profile");
   await cp(join(appRoot, "dist"), currentSnapshot, { recursive: true });
-  const { currentBuildId, previousBuildId } = await makePreviousSnapshot(
-    currentSnapshot,
-    previousSnapshot,
+  const previousSnapshot = await materialiseLegacyV25(legacySource);
+  const currentVersion = JSON.parse(
+    await readFile(join(currentSnapshot, "version.json"), "utf8"),
   );
+  assert.equal(currentVersion.courseVersion, "2.6.0");
+  assert.equal(currentVersion.productStatus, "UNVERIFIED");
+  assert.equal(
+    currentVersion.distributionPurpose,
+    "personal-synthetic-study",
+  );
+  const workflowCommit = String(process.env.GITHUB_SHA || "").toLowerCase();
+  if (/^[0-9a-f]{40}$/.test(workflowCommit)) {
+    assert.equal(currentVersion.commit, workflowCommit);
+  } else {
+    assert.match(currentVersion.commit, /^(?:working-copy|[0-9a-f]{40})$/);
+  }
+  const currentBuildId = currentVersion.buildId;
+  const previousBuildId = legacyV25.buildId;
+  assert.notEqual(currentBuildId, previousBuildId);
+  await cp(currentSnapshot, failedSnapshot, { recursive: true });
+  const failedStylesPath = join(failedSnapshot, "styles.css");
+  const failedStyles = await readFile(failedStylesPath, "utf8");
+  await writeFile(
+    failedStylesPath,
+    `${failedStyles}\n/* Intentionally mismatched candidate for the smoke test. */\n`,
+    "utf8",
+  );
+  const currentCacheName = await releaseCacheName(currentSnapshot);
+  const previousCacheName = await releaseCacheName(previousSnapshot);
+  const failedCacheName = await releaseCacheName(failedSnapshot);
+  assert.equal(failedCacheName, currentCacheName);
+  assert.notEqual(currentCacheName, previousCacheName);
 
   let activeRoot = previousSnapshot;
+  let networkAvailable = true;
   const port = await availablePort();
   const debugPort = await availablePort();
   const previewUrl = `http://127.0.0.1:${port}${basePath}`;
   const server = createServer(async (request, response) => {
     try {
+      if (!networkAvailable) {
+        response.writeHead(503, {
+          "Cache-Control": "no-store",
+          "Content-Type": "text/plain; charset=utf-8",
+        });
+        response.end("Offline test");
+        return;
+      }
       const url = new URL(request.url || "/", `http://${request.headers.host}`);
       if (!url.pathname.startsWith(basePath)) {
         response.writeHead(302, { Location: basePath });
@@ -242,6 +417,54 @@ async function main() {
       }
       return result.result.value;
     };
+    const assertCurrentStudyRelease = async (label, checkSettings = false) => {
+      const release = await evaluate(`(() => {
+        const boundary = document.querySelector("#release-boundary");
+        const pill = document.querySelector(".release-pill");
+        return {
+          boundaryText: boundary?.textContent?.replace(/\\s+/g, " ").trim() || "",
+          boundaryVisible: Boolean(
+            boundary &&
+            !boundary.hidden &&
+            getComputedStyle(boundary).display !== "none" &&
+            getComputedStyle(boundary).visibility !== "hidden" &&
+            boundary.getClientRects().length
+          ),
+          pillText: pill?.textContent?.trim() || "",
+          pillLabel: pill?.getAttribute("aria-label") || "",
+          pillVisible: Boolean(
+            pill &&
+            !pill.hidden &&
+            getComputedStyle(pill).display !== "none" &&
+            getComputedStyle(pill).visibility !== "hidden" &&
+            pill.getClientRects().length
+          ),
+          productStatus: window.__COURSE_APP__?.productStatus || "",
+          distributionPurpose:
+            window.__COURSE_APP__?.distributionPurpose || "",
+          settingsProductStatus:
+            document.querySelector("#settings-product-status")?.textContent?.trim() || "",
+          settingsDistributionPurpose:
+            document.querySelector("#settings-distribution-purpose")?.textContent?.trim() || "",
+        };
+      })()`);
+      assert.equal(release.boundaryVisible, true, `${label}: release boundary hidden`);
+      assert.match(release.boundaryText, /UNVERIFIED personal-study release/);
+      assert.match(release.boundaryText, /Use synthetic data only/);
+      assert.match(release.boundaryText, /cannot award Course 1 completion/);
+      assert.equal(release.pillVisible, true, `${label}: release pill hidden`);
+      assert.equal(release.pillText, "UNVERIFIED");
+      assert.match(release.pillLabel, /UNVERIFIED personal-study release/);
+      assert.equal(release.productStatus, "UNVERIFIED");
+      assert.equal(release.distributionPurpose, "personal-synthetic-study");
+      if (checkSettings) {
+        assert.equal(release.settingsProductStatus, "UNVERIFIED");
+        assert.equal(
+          release.settingsDistributionPurpose,
+          "Personal study with synthetic data only",
+        );
+      }
+    };
 
     await client.call("Page.navigate", { url: previewUrl });
     await waitFor(
@@ -265,11 +488,44 @@ async function main() {
       note.dispatchEvent(new Event("input", { bubbles: true }));`);
     await waitFor(
       () =>
-        evaluate(`JSON.parse(localStorage.getItem(${JSON.stringify(storageKey)}))
+        evaluate(`${storedStateExpression(storageKey)}
           .notes["course-1-foundation-01"] === "Update test note."`),
       "Previous-release progress",
     );
+    assert.equal(
+      await evaluate(`(() => {
+        const record = JSON.parse(
+          localStorage.getItem(${JSON.stringify(storageKey)})
+        );
+        return record?.schemaVersion === 2 && record?.state === undefined;
+      })()`),
+      true,
+      "The immutable v2.5 client did not exercise its historical raw state format.",
+    );
     await evaluate(`caches.open("unrelated-update-smoke-sentinel")`);
+
+    activeRoot = failedSnapshot;
+    await evaluate(`navigator.serviceWorker.getRegistration().then(
+      (registration) => registration.update()
+    ).catch(() => null)`);
+    await waitFor(
+      () =>
+        evaluate(`navigator.serviceWorker.getRegistration().then(
+          (registration) =>
+            registration.installing === null &&
+            registration.waiting === null &&
+            navigator.serviceWorker.controller !== null
+        )`),
+      "Rejected mismatched candidate",
+      20000,
+    );
+    assert.equal(
+      await evaluate(`window.__COURSE_APP__.buildId`),
+      previousBuildId,
+    );
+    const cachesAfterFailedCandidate = await evaluate(`caches.keys()`);
+    assert.ok(cachesAfterFailedCandidate.includes(previousCacheName));
+    assert.ok(!cachesAfterFailedCandidate.includes(failedCacheName));
 
     activeRoot = currentSnapshot;
     await evaluate(`navigator.serviceWorker.getRegistration().then(
@@ -297,7 +553,7 @@ async function main() {
       previousBuildId,
     );
     assert.equal(
-      await evaluate(`JSON.parse(localStorage.getItem(${JSON.stringify(storageKey)}))
+      await evaluate(`${storedStateExpression(storageKey)}
         .notes["course-1-foundation-01"]`),
       "Update test note.",
     );
@@ -324,9 +580,30 @@ async function main() {
       "Activated current release",
       20000,
     );
+    await evaluate(`location.hash = "#settings"`);
+    await waitFor(
+      () => evaluate(`document.querySelector("#settings-view")?.hidden === false`),
+      "Current personal-study Settings",
+    );
+    await assertCurrentStudyRelease("Activated current release", true);
 
     const retainedState = await evaluate(
-      `JSON.parse(localStorage.getItem(${JSON.stringify(storageKey)}))`,
+      storedStateExpression(storageKey),
+    );
+    assert.equal(
+      await evaluate(`(() => {
+        const record = JSON.parse(
+          localStorage.getItem(${JSON.stringify(storageKey)})
+        );
+        return (
+          record?.storageFormat === "ai-workflow-course-storage-v1" &&
+          Number.isInteger(record?.revision) &&
+          record.revision > 0 &&
+          record?.state?.schemaVersion === 3
+        );
+      })()`),
+      true,
+      "The current release did not migrate v2.5 state into the verified envelope.",
     );
     assert.ok(retainedState.completed.includes("course-1-foundation-01"));
     assert.ok(retainedState.practicalPassed.includes("course-1-foundation-01"));
@@ -337,23 +614,117 @@ async function main() {
     const cacheNames = await evaluate(`caches.keys()`);
     assert.ok(cacheNames.includes("unrelated-update-smoke-sentinel"));
     assert.ok(
-      cacheNames.includes(`ai-workflow-course-${currentBuildId}`),
+      cacheNames.includes(currentCacheName),
       `current cache missing from ${JSON.stringify(cacheNames)}`,
     );
-    assert.ok(!cacheNames.includes(`ai-workflow-course-${previousBuildId}`));
+    assert.ok(!cacheNames.includes(previousCacheName));
 
     await client.call("Page.reload", { ignoreCache: false });
     await waitFor(
       () =>
         evaluate(`document.readyState === "complete" &&
           window.__COURSE_APP__?.buildId === ${JSON.stringify(currentBuildId)} &&
-          JSON.parse(localStorage.getItem(${JSON.stringify(storageKey)}))
+          ${storedStateExpression(storageKey)}
             .notes["course-1-foundation-01"] === "Update test note."`),
       "Cold reopen after update",
     );
+    await assertCurrentStudyRelease("Cold reopen after update", true);
+
+    const tamperedAssetUrl = `${previewUrl}course-content.json`;
+    const tamperResult = await evaluate(`(async () => {
+      const cache = await caches.open(${JSON.stringify(currentCacheName)});
+      await cache.put(
+        ${JSON.stringify(tamperedAssetUrl)},
+        new Response('{"tampered":true}', {
+          status: 200,
+          headers: { "Content-Type": "application/json; charset=utf-8" },
+        }),
+      );
+      const response = await fetch(${JSON.stringify(tamperedAssetUrl)}, {
+        cache: "no-store",
+      });
+      return { status: response.status, body: await response.text() };
+    })()`);
+    assert.deepEqual(tamperResult, {
+      status: 503,
+      body: "Verified course asset is unavailable.",
+    });
+
+    const expectedCourseHash = JSON.parse(
+      await readFile(join(currentSnapshot, "asset-manifest.json"), "utf8"),
+    ).assets["course-content.json"].sha256;
+    await waitFor(
+      () =>
+        evaluate(`(async () => {
+          const cache = await caches.open(${JSON.stringify(currentCacheName)});
+          const response = await cache.match(${JSON.stringify(tamperedAssetUrl)});
+          if (!response) return false;
+          const digest = await crypto.subtle.digest(
+            "SHA-256",
+            await response.arrayBuffer(),
+          );
+          const hex = [...new Uint8Array(digest)]
+            .map((value) => value.toString(16).padStart(2, "0"))
+            .join("");
+          return hex === ${JSON.stringify(expectedCourseHash)};
+        })()`),
+      "Verified cache restoration after same-origin mutation",
+    );
+    const restoredResult = await evaluate(`(async () => {
+      const response = await fetch(${JSON.stringify(tamperedAssetUrl)}, {
+        cache: "no-store",
+      });
+      const body = await response.json();
+      return {
+        status: response.status,
+        contentHash: body.course.contentHash,
+      };
+    })()`);
+    assert.equal(restoredResult.status, 200);
+    assert.match(restoredResult.contentHash, /^[a-f0-9]{64}$/);
+
+    const manifestUrl = `${previewUrl}asset-manifest.json`;
+    const stylesUrl = `${previewUrl}styles.css`;
+    const manifestTamperResult = await evaluate(`(async () => {
+      const cache = await caches.open(${JSON.stringify(currentCacheName)});
+      await cache.put(
+        ${JSON.stringify(manifestUrl)},
+        new Response('{"schemaVersion":1,"tampered":true}', {
+          status: 200,
+          headers: { "Content-Type": "application/json; charset=utf-8" },
+        }),
+      );
+      const response = await fetch(${JSON.stringify(stylesUrl)}, {
+        cache: "no-store",
+      });
+      return { status: response.status, body: await response.text() };
+    })()`);
+    assert.deepEqual(manifestTamperResult, {
+      status: 503,
+      body: "Verified course asset is unavailable.",
+    });
+    await waitFor(
+      () =>
+        evaluate(`fetch(${JSON.stringify(stylesUrl)}, { cache: "no-store" })
+          .then((response) => response.status === 200)`),
+      "Verified manifest restoration after same-origin mutation",
+    );
+
+    networkAvailable = false;
+    await client.call("Page.reload", { ignoreCache: false });
+    await waitFor(
+      () =>
+        evaluate(`document.readyState === "complete" &&
+          document.querySelector("#loading-card")?.hidden === true &&
+          window.__COURSE_APP__?.buildId === ${JSON.stringify(currentBuildId)} &&
+          ${storedStateExpression(storageKey)}
+            .notes["course-1-foundation-01"] === "Update test note."`),
+      "Verified offline shell and version fallback",
+    );
+    await assertCurrentStudyRelease("Offline reopen", true);
 
     process.stdout.write(
-      `Update smoke passed: Later preserved build ${previousBuildId}; Update now activated ${currentBuildId}; reading, practice, notes, and unrelated caches survived; obsolete course cache was removed.\n`,
+      `Update smoke passed: immutable v2.5 ${previousBuildId} sent its legacy explicit Update now message and activated ${currentBuildId}; a mismatched candidate was rejected; Later kept v2.5 active; reading, practice, notes, and unrelated caches survived schema migration; obsolete release caches were removed; asset and manifest cache mutations returned 503 and were restored from verified network bytes; the verified offline shell and cached version fallback reopened with the server unavailable.\n`,
     );
   } finally {
     client?.close();

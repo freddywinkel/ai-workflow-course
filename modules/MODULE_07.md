@@ -72,9 +72,41 @@ reported and left unchanged.
 
 Suggested sessions:
 
-1. follow the combined worked decision and scope-change test;
-2. inspect both completed worksheet examples, then recreate both forms;
-3. perform the evidence check, correct gaps, and make the Git checkpoint.
+Use twelve focused blocks of 40–60 minutes. No block may exceed 60 minutes,
+and unfinished work continues in the next block instead of becoming a long
+session. This preserves the published 8–12-hour author estimate.
+
+- **UNDERSTAND** means you must explain the risk question, uncertainty,
+  alternative, owner, escalation, or decision in your own words.
+- **PROTECTED PLUMBING — RUN AND OBSERVE** means you may run the supplied
+  path, create-once, inspection, and Git commands without memorising syntax.
+  You must know their purpose, read the result, and obey every stop condition.
+
+1. **PROTECTED PLUMBING — RUN AND OBSERVE:** run Stage 1, verify the project
+   boundary, and safely create or resume the Module 7 evidence.
+2. **UNDERSTAND:** read the worked intended purpose, negative scope, data flow,
+   and reason that the example excludes artificial intelligence (AI).
+3. **UNDERSTAND:** work through the privacy, data-minimisation, retention,
+   access, transfer, and deletion questions without claiming compliance.
+4. **UNDERSTAND:** work through security, logging, backup, incident, human
+   oversight, and specialist-escalation questions.
+5. **UNDERSTAND:** compare no-build, process, existing-tool, configured
+   workflow, and custom-code options, including total cost and exit.
+6. **UNDERSTAND:** identify every continuing owner and explain the worked
+   decision, fallback, residual risks, and reassessment triggers.
+7. **UNDERSTAND:** perform Stage 2's scope-change test and explain why adding
+   real data or external action forces a new review.
+8. **UNDERSTAND:** inspect both completed Stage 3 worksheet examples and map
+   each field to the worked reasoning.
+9. **PROTECTED PLUMBING — RUN AND OBSERVE:** copy the blank recreation forms
+   once and verify you are assessing only the synthetic Course 1 capstone.
+10. **UNDERSTAND:** complete the risk/escalation screen with evidence,
+    unknowns, owners, specialist routes, and justified not-applicable answers.
+11. **UNDERSTAND:** complete tool fit, ownership, costs, data flow, exit,
+    fallback, and the evidence-backed select/rework/stop decision.
+12. **UNDERSTAND + PROTECTED PLUMBING:** run the bounded Codex review, make
+    your own corrections, recheck every gate, and run only the supplied
+    Module 7 Git checkpoint commands.
 
 Save all files and note the last numbered step before stopping. In a new
 PowerShell window, rerun Stage 1 instead of guessing the paths.
@@ -473,4 +505,4 @@ transfer remain unknown, or the solution is chosen before alternatives.
 
 ## Estimated time
 
-8–12 hours.
+8–12 hours. This is an **AUTHOR ESTIMATE — NOT BEGINNER MEASURED**.

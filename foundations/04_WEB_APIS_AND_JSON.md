@@ -6,6 +6,25 @@ You will create a fictional request and response, validate both JSON files
 locally, and explain why an accepted request is not the same as completed or
 correct work.
 
+## Study plan — six blocks of no more than 60 minutes
+
+**Time label: AUTHOR ESTIMATE — NOT BEGINNER MEASURED.** The published
+5–6-hour range is a planning estimate, not measured novice completion time.
+Use each row as a separate study segment. Stop when the row is complete or
+when 60 focused minutes have elapsed, whichever happens first. Record the last
+completed part using synthetic wording, save and close files, and take a break.
+Run **Start or resume safely** in every new PowerShell session; never combine
+blocks.
+
+| Block | Maximum | Work and safe stopping point |
+|---:|---:|---|
+| 1 | 60 minutes | Learn the request, response, Hypertext Transfer Protocol (HTTP), Application Programming Interface (API), and JSON words plus the safety boundary. |
+| 2 | 60 minutes | Run the start/resume block and make the explicit resume/retry decision. |
+| 3 | 60 minutes | Complete Part B and verify the fictional request before continuing. |
+| 4 | 60 minutes | Complete Part C and verify the fictional response before continuing. |
+| 5 | 60 minutes | Complete Part D, compare the exact result, and troubleshoot only observed mismatches. |
+| 6 | 60 minutes | Recreate the request/response with different content, ask Codex for the bounded check, and apply every pass criterion. |
+
 ## Words you need first
 
 - A **client** is software that sends a request.

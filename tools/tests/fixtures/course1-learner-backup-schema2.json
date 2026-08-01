@@ -1,0 +1,24 @@
+{
+  "exportType": "ai-workflow-course-progress",
+  "exportedAt": "2026-07-29T00:00:00.000Z",
+  "bundleSchemaVersion": 2,
+  "courseId": "course-1-controlled-ai-workflow-foundations",
+  "courseVersion": "2.5.0",
+  "state": {
+    "schemaVersion": 2,
+    "completed": [],
+    "completionRevisions": {},
+    "practicalPassed": [],
+    "practicalPassRevisions": {},
+    "notes": {},
+    "archivedLegacyNotes": {},
+    "lastDocument": null,
+    "theme": "system",
+    "fontSize": 100,
+    "lastUpdateCheck": null,
+    "expandedGroups": [
+      "foundations"
+    ],
+    "migration": null
+  }
+}

@@ -5,7 +5,7 @@
 - Source-register verified: synthetic files only, yes
 - Release-manifest hash: WORKED-SYNTHETIC-HASH
 - Module 8 recommendation: `PROVISIONAL PRE-UAT — ACCEPT FOR SYNTHETIC PORTFOLIO`
-- Module 9 status: `FINAL POST-UAT`
+- Module 9 status: `FINAL POST-REHEARSAL`
 
 Artificial intelligence (AI) is not part of this selected worked solution.
 
@@ -24,7 +24,7 @@ Artificial intelligence (AI) is not part of this selected worked solution.
 
 | Gate | Threshold | Observed | Evidence | Pass? |
 |---|---:|---:|---|:---:|
-| named-state closure | 100% | 100% | UAT record | yes |
+| named-state closure | 100% | 100% | role-simulated acceptance record | yes |
 | valid structure or explicit failure | 100% | 100% | input tests | yes |
 | deterministic precision/recall | 100% | 100% | frozen metrics | yes |
 | AI claims linked to issues | not applicable | no AI used | tool decision | yes |
@@ -64,10 +64,11 @@ uses fallback; support role owns access/backup/restore/update/incident; adoption
 owner owns training and feedback. Normal run, stop, recovery, rollback, and
 shutdown are in the worked runbook.
 
-Post-UAT reassessment: all stated UAT scenarios passed after UAT-D01 was
-rejected, corrected, and retested; role training, support, recovery, adoption,
-and handover evidence are complete for this fictional scope. The Module 8
-recommendation is therefore confirmed, not copied without review.
+Post-rehearsal reassessment: all technical regression scenarios and
+role-simulated operator tasks passed after TECH-D01 was rejected, corrected, and
+retested; role training, support, recovery, adoption, and handover evidence are
+complete for this fictional scope. The Module 8 recommendation is therefore
+confirmed, not copied without review. External UAT remains unverified.
 
 Known limitations: synthetic, tiny volume, solo role simulation, no live
 integration, no independent accessibility or security assessment, no legal or

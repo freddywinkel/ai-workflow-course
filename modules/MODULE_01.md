@@ -2,9 +2,10 @@
 
 ## Outcome
 
-You will observe a small operational process, distinguish evidence from
-assumptions, map the current work, and measure a manual baseline. You will not
-choose a tool or add artificial intelligence (AI) yet.
+You will rehearse how to observe a small synthetic operational process,
+distinguish evidence from assumptions, map the current work, and measure a
+manual baseline. This is not real client discovery. You will not choose a tool
+or add artificial intelligence (AI) yet.
 
 A small or medium-sized enterprise (SME) is a business that is smaller than a
 large enterprise. The final practice project, also called a **capstone**, is the
@@ -86,12 +87,38 @@ overwrite your own recreation merely to restart a lesson.
 
 Suggested sessions:
 
-1. Stage 1 through the worked observation;
-2. recreate the different 15-row process and complete both worksheets;
-3. run the Codex check, correct your work, and record the Git checkpoint.
+Use eight focused blocks of 45–60 minutes. **Never combine blocks to catch
+up**; stop at 60 minutes even when a block is unfinished.
+
+- **UNDERSTAND** means you must be able to explain the decision, evidence,
+  boundary, or result in your own words.
+- **PROTECTED PLUMBING — RUN AND OBSERVE** means you may copy the supplied
+  path, create-once, hash, or Git commands without memorising their syntax. You
+  must still know their purpose, read the output, and obey every stop message.
+
+1. **PROTECTED PLUMBING — RUN AND OBSERVE:** run Stage 1, verify the synthetic
+   project marker and Git root, and note where Module 1 evidence is stored.
+2. **UNDERSTAND:** complete Stage 2 and explain source versus working copy,
+   comma-separated values (CSV), and why matching hashes matter.
+3. **UNDERSTAND:** perform the worked observation and timing in Stage 3; mark
+   every statement as observed, assumed, or unresolved.
+4. **UNDERSTAND:** study the completed stakeholder and baseline records in
+   Stage 4 and explain owner, user, affected non-user, active time, wait time,
+   and rework.
+5. **PROTECTED PLUMBING — RUN AND OBSERVE:** create the recreation files once
+   and verify that the 15-row synthetic source was copied unchanged.
+6. **UNDERSTAND:** write the different as-is observation, including start,
+   finish, handoffs, fallback, measurements, assumptions, and questions.
+7. **UNDERSTAND:** complete the stakeholder and baseline worksheets and check
+   that neither invents a target, saving, interview, or real-process fact.
+8. **UNDERSTAND + PROTECTED PLUMBING:** run the bounded Codex review, make your
+   own smallest corrections, recheck every pass criterion, then run only the
+   supplied Module 1 Git checkpoint commands.
 
 At a stopping point, save and close every Notepad file, run `Get-Location`, and
-write the last completed numbered step in a private note. Do not make the Git
+write the last completed numbered step in a learner progress note using
+synthetic content only. A note stored in the course reader is not private from
+other applications served from the same website origin. Do not make the Git
 checkpoint until the module's full pass criteria are satisfied.
 
 ## Follow along — I show you exactly how
@@ -723,3 +750,4 @@ field meanings. Rework using synthetic data and recorded assumptions.
 ## Estimated time
 
 6–8 hours, including the worked example, independent recreation, and recheck.
+This is an **AUTHOR ESTIMATE — NOT BEGINNER MEASURED**.

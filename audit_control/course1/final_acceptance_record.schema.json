@@ -1,0 +1,208 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/course1/final-acceptance-record.schema.json",
+  "title": "Course 1 post-deployment final technical acceptance record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "decision",
+    "courseId",
+    "candidate",
+    "deployment",
+    "adjudicatedAt",
+    "reviewer",
+    "promotionAcceptanceRecord",
+    "promotionDependentFindingIds",
+    "evidence"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "course1-final-technical-acceptance-v1"
+    },
+    "decision": {
+      "const": "ACCEPTED_AFTER_DEPLOYMENT"
+    },
+    "courseId": {
+      "const": "course-1-controlled-ai-workflow-foundations"
+    },
+    "candidate": {
+      "$ref": "#/$defs/candidate"
+    },
+    "deployment": {
+      "$ref": "#/$defs/deployment"
+    },
+    "adjudicatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "reviewer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "independentOfImplementation"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "independentOfImplementation": {
+          "const": true
+        }
+      }
+    },
+    "promotionAcceptanceRecord": {
+      "$ref": "#/$defs/evidenceLocator"
+    },
+    "promotionDependentFindingIds": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "C1-GOV-002",
+          "C1-GOV-005",
+          "C1-GOV-006"
+        ]
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 33,
+      "maxItems": 33,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/evidenceLocator"
+      }
+    }
+  },
+  "$defs": {
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifactFormat",
+        "commit",
+        "courseVersion",
+        "buildId",
+        "contentHash",
+        "assetManifestSha256",
+        "artifactTreeSha256"
+      ],
+      "properties": {
+        "artifactFormat": {
+          "const": "manifest-v1"
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "courseVersion": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "buildId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{12}$"
+        },
+        "contentHash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "assetManifestSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "artifactTreeSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "deployment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "publicUrl",
+        "promotionWorkflowRunId",
+        "deploymentId",
+        "deployedAt",
+        "publicCommit",
+        "publicBuildId",
+        "publicContentHash",
+        "publicAssetManifestSha256",
+        "publicServedTreeSha256",
+        "nonPublicArtifactFiles"
+      ],
+      "properties": {
+        "publicUrl": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https://[^/?#]+/ai-workflow-course/$"
+        },
+        "promotionWorkflowRunId": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]*$"
+        },
+        "deploymentId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+        },
+        "deployedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "publicCommit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "publicBuildId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{12}$"
+        },
+        "publicContentHash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "publicAssetManifestSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "publicServedTreeSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "nonPublicArtifactFiles": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "prefixItems": [
+            {
+              "const": ".nojekyll"
+            }
+          ],
+          "items": false
+        }
+      }
+    },
+    "evidenceLocator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^release_evidence/(?!templates(?:/|$))(?!\\.\\.?/)(?!.*//)(?!.*(?:/\\.\\.?)(?:/|$))[A-Za-z0-9._/-]+\\.json$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    }
+  }
+}

@@ -309,6 +309,15 @@ def _main_with_args(args: argparse.Namespace) -> int:
 def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
+    if args.command == "prepare":
+        expected_name = args.expected.name if args.expected is not None else "not supplied"
+        print(
+            "PRECHECK: no controlled output has been written yet.\n"
+            f"SELECTED_INPUT={args.input.name}\n"
+            f"SELECTED_EXPECTED={expected_name}\n"
+            "SYNTHETIC_ATTESTATION=The confirmation is your declaration; the "
+            "runner cannot prove that selected files contain only fictional data."
+        )
     base = command_artifact_base(args)
     if base is None:
         return _main_with_args(args)

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "program": {
     "id": "controlled-ai-workflow-consultant-path",
     "title": "Controlled Artificial Intelligence (AI) Workflow Implementation Consultant",
@@ -13,11 +13,15 @@
     "title": "Controlled Artificial Intelligence (AI) Workflow Foundations",
     "shortTitle": "Course 1",
     "subtitle": "From zero technical knowledge to one safe, evidence-backed small and medium-sized enterprise (SME) workflow",
-    "version": "2.5.0",
-    "practiceRevision": 4,
+    "version": "2.6.0",
+    "practiceRevision": 5,
+    "productStatus": "UNVERIFIED",
+    "distributionPurpose": "personal-synthetic-study",
+    "sourceVerifiedThrough": "2026-07-28",
+    "contentRevisionThrough": "2026-08-02",
     "verifiedThrough": "2026-07-28",
     "learnerStartingPoint": "No coding, automation, consulting, or AI implementation knowledge is assumed.",
-    "outcome": "You can investigate a small operational workflow, decide what should and should not be automated, and build a small prototype with clear limits, fixed checks, evidence, human approval, testing, and a documented manual way of working.",
+    "outcome": "Using synthetic evidence, you can rehearse investigation of a small operational workflow, decide what should and should not be automated, safely assemble the supplied prototype, author and test one bounded deterministic rule, design one different bounded offline AI contract, and transfer the control method to an unseen second work area. This does not prove real discovery, external user acceptance, production use, or consulting readiness.",
     "estimatedHours": {
       "minimum": 137,
       "typical": 160,
@@ -70,7 +74,7 @@
       "documents": [
         {
           "id": "course-1-guide",
-          "revision": "2026-07-28",
+          "revision": "2026-08-02",
           "sourcePath": "README.md",
           "legacyIds": [
             "index"
@@ -78,7 +82,7 @@
         },
         {
           "id": "course-1-readiness-check",
-          "revision": "2026-07-28",
+          "revision": "2026-08-02",
           "sourcePath": "BEGINNER_READINESS_CHECK.md",
           "estimatedPracticeHours": {
             "minimum": 1,
@@ -100,7 +104,7 @@
         },
         {
           "id": "course-1-overview",
-          "revision": "2026-07-28",
+          "revision": "2026-08-02",
           "sourcePath": "COURSE_OVERVIEW.md",
           "legacyIds": [
             "course-overview"
@@ -280,7 +284,7 @@
           "id": "course-1-module-04",
           "revision": "2026-07-28",
           "sourcePath": "modules/MODULE_04.md",
-          "title": "Module 4 — Build and Test the Rule-based Workflow",
+          "title": "Module 4 — Safely Assemble, Test, and Extend the Rule-based Workflow",
           "estimatedPracticeHours": {
             "minimum": 12,
             "maximum": 16
@@ -333,9 +337,9 @@
         },
         {
           "id": "course-1-module-09",
-          "revision": "2026-07-28",
+          "revision": "2026-08-02",
           "sourcePath": "modules/MODULE_09.md",
-          "title": "Module 9 — Run User Acceptance Testing (UAT), Hand Over, and Pass the Course 1 Assessment",
+          "title": "Module 9 — Rehearse Operational Acceptance, Hand Over, and Pass the Course 1 Assessment",
           "estimatedPracticeHours": {
             "minimum": 16,
             "maximum": 22
@@ -493,11 +497,32 @@
         },
         {
           "id": "course-1-assessment-rubric",
-          "revision": "2026-07-28",
+          "revision": "2026-08-02",
           "sourcePath": "ASSESSMENT_AND_RUBRIC.md",
           "legacyIds": [
             "assessment-and-rubric"
           ]
+        },
+        {
+          "id": "course-1-opportunity-decision-calibration",
+          "revision": "2026-07-28",
+          "sourcePath": "OPPORTUNITY_DECISION_CALIBRATION.md",
+          "title": "Module 2 Opportunity-Decision Calibration — Open Only After the Original Decision Is Locked",
+          "legacyIds": []
+        },
+        {
+          "id": "course-1-assessor-calibration-cases",
+          "revision": "2026-07-28",
+          "sourcePath": "ASSESSOR_CALIBRATION_CASES.md",
+          "title": "Course 1 Assessor Calibration Cases",
+          "legacyIds": []
+        },
+        {
+          "id": "course-1-assessor-calibration-key",
+          "revision": "2026-07-28",
+          "sourcePath": "ASSESSOR_CALIBRATION_KEY.md",
+          "title": "Course 1 Assessor Calibration Key — Open Only After Both Records Are Locked",
+          "legacyIds": []
         },
         {
           "id": "course-1-source-register",
@@ -521,7 +546,7 @@
         },
         {
           "id": "course-1-glossary",
-          "revision": "2026-07-28",
+          "revision": "2026-07-30",
           "sourcePath": "foundations/GLOSSARY.md",
           "legacyIds": [
             "foundations-glossary"
@@ -599,7 +624,7 @@
         },
         {
           "id": "course-1-worked-example-module-09-assessment",
-          "revision": "2026-07-28",
+          "revision": "2026-08-02",
           "sourcePath": "worked_examples/module_09_assessment_record.md",
           "title": "Completed Module 9 Example — Course 1 Assessment Record",
           "legacyIds": []
@@ -764,7 +789,7 @@
       "documents": [
         {
           "id": "course-1-pwa-updates",
-          "revision": "2026-07-28",
+          "revision": "2026-08-02",
           "sourcePath": "PWA_AND_UPDATES.md",
           "legacyIds": [
             "pwa-and-updates"
@@ -772,7 +797,7 @@
         },
         {
           "id": "course-1-evergreen-update-prompt",
-          "revision": "2026-07-28",
+          "revision": "2026-07-29",
           "sourcePath": "EVERGREEN_UPDATE_PROMPT.md",
           "legacyIds": [
             "evergreen-update-prompt"
@@ -780,7 +805,7 @@
         },
         {
           "id": "course-1-changelog",
-          "revision": "2026-07-28",
+          "revision": "2026-08-02",
           "sourcePath": "COURSE_CHANGELOG.md",
           "legacyIds": [
             "course-changelog"
@@ -788,7 +813,7 @@
         },
         {
           "id": "course-1-release-validation",
-          "revision": "2026-07-28",
+          "revision": "2026-08-02",
           "sourcePath": "RELEASE_VALIDATION.md",
           "legacyIds": [
             "release-validation"
@@ -796,7 +821,7 @@
         },
         {
           "id": "course-1-validation-report",
-          "revision": "2026-07-28",
+          "revision": "2026-08-02",
           "sourcePath": "VALIDATION_REPORT.md",
           "legacyIds": [
             "validation-report"
@@ -829,7 +854,7 @@
         "sequence": 1,
         "title": "Controlled Artificial Intelligence (AI) Workflow Foundations",
         "status": "current",
-        "purpose": "Start with no technical background, learn the basic tools and safety controls, then build one complete workflow using made-up (synthetic) data.",
+        "purpose": "Start with no technical background, learn the basic tools and safety controls, safely assemble and operate the supplied workflow with made-up (synthetic) data, and independently author and test one bounded rule.",
         "exitEvidence": "A tested Synthetic SME Operations Exception Assistant (a practice system that flags records which break stated rules), test evidence, a step-by-step operating guide (runbook), and a plain-language case study."
       },
       {

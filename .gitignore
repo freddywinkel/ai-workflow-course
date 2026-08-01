@@ -8,6 +8,8 @@ Thumbs.db
 .env.*
 !.env.example
 .pytest_cache/
+.coverage
+coverage.json
 .validation-deps/
 __pycache__/
 *.py[cod]

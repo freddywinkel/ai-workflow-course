@@ -12,7 +12,7 @@ import sys
 import tempfile
 import threading
 import unittest
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -39,9 +39,8 @@ ROOT = Path(__file__).resolve().parents[2]
 FIXTURES = ROOT / "course1_capstone" / "fixtures"
 FROZEN_INPUT = ROOT / "practice_data" / "work_items.csv"
 FROZEN_EXPECTED = ROOT / "practice_data" / "expected_issues.csv"
-DECIDED = datetime(2026, 7, 28, 10, 0, tzinfo=timezone.utc)
-FUTURE = datetime(2099, 1, 1, 0, 0, tzinfo=timezone.utc)
-CHECKED = datetime(2026, 7, 28, 11, 0, tzinfo=timezone.utc)
+CHECKED = datetime.now(timezone.utc) + timedelta(hours=2)
+FUTURE = CHECKED + timedelta(days=1)
 
 
 class WorkflowTests(unittest.TestCase):
@@ -77,7 +76,7 @@ class WorkflowTests(unittest.TestCase):
             revision,
             True,
             FUTURE,
-            DECIDED,
+            None,
         )
 
     def assert_safe_stop(self, code: str, function, *args, **kwargs) -> SafeStop:
@@ -199,7 +198,7 @@ class WorkflowTests(unittest.TestCase):
             True,
             True,
             FUTURE,
-            DECIDED,
+            None,
         )
 
     def test_latest_run_locator_is_relative_to_workspace(self) -> None:
@@ -311,7 +310,7 @@ class WorkflowTests(unittest.TestCase):
             1,
             False,
             FUTURE,
-            DECIDED,
+            None,
         )
         self.assertFalse((run_dir / "review" / "decision-r1.json").exists())
         self.assertFalse((run_dir / "outbox").exists())
@@ -328,7 +327,7 @@ class WorkflowTests(unittest.TestCase):
             2,
             True,
             FUTURE,
-            DECIDED,
+            None,
         )
 
     def test_missing_input_file_safely_stops(self) -> None:
@@ -339,7 +338,7 @@ class WorkflowTests(unittest.TestCase):
             expected_path=None,
         )
         self.assert_safe_stop(
-            "file_read_error",
+            "unsupported_file_type",
             self.prepare,
             input_path=self.workspace,
             expected_path=None,
@@ -369,11 +368,11 @@ class WorkflowTests(unittest.TestCase):
             ]
         )
         self.assertEqual(result, 1)
-        self.assertIn("SAFE STOP: file_read_error", output)
+        self.assertIn("SAFE STOP: unsupported_file_type", output)
         self.assertNotIn("Traceback", output)
         self.assertEqual(
             read_json(io_workspace / "failures" / "latest.json")["error_code"],
-            "file_read_error",
+            "unsupported_file_type",
         )
 
     def test_cli_persists_named_failure_evidence(self) -> None:
@@ -824,6 +823,12 @@ class WorkflowTests(unittest.TestCase):
         json_path, csv_path = export_approved(run_dir, CHECKED)
         self.assertTrue(json_path.exists())
         self.assertTrue(csv_path.exists())
+        self.assertFalse(
+            any(
+                path.name.startswith(workflow_module.STAGING_PREFIX)
+                for path in (run_dir / "outbox").iterdir()
+            )
+        )
         payload = read_json(json_path)
         self.assertEqual(payload["dataset_kind"], "synthetic")
         self.assertEqual(payload["output_kind"], "local_draft_only")
@@ -986,8 +991,6 @@ class WorkflowTests(unittest.TestCase):
                             "export",
                             "--run-dir",
                             str(run_dir),
-                            "--checked-at",
-                            "2026-07-28T11:00:00Z",
                         ]
                     )
 
@@ -1307,7 +1310,7 @@ class WorkflowTests(unittest.TestCase):
             1,
             True,
             CHECKED,
-            DECIDED,
+            None,
         )
         self.assert_safe_stop(
             "expired_review",
@@ -1335,7 +1338,7 @@ class WorkflowTests(unittest.TestCase):
                     1,
                     True,
                     FUTURE,
-                    DECIDED,
+                    None,
                 )
                 self.assertEqual(
                     read_json(run_dir / "state.json")["current_state"],
@@ -1359,7 +1362,7 @@ class WorkflowTests(unittest.TestCase):
             1,
             True,
             FUTURE,
-            DECIDED,
+            None,
         )
         replacement = read_json(run_dir / "draft" / "summary.json")
         replacement["headline"] = (
@@ -1407,7 +1410,7 @@ class WorkflowTests(unittest.TestCase):
                 1,
                 True,
                 FUTURE,
-                DECIDED,
+                None,
             )
         self.assertFalse((decision_run / "review" / "decision-r1.json").exists())
         self.assertEqual(
@@ -1425,7 +1428,7 @@ class WorkflowTests(unittest.TestCase):
             1,
             True,
             FUTURE,
-            DECIDED,
+            None,
         )
         bounded_replacement = read_json(revision_run / "draft" / "summary.json")
         bounded_replacement["headline"] = (
@@ -1559,8 +1562,6 @@ class WorkflowTests(unittest.TestCase):
                 "export",
                 "--run-dir",
                 str(run_dir),
-                "--checked-at",
-                "2026-07-28T11:00:00Z",
             ]
         )
         self.assertEqual(result, 1)
@@ -1629,8 +1630,6 @@ class WorkflowTests(unittest.TestCase):
                 "--expected-revision",
                 "1",
                 "--evidence-reviewed",
-                "--decided-at",
-                "2026-07-28T10:00:00Z",
                 "--expires-at",
                 "2099-01-01T00:00:00Z",
             ]
@@ -1643,8 +1642,6 @@ class WorkflowTests(unittest.TestCase):
                 "export",
                 "--run-dir",
                 str(run_dir),
-                "--checked-at",
-                "2026-07-28T11:00:00Z",
             ]
         )
         self.assertEqual(export_result, 0)
@@ -1694,6 +1691,359 @@ class WorkflowTests(unittest.TestCase):
             self.assertEqual(set(event), required)
             self.assertEqual(event["run_id"], inspect_run(run_dir)["run_id"])
 
+    def test_closed_audit_vocabulary_rejects_unknown_recomputed_event(self) -> None:
+        run_dir = self.prepare(workspace_name="unknown-audit-event")
+        audit_path = run_dir / "audit" / "events.jsonl"
+        events = [
+            json.loads(line)
+            for line in audit_path.read_text(encoding="utf-8").splitlines()
+        ]
+        unknown = {
+            "run_id": run_dir.name,
+            "event_type": "invented_success",
+            "state": "needs_review",
+            "occurred_at": "2099-01-01T00:00:00Z",
+            "actor_type": "system",
+            "details": {},
+        }
+        unknown["event_id"] = workflow_module._event_id(
+            unknown["run_id"],
+            unknown["event_type"],
+            unknown["state"],
+            unknown["occurred_at"],
+            unknown["actor_type"],
+            unknown["details"],
+        )
+        audit_path.write_text(
+            "".join(
+                json.dumps(event, ensure_ascii=False, sort_keys=True) + "\n"
+                for event in [*events, unknown]
+            ),
+            encoding="utf-8",
+        )
+        self.assert_safe_stop("invalid_audit_event", inspect_run, run_dir)
+
+    def test_audit_lifecycle_rejects_duplicate_contradictory_and_reordered_events(
+        self,
+    ) -> None:
+        def read_events(run_dir: Path) -> tuple[Path, list[dict[str, object]]]:
+            audit_path = run_dir / "audit" / "events.jsonl"
+            return audit_path, [
+                json.loads(line)
+                for line in audit_path.read_text(encoding="utf-8").splitlines()
+            ]
+
+        def save_events(path: Path, events: list[dict[str, object]]) -> None:
+            path.write_text(
+                "".join(
+                    json.dumps(event, ensure_ascii=False, sort_keys=True) + "\n"
+                    for event in events
+                ),
+                encoding="utf-8",
+            )
+
+        duplicate_run = self.prepare(workspace_name="duplicate-audit-event")
+        duplicate_path, duplicate_events = read_events(duplicate_run)
+        duplicate = json.loads(json.dumps(duplicate_events[0]))
+        duplicate["occurred_at"] = "2099-01-01T00:00:00Z"
+        duplicate["event_id"] = workflow_module._event_id(
+            duplicate["run_id"],
+            duplicate["event_type"],
+            duplicate["state"],
+            duplicate["occurred_at"],
+            duplicate["actor_type"],
+            duplicate["details"],
+        )
+        save_events(duplicate_path, [*duplicate_events, duplicate])
+        self.assert_safe_stop(
+            "audit_history_mismatch",
+            inspect_run,
+            duplicate_run,
+        )
+
+        contradictory_run = self.prepare(workspace_name="contradictory-audit-event")
+        contradictory_path, contradictory_events = read_events(contradictory_run)
+        contradictory = {
+            "run_id": contradictory_run.name,
+            "event_type": "no_verified_issues",
+            "state": "no_action_needed",
+            "occurred_at": "2099-01-01T00:00:00Z",
+            "actor_type": "system",
+            "details": {"issue_count": 0, "external_actions": 0},
+        }
+        contradictory["event_id"] = workflow_module._event_id(
+            contradictory["run_id"],
+            contradictory["event_type"],
+            contradictory["state"],
+            contradictory["occurred_at"],
+            contradictory["actor_type"],
+            contradictory["details"],
+        )
+        save_events(contradictory_path, [*contradictory_events, contradictory])
+        self.assert_safe_stop(
+            "audit_history_mismatch",
+            inspect_run,
+            contradictory_run,
+        )
+
+        reordered_run = self.prepare(workspace_name="reordered-audit-event")
+        reordered_path, reordered_events = read_events(reordered_run)
+        reordered_events[0], reordered_events[1] = (
+            reordered_events[1],
+            reordered_events[0],
+        )
+        save_events(reordered_path, reordered_events)
+        self.assert_safe_stop(
+            "audit_history_mismatch",
+            inspect_run,
+            reordered_run,
+        )
+
+        chronology_run = self.prepare(workspace_name="decision-before-run")
+        chronology_events_before = (
+            chronology_run / "audit" / "events.jsonl"
+        ).read_bytes()
+        self.assert_safe_stop(
+            "audit_history_mismatch",
+            record_decision,
+            chronology_run,
+            "approve",
+            "course_learner",
+            "Every synthetic source link and statement was reviewed.",
+            1,
+            True,
+            datetime(1900, 1, 2, tzinfo=timezone.utc),
+            datetime(1900, 1, 1, tzinfo=timezone.utc),
+        )
+        self.assertEqual(
+            (chronology_run / "audit" / "events.jsonl").read_bytes(),
+            chronology_events_before,
+        )
+        self.assertFalse(
+            (chronology_run / "review" / "decision-r1.json").exists()
+        )
+        self.assertEqual(inspect_run(chronology_run)["current_state"], "needs_review")
+        latest_event = json.loads(
+            (chronology_run / "audit" / "events.jsonl")
+            .read_text(encoding="utf-8")
+            .splitlines()[-1]
+        )
+        latest_occurred = workflow_module.parse_datetime(
+            latest_event["occurred_at"],
+            "occurred_at",
+        )
+        self.assert_safe_stop(
+            "audit_history_mismatch",
+            record_decision,
+            chronology_run,
+            "approve",
+            "course_learner",
+            "Every synthetic source link and statement was reviewed.",
+            1,
+            True,
+            latest_occurred + timedelta(days=1),
+            latest_occurred,
+        )
+        self.assertEqual(
+            (chronology_run / "audit" / "events.jsonl").read_bytes(),
+            chronology_events_before,
+        )
+        self.assertFalse(
+            (chronology_run / "review" / "decision-r1.json").exists()
+        )
+
+    def test_expected_oracle_is_exact_bounded_and_beginner_safe(self) -> None:
+        header = (
+            "issue_id,work_item_id,field,rule_code,severity,expected_message\n"
+        )
+        cases = {
+            "wrong-headers": (
+                "work_item_id,rule_code,field\nWI-0001,R001,title\n",
+                "expected_contract",
+            ),
+            "missing-cell": (
+                header + "WI-0001|R001|title,WI-0001,title,R001,medium\n",
+                "expected_contract",
+            ),
+            "invalid-id": (
+                header
+                + "WI-0001|R001|title,NOT-0001,title,R001,medium,Message\n",
+                "expected_contract",
+            ),
+            "oversized-cell": (
+                header
+                + "WI-0001|R001|title,WI-0001,title,R001,medium,"
+                + ("x" * (workflow_module.MAX_CSV_CELL_CODE_POINTS + 1))
+                + "\n",
+                "input_limit_exceeded",
+            ),
+        }
+        for name, (content, expected_code) in cases.items():
+            with self.subTest(case=name):
+                path = self.workspace / f"{name}.csv"
+                path.write_text(content, encoding="utf-8", newline="")
+                self.assert_safe_stop(
+                    expected_code,
+                    self.prepare,
+                    expected_path=path,
+                    workspace_name=f"expected-{name}",
+                )
+        self.assert_safe_stop(
+            "unsupported_file_type",
+            self.prepare,
+            expected_path=self.workspace,
+            workspace_name="expected-directory",
+        )
+        malformed_expected = self.workspace / "cli-malformed-expected.csv"
+        malformed_expected.write_text(
+            "work_item_id,rule_code,field\nWI-0001,R001,title\n",
+            encoding="utf-8",
+            newline="",
+        )
+        input_before = hashlib.sha256(FROZEN_INPUT.read_bytes()).hexdigest()
+        expected_before = hashlib.sha256(malformed_expected.read_bytes()).hexdigest()
+        cli_workspace = self.workspace / "cli-malformed-expected-workspace"
+        result, output = self.run_cli(
+            [
+                "prepare",
+                "--input",
+                str(FROZEN_INPUT),
+                "--expected",
+                str(malformed_expected),
+                "--workspace",
+                str(cli_workspace),
+                "--ai-mode",
+                "mock",
+                "--synthetic-confirmation",
+                SYNTHETIC_CONFIRMATION,
+            ]
+        )
+        self.assertEqual(result, 1)
+        self.assertIn("SAFE STOP: expected_contract", output)
+        self.assertIn("FAILURE_EVIDENCE=failures/latest.json", output)
+        self.assertNotIn("Traceback", output)
+        self.assertEqual(
+            read_json(cli_workspace / "failures" / "latest.json")["error_code"],
+            "expected_contract",
+        )
+        self.assertEqual(
+            hashlib.sha256(FROZEN_INPUT.read_bytes()).hexdigest(),
+            input_before,
+        )
+        self.assertEqual(
+            hashlib.sha256(malformed_expected.read_bytes()).hexdigest(),
+            expected_before,
+        )
+        self.assertFalse((cli_workspace / "runs").exists())
+
+    def test_workspace_file_stops_without_false_lock_message(self) -> None:
+        workspace_file = self.workspace / "not-a-workspace"
+        workspace_file.write_text("ordinary file", encoding="utf-8")
+        self.assert_safe_stop(
+            "workspace_not_directory",
+            prepare_run,
+            FROZEN_INPUT,
+            workspace_file,
+            "mock",
+            SYNTHETIC_CONFIRMATION,
+            FROZEN_EXPECTED,
+        )
+        result, output = self.run_cli(
+            [
+                "prepare",
+                "--input",
+                str(FROZEN_INPUT),
+                "--expected",
+                str(FROZEN_EXPECTED),
+                "--workspace",
+                str(workspace_file),
+                "--ai-mode",
+                "mock",
+                "--synthetic-confirmation",
+                SYNTHETIC_CONFIRMATION,
+            ]
+        )
+        self.assertEqual(result, 1)
+        self.assertIn("SAFE STOP: scope_not_directory", output)
+        self.assertNotIn("lock_error", output)
+        self.assertNotIn("Traceback", output)
+
+    def test_runner_resource_limits_stop_before_materialising_oversized_input(
+        self,
+    ) -> None:
+        valid_header = ",".join(workflow_module.HEADERS) + "\n"
+        valid_row = (
+            "WI-0001,REF-0001,Title,owner,new,medium,2026-01-01,"
+            "2026-12-31,,10.00,EUR,training\n"
+        )
+        exact = self.workspace / "exact-2mib.csv"
+        exact.write_bytes(
+            (valid_header + valid_row).encode("utf-8")
+            + b"\n"
+            * (
+                workflow_module.MAX_WORK_ITEM_CSV_BYTES
+                - len((valid_header + valid_row).encode("utf-8"))
+            )
+        )
+        exact_bytes, exact_rows = workflow_module.load_work_items(exact)
+        self.assertEqual(len(exact_bytes), workflow_module.MAX_WORK_ITEM_CSV_BYTES)
+        self.assertEqual(len(exact_rows), 1)
+
+        too_large = self.workspace / "over-2mib.csv"
+        too_large.write_bytes(exact.read_bytes() + b"\n")
+        self.assert_safe_stop(
+            "input_limit_exceeded",
+            workflow_module.load_work_items,
+            too_large,
+        )
+
+        too_many_rows = self.workspace / "too-many-rows.csv"
+        rows = [valid_header]
+        for number in range(1, workflow_module.MAX_WORK_ITEM_ROWS + 2):
+            rows.append(
+                f"WI-{number:04d},REF-{number:04d},Title,owner,new,medium,"
+                "2026-01-01,2026-12-31,,10.00,EUR,training\n"
+            )
+        too_many_rows.write_text("".join(rows), encoding="utf-8", newline="")
+        self.assert_safe_stop(
+            "input_limit_exceeded",
+            workflow_module.load_work_items,
+            too_many_rows,
+        )
+
+        bad_control = self.workspace / "control.csv"
+        bad_control.write_bytes(
+            (valid_header + valid_row.replace("Title", "Bad\x01Title")).encode("utf-8")
+        )
+        self.assert_safe_stop(
+            "invalid_text_control",
+            workflow_module.load_work_items,
+            bad_control,
+        )
+
+        oversized_json = self.workspace / "oversized.json"
+        oversized_json.write_bytes(b" " * (workflow_module.MAX_JSON_BYTES + 1))
+        self.assert_safe_stop(
+            "input_limit_exceeded",
+            read_json,
+            oversized_json,
+        )
+
+    def test_unowned_staging_like_folder_is_preserved_and_blocks_cleanup(self) -> None:
+        workspace = self.workspace / "staging-ownership"
+        forged = workspace / "runs" / (
+            workflow_module.STAGING_PREFIX + "not-owned"
+        )
+        forged.mkdir(parents=True)
+        evidence = forged / "keep.txt"
+        evidence.write_text("do not delete", encoding="utf-8")
+        self.assert_safe_stop(
+            "staging_ownership_mismatch",
+            workflow_module._cleanup_prepare_staging,
+            workspace,
+        )
+        self.assertEqual(evidence.read_text(encoding="utf-8"), "do not delete")
+
     def test_synthetic_confirmation_is_mandatory(self) -> None:
         self.assert_safe_stop(
             "synthetic_confirmation_required",
@@ -1703,6 +2053,29 @@ class WorkflowTests(unittest.TestCase):
             "mock",
             "yes",
             FROZEN_EXPECTED,
+        )
+        result, output = self.run_cli(
+            [
+                "prepare",
+                "--input",
+                str(FROZEN_INPUT),
+                "--expected",
+                str(FROZEN_EXPECTED),
+                "--workspace",
+                str(self.workspace / "precheck"),
+                "--ai-mode",
+                "mock",
+                "--synthetic-confirmation",
+                "yes",
+            ]
+        )
+        self.assertEqual(result, 1)
+        self.assertIn(f"SELECTED_INPUT={FROZEN_INPUT.name}", output)
+        self.assertIn(f"SELECTED_EXPECTED={FROZEN_EXPECTED.name}", output)
+        self.assertIn("runner cannot prove", output)
+        self.assertLess(
+            output.index("SELECTED_INPUT="),
+            output.index("SAFE STOP: synthetic_confirmation_required"),
         )
 
     def test_run_identity_includes_mode_and_expected_oracle_hash(self) -> None:
@@ -1971,7 +2344,7 @@ class WorkflowTests(unittest.TestCase):
             1,
             True,
             FUTURE,
-            DECIDED,
+            None,
         )
         self.assertEqual((run_dir / "state.json").read_bytes(), state_before)
         self.assertFalse((run_dir / "review" / "decision-r1.json").exists())
@@ -2065,7 +2438,7 @@ class WorkflowTests(unittest.TestCase):
 
     def test_prior_expiry_cannot_be_extended_by_editing_decision(self) -> None:
         run_dir = self.prepare()
-        original_expiry = datetime(2026, 7, 28, 10, 30, tzinfo=timezone.utc)
+        original_expiry = datetime.now(timezone.utc) + timedelta(hours=1)
         decision_path = record_decision(
             run_dir,
             "approve",
@@ -2074,7 +2447,7 @@ class WorkflowTests(unittest.TestCase):
             1,
             True,
             original_expiry,
-            DECIDED,
+            None,
         )
         decision = read_json(decision_path)
         decision["expires_at"] = "2099-01-01T00:00:00Z"
@@ -2150,8 +2523,6 @@ class WorkflowTests(unittest.TestCase):
                 "export",
                 "--run-dir",
                 str(blocked_run),
-                "--checked-at",
-                "2026-07-28T11:00:00Z",
             ]
         )
         self.assertEqual(result, 1)
@@ -2165,16 +2536,16 @@ class WorkflowTests(unittest.TestCase):
     def test_second_export_promotion_failure_rolls_back_first_file(self) -> None:
         run_dir = self.prepare()
         self.approve(run_dir)
-        real_replace = os.replace
+        real_link = os.link
 
-        def fail_csv_promotion(source, destination):
+        def fail_csv_promotion(source, destination, *args, **kwargs):
             destination_path = Path(destination)
             if destination_path.name == "approved-r1.csv":
-                raise OSError("simulated second promotion failure")
-            return real_replace(source, destination)
+                destination_path.write_bytes(b"competing unowned output\n")
+            return real_link(source, destination, *args, **kwargs)
 
         with patch(
-            "course1_capstone.workflow.os.replace",
+            "course1_capstone.workflow.os.link",
             side_effect=fail_csv_promotion,
         ):
             self.assert_safe_stop(
@@ -2184,7 +2555,16 @@ class WorkflowTests(unittest.TestCase):
                 CHECKED,
             )
         self.assertFalse((run_dir / "outbox" / "approved-r1.json").exists())
-        self.assertFalse((run_dir / "outbox" / "approved-r1.csv").exists())
+        self.assertEqual(
+            (run_dir / "outbox" / "approved-r1.csv").read_bytes(),
+            b"competing unowned output\n",
+        )
+        self.assertFalse(
+            any(
+                path.name.startswith(workflow_module.STAGING_PREFIX)
+                for path in (run_dir / "outbox").iterdir()
+            )
+        )
 
     def test_csv_exports_neutralize_formula_prefixes_but_json_keeps_evidence(
         self,

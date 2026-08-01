@@ -1,0 +1,182 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/course1/promotion-record.schema.json",
+  "title": "Course 1 promotion acceptance record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "decision",
+    "courseId",
+    "candidate",
+    "acceptedAt",
+    "reviewer",
+    "gates",
+    "promotionDependentFindingIds",
+    "evidence"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "decision": {
+      "const": "ACCEPTED_FOR_PROMOTION"
+    },
+    "courseId": {
+      "const": "course-1-controlled-ai-workflow-foundations"
+    },
+    "candidate": {
+      "$ref": "#/$defs/promotionCandidate"
+    },
+    "acceptedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "reviewer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "independentOfImplementation"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "independentOfImplementation": {
+          "const": true
+        }
+      }
+    },
+    "gates": {
+      "$ref": "#/$defs/promotionGates"
+    },
+    "promotionDependentFindingIds": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "C1-GOV-002",
+          "C1-GOV-005",
+          "C1-GOV-006"
+        ]
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 32,
+      "maxItems": 32,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/evidenceLocator"
+      }
+    }
+  },
+  "$defs": {
+    "promotionCandidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifactFormat",
+        "commit",
+        "courseVersion",
+        "buildId",
+        "contentHash",
+        "assetManifestSha256",
+        "artifactTreeSha256"
+      ],
+      "properties": {
+        "artifactFormat": {
+          "const": "manifest-v1"
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "courseVersion": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "buildId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{12}$"
+        },
+        "contentHash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "assetManifestSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "artifactTreeSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "promotionGates": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "independentReview",
+        "manualSourceReview",
+        "packageValidation",
+        "pwaBrowserSmoke",
+        "pwaUnitTests",
+        "pwaUpdateSmoke",
+        "course1CleanRoomMatrix",
+        "sourceClaimsOnline",
+        "supplyChainOnline"
+      ],
+      "properties": {
+        "independentReview": {
+          "const": true
+        },
+        "manualSourceReview": {
+          "const": true
+        },
+        "packageValidation": {
+          "const": true
+        },
+        "pwaBrowserSmoke": {
+          "const": true
+        },
+        "pwaUnitTests": {
+          "const": true
+        },
+        "pwaUpdateSmoke": {
+          "const": true
+        },
+        "course1CleanRoomMatrix": {
+          "const": true
+        },
+        "sourceClaimsOnline": {
+          "const": true
+        },
+        "supplyChainOnline": {
+          "const": true
+        }
+      }
+    },
+    "evidenceLocator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^release_evidence/(?!templates(?:/|$))(?!\\.\\.?/)(?!.*//)(?!.*(?:/\\.\\.?)(?:/|$))[A-Za-z0-9._/-]+\\.json$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    }
+  }
+}

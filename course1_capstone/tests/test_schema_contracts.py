@@ -9,6 +9,7 @@ from pathlib import Path
 
 import jsonschema
 
+from course1_capstone import workflow as workflow_module
 from course1_capstone.workflow import (
     SYNTHETIC_CONFIRMATION,
     SafeStop,
@@ -45,6 +46,16 @@ class SchemaContractTests(unittest.TestCase):
                 jsonschema.Draft202012Validator.check_schema(
                     json.loads(path.read_text(encoding="utf-8"))
                 )
+        audit_schema = load_schema("audit_event.schema.json")
+        audit_branches = audit_schema["allOf"][0]["oneOf"]
+        schema_event_types = {
+            branch["properties"]["event_type"]["const"]
+            for branch in audit_branches
+        }
+        self.assertEqual(
+            schema_event_types,
+            set(workflow_module.AUDIT_EVENT_CONTRACTS),
+        )
 
     def test_every_generated_artifact_matches_its_schema(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -63,7 +74,7 @@ class SchemaContractTests(unittest.TestCase):
                 1,
                 True,
                 datetime(2099, 1, 1, tzinfo=timezone.utc),
-                datetime(2026, 7, 28, 10, 0, tzinfo=timezone.utc),
+                None,
             )
             with INPUT.open("r", encoding="utf-8-sig", newline="") as stream:
                 work_items = list(csv.DictReader(stream))
@@ -113,6 +124,27 @@ class SchemaContractTests(unittest.TestCase):
             validate(review_manifest, "review_manifest.schema.json")
             for event in audit_events:
                 validate(event, "audit_event.schema.json")
+            invalid_event = json.loads(json.dumps(audit_events[0]))
+            invalid_event["state"] = "needs_review"
+            with self.assertRaises(jsonschema.ValidationError):
+                validate(invalid_event, "audit_event.schema.json")
+            invalid_event = json.loads(json.dumps(audit_events[0]))
+            invalid_event["actor_type"] = "reviewer"
+            with self.assertRaises(jsonschema.ValidationError):
+                validate(invalid_event, "audit_event.schema.json")
+            invalid_event = json.loads(json.dumps(audit_events[0]))
+            invalid_event["details"]["unexpected"] = "not permitted"
+            with self.assertRaises(jsonschema.ValidationError):
+                validate(invalid_event, "audit_event.schema.json")
+            decision_event = next(
+                event
+                for event in audit_events
+                if event["event_type"] == "review_decision_recorded"
+            )
+            invalid_event = json.loads(json.dumps(decision_event))
+            invalid_event["details"]["decision"] = "edit"
+            with self.assertRaises(jsonschema.ValidationError):
+                validate(invalid_event, "audit_event.schema.json")
 
             invalid_state = dict(state)
             invalid_state["external_actions"] = False

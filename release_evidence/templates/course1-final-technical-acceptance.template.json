@@ -1,0 +1,176 @@
+{
+  "schemaVersion": "course1-final-technical-acceptance-v1",
+  "decision": "ACCEPTED_AFTER_DEPLOYMENT",
+  "courseId": "course-1-controlled-ai-workflow-foundations",
+  "candidate": {
+    "artifactFormat": "manifest-v1",
+    "commit": "REPLACE_WITH_FULL_40_CHARACTER_COMMIT_SHA",
+    "courseVersion": "REPLACE_WITH_APP_DIST_VERSION_JSON_VALUE",
+    "buildId": "REPLACE_WITH_APP_DIST_VERSION_JSON_VALUE",
+    "contentHash": "REPLACE_WITH_APP_DIST_VERSION_JSON_VALUE",
+    "assetManifestSha256": "REPLACE_WITH_SHA256_OF_APP_DIST_ASSET_MANIFEST_JSON",
+    "artifactTreeSha256": "REPLACE_WITH_WHOLE_ARTIFACT_TREE_SHA256"
+  },
+  "deployment": {
+    "publicUrl": "https://REPLACE_WITH_GITHUB_PAGES_HOST/ai-workflow-course/",
+    "promotionWorkflowRunId": "REPLACE_WITH_NUMERIC_GITHUB_ACTIONS_RUN_ID",
+    "deploymentId": "REPLACE_WITH_GITHUB_PAGES_DEPLOYMENT_ID",
+    "deployedAt": "REPLACE_WITH_ISO_8601_TIMESTAMP_AND_TIMEZONE",
+    "publicCommit": "REPLACE_WITH_FULL_40_CHARACTER_COMMIT_SHA",
+    "publicBuildId": "REPLACE_WITH_PUBLIC_VERSION_JSON_VALUE",
+    "publicContentHash": "REPLACE_WITH_PUBLIC_VERSION_JSON_VALUE",
+    "publicAssetManifestSha256": "REPLACE_WITH_PUBLIC_ASSET_MANIFEST_SHA256",
+    "publicServedTreeSha256": "REPLACE_WITH_EXACT_REDOWNLOADED_PUBLIC_SERVED_TREE_SHA256",
+    "nonPublicArtifactFiles": [
+      ".nojekyll"
+    ]
+  },
+  "adjudicatedAt": "REPLACE_WITH_ISO_8601_TIMESTAMP_AND_TIMEZONE",
+  "reviewer": {
+    "name": "REPLACE_WITH_REVIEWER_NAME",
+    "independentOfImplementation": true
+  },
+  "promotionAcceptanceRecord": {
+    "path": "release_evidence/REPLACE_WITH_PROMOTION_ACCEPTANCE_RECORD.json",
+    "sha256": "REPLACE_WITH_SHA256_OF_THE_EXACT_PROMOTION_RECORD"
+  },
+  "promotionDependentFindingIds": [
+    "C1-GOV-002",
+    "C1-GOV-005",
+    "C1-GOV-006"
+  ],
+  "evidence": [
+    {
+      "path": "release_evidence/C1-TST-BROWSER-MATRIX-001.json",
+      "sha256": "REPLACE_WITH_SHA256_OF_THE_EXACT_EVIDENCE_FILE"
+    },
+    {
+      "path": "release_evidence/C1-TST-CAP-001.json",
+      "sha256": "REPLACE_WITH_SHA256_OF_THE_EXACT_EVIDENCE_FILE"
+    },
+    {
+      "path": "release_evidence/C1-TST-CAP-002.json",
+      "sha256": "REPLACE_WITH_SHA256_OF_THE_EXACT_EVIDENCE_FILE"
+    },
+    {
+      "path": "release_evidence/C1-TST-CAP-003.json",
+      "sha256": "REPLACE_WITH_SHA256_OF_THE_EXACT_EVIDENCE_FILE"
+    },
+    {
+      "path": "release_evidence/C1-TST-CAP-005.json",
+      "sha256": "REPLACE_WITH_SHA256_OF_THE_EXACT_EVIDENCE_FILE"
+    },
+    {
+      "path": "release_evidence/C1-TST-DATA-001.json",
+      "sha256": "REPLACE_WITH_SHA256_OF_THE_EXACT_EVIDENCE_FILE"
+    },
+    {
+      "path": "release_evidence/C1-TST-FS-001.json",
+      "sha256": "REPLACE_WITH_SHA256_OF_THE_EXACT_EVIDENCE_FILE"
+    },
+    {
+      "path": "release_evidence/C1-TST-FS-002.json",
+      "sha256": "REPLACE_WITH_SHA256_OF_THE_EXACT_EVIDENCE_FILE"
+    },
+    {
+      "path": "release_evidence/C1-TST-FS-003.json",
+      "sha256": "REPLACE_WITH_SHA256_OF_THE_EXACT_EVIDENCE_FILE"
+    },
+    {
+      "path": "release_evidence/C1-TST-FS-004.json",
+      "sha256": "REPLACE_WITH_SHA256_OF_THE_EXACT_EVIDENCE_FILE"
+    },
+    {
+      "path": "release_evidence/C1-TST-FS-005.json",
+      "sha256": "REPLACE_WITH_SHA256_OF_THE_EXACT_EVIDENCE_FILE"
+    },
+    {
+      "path": "release_evidence/C1-TST-FS-006.json",
+      "sha256": "REPLACE_WITH_SHA256_OF_THE_EXACT_EVIDENCE_FILE"
+    },
+    {
+      "path": "release_evidence/C1-TST-FS-007.json",
+      "sha256": "REPLACE_WITH_SHA256_OF_THE_EXACT_EVIDENCE_FILE"
+    },
+    {
+      "path": "release_evidence/C1-TST-FS-008.json",
+      "sha256": "REPLACE_WITH_SHA256_OF_THE_EXACT_EVIDENCE_FILE"
+    },
+    {
+      "path": "release_evidence/C1-TST-FS-009.json",
+      "sha256": "REPLACE_WITH_SHA256_OF_THE_EXACT_EVIDENCE_FILE"
+    },
+    {
+      "path": "release_evidence/C1-TST-FS-010.json",
+      "sha256": "REPLACE_WITH_SHA256_OF_THE_EXACT_EVIDENCE_FILE"
+    },
+    {
+      "path": "release_evidence/C1-TST-FS-011.json",
+      "sha256": "REPLACE_WITH_SHA256_OF_THE_EXACT_EVIDENCE_FILE"
+    },
+    {
+      "path": "release_evidence/C1-TST-IO-001.json",
+      "sha256": "REPLACE_WITH_SHA256_OF_THE_EXACT_EVIDENCE_FILE"
+    },
+    {
+      "path": "release_evidence/C1-TST-IO-002.json",
+      "sha256": "REPLACE_WITH_SHA256_OF_THE_EXACT_EVIDENCE_FILE"
+    },
+    {
+      "path": "release_evidence/C1-TST-ORACLE-001.json",
+      "sha256": "REPLACE_WITH_SHA256_OF_THE_EXACT_EVIDENCE_FILE"
+    },
+    {
+      "path": "release_evidence/C1-TST-PROV-001.json",
+      "sha256": "REPLACE_WITH_SHA256_OF_THE_EXACT_POST_DEPLOY_EVIDENCE_FILE"
+    },
+    {
+      "path": "release_evidence/C1-TST-PWA-BACKUP-001.json",
+      "sha256": "REPLACE_WITH_SHA256_OF_THE_EXACT_EVIDENCE_FILE"
+    },
+    {
+      "path": "release_evidence/C1-TST-PWA-NET-001.json",
+      "sha256": "REPLACE_WITH_SHA256_OF_THE_EXACT_EVIDENCE_FILE"
+    },
+    {
+      "path": "release_evidence/C1-TST-PWA-STORAGE-001.json",
+      "sha256": "REPLACE_WITH_SHA256_OF_THE_EXACT_EVIDENCE_FILE"
+    },
+    {
+      "path": "release_evidence/C1-TST-QUALITY-001.json",
+      "sha256": "REPLACE_WITH_SHA256_OF_THE_EXACT_EVIDENCE_FILE"
+    },
+    {
+      "path": "release_evidence/C1-TST-RECOVERY-001.json",
+      "sha256": "REPLACE_WITH_SHA256_OF_THE_EXACT_EVIDENCE_FILE"
+    },
+    {
+      "path": "release_evidence/C1-TST-SC-001.json",
+      "sha256": "REPLACE_WITH_SHA256_OF_THE_EXACT_EVIDENCE_FILE"
+    },
+    {
+      "path": "release_evidence/C1-TST-SW-001.json",
+      "sha256": "REPLACE_WITH_SHA256_OF_THE_EXACT_EVIDENCE_FILE"
+    },
+    {
+      "path": "release_evidence/C1-TST-SW-002.json",
+      "sha256": "REPLACE_WITH_SHA256_OF_THE_EXACT_EVIDENCE_FILE"
+    },
+    {
+      "path": "release_evidence/C1-TST-WEB-001.json",
+      "sha256": "REPLACE_WITH_SHA256_OF_THE_EXACT_EVIDENCE_FILE"
+    },
+    {
+      "path": "release_evidence/C1-TST-WEB-002.json",
+      "sha256": "REPLACE_WITH_SHA256_OF_THE_EXACT_EVIDENCE_FILE"
+    },
+    {
+      "path": "release_evidence/C1-TST-WEB-003.json",
+      "sha256": "REPLACE_WITH_SHA256_OF_THE_EXACT_EVIDENCE_FILE"
+    },
+    {
+      "path": "release_evidence/C1-TST-WIN-E2E-001.json",
+      "sha256": "REPLACE_WITH_SHA256_OF_THE_EXACT_EVIDENCE_FILE"
+    }
+  ]
+}

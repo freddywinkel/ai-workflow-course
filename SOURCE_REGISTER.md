@@ -71,6 +71,24 @@ process, contracts, tests, human control, failures, ownership, and evidence.
 
 ## Source maintenance rules
 
+`source_claims.json` is the machine-readable claim-level control for every URL
+in this register. Each entry records a stable source ID, topic, exact locator,
+course use, owner, access date, maximum age, automated or manual availability
+check, and review triggers. A URL merely opening is not evidence that the
+supported claim remains correct.
+
+Run the deterministic ownership and freshness gate from the course root:
+
+```powershell
+python tools\audit_course1_sources.py
+```
+
+Maintainers and continuous integration use `--online` to check configured
+official pages and save the JSON report. Sources marked `manual-browser` still
+require a human to open the named locator and compare the claim. A stale,
+unavailable, moved, or materially changed source reopens the affected ledger
+item; it must not be silently treated as current.
+
 For every material update:
 
 1. open the official source;

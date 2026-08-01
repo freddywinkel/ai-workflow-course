@@ -2,6 +2,8 @@
 <html lang="en" data-theme="system">
   <head>
     <meta charset="utf-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; manifest-src 'self'; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta name="referrer" content="no-referrer">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" id="theme-color-meta" content="#f6f3ec">
     <meta name="color-scheme" content="light dark">
@@ -13,28 +15,8 @@
     <link rel="manifest" href="__BASE_PATH__manifest.webmanifest">
     <link rel="icon" href="__BASE_PATH__favicon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="__BASE_PATH__icons/apple-touch-icon.png">
-    <script>
-      try {
-        const savedAppearance = JSON.parse(
-          localStorage.getItem("ai-workflow-course-state-v1") || "null",
-        );
-        if (["system", "light", "dark"].includes(savedAppearance?.theme)) {
-          document.documentElement.dataset.theme = savedAppearance.theme;
-        }
-      } catch {
-        // The default system theme remains safe when storage is unavailable.
-      }
-    </script>
+    <script src="__BASE_PATH__bootstrap.js"></script>
     <link rel="stylesheet" href="__BASE_PATH__styles.css">
-    <script>
-      window.__COURSE_APP__ = Object.freeze({
-        basePath: "__BASE_PATH__",
-        buildId: "__BUILD_ID__",
-        courseVersion: "__COURSE_VERSION__",
-        verifiedThrough: "__VERIFIED_THROUGH__",
-        repositoryUrl: "https://github.com/freddywinkel/ai-workflow-course"
-      });
-    </script>
   </head>
   <body>
     <a class="skip-link" href="#main-content">Skip to course content</a>
@@ -50,10 +32,11 @@
           <img src="__BASE_PATH__favicon.svg" width="38" height="38" alt="">
           <span>
             <strong>Controlled artificial intelligence</strong>
-            <small>Course 1 · Dutch small-business consulting path</small>
+            <small>Course 1 · UNVERIFIED personal-study edition</small>
           </span>
         </a>
         <div class="topbar-actions">
+          <span class="release-pill" aria-label="Product status: UNVERIFIED personal-study release">UNVERIFIED</span>
           <span class="connection-pill" id="connection-pill" role="status">
             <span class="status-dot" aria-hidden="true"></span>
             <span id="connection-text">Online</span>
@@ -66,6 +49,11 @@
           </button>
         </div>
       </header>
+
+      <aside class="release-boundary" id="release-boundary" role="note" aria-labelledby="release-boundary-title">
+        <strong id="release-boundary-title">UNVERIFIED personal-study release</strong>
+        <span>Use synthetic data only. This published study copy cannot award Course 1 completion or prove Course 2, consulting, client, or production readiness.</span>
+      </aside>
 
       <div class="workspace">
         <aside class="sidebar" id="course-sidebar" aria-label="Course navigation">
@@ -177,10 +165,10 @@
             </section>
             <section class="learner-notes" aria-labelledby="notes-title">
               <div>
-                <span class="eyebrow">Private device note</span>
+                <span class="eyebrow">Local learning note</span>
                 <h2><label id="notes-title" for="learner-note">What do you want to remember?</label></h2>
               </div>
-              <textarea id="learner-note" rows="5" maxlength="50000" aria-labelledby="notes-title" placeholder="Stored only in this browser or installed course. Never paste secrets or real client data."></textarea>
+              <textarea id="learner-note" rows="5" maxlength="50000" aria-labelledby="notes-title" placeholder="Stored in this browser profile. Never paste secrets or real client, employer, workplace, personal, or medical data."></textarea>
               <span class="save-status" id="note-save-status" role="status">Not yet edited</span>
             </section>
             <nav class="document-pager" aria-label="Previous and next course pages">
@@ -214,7 +202,7 @@
             <div class="page-heading">
               <span class="eyebrow">Your device</span>
               <h1>Application and reading settings</h1>
-              <p>Your progress and notes stay on this device. They are not sent to GitHub, the online service that hosts this course, or to an artificial intelligence provider.</p>
+              <p>The app does not send progress or notes to GitHub or an artificial intelligence provider. They remain in this browser profile, but scripts on other pages under the same freddywinkel.github.io website origin could technically access the same browser storage. Use learning notes only; never enter sensitive, client, employer, workplace, personal, or medical information.</p>
             </div>
             <div class="settings-grid">
               <section class="settings-card">
@@ -255,7 +243,10 @@
                 <h2>Course updates</h2>
                 <dl>
                   <div><dt>Course version</dt><dd id="settings-course-version">—</dd></div>
-                  <div><dt>Verified through</dt><dd id="settings-verified-date">—</dd></div>
+                  <div><dt>Product status</dt><dd id="settings-product-status">—</dd></div>
+                  <div><dt>Distribution purpose</dt><dd id="settings-distribution-purpose">—</dd></div>
+                  <div><dt>Research and sources verified through</dt><dd id="settings-source-verified-date">—</dd></div>
+                  <div><dt>Course content revised through</dt><dd id="settings-content-revision-date">—</dd></div>
                   <div><dt>Installed release</dt><dd><code id="settings-build-id">—</code></dd></div>
                   <div><dt>Last checked</dt><dd id="last-update-check">Not yet</dd></div>
                 </dl>
@@ -269,7 +260,7 @@
                   </svg>
                 </span>
                 <h2>Progress backup</h2>
-                <p>Export a small data backup of pages read, practical self-checks, private notes, and reading settings before clearing browser data or moving to another device.</p>
+                <p>Export a small data backup of pages read, practical self-checks, local learning notes, and reading settings before clearing browser data or moving to another device. Treat the backup like the notes it contains.</p>
                 <div class="button-row">
                   <button class="button button-quiet" id="export-progress" type="button">Export</button>
                   <label class="button button-quiet file-button">
@@ -323,8 +314,8 @@
 
     <div class="update-banner" id="update-banner" role="status" aria-live="polite" hidden>
       <div>
-        <strong>A revised Course 1 is ready</strong>
-        <p>Your progress will stay on this device.</p>
+        <strong>A revised personal-study version is ready</strong>
+        <p>Status remains UNVERIFIED. Your progress will stay on this device.</p>
       </div>
       <div class="button-row">
         <button class="button button-quiet" id="update-later" type="button">Later</button>

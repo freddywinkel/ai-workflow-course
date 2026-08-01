@@ -9,6 +9,9 @@ It checks:
 - Course 1 program, course, career, group, and document metadata;
 - normalized configured lesson paths, stable current and legacy IDs, unique
   paths, and ISO revision dates;
+- the closed date-semantics contract: content revisions are derived from
+  bundled pages, source verification is tied to `source_claims.json`, and the
+  legacy `verifiedThrough` field is only a source-date compatibility alias;
 - exactly 9 ordered foundation and 9 ordered module progress lessons;
 - the shared heading contract in all 9 modules;
 - the four-part beginner practice contract in all 18 progress lessons:
@@ -28,7 +31,7 @@ It checks:
 Run from the course root:
 
 ```powershell
-python tools\validate_package.py
+python tools\validate_package.py --scope course1
 ```
 
 The script always writes
@@ -40,6 +43,7 @@ You can validate another copy or write a temporary report:
 ```powershell
 python tools\validate_package.py --root C:\path\to\course
 python tools\validate_package.py --report C:\path\to\report.md
+python tools\validate_package.py --scope full --report C:\path\to\course4-report.md
 ```
 
 Paths containing spaces should be quoted.
@@ -51,8 +55,8 @@ PyYAML are installed, it also performs Draft 2020-12 schema
 meta-validation and parses `stack-manifest.yaml`.
 
 ```powershell
-python -m pip install -r tools\requirements-validation.txt
-python tools\validate_package.py
+python -m pip install --require-hashes -r tools\requirements-validation.txt
+python tools\validate_package.py --scope course1
 ```
 
 If those packages are absent, the report contains explicit warnings. Their
@@ -61,7 +65,12 @@ practice-data, or link checks.
 
 ## Validation scope
 
-The validator covers the **current Course 1 package**. It deliberately ignores:
+The default `course1` scope covers the **current Course 1 package**. It verifies
+that Course 4 remains non-core, outside the Course 1 sequence, and readable by
+the shared PWA, but does not accept Course 4 lesson content or its runnable
+implementation. The separate Course 4 workflow uses `--scope full`.
+
+The validator deliberately ignores:
 
 - `future_courses/`, which contains archived source material and proposed later
   courses;
@@ -72,6 +81,151 @@ The validator covers the **current Course 1 package**. It deliberately ignores:
 Current Markdown source elsewhere in the package remains in scope. A moved or
 deleted current lesson therefore cannot disappear merely because an old copy
 still exists in `future_courses/`.
+
+The current source manifest uses curriculum schema version 3. The generated
+PWA bundle remains schema version 2 for installed-client compatibility. See
+[`audit_control/course1/curriculum_date_contract.json`](../audit_control/course1/curriculum_date_contract.json)
+for the separate meanings, owners, evidence sources, and consumers of
+`sourceVerifiedThrough`, `contentRevisionThrough`, and the deprecated
+`verifiedThrough` alias.
+
+## Dependency and source maintenance gates
+
+[`audit_course1_supply_chain.py`](audit_course1_supply_chain.py) checks exact
+Python pins and the complete PyPI artifact lock against
+`supply_chain/course1-dependencies.json`, the licence allow-list,
+hash-required installation policy, the tracked CycloneDX 1.6 Software Bill of
+Materials (SBOM), full-commit GitHub Action inventory, fixed toolchains,
+workflow permissions, and the dependency-free Node lock. With `--online`, it
+also compares official PyPI artifact metadata, checks PyPI and Open Source
+Vulnerabilities (OSV) records, checks GitHub advisories for Python and Actions,
+resolves every reviewed Action tag to its recorded commit, and validates the
+SBOM against the official CycloneDX schema:
+
+```powershell
+python tools\audit_course1_supply_chain.py
+python tools\audit_course1_supply_chain.py --online --report C:\path\to\supply.json
+```
+
+[`audit_course1_sources.py`](audit_course1_sources.py) checks the one-to-one
+source-register mapping plus claim ownership, locator, freshness, and review
+triggers. `--online` requests sources configured for automation; entries marked
+`manual-browser` still need human review:
+
+```powershell
+python tools\audit_course1_sources.py
+python tools\audit_course1_sources.py --online --report C:\path\to\sources.json
+```
+
+The scheduled workflow runs both online gates and `npm audit`. Dependabot
+monitors the two Python requirement locations, the PWA package lock, and
+GitHub Actions. Hash-required clean installation and local full-commit Action
+checks are automated. Repository security settings, the resolved hosted-runner
+image revision, and the exact browser binary used by a hosted run remain
+separate repository/run evidence.
+
+## Maintainer-only quality gate
+
+This is release-maintainer validation, not a learner setup step. Install the
+learner test dependencies and the separate coverage dependency into a
+disposable virtual environment, then run:
+
+```powershell
+python -m pip install --require-hashes -r requirements-course.txt -r tools\requirements-maintainer.txt
+$nodeExe = (Get-Command node).Source
+python tools\accept_course1_quality.py --node $nodeExe --report C:\path\to\course1-quality.json
+```
+
+The closed contract is
+[`quality/course1-quality-contract.json`](../quality/course1-quality-contract.json).
+One invocation independently reports:
+
+- line and branch coverage for the critical Python and importable PWA security
+  modules, with both thresholds fixed at 90%;
+- the persistent regression corpus plus generated Python and PWA properties;
+- exactly one caught mutant for each of nine named security families;
+- exactly one caught deliberately broken implementation for each of 12
+  cross-system control families; and
+- separation of learner dependencies from maintainer-only coverage tooling.
+
+Mutation and negative-control edits happen only in unique temporary copies.
+The runner also confirms that the live source hashes did not change. The
+service worker is exercised by controlled browser and mutation tests rather
+than misrepresented as Node import coverage. `--skip-mutations` exists only to
+shorten repair iterations: it records a failure and is never valid release
+evidence.
+
+## Promotion and rollback controls
+
+[`verify_course1_study_release.py`](verify_course1_study_release.py) is the
+separate fail-closed gate for the authorized version 2.6.0 personal-study
+publication. It requires product status `UNVERIFIED`, distribution purpose
+`personal-synthetic-study`, the exact full commit and artifact identity, no
+known open/partial/reopened defect, only the explicitly allowlisted missing
+human/live evidence, and the fixed synthetic-only boundary in the PWA. Passing
+it permits study distribution only; it is not accepted promotion, Course 1
+completion, or Course 2 readiness.
+
+[`verify_course1_public_artifact.py`](verify_course1_public_artifact.py) runs
+after that artifact is deployed. It redownloads and byte-compares the exact 16
+public-served files, recomputes their tree SHA-256, rechecks the public version
+identity, and records `.nojekyll` separately as an uploaded control that is
+expected to return HTTP 404. It retries normal GitHub Pages propagation and
+writes machine-readable live evidence.
+
+[`verify_course1_promotion.py`](verify_course1_promotion.py) is an intended
+fail-closed workflow gate, not a learner command. Its currently tested cases
+match an immutable post-review JSON record to the built commit, course version,
+build ID, content hash, asset manifest, complete artifact-tree fingerprint,
+reviewer, required gates, and authoritative ledger. Generate the candidate
+identity block with
+[`course1_artifact_identity.py`](course1_artifact_identity.py). Normal
+`manifest-v1` artifacts require the same full 40-character commit in
+`version.json`, the manifest, service worker, and record. Its
+`--operation rollback` mode uses the separate rollback authorization contract
+so recovery remains available when the ledger is `REPAIR REQUIRED`; only the
+exact allowlisted `legacy-v2.5` artifact may omit the asset manifest.
+
+The tested promotion and rollback cases require the exact current 30-ID ledger
+inventory in exact six-column authoritative tables and reject missing,
+malformed, unbackticked, wrong-family, duplicate, shifted, unknown, `OPEN`,
+`REOPENED`, and `PARTIAL` rows, including finding-like rows hidden in block
+quotes. `EVIDENCE PENDING` is permitted only for the three named
+live-promotion gates. Acceptance records and referenced evidence use closed
+objects; duplicate JSON keys, unknown fields, unsafe or missing paths, hash
+mismatches, and evidence bound to another candidate all fail. Each technical
+record must also hash-bind non-empty raw files covering every manifest-declared
+procedure and environment; a self-authored command/environment summary does
+not satisfy the gate.
+Promotion requires the exact 32-test
+pre-deployment evidence set; the post-deploy provenance test remains pending
+until the public artifact exists.
+[`verify_course1_final_acceptance.py`](verify_course1_final_acceptance.py)
+is the separate final technical gate. It redownloads the preserved promotion
+artifact through the dedicated workflow, revalidates the exact prior
+promotion record, public/candidate identity and chronology, and requires the
+complete 33-test evidence set including `C1-TST-PROV-001`. Its presence does
+not change any current `UNVERIFIED` result.
+
+Rollback requires the exact provenance,
+recovery, and old-client test set, and it verifies the hash, closed shape,
+independent decision, candidate identity, timestamp, gates, and complete
+technical evidence of the named prior accepted promotion record. The
+rollback-only v2.5 exception is pinned to the exact historical Markdown path
+and SHA-256. This closes the reproduced parser bypasses under `C1-GOV-012`; it
+does not supply missing release evidence. Run the regression suite with:
+
+```powershell
+python -m unittest discover -s tools/tests -p "test_*.py"
+```
+
+[`rehearse_course1_rollback.ps1`](rehearse_course1_rollback.ps1) locally
+promotes and restores copies of two supplied PWA artifacts in a unique
+temporary directory, compares every restored file hash, and verifies that a
+supplied learner-state backup remains unchanged and is readable by the rollback
+target's known state schema. Follow
+[`ROLLBACK_RUNBOOK.md`](../ROLLBACK_RUNBOOK.md); a local rehearsal does not
+prove a public or installed-client rollback.
 
 ## Practice-data control
 

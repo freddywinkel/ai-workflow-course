@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "seed": 271828182,
+  "generatedCasesPerProperty": 250,
+  "dangerousUrlFragments": [
+    "http://example.com/plain-http",
+    "javascript:alert(1)",
+    "data:text/html,<svg onload=alert(1)>",
+    "vbscript:msgbox(1)",
+    "//evil.example/path",
+    "https://user:password@example.com/",
+    "https://example.com/%00",
+    "https://example.com/%0aheader",
+    "https://example.com/%2f%2fevil",
+    "https:\\\\evil.example",
+    "\u0000https://example.com"
+  ],
+  "safeUrlFragments": [
+    "#section-1",
+    "/ai-workflow-course/",
+    "../lesson.md",
+    "templates/uat_script.md",
+    "https://example.com/reference?q=synthetic"
+  ],
+  "jsonDepthBoundaries": [
+    0,
+    1,
+    11,
+    12,
+    13
+  ],
+  "noteCodePointBoundaries": [
+    0,
+    1,
+    49999,
+    50000,
+    50001
+  ],
+  "regressions": [
+    {
+      "id": "PWA-PROP-001",
+      "reason": "Plain HTTP, encoded control characters, and credentialed URLs must stay inert."
+    },
+    {
+      "id": "PWA-PROP-002",
+      "reason": "Disjoint concurrent edits must merge without losing either writer."
+    },
+    {
+      "id": "PWA-PROP-003",
+      "reason": "Same-field concurrent note edits must remain explicit conflicts."
+    },
+    {
+      "id": "PWA-PROP-004",
+      "reason": "Storage envelopes must round-trip only with the exact closed shape."
+    },
+    {
+      "id": "PWA-PROP-005",
+      "reason": "JSON nesting and note limits must accept the exact boundary and reject boundary plus one."
+    }
+  ]
+}

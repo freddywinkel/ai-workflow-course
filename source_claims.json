@@ -1,0 +1,438 @@
+{
+  "schemaVersion": 1,
+  "verifiedThrough": "2026-07-28",
+  "entries": [
+    {
+      "id": "SRC-MARKET-001",
+      "category": "market",
+      "topic": "AI adoption and barriers by Dutch business size",
+      "url": "https://www.cbs.nl/nl-nl/nieuws/2025/50/bedrijven-gebruiken-ai-vaakst-voor-marketing-of-verkoop",
+      "locator": "CBS article and linked StatLine evidence",
+      "courseUse": "Target-market context only; not customer-demand proof",
+      "owner": "market-evidence owner",
+      "lastVerified": "2026-07-28",
+      "maxAgeDays": 84,
+      "automatedCheck": "get",
+      "reviewTriggers": [
+        "new CBS business-size AI adoption release",
+        "course target-market claim changes"
+      ]
+    },
+    {
+      "id": "SRC-MARKET-002",
+      "category": "market",
+      "topic": "Dutch business automation response to staff shortages",
+      "url": "https://www.cbs.nl/nl-nl/nieuws/2026/23/bedrijven-zetten-meer-in-op-automatisering-door-personeelstekort",
+      "locator": "CBS article findings on automation measures",
+      "courseUse": "Measure process improvement rather than sell AI novelty",
+      "owner": "market-evidence owner",
+      "lastVerified": "2026-07-28",
+      "maxAgeDays": 84,
+      "automatedCheck": "get",
+      "reviewTriggers": [
+        "new CBS automation release",
+        "course value proposition changes"
+      ]
+    },
+    {
+      "id": "SRC-MARKET-003",
+      "category": "market",
+      "topic": "Small and medium-sized enterprise AI readiness",
+      "url": "https://www.oecd.org/en/publications/ai-adoption-by-small-and-medium-sized-enterprises_426399c1-en.html",
+      "locator": "OECD publication overview and policy findings",
+      "courseUse": "Data, skills, leadership, integration, and iterative adoption",
+      "owner": "market-evidence owner",
+      "lastVerified": "2026-07-28",
+      "maxAgeDays": 84,
+      "automatedCheck": "manual-browser",
+      "reviewTriggers": [
+        "new OECD SME AI adoption edition",
+        "publication becomes unavailable"
+      ]
+    },
+    {
+      "id": "SRC-LAW-001",
+      "category": "legal-guidance",
+      "topic": "General Data Protection Regulation accountability",
+      "url": "https://autoriteitpersoonsgegevens.nl/themas/basis-avg/avg-algemeen/verantwoordingsplicht",
+      "locator": "Autoriteit Persoonsgegevens accountability guidance",
+      "courseUse": "Basic accountability questions; no legal conclusion",
+      "owner": "privacy-source owner",
+      "lastVerified": "2026-07-28",
+      "maxAgeDays": 56,
+      "automatedCheck": "get",
+      "reviewTriggers": [
+        "Autoriteit Persoonsgegevens guidance changes",
+        "real-data scope is proposed"
+      ]
+    },
+    {
+      "id": "SRC-LAW-002",
+      "category": "legal-guidance",
+      "topic": "General Data Protection Regulation conditions for generative AI",
+      "url": "https://autoriteitpersoonsgegevens.nl/system/files?file=2025-05%2FAVG-Randvoorwaarden+voor+generatieve+AI.pdf",
+      "locator": "Autoriteit Persoonsgegevens PDF on conditions for generative AI",
+      "courseUse": "Data minimisation, roles, risks, and specialist escalation",
+      "owner": "privacy-source owner",
+      "lastVerified": "2026-07-28",
+      "maxAgeDays": 56,
+      "automatedCheck": "get",
+      "reviewTriggers": [
+        "document is replaced or withdrawn",
+        "provider-data guidance changes"
+      ]
+    },
+    {
+      "id": "SRC-LAW-003",
+      "category": "legal-guidance",
+      "topic": "European Union Artificial Intelligence Act roles and obligations",
+      "url": "https://digital-strategy.ec.europa.eu/en/faqs/navigating-ai-act",
+      "locator": "European Commission Navigating the AI Act questions and answers",
+      "courseUse": "Provider/deployer literacy and escalation; no classification advice",
+      "owner": "AI-Act source owner",
+      "lastVerified": "2026-07-28",
+      "maxAgeDays": 56,
+      "automatedCheck": "get",
+      "reviewTriggers": [
+        "AI Act application date",
+        "European Commission guidance changes"
+      ]
+    },
+    {
+      "id": "SRC-LAW-004",
+      "category": "legal-guidance",
+      "topic": "Artificial intelligence literacy",
+      "url": "https://digital-strategy.ec.europa.eu/en/faqs/ai-literacy-questions-answers",
+      "locator": "European Commission AI literacy questions and answers",
+      "courseUse": "Training appropriate to role, context, and risk",
+      "owner": "AI-Act source owner",
+      "lastVerified": "2026-07-28",
+      "maxAgeDays": 56,
+      "automatedCheck": "get",
+      "reviewTriggers": [
+        "AI literacy obligation or guidance changes",
+        "course role-readiness claim changes"
+      ]
+    },
+    {
+      "id": "SRC-LAW-005",
+      "category": "legal-guidance",
+      "topic": "Artificial Intelligence Act transparency guidance",
+      "url": "https://digital-strategy.ec.europa.eu/en/library/guidelines-transparency-obligations-providers-and-deployers-ai-systems",
+      "locator": "European Commission Article 50 transparency-guidelines page",
+      "courseUse": "Dated current-law reference; recheck before real use",
+      "owner": "AI-Act source owner",
+      "lastVerified": "2026-07-28",
+      "maxAgeDays": 56,
+      "automatedCheck": "get",
+      "reviewTriggers": [
+        "guidelines are amended or replaced",
+        "real client use is proposed"
+      ]
+    },
+    {
+      "id": "SRC-SEC-001",
+      "category": "security-guidance",
+      "topic": "Dutch digital resilience principles",
+      "url": "https://www.ncsc.nl/nieuws/ncsc-en-dtc-lanceren-gezamenlijke-basisprincipes-voor-digitale-weerbaarheid",
+      "locator": "NCSC and Digital Trust Center resilience principles",
+      "courseUse": "Identify, protect, limit access, prepare, and recover",
+      "owner": "security-source owner",
+      "lastVerified": "2026-07-28",
+      "maxAgeDays": 84,
+      "automatedCheck": "get",
+      "reviewTriggers": [
+        "NCSC or Digital Trust Center baseline changes",
+        "security lesson scope changes"
+      ]
+    },
+    {
+      "id": "SRC-RISK-001",
+      "category": "standard",
+      "topic": "Artificial Intelligence Risk Management Framework core",
+      "url": "https://airc.nist.gov/airmf-resources/airmf/5-sec-core/",
+      "locator": "NIST AI RMF Core functions and categories",
+      "courseUse": "Intended scope, testing, oversight, and lifecycle thinking",
+      "owner": "risk-framework owner",
+      "lastVerified": "2026-07-28",
+      "maxAgeDays": 84,
+      "automatedCheck": "get",
+      "reviewTriggers": [
+        "NIST AI RMF revision",
+        "evaluation framework changes"
+      ]
+    },
+    {
+      "id": "SRC-OAI-001",
+      "category": "vendor",
+      "topic": "OpenAI safety practices",
+      "url": "https://developers.openai.com/api/docs/guides/safety-best-practices",
+      "locator": "Official OpenAI safety best-practices guide",
+      "courseUse": "Later-course provider reference only",
+      "owner": "provider-source owner",
+      "lastVerified": "2026-07-28",
+      "maxAgeDays": 28,
+      "automatedCheck": "get",
+      "reviewTriggers": [
+        "OpenAI safety guidance changes",
+        "a live provider lab is revised"
+      ]
+    },
+    {
+      "id": "SRC-OAI-002",
+      "category": "vendor",
+      "topic": "OpenAI structured outputs",
+      "url": "https://developers.openai.com/api/docs/guides/structured-outputs",
+      "locator": "Official OpenAI structured-output guide",
+      "courseUse": "Later-course bounded-output reference only",
+      "owner": "provider-source owner",
+      "lastVerified": "2026-07-28",
+      "maxAgeDays": 28,
+      "automatedCheck": "get",
+      "reviewTriggers": [
+        "structured-output interface changes",
+        "a live provider lab is revised"
+      ]
+    },
+    {
+      "id": "SRC-OAI-003",
+      "category": "vendor",
+      "topic": "OpenAI Responses API migration",
+      "url": "https://developers.openai.com/api/docs/guides/migrate-to-responses",
+      "locator": "Official migration guide to the Responses API",
+      "courseUse": "Later-course provider pattern only",
+      "owner": "provider-source owner",
+      "lastVerified": "2026-07-28",
+      "maxAgeDays": 28,
+      "automatedCheck": "get",
+      "reviewTriggers": [
+        "Responses API changes",
+        "a live provider lab is revised"
+      ]
+    },
+    {
+      "id": "SRC-OAI-004",
+      "category": "vendor",
+      "topic": "OpenAI current model guidance",
+      "url": "https://developers.openai.com/api/docs/guides/latest-model",
+      "locator": "Official OpenAI latest-model guidance",
+      "courseUse": "Dated later-course model selection; never a durable Course 1 dependency",
+      "owner": "provider-source owner",
+      "lastVerified": "2026-07-28",
+      "maxAgeDays": 28,
+      "automatedCheck": "get",
+      "reviewTriggers": [
+        "recommended model changes",
+        "model-specific wording is published"
+      ]
+    },
+    {
+      "id": "SRC-OAI-005",
+      "category": "vendor",
+      "topic": "OpenAI application programming interface data controls",
+      "url": "https://developers.openai.com/api/docs/guides/your-data",
+      "locator": "Official OpenAI Your data guide",
+      "courseUse": "Later-course provider review; no real Course 1 data",
+      "owner": "provider-source owner",
+      "lastVerified": "2026-07-28",
+      "maxAgeDays": 28,
+      "automatedCheck": "get",
+      "reviewTriggers": [
+        "provider data-control terms change",
+        "a live provider lab is revised"
+      ]
+    },
+    {
+      "id": "SRC-N8N-001",
+      "category": "vendor",
+      "topic": "n8n installation with Node Package Manager",
+      "url": "https://docs.n8n.io/deploy/host-n8n/install-options/install-with-npm",
+      "locator": "Official n8n npm installation page",
+      "courseUse": "Optional visual-platform crosswalk; not required",
+      "owner": "workflow-platform owner",
+      "lastVerified": "2026-07-28",
+      "maxAgeDays": 28,
+      "automatedCheck": "get",
+      "reviewTriggers": [
+        "n8n installation support changes",
+        "optional platform lab changes"
+      ]
+    },
+    {
+      "id": "SRC-N8N-002",
+      "category": "vendor",
+      "topic": "n8n workflow concepts and errors",
+      "url": "https://docs.n8n.io/build/understand-workflows",
+      "locator": "Official n8n workflow-concepts documentation",
+      "courseUse": "Orchestration concepts; verify nodes before live use",
+      "owner": "workflow-platform owner",
+      "lastVerified": "2026-07-28",
+      "maxAgeDays": 28,
+      "automatedCheck": "get",
+      "reviewTriggers": [
+        "n8n workflow behavior changes",
+        "optional platform lab changes"
+      ]
+    },
+    {
+      "id": "SRC-MS-001",
+      "category": "vendor",
+      "topic": "Microsoft Copilot Studio agent flows",
+      "url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/flows-overview",
+      "locator": "Microsoft Learn agent-flows overview",
+      "courseUse": "Platform crosswalk and build-versus-buy context",
+      "owner": "workflow-platform owner",
+      "lastVerified": "2026-07-28",
+      "maxAgeDays": 28,
+      "automatedCheck": "get",
+      "reviewTriggers": [
+        "Copilot Studio flow capabilities change",
+        "Microsoft platform recommendation changes"
+      ]
+    },
+    {
+      "id": "SRC-GOOGLE-001",
+      "category": "vendor",
+      "topic": "Google Workspace Studio",
+      "url": "https://workspace.google.com/blog/product-announcements/introducing-google-workspace-studio-agents-for-everyday-work",
+      "locator": "Official Google Workspace announcement",
+      "courseUse": "Platform crosswalk and commoditisation context",
+      "owner": "workflow-platform owner",
+      "lastVerified": "2026-07-28",
+      "maxAgeDays": 28,
+      "automatedCheck": "get",
+      "reviewTriggers": [
+        "Workspace Studio availability or capabilities change",
+        "Google platform recommendation changes"
+      ]
+    },
+    {
+      "id": "SRC-DEV-001",
+      "category": "software",
+      "topic": "Python on Windows",
+      "url": "https://docs.python.org/3/using/windows.html",
+      "locator": "Official Using Python on Windows documentation",
+      "courseUse": "Supported beginner installation path",
+      "owner": "learning-stack owner",
+      "lastVerified": "2026-07-28",
+      "maxAgeDays": 56,
+      "automatedCheck": "get",
+      "reviewTriggers": [
+        "Python Windows installation guidance changes",
+        "supported Python range changes"
+      ]
+    },
+    {
+      "id": "SRC-DEV-002",
+      "category": "software",
+      "topic": "Python comma-separated-values module",
+      "url": "https://docs.python.org/3/library/csv.html",
+      "locator": "Official csv module documentation",
+      "courseUse": "Comma-separated-values behavior",
+      "owner": "learning-stack owner",
+      "lastVerified": "2026-07-28",
+      "maxAgeDays": 84,
+      "automatedCheck": "get",
+      "reviewTriggers": [
+        "supported Python behavior changes",
+        "CSV contract changes"
+      ]
+    },
+    {
+      "id": "SRC-DEV-003",
+      "category": "software",
+      "topic": "Python virtual environments",
+      "url": "https://docs.python.org/3/library/venv.html",
+      "locator": "Official venv documentation",
+      "courseUse": "Isolated learner environment",
+      "owner": "learning-stack owner",
+      "lastVerified": "2026-07-28",
+      "maxAgeDays": 56,
+      "automatedCheck": "get",
+      "reviewTriggers": [
+        "Python environment guidance changes",
+        "setup method changes"
+      ]
+    },
+    {
+      "id": "SRC-DEV-004",
+      "category": "software",
+      "topic": "pytest documentation",
+      "url": "https://docs.pytest.org/",
+      "locator": "Official pytest stable documentation",
+      "courseUse": "Pinned offline Course 1 testing tool",
+      "owner": "dependency owner",
+      "lastVerified": "2026-07-28",
+      "maxAgeDays": 28,
+      "automatedCheck": "get",
+      "reviewTriggers": [
+        "pytest release or security advisory",
+        "test-runner pin changes"
+      ]
+    },
+    {
+      "id": "SRC-DEV-005",
+      "category": "software",
+      "topic": "JavaScript Object Notation Schema",
+      "url": "https://json-schema.org/learn/getting-started-step-by-step",
+      "locator": "Official JSON Schema getting-started guide",
+      "courseUse": "Schema concepts and validation",
+      "owner": "learning-stack owner",
+      "lastVerified": "2026-07-28",
+      "maxAgeDays": 84,
+      "automatedCheck": "get",
+      "reviewTriggers": [
+        "JSON Schema draft support changes",
+        "schema contract changes"
+      ]
+    },
+    {
+      "id": "SRC-DEV-006",
+      "category": "software",
+      "topic": "Git documentation",
+      "url": "https://git-scm.com/doc",
+      "locator": "Official Git documentation index",
+      "courseUse": "Local version-control instructions",
+      "owner": "learning-stack owner",
+      "lastVerified": "2026-07-28",
+      "maxAgeDays": 84,
+      "automatedCheck": "get",
+      "reviewTriggers": [
+        "Git command behavior changes",
+        "version-control lesson changes"
+      ]
+    },
+    {
+      "id": "SRC-DEV-007",
+      "category": "software",
+      "topic": "Node.js supported downloads",
+      "url": "https://nodejs.org/en/download",
+      "locator": "Official Node.js download and release information",
+      "courseUse": "Maintainer-only PWA build runtime",
+      "owner": "PWA build owner",
+      "lastVerified": "2026-07-28",
+      "maxAgeDays": 28,
+      "automatedCheck": "get",
+      "reviewTriggers": [
+        "Node.js Long-Term Support changes",
+        "PWA build runtime changes"
+      ]
+    },
+    {
+      "id": "SRC-DEV-008",
+      "category": "software",
+      "topic": "Visual Studio Code documentation",
+      "url": "https://code.visualstudio.com/docs",
+      "locator": "Official Visual Studio Code documentation",
+      "courseUse": "Beginner editor setup",
+      "owner": "learning-stack owner",
+      "lastVerified": "2026-07-28",
+      "maxAgeDays": 56,
+      "automatedCheck": "get",
+      "reviewTriggers": [
+        "Visual Studio Code installation guidance changes",
+        "editor setup changes"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "course1-curriculum-date-contract-v1",
+  "courseId": "course-1-controlled-ai-workflow-foundations",
+  "fields": {
+    "sourceVerifiedThrough": {
+      "meaning": "Oldest date on which every current research or source claim was last semantically reviewed; this is not a content-edit date.",
+      "owner": "Source-claim owners",
+      "evidenceSource": "source_claims.json verifiedThrough and entries[].lastVerified",
+      "consumers": [
+        "app/scripts/build.mjs",
+        "app/src/app.js",
+        "tools/audit_course1_sources.py",
+        "tools/validate_package.py"
+      ]
+    },
+    "contentRevisionThrough": {
+      "meaning": "Latest revision date among the bundled curriculum documents; this does not assert that research or sources were reverified.",
+      "owner": "Curriculum maintainer",
+      "evidenceSource": "curriculum.json groups[].documents[].revision",
+      "consumers": [
+        "app/scripts/build.mjs",
+        "app/src/app.js",
+        "tools/validate_package.py"
+      ]
+    },
+    "verifiedThrough": {
+      "meaning": "Deprecated compatibility alias for sourceVerifiedThrough; it is not an independent verification claim and never limits content revisions.",
+      "owner": "PWA compatibility maintainer",
+      "evidenceSource": "curriculum.json course.sourceVerifiedThrough",
+      "consumers": [
+        "app/scripts/build.mjs",
+        "app/src/sw.js"
+      ]
+    }
+  }
+}

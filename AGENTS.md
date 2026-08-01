@@ -37,3 +37,48 @@ The project may change direction when better evidence supports a better goal. Do
 - Use only synthetic data in course demonstrations unless the user explicitly authorizes a separately assessed use.
 - Never activate paid billing or use real client, medical, personal, confidential, or regulated data without explicit user approval.
 - Keep beginner instructions concrete: explain, demonstrate, let the learner recreate, and verify the result.
+
+## Course 1 product-status gate
+
+Before auditing, repairing, releasing, or declaring Course 1 complete, read
+`COURSE_1_AUDIT_STATUS_AND_REPAIR_LEDGER.md`.
+
+- The ledger is authoritative for current status and reopened findings.
+- Dated acceptance records remain historical evidence and cannot override a
+  later `REPAIR REQUIRED` or `UNVERIFIED` decision.
+- Do not close a finding without its named reproducible closure evidence.
+- Do not call a release `PASS` while a High or Medium Course 1 finding is open.
+- Keep Course 1 and Course 4 statuses, tests, and release decisions separate.
+- Never restore direct-push publishing. An accepted Course 1 release requires
+  candidate validation, independent post-build acceptance, manual
+  exact-artifact promotion, immediate live verification, and the separate
+  controlled rollback path in `ROLLBACK_RUNBOOK.md`.
+- A separately authorized `UNVERIFIED` personal-study publication may omit
+  learner-completion and competence evidence only when it remains visibly
+  limited to synthetic personal study, runs the complete automated technical
+  gates, deploys the exact tested artifact, preserves rollback and learner
+  state, and cannot be mistaken for Course 1 `PASS` or Course 2 readiness.
+
+## Course 1 ground-up audit gate
+
+When an audit, review, or product-pass request says “full,” “final,” “last,”
+“100%,” “from the ground up,” or “full product pass,” follow
+`COURSE_1_GROUND_UP_AUDIT_PROTOCOL.md`. Use
+`COURSE_1_AUDIT_REQUEST_TEMPLATE.md` when a reusable request is needed.
+
+- Start with the protocol's read-only diagnosis. Freeze the untouched baseline,
+  enumerate the complete requirement universe, build the
+  requirement-test-evidence graph, challenge the audit controls, and finish
+  the audit-of-the-audit before proposing repairs.
+- Do not inherit a previous `PASS`, green suite, evidence report, or audit
+  checklist as current truth.
+- Keep diagnosis, approved repair, independent post-repair re-audit, and
+  release acceptance as separate modes. Do not begin repair until the user
+  approves the diagnostic repair plan.
+- `EVERGREEN_UPDATE_PROMPT.md` is a time-sensitive delta-audit module. It
+  cannot substitute for the ground-up protocol.
+- When a requirement, finding status, schema value, or evidence vocabulary
+  changes, update every producer and consumer together. Unknown or malformed
+  values must fail closed.
+- Any material change after evidence collection invalidates the affected
+  evidence. Run one complete integrated audit after the final material change.

@@ -24,6 +24,20 @@ page. Mark **Practical** complete only after you finish all four parts below:
 3. have Codex check your interpretation without changing anything; and
 4. meet every pass criterion.
 
+## Study plan — two blocks of no more than 60 minutes
+
+**Time label: AUTHOR ESTIMATE — NOT BEGINNER MEASURED.** The published
+1–2-hour range is a planning estimate, not measured novice completion time.
+Use each row as a separate study segment. Stop when the row is complete or
+when 60 focused minutes have elapsed, whichever happens first. Record the last
+completed heading using synthetic wording, close the page, and take a break.
+Resume from that heading; never combine blocks to catch up.
+
+| Block | Maximum | Work and safe stopping point |
+|---:|---:|---|
+| 1 | 45 minutes | Learn the terms, read the dated baseline, and follow the worked classification. Stop after **Worked classification**. |
+| 2 | 60 minutes | Recreate the current read-only classification, explain the next manual action, ask Codex to check it, and apply the pass criteria. Stop after saving the result for Windows Setup. |
+
 Terms used below:
 
 - **Git** is a version-control tool that records file changes. Git is a name,

@@ -1,4 +1,4 @@
-# Certified-Beginner Foundations — Start Here
+# Literal-Beginner Foundations — Start Here
 
 This sequence assumes you have never programmed, used a command line, built an
 automation, or implemented artificial intelligence (AI). It teaches the minimum

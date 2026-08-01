@@ -10,9 +10,11 @@ result is complete.
 
 ## Purpose
 
-Demonstrate that you can diagnose, design, build, evaluate, and hand over one
-bounded workflow without confusing a technical prototype with a production
-solution.
+Demonstrate that you can rehearse diagnosis on a synthetic process, safely
+assemble and operate the supplied reference implementation, author and test
+one small deterministic rule, design one different offline AI contract,
+evaluate the evidence, and prepare a bounded handover without confusing a
+technical prototype with a production solution.
 
 ## Fictional organization
 
@@ -67,6 +69,8 @@ Before building, produce:
 - build-versus-buy check;
 - explicit Module 2 selection decision: select for synthetic proof, discover
   further, or discard.
+- an independently reasoned choice between two plausible second synthetic
+  opportunities, locked before comparison or feedback.
 
 Course 1 has one required reference workflow: the supplied Synthetic SME
 Operations Exception Assistant. Do not replace it with another workflow inside
@@ -138,6 +142,14 @@ Required characteristics:
 - every generated issue, summary, run configuration, control, state, review
   package, review manifest, decision, audit event, and evaluation matches the
   canonical schema in `schemas/`.
+
+Course 1 also requires one learner-authored deterministic rule in an isolated
+practice file, with learner-authored normal, equality-boundary, below-boundary,
+wrong-type, and invalid-negative tests. That small exercise demonstrates
+bounded authorship; it does not mean the learner independently engineered the
+supplied runner. Module 5 separately requires a learner-designed offline AI
+input/output contract for a different fictional equipment-inspection domain.
+That contract is a design artifact only and makes no model call.
 
 The runnable artifact flow is:
 
@@ -286,9 +298,14 @@ studies are not forecasts.
 The runnable Modules 4-6 evaluation remains `REWORK` even when all technical
 tests pass. That is deliberate: the runner cannot prove discovery, value, risk
 ownership, usability, adoption, or handover. Module 8 records one
-`PROVISIONAL PRE-UAT` recommendation. Module 9 preserves it, adds UAT,
-defect/retest, adoption, and handover evidence, then records exactly one
-`FINAL POST-UAT` Course 1 recommendation.
+`PROVISIONAL PRE-UAT` recommendation. Here, **User Acceptance Testing (UAT)**
+means another consenting intended user performs realistic synthetic tasks.
+Module 9 preserves the recommendation, adds technical regression scenarios,
+a role-simulated operator rehearsal, defect/retest, adoption, and handover
+evidence, then records exactly one
+`FINAL POST-REHEARSAL` Course 1 recommendation. `FINAL POST-UAT` is permitted
+only when another consenting intended user performs the synthetic tasks and a
+separate real-UAT record proves it.
 
 ## Required handover pack
 
@@ -302,7 +319,10 @@ defect/retest, adoption, and handover evidence, then records exactly one
 - risk and escalation screen;
 - tool-fit and ownership record;
 - review instructions;
-- user acceptance testing (UAT) record;
+- candidate User Acceptance Testing (UAT) script and technical-scenario record;
+- role-simulated operator-rehearsal record;
+- separate real synthetic UAT record only if another consenting intended user
+  actually performed the tasks;
 - runbook and fallback;
 - change log;
 - limitations and assumptions;
@@ -326,14 +346,14 @@ Codex for a read-only check, and adds a Git checkpoint only after `PASS`.
 | Module | Required capstone evidence | Repository location |
 |---:|---|---|
 | 1 | as-is map and observation; stakeholder/user map; baseline/value record | `evidence/module-01/` |
-| 2 | opportunity brief; workflow opportunity scorecard; intended purpose and exclusions | `evidence/module-02/` |
-| 3 | frozen data/rules record; data dictionary and quality check; expected issues | `evidence/module-03/` |
-| 4 | runnable rule-first workflow; recreated synthetic input; 13- and 5-issue checks; input failures; retry; to-be map; architecture record | `src/course1_capstone/`, `evidence/module-04/` |
-| 5 | bounded offline mock; source-linked review actions; learner candidate; all AI failure fallbacks | `evidence/module-05/` |
+| 2 | opportunity brief; workflow opportunity scorecard; intended purpose and exclusions; locked independent two-option decision | `evidence/module-02/` |
+| 3 | frozen data/rules record; data dictionary and quality check; expected issues; learner-authored complete rule-example matrix | `evidence/module-03/` |
+| 4 | safely assembled runnable rule-first workflow; recreated synthetic input; 13- and 5-issue checks; input failures; retry; learner-authored isolated rule and tests; to-be map; architecture record | `src/course1_capstone/`, `evidence/module-04/` |
+| 5 | bounded offline mock; source-linked review actions; learner candidate; all AI failure fallbacks; different-domain learner-designed offline AI contract | `evidence/module-05/` |
 | 6 | non-overwriting Module 5 evidence copies; exact-revision decisions; approve/edit/reject/expire; local CSV/JSON; full executable acceptance | `evidence/module-06/` |
 | 7 | data flow; risk/escalation screen; tool-fit and ownership record | `evidence/module-07/` |
-| 8 | regression and value evaluation; `PROVISIONAL PRE-UAT` Course 1 recommendation | `evidence/module-08/` |
-| 9 | executable user acceptance testing (UAT); defect/retest; adoption/training; runbook; `FINAL POST-UAT` decision; six-area assessment; ten oral answers; change log; portfolio demonstration | `evidence/module-09/` |
+| 8 | regression and value evaluation, including worked and learner-recreated executable empty-set precision/recall checks; `PROVISIONAL PRE-UAT` Course 1 recommendation | `evidence/module-08/` |
+| 9 | technical regression scenarios TECH-01 through TECH-09; separate candidate intended-user UAT tasks; role-simulated operator rehearsal; defect/retest; adoption/training; runbook; `FINAL POST-REHEARSAL` decision; unseen second-domain transfer; delayed retention; separate self-reflection; two separately locked assessor-calibration records and resolution; independently scored artifact assessment; independent oral record; Dutch explanation rehearsal; change log; portfolio demonstration | `evidence/module-09/` |
 
 Module 9 also creates `CAPSTONE_INDEX.md` and `CHANGELOG.md` at the repository
 root. `CAPSTONE_INDEX.md` links every required artifact and its module gate.

@@ -71,9 +71,37 @@ replace your work.
 
 Suggested sessions:
 
-1. build and check the four-row worked data contract;
-2. recreate the dictionary, rules, dependencies, and frozen expected results;
-3. run the Codex check, correct the evidence, and make the Git checkpoint.
+Use ten focused blocks, each no longer than 60 minutes; most should take
+45–60 minutes. Do not merge blocks. The ten-block plan remains within the
+published 8–10-hour author estimate because reading and recovery speed vary.
+
+- **UNDERSTAND** means you must explain field meaning, blank behavior, rule
+  dependency, boundary, expected issue, or evidence link in your own words.
+- **PROTECTED PLUMBING — RUN AND OBSERVE** means you may run supplied
+  path/copy/hash and matrix-checker commands without memorising their syntax.
+  You must know what they protect, inspect the output, and stop on a failure.
+
+1. **PROTECTED PLUMBING — RUN AND OBSERVE:** run Stage 1, verify the project
+   boundary, and create the four-row worked files without overwriting evidence.
+2. **UNDERSTAND:** study the complete worked contract in Stage 2, including
+   dictionary, rules, dependencies, provenance, and frozen expected issues.
+3. **UNDERSTAND:** perform the Stage 3 boundary case and Stage 4 template
+   mapping; explain zero versus blank and invalid-date skip behavior.
+4. **PROTECTED PLUMBING — RUN AND OBSERVE:** copy and hash-check the different
+   15-row source, answer key, requirements, and quality template.
+5. **UNDERSTAND:** write the 12-field dictionary and R001–R005 conditions,
+   dependencies, evidence, blank behavior, and examples.
+6. **UNDERSTAND:** finish R006–R011, rule order, issue contract, all 13 expected
+   triples, and the data-minimisation decision.
+7. **UNDERSTAND + PROTECTED PLUMBING:** create matrix rows R001–R004 and run
+   the supplied `x`-case failure/corrected-R003 retest lab; preserve both logs.
+8. **UNDERSTAND:** complete bounded matrix rows R005–R008 with your own
+   `because` reasons and row explanations.
+9. **UNDERSTAND + PROTECTED PLUMBING:** finish R009–R011, run the 11-row
+   checker, verify source hashes/counts, and complete the quality record.
+10. **UNDERSTAND + PROTECTED PLUMBING:** run the bounded Codex semantic review,
+    make your own corrections, rerun the matrix and evidence gates, and use
+    only the supplied Module 3 Git checkpoint commands.
 
 Before stopping, save every file and record the last completed numbered step.
 Rerun Stage 1 in the next PowerShell window; never rebuild the folder from
@@ -461,7 +489,355 @@ notepad.exe $rulesPath
 - a manual map of all 13 expected `(work_item_id, rule_code, field)` triples;
 - a data-minimisation decision.
 
-4. Reuse the demonstrated `Sort-Object -Unique` pattern and verify counts and
+4. Create the complete rule-example matrix. This separate comma-separated
+   values (CSV) file makes it possible to prove that no rule or example category
+   disappeared inside prose. It also includes a learner-written explanation;
+   the deterministic check can enforce a bounded case, while the explanation
+   and later Codex review check whether you understand it.
+
+First study this one-row formatting example for an unrelated fictional rule.
+It is a demonstration only; do not add `R900` to your capstone matrix:
+
+```csv
+rule_code,valid_example,failing_example,blank_or_not_applicable,boundary_example,learner_explanation
+R900,"case=R900-V; field=temperature_c; value=20; expect=NO_ISSUE; because=20 is inside the permitted range","case=R900-F; field=temperature_c; value=31; expect=ISSUE; because=31 is above the permitted maximum","case=R900-B; field=temperature_c; value=<BLANK>; expect=SAFE_STOP; because=the required measurement is absent","case=R900-D; field=temperature_c; value=30|31; expect=NO_ISSUE|ISSUE; because=30 is the last permitted value and 31 is the first failing value","The valid and failing cases sit on different sides of the rule. Blank input cannot be compared safely, and the boundary pair proves the exact transition."
+```
+
+Each example cell uses exactly five labelled parts:
+
+```text
+case=[CASE ID]; field=[FIELD]; value=[VALUE]; expect=[OUTCOME]; because=[YOUR REASON]
+```
+
+The first four parts are a small machine-checkable contract. You write the
+`because` sentence yourself. The final `learner_explanation` cell explains how
+the valid, failing, blank/not-applicable, and boundary cases differ. Double
+quotation marks keep each description inside one CSV cell. Your different
+recreation uses the real requirements for R001–R011 rather than copying this
+unrelated temperature example.
+
+```powershell
+$matrixPath = Join-Path $moduleFolder 'recreated_rule_example_matrix.csv'
+$matrixHeader = 'rule_code,valid_example,failing_example,blank_or_not_applicable,boundary_example,learner_explanation'
+if (Test-Path -LiteralPath $matrixPath) {
+    if (-not (Test-Path -LiteralPath $matrixPath -PathType Leaf) -or
+        (Get-Content -LiteralPath $matrixPath -TotalCount 1) -cne $matrixHeader) {
+        throw 'Existing rule-example matrix is the wrong type or has an unfamiliar header. Preserve it and ask for read-only diagnosis.'
+    }
+    Write-Host "Resume: $matrixPath already exists and was left unchanged."
+} else {
+    $matrixHeader | Set-Content -LiteralPath $matrixPath -Encoding utf8
+    Write-Host "Created: $matrixPath"
+}
+notepad.exe $matrixPath
+```
+
+Add exactly one row for every rule `R001` through `R011`. Each row must contain
+all four categories and one explanation:
+
+- a valid example that does not trigger that rule;
+- a failing example that does trigger it;
+- a blank example, or `NOT APPLICABLE —` followed by the rule-specific reason;
+- an exact boundary example at, immediately below, or immediately above a
+  numeric/date threshold; for a categorical or structural rule, use the
+  nearest allowed-to-disallowed transition, such as an allowed status versus
+  one value outside the set, one unique reference versus adding a second row
+  with the same reference (which makes both rows issues), or a present versus
+  blank required field, and explain why that transition is the boundary.
+
+Do not write only “valid” or “fails.” Record the actual synthetic field and
+value, expected outcome, and why.
+
+Use the exact bounded case cores below. The vertical bar (`|`) in a value means
+“compare the case on the left with the case on the right.” `R001_ISSUE` means
+the blank is handled by the required-value rule instead of being silently
+reclassified by a later rule. For each rule, use suffix `-V` for the valid
+case, `-F` for failing, `-B` for blank/not-applicable, and `-D` for boundary.
+For example, the four R005 case IDs are `R005-V`, `R005-F`, `R005-B`, and
+`R005-D`. Use the field text printed beside each rule exactly.
+
+| Rule | Valid value → expectation | Failing value → expectation | Blank or not-applicable value → expectation | Boundary value → expectation |
+|---|---|---|---|---|
+| R001 `title` | `Synthetic request` → `NO_ISSUE` | `<BLANK>` → `ISSUE` | `<BLANK>` → `ISSUE` | `A\|<BLANK>` → `NO_ISSUE\|ISSUE` |
+| R002 `status` | `new` → `NO_ISSUE` | `paused` → `ISSUE` | `<BLANK>` → `R001_ISSUE` | `waiting\|paused` → `NO_ISSUE\|ISSUE` |
+| R003 `priority` | `medium` → `NO_ISSUE` | `urgent` → `ISSUE` | `<BLANK>` → `R001_ISSUE` | `high\|urgent` → `NO_ISSUE\|ISSUE` |
+| R004 `due_date` | `2026-07-26` → `NO_ISSUE` | `2026-02-30` → `ISSUE` | `<BLANK>` → `NO_ISSUE` | `2026-02-28\|2026-02-29` → `NO_ISSUE\|ISSUE` |
+| R005 `received_date+due_date` | `received:2026-07-20+due:2026-07-20` → `NO_ISSUE` | `received:2026-07-20+due:2026-07-19` → `ISSUE` | `received:2026-07-20+due:<BLANK>` → `NOT_APPLICABLE` | `received:2026-07-20+due:2026-07-20\|received:2026-07-20+due:2026-07-19` → `NO_ISSUE\|ISSUE` |
+| R006 `status+completed_date` | `completed+2026-07-20` → `NO_ISSUE` | `completed+<BLANK>` → `ISSUE` | `new+<BLANK>` → `NO_ISSUE` | `completed+2026-07-20\|completed+<BLANK>` → `NO_ISSUE\|ISSUE` |
+| R007 `status+owner_role` | `waiting+operations_coordinator` → `NO_ISSUE` | `waiting+<BLANK>` → `ISSUE` | `cancelled+<BLANK>` → `NOT_APPLICABLE` | `new+<BLANK>\|in_progress+<BLANK>` → `NO_ISSUE\|ISSUE` |
+| R008 `amount` | `0.00` → `NO_ISSUE` | `-0.01` → `ISSUE` | `<BLANK>` → `NO_ISSUE` | `0.00\|-0.01` → `NO_ISSUE\|ISSUE` |
+| R009 `amount+currency` | `1.00+EUR` → `NO_ISSUE` | `1.00+USD` → `ISSUE` | `<BLANK>+<BLANK>` → `NOT_APPLICABLE` | `<BLANK>+<BLANK>\|0.00+<BLANK>` → `NOT_APPLICABLE\|ISSUE` |
+| R010 `source_reference` | `REF-1001+REF-1002` → `NO_ISSUE` | `REF-1001+REF-1001` → `ISSUE_BOTH_ROWS` | `REF-1001+<BLANK>` → `R001_ISSUE` | `REF-1001\|REF-1001+REF-1001` → `NO_ISSUE\|ISSUE_BOTH_ROWS` |
+| R011 `status+due_date+assessment_date` | `waiting+2026-07-26+2026-07-26` → `NO_ISSUE` | `waiting+2026-07-25+2026-07-26` → `ISSUE` | `waiting+<BLANK>+2026-07-26` → `NOT_APPLICABLE` | `waiting+2026-07-26+2026-07-26\|waiting+2026-07-25+2026-07-26` → `NO_ISSUE\|ISSUE` |
+
+The protected checker below contains those same exact cores. You may run this
+checker without memorising its implementation. You **must understand** that it
+checks structure, rule-specific cases, outcomes, non-placeholder reasons, and
+explanation coverage; it cannot decide whether your prose is genuinely sound.
+
+Save and close Notepad, then run the complete block. It first proves the
+checker rejects a supplied meaningless `x` row, then proves a corrected R003
+row passes, saves both results, and finally checks your 11-row matrix:
+
+```powershell
+$requiredColumns = @(
+    'rule_code',
+    'valid_example',
+    'failing_example',
+    'blank_or_not_applicable',
+    'boundary_example',
+    'learner_explanation'
+)
+$exampleContracts = @{
+    R001 = @{
+        valid_example = 'case=R001-V; field=title; value=Synthetic request; expect=NO_ISSUE; because='
+        failing_example = 'case=R001-F; field=title; value=<BLANK>; expect=ISSUE; because='
+        blank_or_not_applicable = 'case=R001-B; field=title; value=<BLANK>; expect=ISSUE; because='
+        boundary_example = 'case=R001-D; field=title; value=A|<BLANK>; expect=NO_ISSUE|ISSUE; because='
+    }
+    R002 = @{
+        valid_example = 'case=R002-V; field=status; value=new; expect=NO_ISSUE; because='
+        failing_example = 'case=R002-F; field=status; value=paused; expect=ISSUE; because='
+        blank_or_not_applicable = 'case=R002-B; field=status; value=<BLANK>; expect=R001_ISSUE; because='
+        boundary_example = 'case=R002-D; field=status; value=waiting|paused; expect=NO_ISSUE|ISSUE; because='
+    }
+    R003 = @{
+        valid_example = 'case=R003-V; field=priority; value=medium; expect=NO_ISSUE; because='
+        failing_example = 'case=R003-F; field=priority; value=urgent; expect=ISSUE; because='
+        blank_or_not_applicable = 'case=R003-B; field=priority; value=<BLANK>; expect=R001_ISSUE; because='
+        boundary_example = 'case=R003-D; field=priority; value=high|urgent; expect=NO_ISSUE|ISSUE; because='
+    }
+    R004 = @{
+        valid_example = 'case=R004-V; field=due_date; value=2026-07-26; expect=NO_ISSUE; because='
+        failing_example = 'case=R004-F; field=due_date; value=2026-02-30; expect=ISSUE; because='
+        blank_or_not_applicable = 'case=R004-B; field=due_date; value=<BLANK>; expect=NO_ISSUE; because='
+        boundary_example = 'case=R004-D; field=due_date; value=2026-02-28|2026-02-29; expect=NO_ISSUE|ISSUE; because='
+    }
+    R005 = @{
+        valid_example = 'case=R005-V; field=received_date+due_date; value=received:2026-07-20+due:2026-07-20; expect=NO_ISSUE; because='
+        failing_example = 'case=R005-F; field=received_date+due_date; value=received:2026-07-20+due:2026-07-19; expect=ISSUE; because='
+        blank_or_not_applicable = 'case=R005-B; field=received_date+due_date; value=received:2026-07-20+due:<BLANK>; expect=NOT_APPLICABLE; because='
+        boundary_example = 'case=R005-D; field=received_date+due_date; value=received:2026-07-20+due:2026-07-20|received:2026-07-20+due:2026-07-19; expect=NO_ISSUE|ISSUE; because='
+    }
+    R006 = @{
+        valid_example = 'case=R006-V; field=status+completed_date; value=completed+2026-07-20; expect=NO_ISSUE; because='
+        failing_example = 'case=R006-F; field=status+completed_date; value=completed+<BLANK>; expect=ISSUE; because='
+        blank_or_not_applicable = 'case=R006-B; field=status+completed_date; value=new+<BLANK>; expect=NO_ISSUE; because='
+        boundary_example = 'case=R006-D; field=status+completed_date; value=completed+2026-07-20|completed+<BLANK>; expect=NO_ISSUE|ISSUE; because='
+    }
+    R007 = @{
+        valid_example = 'case=R007-V; field=status+owner_role; value=waiting+operations_coordinator; expect=NO_ISSUE; because='
+        failing_example = 'case=R007-F; field=status+owner_role; value=waiting+<BLANK>; expect=ISSUE; because='
+        blank_or_not_applicable = 'case=R007-B; field=status+owner_role; value=cancelled+<BLANK>; expect=NOT_APPLICABLE; because='
+        boundary_example = 'case=R007-D; field=status+owner_role; value=new+<BLANK>|in_progress+<BLANK>; expect=NO_ISSUE|ISSUE; because='
+    }
+    R008 = @{
+        valid_example = 'case=R008-V; field=amount; value=0.00; expect=NO_ISSUE; because='
+        failing_example = 'case=R008-F; field=amount; value=-0.01; expect=ISSUE; because='
+        blank_or_not_applicable = 'case=R008-B; field=amount; value=<BLANK>; expect=NO_ISSUE; because='
+        boundary_example = 'case=R008-D; field=amount; value=0.00|-0.01; expect=NO_ISSUE|ISSUE; because='
+    }
+    R009 = @{
+        valid_example = 'case=R009-V; field=amount+currency; value=1.00+EUR; expect=NO_ISSUE; because='
+        failing_example = 'case=R009-F; field=amount+currency; value=1.00+USD; expect=ISSUE; because='
+        blank_or_not_applicable = 'case=R009-B; field=amount+currency; value=<BLANK>+<BLANK>; expect=NOT_APPLICABLE; because='
+        boundary_example = 'case=R009-D; field=amount+currency; value=<BLANK>+<BLANK>|0.00+<BLANK>; expect=NOT_APPLICABLE|ISSUE; because='
+    }
+    R010 = @{
+        valid_example = 'case=R010-V; field=source_reference; value=REF-1001+REF-1002; expect=NO_ISSUE; because='
+        failing_example = 'case=R010-F; field=source_reference; value=REF-1001+REF-1001; expect=ISSUE_BOTH_ROWS; because='
+        blank_or_not_applicable = 'case=R010-B; field=source_reference; value=REF-1001+<BLANK>; expect=R001_ISSUE; because='
+        boundary_example = 'case=R010-D; field=source_reference; value=REF-1001|REF-1001+REF-1001; expect=NO_ISSUE|ISSUE_BOTH_ROWS; because='
+    }
+    R011 = @{
+        valid_example = 'case=R011-V; field=status+due_date+assessment_date; value=waiting+2026-07-26+2026-07-26; expect=NO_ISSUE; because='
+        failing_example = 'case=R011-F; field=status+due_date+assessment_date; value=waiting+2026-07-25+2026-07-26; expect=ISSUE; because='
+        blank_or_not_applicable = 'case=R011-B; field=status+due_date+assessment_date; value=waiting+<BLANK>+2026-07-26; expect=NOT_APPLICABLE; because='
+        boundary_example = 'case=R011-D; field=status+due_date+assessment_date; value=waiting+2026-07-26+2026-07-26|waiting+2026-07-25+2026-07-26; expect=NO_ISSUE|ISSUE; because='
+    }
+}
+$ruleExplanationTerms = @{
+    R001 = @('required','blank')
+    R002 = @('status','allowed')
+    R003 = @('priority','allowed')
+    R004 = @('date','format')
+    R005 = @('due','received')
+    R006 = @('completed','completion')
+    R007 = @('owner','status')
+    R008 = @('amount','negative')
+    R009 = @('currency','eur')
+    R010 = @('reference','duplicate')
+    R011 = @('assessment','overdue')
+}
+function Test-RuleExampleMatrix {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Path,
+        [string[]]$ExpectedCodes = @(1..11 | ForEach-Object {
+            'R{0:D3}' -f $_
+        })
+    )
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+        throw "Matrix file is missing: $Path"
+    }
+    $matrix = @(Import-Csv -LiteralPath $Path)
+    if ($matrix.Count -ne $ExpectedCodes.Count) {
+        throw "Expected exactly $($ExpectedCodes.Count) rule rows; observed $($matrix.Count)."
+    }
+    $actualColumns = @($matrix[0].PSObject.Properties.Name)
+    if (($actualColumns -join '|') -cne ($requiredColumns -join '|')) {
+        throw 'The rule-example matrix header or column order is incomplete or changed.'
+    }
+    $actualCodes = @($matrix.rule_code)
+    if ($actualCodes.Count -ne @($actualCodes | Sort-Object -Unique).Count -or
+        @(Compare-Object ($ExpectedCodes | Sort-Object) ($actualCodes | Sort-Object)).Count -ne 0) {
+        throw "The matrix must cover only these rule codes, each once: $($ExpectedCodes -join ', ')."
+    }
+    foreach ($row in $matrix) {
+        $code = [string]$row.rule_code
+        foreach ($column in @(
+            'valid_example',
+            'failing_example',
+            'blank_or_not_applicable',
+            'boundary_example'
+        )) {
+            $cell = [string]$row.$column
+            $prefix = [string]$exampleContracts[$code][$column]
+            if (-not $cell.StartsWith(
+                $prefix,
+                [System.StringComparison]::Ordinal
+            )) {
+                throw "$code $column must start with its exact bounded case, field, value, and expectation contract."
+            }
+            $reason = $cell.Substring($prefix.Length).Trim()
+            if ($reason.Length -lt 20 -or
+                $reason -notmatch '\s' -or
+                $reason -match '^(?i:x+|n/?a|valid|fails?|todo|tbd|test|example|placeholder)[.! ]*$') {
+                throw "$code $column needs a learner-written reason of at least 20 meaningful characters."
+            }
+        }
+        $explanation = [string]$row.learner_explanation
+        if ($explanation.Trim().Length -lt 100) {
+            throw "$code learner_explanation must contain at least 100 characters in the learner's own words."
+        }
+        foreach ($pattern in @(
+            '(?i)\bvalid\b',
+            '(?i)\bfail(?:ing|s|ed)?\b',
+            '(?i)\bblank\b|not applicable',
+            '(?i)\bboundar'
+        )) {
+            if ($explanation -notmatch $pattern) {
+                throw "$code learner_explanation must discuss valid, failing, blank/not-applicable, and boundary behaviour."
+            }
+        }
+        $lowerExplanation = $explanation.ToLowerInvariant()
+        foreach ($term in $ruleExplanationTerms[$code]) {
+            if (-not $lowerExplanation.Contains($term)) {
+                throw "$code learner_explanation must use the rule-specific term '$term'."
+            }
+        }
+    }
+    "PASS: $($matrix.Count) rule rows satisfy the bounded case contracts and explanation structure"
+}
+
+function Write-CreateOnceTextEvidence {
+    param([string]$Path, [string]$Text)
+    if (Test-Path -LiteralPath $Path) {
+        if (-not (Test-Path -LiteralPath $Path -PathType Leaf) -or
+            (Get-Content -Raw -LiteralPath $Path).Trim() -cne $Text.Trim()) {
+            throw "Existing checker evidence is unfamiliar. Preserve it and stop: $Path"
+        }
+        Write-Host "KEEPING existing $Path"
+    } else {
+        $Text | Set-Content -LiteralPath $Path -Encoding utf8
+        Write-Host "CREATED $Path"
+    }
+}
+
+$incorrectCasePath = Join-Path $moduleFolder 'supplied_incorrect_matrix_case.csv'
+$correctedCasePath = Join-Path $moduleFolder 'supplied_corrected_matrix_case.csv'
+$incorrectCase = [PSCustomObject][ordered]@{
+    rule_code = 'R003'
+    valid_example = 'x'
+    failing_example = 'x'
+    blank_or_not_applicable = 'x'
+    boundary_example = 'x'
+    learner_explanation = 'x'
+}
+$correctedCase = [PSCustomObject][ordered]@{
+    rule_code = 'R003'
+    valid_example = 'case=R003-V; field=priority; value=medium; expect=NO_ISSUE; because=medium is one of the three allowed priorities'
+    failing_example = 'case=R003-F; field=priority; value=urgent; expect=ISSUE; because=urgent is outside the exact allowed priority set'
+    blank_or_not_applicable = 'case=R003-B; field=priority; value=<BLANK>; expect=R001_ISSUE; because=the required-value rule handles a blank before R003'
+    boundary_example = 'case=R003-D; field=priority; value=high|urgent; expect=NO_ISSUE|ISSUE; because=high is allowed and the next supplied category urgent is not'
+    learner_explanation = 'For R003, a valid priority is in the allowed set and the failing value is outside it. A blank is handled first as missing required data. The categorical boundary changes from allowed high to disallowed urgent.'
+}
+foreach ($labCase in @(
+    @($incorrectCasePath, $incorrectCase),
+    @($correctedCasePath, $correctedCase)
+)) {
+    if (Test-Path -LiteralPath $labCase[0]) {
+        $savedCase = @(Import-Csv -LiteralPath $labCase[0])
+        if ($savedCase.Count -ne 1) {
+            throw "Existing supplied lab case is unfamiliar. Preserve it and stop: $($labCase[0])"
+        }
+        foreach ($column in $requiredColumns) {
+            if ([string]$savedCase[0].$column -cne [string]$labCase[1].$column) {
+                throw "Existing supplied lab case changed. Preserve it and stop: $($labCase[0])"
+            }
+        }
+        Write-Host "KEEPING existing $($labCase[0])"
+    } else {
+        $labCase[1] | Export-Csv -NoTypeInformation -Encoding utf8 `
+            -LiteralPath $labCase[0]
+        Write-Host "CREATED $($labCase[0])"
+    }
+}
+
+try {
+    $unexpectedNegativePass = Test-RuleExampleMatrix `
+        -Path $incorrectCasePath `
+        -ExpectedCodes @('R003')
+    throw "The supplied incorrect case unexpectedly passed: $unexpectedNegativePass"
+} catch {
+    if ($_.Exception.Message -like 'The supplied incorrect case unexpectedly passed:*') {
+        throw
+    }
+    $negativeEvidence = "EXPECTED FAILURE: $($_.Exception.Message)"
+}
+if ($negativeEvidence -notmatch 'R003 valid_example must start with') {
+    throw 'The supplied incorrect case failed for an unexpected reason.'
+}
+Write-CreateOnceTextEvidence `
+    -Path (Join-Path $moduleFolder 'matrix_checker_deliberate_failure.txt') `
+    -Text $negativeEvidence
+
+$positiveEvidence = Test-RuleExampleMatrix `
+    -Path $correctedCasePath `
+    -ExpectedCodes @('R003')
+if ($positiveEvidence -notmatch '^PASS: 1 rule rows') {
+    throw 'The supplied corrected case did not produce the expected pass.'
+}
+Write-CreateOnceTextEvidence `
+    -Path (Join-Path $moduleFolder 'matrix_checker_correction_pass.txt') `
+    -Text $positiveEvidence
+
+Test-RuleExampleMatrix -Path $matrixPath
+```
+
+Expected evidence:
+
+- `matrix_checker_deliberate_failure.txt` begins with `EXPECTED FAILURE:` and
+  names `R003 valid_example`;
+- `matrix_checker_correction_pass.txt` begins with `PASS: 1 rule rows`;
+- the final output begins with `PASS: 11 rule rows`.
+
+The first record must remain failed; never replace it with the corrected
+result. This checker is intentionally stricter than a nonblank-cell check, but
+it still cannot understand prose. The read-only Codex review below must inspect
+the learner-written reasons and explanation for semantic correctness.
+
+5. Reuse the demonstrated `Sort-Object -Unique` pattern and verify counts and
    coverage:
 
 ```powershell
@@ -476,7 +852,7 @@ Select-String -Path .\recreated_data_and_rules.md -Pattern 'R001','R011','2026-0
 **Expected output:** 15 rows, 13 issues, R001 through R011, and four text
 matches.
 
-5. Re-run this self-contained comparison. It deliberately rebuilds
+6. Re-run this self-contained comparison. It deliberately rebuilds
    `$sourceData`, so it still works after PowerShell has been closed:
 
 ```powershell
@@ -497,7 +873,7 @@ $sourceHash -eq $recreatedHash
    The final line must be `True`. A `False` result is a safe stop; preserve
    both files and request read-only diagnosis.
 
-6. Open `data_dictionary_and_quality_check.md` in Notepad and recreate the
+7. Open `data_dictionary_and_quality_check.md` in Notepad and recreate the
    demonstrated quality record for the different 15-row fixture. Complete the
    dataset boundary, all 12 dictionary fields, R001–R011 quality rules, input
    profile, untouched-source and working-copy locations, transformation and
@@ -532,13 +908,25 @@ repeat it: return NOT YET with only the filename and general category, then
 stop. If none is noticed, say that non-detection is not proof that none exists.
 
 Inspect the worked and recreated comma-separated values (CSV) and Markdown
-files, including worked_data_dictionary_and_quality_check.md and
-data_dictionary_and_quality_check.md. Return:
+files, including worked_data_dictionary_and_quality_check.md,
+recreated_rule_example_matrix.csv, and
+data_dictionary_and_quality_check.md. Also inspect
+supplied_incorrect_matrix_case.csv, supplied_corrected_matrix_case.csv,
+matrix_checker_deliberate_failure.txt, and
+matrix_checker_correction_pass.txt. Return:
 1. PASS or NOT YET;
 2. checks for: 12-field dictionary; exact R001-R011 coverage; fixed date
 2026-07-26; raw values preserved; blanks distinguished from zero; invalid dates
 blocking dependent checks; duplicate rule reporting both rows; evidence-linked
-issue contract; 15 input rows; 13 unique expected keys; boundary cases; no AI
+issue contract; 15 input rows; 13 unique expected keys; exactly one matrix row
+for each R001-R011 rule; every matrix row has a semantically correct valid,
+failing, blank-or-reasoned-not-applicable, and exact boundary example; every
+bounded case uses the rule's correct field, value, expectation, and a meaningful
+learner-written `because` reason; every `learner_explanation` accurately
+explains all four categories in the learner's own words; the supplied `x` case
+is preserved with `EXPECTED FAILURE`, the corrected R003 case is separately
+preserved with `PASS`, and the failure record was not replaced by the retest;
+no AI
 used for deterministic checks; synthetic-only data; unchanged source-copy
 content where observable; complete dataset boundary and input profile;
 recreated_data_and_rules.md agrees with data_dictionary_and_quality_check.md;
@@ -553,6 +941,15 @@ Remain read-only and do not provide replacement files.
 - [ ] Source copies remain byte-identical to supplied files.
 - [ ] The recreated data dictionary covers all 12 fields.
 - [ ] The rule register covers R001–R011 exactly.
+- [ ] `recreated_rule_example_matrix.csv` has exactly 11 unique rule rows and
+      every rule has a correct valid, failing, blank-or-reasoned-not-applicable,
+      and boundary example.
+- [ ] Every matrix case matches its rule-specific field, value, and expected
+      result contract; each has my meaningful `because` reason and each row has
+      my 100-character-or-longer explanation of all four categories.
+- [ ] The supplied meaningless `x` case is preserved as
+      `EXPECTED FAILURE`, and the separate corrected R003 case is preserved as
+      `PASS`; the failed record was not overwritten by the retest.
 - [ ] Fixed date `2026-07-26` is configuration, not “today.”
 - [ ] Invalid dates do not trigger dependent date checks.
 - [ ] Blank and zero are distinct.
@@ -582,7 +979,11 @@ and expected result.
 The teaching contract produces the worked CSV/Markdown files,
 `worked_data_dictionary_and_quality_check.md`,
 `recreated_data_and_rules.md`, and
-`data_dictionary_and_quality_check.md` under `evidence\module-03`.
+`recreated_rule_example_matrix.csv`, and
+`data_dictionary_and_quality_check.md` under `evidence\module-03`. It also
+preserves the supplied incorrect and corrected matrix cases plus
+`matrix_checker_deliberate_failure.txt` and
+`matrix_checker_correction_pass.txt`.
 
 ## Test gate
 
@@ -626,4 +1027,4 @@ real data enters the folder.
 
 ## Estimated time
 
-8–10 hours.
+8–10 hours. This is an **AUTHOR ESTIMATE — NOT BEGINNER MEASURED**.

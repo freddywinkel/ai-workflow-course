@@ -1,5 +1,9 @@
 # Adoption and Training Plan
 
+**User Acceptance Testing (UAT)** means another consenting intended user
+performs realistic synthetic tasks. A learner working alone records a
+role-simulated operational acceptance rehearsal, not real UAT.
+
 Artifact ID:
 Version/date:
 Author/reviewer:
@@ -46,7 +50,7 @@ Training must include:
 | When | Audience | Message/decision | Channel | Owner | Feedback route |
 |---|---|---|---|---|---|
 | Before design | | | | | |
-| Before UAT | | | | | |
+| Before role-simulated rehearsal or real UAT | | | | | |
 | Before the Course 1 decision | | | | | |
 | After the Course 1 decision | | | | | |
 | At decision | | | | | |
@@ -77,7 +81,9 @@ Training completion does not prove adoption or value.
 
 ## Readiness
 
-- [ ] Representative users helped test the workflow.
+- [ ] Required operator and reviewer tasks were rehearsed and recorded.
+- [ ] Any claim of real UAT is supported by another consenting intended user;
+      otherwise `EXTERNAL UAT NOT VERIFIED` is explicit.
 - [ ] Materials match the tested release.
 - [ ] Users can reject and escalate without penalty.
 - [ ] Accessibility/language needs are addressed.

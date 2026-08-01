@@ -13,7 +13,7 @@ import io
 import json
 import os
 import re
-import shutil
+import stat
 import tempfile
 import threading
 import uuid
@@ -179,6 +179,137 @@ PROTECTED_REVIEW_ARTIFACTS = {
 }
 OPERATION_LOCK_NAME = ".course1-operation.lock"
 TRANSACTION_INCOMPLETE_NAME = "CONTROLLED_TRANSACTION_INCOMPLETE.txt"
+STAGING_MARKER_NAME = ".course1-staging-owner.json"
+STAGING_MARKER_FORMAT = "course1-owned-staging-v1"
+MIB = 1024 * 1024
+MAX_WORK_ITEM_CSV_BYTES = 2 * MIB
+MAX_WORK_ITEM_ROWS = 2_000
+MAX_EXPECTED_CSV_BYTES = 2 * MIB
+MAX_EXPECTED_ROWS = 25_000
+MAX_CSV_CELL_CODE_POINTS = 16_384
+MAX_JSON_BYTES = 4 * MIB
+MAX_JSON_DEPTH = 32
+MAX_JSON_ARRAY_ITEMS = 25_000
+MAX_JSON_OBJECT_PROPERTIES = 256
+MAX_JSON_STRING_CODE_POINTS = 65_536
+MAX_AUDIT_BYTES = 16 * MIB
+MAX_AUDIT_EVENTS = 25_000
+MAX_AUDIT_LINE_BYTES = 256 * 1024
+MAX_WORKSPACE_PATH_CHARACTERS = 175
+BIDI_CONTROLS = {
+    "\u061c",
+    "\u200e",
+    "\u200f",
+    "\u202a",
+    "\u202b",
+    "\u202c",
+    "\u202d",
+    "\u202e",
+    "\u2066",
+    "\u2067",
+    "\u2068",
+    "\u2069",
+}
+WINDOWS_RESERVED_NAMES = {
+    "CON",
+    "PRN",
+    "AUX",
+    "NUL",
+    *(f"COM{number}" for number in range(1, 10)),
+    *(f"LPT{number}" for number in range(1, 10)),
+}
+AUDIT_EVENT_CONTRACTS = {
+    "run_received": (
+        {"received"},
+        "system",
+        {"input_sha256", "run_config_sha256", "dataset_kind"},
+    ),
+    "input_validated": (
+        {"validated"},
+        "system",
+        {"row_count", "header_count"},
+    ),
+    "no_verified_issues": (
+        {"no_action_needed"},
+        "system",
+        {"issue_count", "external_actions"},
+    ),
+    "issues_created": (
+        {"issues_ready"},
+        "system",
+        {"issue_count", "identity_fields"},
+    ),
+    "summary_fallback": (
+        {"summary_ready"},
+        "system",
+        {"reason", "generator"},
+    ),
+    "mock_summary_validated": (
+        {"summary_ready"},
+        "mock_ai",
+        {"generator", "issue_reference_count"},
+    ),
+    "human_review_required": (
+        {"needs_review"},
+        "system",
+        {"draft_revision", "draft_sha256", "review_manifest_sha256"},
+    ),
+    "duplicate_retry_ignored": (
+        PERSISTED_STATES,
+        "system",
+        {"input_sha256", "run_config_sha256", "no_duplicate_effect"},
+    ),
+    "review_decision_recorded": (
+        {"approved_for_local_export", "changes_requested", "rejected", "expired"},
+        "reviewer",
+        {
+            "decision_id",
+            "decision",
+            "draft_revision",
+            "draft_sha256",
+            "review_manifest_sha256",
+            "evidence_reviewed",
+            "integrity_scope",
+        },
+    ),
+    "draft_revision_created": (
+        {"needs_review"},
+        "system",
+        {
+            "previous_revision",
+            "draft_revision",
+            "previous_sha256",
+            "draft_sha256",
+            "review_manifest_sha256",
+        },
+    ),
+    "candidate_summary_validated": (
+        {"needs_review"},
+        "system",
+        {
+            "candidate_sha256",
+            "draft_revision",
+            "issue_reference_count",
+            "prose_support_status",
+            "human_support_review_required",
+        },
+    ),
+    "local_export_created": (
+        {"approved_draft"},
+        "system",
+        {"decision_id", "draft_revision", "files", "external_actions"},
+    ),
+    "review_expired": (
+        {"expired"},
+        "system",
+        {"decision_id", "draft_revision"},
+    ),
+    "safe_stop_recorded": (
+        {"failed_manual"},
+        "system",
+        {"attempt_id", "error_code", "command", "external_actions"},
+    ),
+}
 _LOCK_OWNERS = threading.local()
 
 
@@ -191,6 +322,221 @@ class SafeStop(RuntimeError):
 
     def __str__(self) -> str:
         return f"{self.code}: {super().__str__()}"
+
+
+def _reject_disallowed_controls(value: str, label: str) -> None:
+    if not isinstance(value, str):
+        raise SafeStop("invalid_text", f"{label} must be text.")
+    if any(ord(character) < 32 and character not in "\t\r\n" for character in value):
+        raise SafeStop(
+            "invalid_text_control",
+            f"{label} contains an unsupported control character.",
+        )
+
+
+def _reject_bidi_controls(value: str, label: str) -> None:
+    if any(character in BIDI_CONTROLS for character in value):
+        raise SafeStop(
+            "invalid_bidi_control",
+            f"{label} contains an unsupported bidirectional control character.",
+        )
+
+
+def _path_has_reparse_attribute(path_stat: os.stat_result) -> bool:
+    reparse_flag = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+    return bool(getattr(path_stat, "st_file_attributes", 0) & reparse_flag)
+
+
+def _validate_supported_path(
+    path: Path,
+    label: str,
+    *,
+    workspace_root: bool = False,
+) -> None:
+    if not isinstance(path, Path):
+        raise SafeStop("invalid_argument", f"{label} path must be a Path.")
+    raw = str(path)
+    _reject_disallowed_controls(raw, f"{label} path")
+    _reject_bidi_controls(raw, f"{label} path")
+    normalized_slashes = raw.replace("/", "\\")
+    if normalized_slashes.startswith(("\\\\?\\", "\\\\.\\")):
+        raise SafeStop(
+            "unsupported_path",
+            f"{label} must not use a Windows device namespace.",
+        )
+    if normalized_slashes.startswith("\\\\"):
+        raise SafeStop(
+            "unsupported_path",
+            f"{label} must use an ordinary local folder, not a network or device path.",
+        )
+    for component in path.parts:
+        if component in {path.anchor, path.drive, "\\", "/"}:
+            continue
+        if component.endswith((" ", ".")):
+            raise SafeStop(
+                "unsupported_path",
+                f"{label} has a name ending in a space or dot.",
+            )
+        if ":" in component:
+            raise SafeStop(
+                "unsupported_path",
+                f"{label} must not use an alternate data stream.",
+            )
+        stem = component.split(".", 1)[0].upper()
+        if stem in WINDOWS_RESERVED_NAMES:
+            raise SafeStop(
+                "unsupported_path",
+                f"{label} uses a reserved Windows device name.",
+            )
+    try:
+        absolute = path.absolute()
+    except OSError as error:
+        raise SafeStop(
+            "filesystem_check_error",
+            f"Could not inspect the {label} path.",
+        ) from error
+    if workspace_root and len(str(absolute)) > MAX_WORKSPACE_PATH_CHARACTERS:
+        raise SafeStop(
+            "workspace_path_too_long",
+            "The workspace path is longer than 175 characters. Choose a shorter "
+            "ordinary local folder, then retry; nothing was moved or deleted.",
+        )
+    existing_chain = [absolute, *absolute.parents]
+    for component in reversed(existing_chain):
+        try:
+            component_stat = component.lstat()
+        except FileNotFoundError:
+            continue
+        except OSError as error:
+            raise SafeStop(
+                "filesystem_check_error",
+                f"Could not safely inspect the {label} path.",
+            ) from error
+        if stat.S_ISLNK(component_stat.st_mode) or _path_has_reparse_attribute(
+            component_stat
+        ):
+            raise SafeStop(
+                "unsupported_reparse_path",
+                f"{label} must use an ordinary local folder without links or reparse points.",
+            )
+
+
+def _read_regular_bytes(
+    path: Path,
+    label: str,
+    *,
+    max_bytes: int,
+    missing_code: str = "missing_file",
+) -> bytes:
+    _validate_supported_path(path, label)
+    try:
+        before = path.lstat()
+    except FileNotFoundError as error:
+        raise SafeStop(missing_code, f"Required {label} is missing.") from error
+    except OSError as error:
+        raise SafeStop(
+            "file_read_error",
+            f"Could not safely inspect {label}.",
+        ) from error
+    if (
+        not stat.S_ISREG(before.st_mode)
+        or stat.S_ISLNK(before.st_mode)
+        or _path_has_reparse_attribute(before)
+    ):
+        raise SafeStop(
+            "unsupported_file_type",
+            f"{label} must be an ordinary file, not a folder, link, device, or stream.",
+        )
+    if before.st_size > max_bytes:
+        raise SafeStop(
+            "input_limit_exceeded",
+            f"{label} is larger than the supported {max_bytes}-byte limit.",
+        )
+    try:
+        with path.open("rb") as stream:
+            opened = os.fstat(stream.fileno())
+            value = stream.read(max_bytes + 1)
+            after_open = os.fstat(stream.fileno())
+        after_path = path.lstat()
+    except OSError as error:
+        raise SafeStop(
+            "file_read_error",
+            f"Could not safely read {label}.",
+        ) from error
+    identities = {
+        (before.st_dev, before.st_ino),
+        (opened.st_dev, opened.st_ino),
+        (after_open.st_dev, after_open.st_ino),
+        (after_path.st_dev, after_path.st_ino),
+    }
+    if (
+        len(identities) != 1
+        or opened.st_size != after_open.st_size
+        or before.st_size != after_path.st_size
+        or len(value) != after_open.st_size
+    ):
+        raise SafeStop(
+            "file_changed_during_read",
+            f"{label} changed while it was being read; nothing was trusted.",
+        )
+    if len(value) > max_bytes:
+        raise SafeStop(
+            "input_limit_exceeded",
+            f"{label} is larger than the supported {max_bytes}-byte limit.",
+        )
+    return value
+
+
+def _decode_utf8(value: bytes, label: str, *, code: str) -> str:
+    try:
+        text = value.decode("utf-8-sig")
+    except UnicodeDecodeError as error:
+        raise SafeStop(code, f"{label} is not valid UTF-8 text.") from error
+    if text.startswith("\ufeff"):
+        raise SafeStop(code, f"{label} contains more than one UTF-8 byte-order mark.")
+    _reject_disallowed_controls(text, label)
+    return text
+
+
+def _validate_json_complexity(value: Any, label: str, depth: int = 0) -> None:
+    if depth > MAX_JSON_DEPTH:
+        raise SafeStop("json_limit_exceeded", f"{label} is nested too deeply.")
+    if value is None or type(value) in {bool, int, float}:
+        return
+    if isinstance(value, str):
+        if len(value) > MAX_JSON_STRING_CODE_POINTS:
+            raise SafeStop("json_limit_exceeded", f"{label} contains an oversized string.")
+        _reject_disallowed_controls(value, label)
+        return
+    if isinstance(value, list):
+        if len(value) > MAX_JSON_ARRAY_ITEMS:
+            raise SafeStop("json_limit_exceeded", f"{label} contains too many array items.")
+        for item in value:
+            _validate_json_complexity(item, label, depth + 1)
+        return
+    if isinstance(value, dict):
+        if len(value) > MAX_JSON_OBJECT_PROPERTIES:
+            raise SafeStop(
+                "json_limit_exceeded",
+                f"{label} contains too many object properties.",
+            )
+        for key, item in value.items():
+            if not isinstance(key, str):
+                raise SafeStop("malformed_json", f"{label} contains a non-text key.")
+            _reject_disallowed_controls(key, f"{label} key")
+            _reject_bidi_controls(key, f"{label} key")
+            _validate_json_complexity(item, label, depth + 1)
+        return
+    raise SafeStop("malformed_json", f"{label} contains an unsupported JSON value.")
+
+
+def _json_object_without_duplicates(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise SafeStop("malformed_json", "JSON contains a duplicate object key.")
+        result[key] = value
+    return result
 
 
 def utc_now() -> datetime:
@@ -225,38 +571,49 @@ def sha256_bytes(value: bytes) -> str:
 
 
 def canonical_bytes(value: Any) -> bytes:
-    return (
-        json.dumps(
+    _validate_json_complexity(value, "Controlled JSON")
+    try:
+        rendered = json.dumps(
             value,
             ensure_ascii=False,
             sort_keys=True,
             separators=(",", ":"),
+            allow_nan=False,
         )
-        + "\n"
-    ).encode("utf-8")
+    except (TypeError, ValueError) as error:
+        raise SafeStop(
+            "malformed_json",
+            "Controlled JSON contains an unsupported value.",
+        ) from error
+    encoded = (rendered + "\n").encode("utf-8")
+    if len(encoded) > MAX_JSON_BYTES:
+        raise SafeStop(
+            "json_limit_exceeded",
+            f"Controlled JSON is larger than the supported {MAX_JSON_BYTES}-byte limit.",
+        )
+    return encoded
 
 
 def read_json(path: Path) -> Any:
     try:
-        return json.loads(path.read_text(encoding="utf-8-sig"))
-    except FileNotFoundError as error:
-        raise SafeStop(
-            "missing_file",
-            f"Required JSON file is missing: {path.name}.",
-        ) from error
+        encoded = _read_regular_bytes(
+            path,
+            f"JSON file {path.name}",
+            max_bytes=MAX_JSON_BYTES,
+        )
+        text = _decode_utf8(encoded, f"JSON file {path.name}", code="malformed_json")
+        value = json.loads(
+            text,
+            object_pairs_hook=_json_object_without_duplicates,
+            parse_constant=lambda _: (_ for _ in ()).throw(
+                SafeStop("malformed_json", f"Invalid JSON value in {path.name}.")
+            ),
+        )
+        _validate_json_complexity(value, f"JSON file {path.name}")
+        return value
     except json.JSONDecodeError as error:
         raise SafeStop(
             "malformed_json", f"Invalid JSON in {path.name}: {error.msg}"
-        ) from error
-    except UnicodeError as error:
-        raise SafeStop(
-            "malformed_json",
-            f"Invalid text encoding in {path.name}.",
-        ) from error
-    except OSError as error:
-        raise SafeStop(
-            "file_read_error",
-            f"Could not safely read required file {path.name}.",
         ) from error
 
 
@@ -266,14 +623,48 @@ def atomic_write_bytes(path: Path, value: bytes) -> None:
             "invalid_argument",
             "Controlled writes require a Path and bytes.",
         )
-    temporary_path = path.parent / f"~{uuid.uuid4().hex[:8]}.tmp"
+    _validate_supported_path(path, "Controlled output")
+    temporary_path = path.parent / f"~{uuid.uuid4().hex[:16]}.tmp"
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
+        _validate_supported_path(path.parent, "Controlled output folder")
+        parent_before = path.parent.lstat()
+        if not stat.S_ISDIR(parent_before.st_mode):
+            raise SafeStop(
+                "output_parent_type_mismatch",
+                "A controlled output parent must be an ordinary folder.",
+            )
+        if path.exists():
+            existing = path.lstat()
+            if (
+                not stat.S_ISREG(existing.st_mode)
+                or stat.S_ISLNK(existing.st_mode)
+                or _path_has_reparse_attribute(existing)
+            ):
+                raise SafeStop(
+                    "output_type_mismatch",
+                    "A controlled output target is not an ordinary file.",
+                )
         with temporary_path.open("xb") as stream:
             stream.write(value)
             stream.flush()
             os.fsync(stream.fileno())
+        parent_after = path.parent.lstat()
+        if (parent_before.st_dev, parent_before.st_ino) != (
+            parent_after.st_dev,
+            parent_after.st_ino,
+        ):
+            raise SafeStop(
+                "output_parent_changed",
+                "The controlled output folder changed during the write; nothing was published.",
+            )
         os.replace(temporary_path, path)
+    except SafeStop:
+        try:
+            temporary_path.unlink(missing_ok=True)
+        except OSError:
+            pass
+        raise
     except OSError as error:
         try:
             temporary_path.unlink(missing_ok=True)
@@ -290,14 +681,7 @@ def write_json(path: Path, value: Any) -> None:
 
 
 def _read_bytes(path: Path, label: str) -> bytes:
-    if not isinstance(path, Path):
-        raise SafeStop("invalid_argument", f"{label} path must be a Path.")
-    try:
-        return path.read_bytes()
-    except FileNotFoundError as error:
-        raise SafeStop("missing_file", f"Required {label} is missing.") from error
-    except OSError as error:
-        raise SafeStop("file_read_error", f"Could not safely read {label}.") from error
+    return _read_regular_bytes(path, label, max_bytes=MAX_JSON_BYTES)
 
 
 def _path_exists(path: Path, label: str) -> bool:
@@ -318,6 +702,19 @@ def _exclusive_operation_lock(scope: Path) -> Iterator[None]:
 
     if not isinstance(scope, Path):
         raise SafeStop("invalid_argument", "Lock scope must be a Path.")
+    _validate_supported_path(scope, "Controlled lock scope")
+    try:
+        if scope.exists() and not scope.is_dir():
+            raise SafeStop(
+                "scope_not_directory",
+                "The selected controlled scope is a file, not a folder. Choose an "
+                "ordinary local folder and retry.",
+            )
+    except OSError as error:
+        raise SafeStop(
+            "filesystem_check_error",
+            "The controlled lock scope could not be inspected.",
+        ) from error
     try:
         scope_key = os.path.normcase(str(scope.resolve()))
     except OSError as error:
@@ -337,6 +734,16 @@ def _exclusive_operation_lock(scope: Path) -> Iterator[None]:
     descriptor: int | None = None
     try:
         scope.mkdir(parents=True, exist_ok=True)
+        scope_stat = scope.lstat()
+        if (
+            not stat.S_ISDIR(scope_stat.st_mode)
+            or stat.S_ISLNK(scope_stat.st_mode)
+            or _path_has_reparse_attribute(scope_stat)
+        ):
+            raise SafeStop(
+                "scope_not_directory",
+                "The selected controlled scope is not an ordinary local folder.",
+            )
         descriptor = os.open(
             lock_path,
             os.O_CREAT | os.O_EXCL | os.O_WRONLY,
@@ -353,12 +760,38 @@ def _exclusive_operation_lock(scope: Path) -> Iterator[None]:
         )
         os.fsync(descriptor)
     except FileExistsError as error:
+        try:
+            lock_stat = lock_path.lstat()
+        except OSError:
+            lock_stat = None
+        if lock_stat is not None and (
+            not stat.S_ISREG(lock_stat.st_mode)
+            or stat.S_ISLNK(lock_stat.st_mode)
+            or _path_has_reparse_attribute(lock_stat)
+        ):
+            raise SafeStop(
+                "lock_contract_error",
+                "The controlled lock path is not an ordinary lock file. Stop and "
+                "inspect the folder; nothing was removed.",
+            ) from error
         raise SafeStop(
             "concurrent_operation",
             "Another Course 1 operation is already using this controlled scope. "
             "Wait for it to finish, then retry. After a confirmed crash, follow "
             "the proof-first stale-lock steps in course1_capstone/README.md.",
         ) from error
+    except SafeStop:
+        if descriptor is not None:
+            try:
+                os.close(descriptor)
+            except OSError:
+                pass
+            descriptor = None
+            try:
+                lock_path.unlink(missing_ok=True)
+            except OSError:
+                pass
+        raise
     except OSError as error:
         if descriptor is not None:
             try:
@@ -467,12 +900,12 @@ def _write_latest_run_locator(workspace: Path, run_id: str) -> None:
 
 
 def _parse_csv_bytes(input_bytes: bytes, source_name: str) -> list[dict[str, str]]:
-    try:
-        text = input_bytes.decode("utf-8-sig")
-    except UnicodeDecodeError as error:
+    if len(input_bytes) > MAX_WORK_ITEM_CSV_BYTES:
         raise SafeStop(
-            "malformed_input", f"{source_name} is not UTF-8 text."
-        ) from error
+            "input_limit_exceeded",
+            f"{source_name} is larger than the supported 2 MiB work-item limit.",
+        )
+    text = _decode_utf8(input_bytes, source_name, code="malformed_input")
     try:
         reader = csv.DictReader(io.StringIO(text, newline=""), strict=True)
         if reader.fieldnames != HEADERS:
@@ -480,7 +913,14 @@ def _parse_csv_bytes(input_bytes: bytes, source_name: str) -> list[dict[str, str
                 "header_mismatch",
                 f"Expected headers {HEADERS}; received {reader.fieldnames}.",
             )
-        rows = list(reader)
+        rows: list[dict[str, str]] = []
+        for row in reader:
+            if len(rows) >= MAX_WORK_ITEM_ROWS:
+                raise SafeStop(
+                    "input_limit_exceeded",
+                    f"{source_name} contains more than {MAX_WORK_ITEM_ROWS} work-item rows.",
+                )
+            rows.append(row)
     except csv.Error as error:
         raise SafeStop(
             "malformed_input", f"{source_name} is malformed CSV: {error}."
@@ -495,6 +935,12 @@ def _parse_csv_bytes(input_bytes: bytes, source_name: str) -> list[dict[str, str
                 f"CSV row {source_row} does not have exactly {len(HEADERS)} values.",
             )
         clean = {field: row[field] for field in HEADERS}
+        for field, value in clean.items():
+            if len(value) > MAX_CSV_CELL_CODE_POINTS:
+                raise SafeStop(
+                    "input_limit_exceeded",
+                    f"CSV row {source_row} field {field} exceeds the supported cell limit.",
+                )
         clean["_source_row"] = str(source_row)
         clean_rows.append(clean)
     return clean_rows
@@ -503,18 +949,11 @@ def _parse_csv_bytes(input_bytes: bytes, source_name: str) -> list[dict[str, str
 def load_work_items(input_path: Path) -> tuple[bytes, list[dict[str, str]]]:
     if not isinstance(input_path, Path):
         raise SafeStop("invalid_argument", "Input path must be a Path.")
-    try:
-        input_bytes = input_path.read_bytes()
-    except FileNotFoundError as error:
-        raise SafeStop(
-            "missing_file",
-            f"Input file does not exist: {input_path.name}.",
-        ) from error
-    except OSError as error:
-        raise SafeStop(
-            "file_read_error",
-            f"Could not safely read input file {input_path.name}.",
-        ) from error
+    input_bytes = _read_regular_bytes(
+        input_path,
+        f"input file {input_path.name}",
+        max_bytes=MAX_WORK_ITEM_CSV_BYTES,
+    )
     rows = _parse_csv_bytes(input_bytes, input_path.name)
     work_ids = [row["work_item_id"].strip() for row in rows]
     if any(not re.fullmatch(r"WI-[0-9]{4}", value) for value in work_ids):
@@ -1552,18 +1991,19 @@ def _build_review_manifest(
     artifact_hashes: dict[str, str] = {}
     for relative_path in PROTECTED_REVIEW_ARTIFACTS.values():
         path = run_dir / relative_path
-        try:
-            artifact_hashes[relative_path] = sha256_bytes(path.read_bytes())
-        except FileNotFoundError as error:
-            raise SafeStop(
-                "missing_file",
-                f"Protected review artifact is missing: {relative_path}.",
-            ) from error
-        except OSError as error:
-            raise SafeStop(
-                "file_read_error",
-                f"Could not read protected review artifact: {relative_path}.",
-            ) from error
+        if relative_path == PROTECTED_REVIEW_ARTIFACTS["source"]:
+            max_bytes = MAX_WORK_ITEM_CSV_BYTES
+        elif relative_path == PROTECTED_REVIEW_ARTIFACTS["expected_oracle"]:
+            max_bytes = MAX_EXPECTED_CSV_BYTES
+        else:
+            max_bytes = MAX_JSON_BYTES
+        artifact_hashes[relative_path] = sha256_bytes(
+            _read_regular_bytes(
+                path,
+                f"protected review artifact {relative_path}",
+                max_bytes=max_bytes,
+            )
+        )
     manifest = {
         "schema_version": REVIEW_MANIFEST_SCHEMA_VERSION,
         "run_id": run_id,
@@ -1680,7 +2120,19 @@ def append_audit_event(
     details: dict[str, Any],
     occurred_at: datetime | None = None,
 ) -> dict[str, Any]:
-    occurred_at_text = iso_utc(occurred_at or utc_now())
+    audit_path = run_dir / "audit" / "events.jsonl"
+    existing = _load_audit_events(audit_path, expected_run_id=run_id)
+    occurred = occurred_at or utc_now()
+    if existing:
+        latest = parse_datetime(existing[-1]["occurred_at"], "occurred_at")
+        if occurred_at is None and occurred <= latest:
+            occurred = latest + timedelta(microseconds=1)
+        elif occurred <= latest:
+            raise SafeStop(
+                "audit_history_mismatch",
+                "The new audit event must be dated after the latest controlled event.",
+            )
+    occurred_at_text = iso_utc(occurred)
     event = {
         "event_id": _event_id(
             run_id,
@@ -1698,13 +2150,34 @@ def append_audit_event(
         "details": details,
     }
     validate_audit_event(event)
-    audit_path = run_dir / "audit" / "events.jsonl"
-    existing = _load_audit_events(audit_path, expected_run_id=run_id)
     if event["event_id"] not in {item["event_id"] for item in existing}:
-        encoded = "".join(
-            json.dumps(item, ensure_ascii=False, sort_keys=True) + "\n"
-            for item in [*existing, event]
-        ).encode("utf-8")
+        candidate_events = [*existing, event]
+        if len(candidate_events) > MAX_AUDIT_EVENTS:
+            raise SafeStop(
+                "audit_limit_exceeded",
+                f"Audit history exceeds the supported {MAX_AUDIT_EVENTS}-event limit.",
+            )
+        rendered_lines = [
+            json.dumps(
+                item,
+                ensure_ascii=False,
+                sort_keys=True,
+                allow_nan=False,
+            )
+            + "\n"
+            for item in candidate_events
+        ]
+        if any(len(line.encode("utf-8")) > MAX_AUDIT_LINE_BYTES for line in rendered_lines):
+            raise SafeStop(
+                "audit_limit_exceeded",
+                "An audit event exceeds the supported 256 KiB line limit.",
+            )
+        encoded = "".join(rendered_lines).encode("utf-8")
+        if len(encoded) > MAX_AUDIT_BYTES:
+            raise SafeStop(
+                "audit_limit_exceeded",
+                "Audit history exceeds the supported 16 MiB limit.",
+            )
         try:
             atomic_write_bytes(audit_path, encoded)
         except SafeStop as error:
@@ -1713,6 +2186,154 @@ def append_audit_event(
                 "Could not atomically persist the controlled audit event.",
             ) from error
     return event
+
+
+def _positive_int(value: Any) -> bool:
+    return type(value) is int and value > 0
+
+
+def _validate_audit_details(event_type: str, state: str, details: Any) -> None:
+    contract = AUDIT_EVENT_CONTRACTS.get(event_type)
+    if contract is None:
+        raise SafeStop(
+            "invalid_audit_event",
+            "Audit event_type is outside the closed Course 1 vocabulary.",
+        )
+    allowed_states, _, required_details = contract
+    if state not in allowed_states:
+        raise SafeStop(
+            "invalid_audit_event",
+            "Audit event_type is not permitted in the recorded state.",
+        )
+    _require_exact_keys(details, required_details, f"{event_type} audit details")
+
+    def hash_field(name: str) -> bool:
+        return isinstance(details[name], str) and bool(
+            re.fullmatch(r"[a-f0-9]{64}", details[name])
+        )
+
+    if event_type == "run_received":
+        valid = (
+            hash_field("input_sha256")
+            and hash_field("run_config_sha256")
+            and details["dataset_kind"] == "synthetic"
+        )
+    elif event_type == "input_validated":
+        valid = (
+            _positive_int(details["row_count"])
+            and details["row_count"] <= MAX_WORK_ITEM_ROWS
+            and details["header_count"] == len(HEADERS)
+        )
+    elif event_type == "no_verified_issues":
+        valid = (
+            type(details["issue_count"]) is int
+            and details["issue_count"] == 0
+            and type(details["external_actions"]) is int
+            and details["external_actions"] == 0
+        )
+    elif event_type == "issues_created":
+        valid = (
+            _positive_int(details["issue_count"])
+            and details["identity_fields"]
+            == ["work_item_id", "rule_code", "field"]
+        )
+    elif event_type == "summary_fallback":
+        valid = (
+            details["reason"]
+            in {
+                "ai_disabled",
+                "ai_timeout",
+                "ai_refusal",
+                "malformed_ai_json",
+                "unknown_ai_issue_reference",
+            }
+            and details["generator"] == "deterministic-fallback"
+        )
+    elif event_type == "mock_summary_validated":
+        valid = (
+            details["generator"] == "offline-mock"
+            and _positive_int(details["issue_reference_count"])
+        )
+    elif event_type == "human_review_required":
+        valid = (
+            details["draft_revision"] == 1
+            and hash_field("draft_sha256")
+            and hash_field("review_manifest_sha256")
+        )
+    elif event_type == "duplicate_retry_ignored":
+        valid = (
+            hash_field("input_sha256")
+            and hash_field("run_config_sha256")
+            and details["no_duplicate_effect"] is True
+        )
+    elif event_type == "review_decision_recorded":
+        decision_state = {
+            "approve": "approved_for_local_export",
+            "edit": "changes_requested",
+            "reject": "rejected",
+            "expire": "expired",
+        }
+        valid = (
+            isinstance(details["decision_id"], str)
+            and bool(re.fullmatch(r"DEC-[A-F0-9]{12}", details["decision_id"]))
+            and details["decision"] in decision_state
+            and state == decision_state.get(details["decision"])
+            and _positive_int(details["draft_revision"])
+            and hash_field("draft_sha256")
+            and hash_field("review_manifest_sha256")
+            and type(details["evidence_reviewed"]) is bool
+            and details["integrity_scope"]
+            == "local_tamper_detection_not_authentication"
+        )
+    elif event_type == "draft_revision_created":
+        valid = (
+            _positive_int(details["previous_revision"])
+            and details["draft_revision"] == details["previous_revision"] + 1
+            and hash_field("previous_sha256")
+            and hash_field("draft_sha256")
+            and hash_field("review_manifest_sha256")
+        )
+    elif event_type == "candidate_summary_validated":
+        valid = (
+            hash_field("candidate_sha256")
+            and _positive_int(details["draft_revision"])
+            and _positive_int(details["issue_reference_count"])
+            and details["prose_support_status"] == "controlled_templates_only"
+            and details["human_support_review_required"] is True
+        )
+    elif event_type == "local_export_created":
+        revision = details["draft_revision"]
+        valid = (
+            isinstance(details["decision_id"], str)
+            and bool(re.fullmatch(r"DEC-[A-F0-9]{12}", details["decision_id"]))
+            and _positive_int(revision)
+            and details["files"]
+            == [f"approved-r{revision}.json", f"approved-r{revision}.csv"]
+            and type(details["external_actions"]) is int
+            and details["external_actions"] == 0
+        )
+    elif event_type == "review_expired":
+        valid = (
+            isinstance(details["decision_id"], str)
+            and bool(re.fullmatch(r"DEC-[A-F0-9]{12}", details["decision_id"]))
+            and _positive_int(details["draft_revision"])
+        )
+    else:
+        valid = (
+            isinstance(details["attempt_id"], str)
+            and bool(re.fullmatch(r"A[0-9]{4,}", details["attempt_id"]))
+            and isinstance(details["error_code"], str)
+            and bool(re.fullmatch(r"[a-z][a-z0-9_]{0,63}", details["error_code"]))
+            and details["command"]
+            in {"prepare", "decide", "revise", "validate-summary", "export", "status"}
+            and type(details["external_actions"]) is int
+            and details["external_actions"] == 0
+        )
+    if not valid:
+        raise SafeStop(
+            "invalid_audit_event",
+            f"{event_type} audit details do not match the closed event contract.",
+        )
 
 
 def validate_audit_event(
@@ -1737,19 +2358,20 @@ def validate_audit_event(
     _require_run_id(event["run_id"], "Audit run_id", "invalid_audit_event")
     if expected_run_id is not None and event["run_id"] != expected_run_id:
         raise SafeStop("invalid_audit_event", "Audit event belongs to another run.")
-    if not isinstance(event["event_type"], str) or not re.fullmatch(
-        r"[a-z_]+",
-        event["event_type"],
-    ):
+    if not isinstance(event["event_type"], str):
         raise SafeStop("invalid_audit_event", "Audit event_type is invalid.")
+    contract = AUDIT_EVENT_CONTRACTS.get(event["event_type"])
+    if contract is None:
+        raise SafeStop(
+            "invalid_audit_event",
+            "Audit event_type is outside the closed Course 1 vocabulary.",
+        )
     if not isinstance(event["state"], str) or event["state"] not in WORKFLOW_STATES:
         raise SafeStop("invalid_audit_event", "Audit state is invalid.")
-    if not isinstance(event["actor_type"], str) or event["actor_type"] not in {
-        "system",
-        "mock_ai",
-        "ai",
-        "reviewer",
-    }:
+    if (
+        not isinstance(event["actor_type"], str)
+        or event["actor_type"] != contract[1]
+    ):
         raise SafeStop("invalid_audit_event", "Audit actor_type is invalid.")
     parse_datetime(event["occurred_at"], "occurred_at")
     if not isinstance(event["details"], dict):
@@ -1767,6 +2389,11 @@ def validate_audit_event(
             "audit_integrity_mismatch",
             "Audit event fields no longer match event_id.",
         )
+    _validate_audit_details(
+        event["event_type"],
+        event["state"],
+        event["details"],
+    )
 
 
 def _load_audit_events(
@@ -1774,27 +2401,55 @@ def _load_audit_events(
     *,
     expected_run_id: str | None = None,
 ) -> list[dict[str, Any]]:
+    _validate_supported_path(path, "Audit file")
     if not path.exists():
         return []
-    try:
-        lines = path.read_text(encoding="utf-8").splitlines()
-    except UnicodeError as error:
-        raise SafeStop("audit_corrupt", "Audit file encoding is invalid.") from error
-    except OSError as error:
-        raise SafeStop("file_read_error", "Could not read the audit file.") from error
+    encoded = _read_regular_bytes(
+        path,
+        "audit file",
+        max_bytes=MAX_AUDIT_BYTES,
+    )
+    text = _decode_utf8(encoded, "Audit file", code="audit_corrupt")
+    lines = text.splitlines()
     events: list[dict[str, Any]] = []
     for line_number, line in enumerate(lines, start=1):
         if not line.strip():
             continue
+        if len(line.encode("utf-8")) > MAX_AUDIT_LINE_BYTES:
+            raise SafeStop(
+                "audit_limit_exceeded",
+                f"Audit line {line_number} exceeds the supported 256 KiB limit.",
+            )
         try:
-            event = json.loads(line)
+            event = json.loads(
+                line,
+                object_pairs_hook=_json_object_without_duplicates,
+                parse_constant=lambda _: (_ for _ in ()).throw(
+                    SafeStop(
+                        "audit_corrupt",
+                        f"Audit line {line_number} contains an invalid JSON value.",
+                    )
+                ),
+            )
         except json.JSONDecodeError as error:
             raise SafeStop(
                 "audit_corrupt",
                 f"Audit line {line_number} is not valid JSON.",
             ) from error
         validate_audit_event(event, expected_run_id)
+        if events and parse_datetime(
+            event["occurred_at"], "occurred_at"
+        ) <= parse_datetime(events[-1]["occurred_at"], "occurred_at"):
+            raise SafeStop(
+                "audit_history_mismatch",
+                "Audit event dates are not strictly increasing in the controlled history.",
+            )
         events.append(event)
+        if len(events) > MAX_AUDIT_EVENTS:
+            raise SafeStop(
+                "audit_limit_exceeded",
+                f"Audit history exceeds the supported {MAX_AUDIT_EVENTS}-event limit.",
+            )
     if len({event["event_id"] for event in events}) != len(events):
         raise SafeStop("audit_corrupt", "Audit event identifiers are duplicated.")
     return events
@@ -1809,18 +2464,11 @@ def _read_expected_oracle(
 ) -> tuple[set[tuple[str, str, str]] | None, str | None, bytes]:
     if path is None:
         return None, None, EXPECTED_ORACLE_ABSENT_BYTES
-    try:
-        oracle_bytes = path.read_bytes()
-    except FileNotFoundError as error:
-        raise SafeStop(
-            "missing_file",
-            f"Expected-issues file is missing: {path.name}.",
-        ) from error
-    except OSError as error:
-        raise SafeStop(
-            "file_read_error",
-            f"Could not safely read expected-issues file {path.name}.",
-        ) from error
+    oracle_bytes = _read_regular_bytes(
+        path,
+        f"expected-issues file {path.name}",
+        max_bytes=MAX_EXPECTED_CSV_BYTES,
+    )
     return (
         _parse_expected_oracle_bytes(oracle_bytes),
         sha256_bytes(oracle_bytes),
@@ -1831,25 +2479,93 @@ def _read_expected_oracle(
 def _parse_expected_oracle_bytes(
     oracle_bytes: bytes,
 ) -> set[tuple[str, str, str]]:
-    try:
-        text = oracle_bytes.decode("utf-8-sig")
-    except UnicodeError as error:
+    if len(oracle_bytes) > MAX_EXPECTED_CSV_BYTES:
         raise SafeStop(
-            "malformed_input",
-            "Expected-issues CSV is not UTF-8 text.",
-        ) from error
+            "input_limit_exceeded",
+            "Expected-issues CSV is larger than the supported 2 MiB limit.",
+        )
+    text = _decode_utf8(
+        oracle_bytes,
+        "Expected-issues CSV",
+        code="malformed_input",
+    )
     try:
-        rows = list(csv.DictReader(io.StringIO(text, newline=""), strict=True))
+        reader = csv.DictReader(io.StringIO(text, newline=""), strict=True)
+        expected_headers = [
+            "issue_id",
+            "work_item_id",
+            "field",
+            "rule_code",
+            "severity",
+            "expected_message",
+        ]
+        if reader.fieldnames != expected_headers:
+            raise SafeStop(
+                "expected_contract",
+                "Expected-issues CSV must use the exact six published headers.",
+            )
+        rows: list[dict[str, str]] = []
+        for row in reader:
+            if len(rows) >= MAX_EXPECTED_ROWS:
+                raise SafeStop(
+                    "input_limit_exceeded",
+                    f"Expected-issues CSV contains more than {MAX_EXPECTED_ROWS} rows.",
+                )
+            rows.append(row)
     except csv.Error as error:
         raise SafeStop(
             "malformed_input", f"Expected-issues CSV is malformed: {error}"
         ) from error
-    required = {"work_item_id", "rule_code", "field"}
-    if not rows or not required.issubset(set(rows[0])):
+    if not rows:
         raise SafeStop(
             "expected_contract",
-            "Expected issues must contain work_item_id, rule_code, and field.",
+            "Expected-issues CSV must contain at least one expected issue.",
         )
+    for row_number, row in enumerate(rows, start=2):
+        if None in row or any(value is None for value in row.values()):
+            raise SafeStop(
+                "expected_contract",
+                f"Expected-issues row {row_number} does not have exactly six values.",
+            )
+        for field_name, value in row.items():
+            if len(value) > MAX_CSV_CELL_CODE_POINTS:
+                raise SafeStop(
+                    "input_limit_exceeded",
+                    f"Expected-issues row {row_number} field {field_name} exceeds the cell limit.",
+                )
+        work_item_id = row["work_item_id"]
+        rule_code = row["rule_code"]
+        field_name = row["field"]
+        _reject_bidi_controls(work_item_id, "Expected work-item identifier")
+        _reject_bidi_controls(rule_code, "Expected rule code")
+        _reject_bidi_controls(field_name, "Expected field")
+        if not re.fullmatch(r"WI-[0-9]{4}", work_item_id):
+            raise SafeStop(
+                "expected_contract",
+                f"Expected-issues row {row_number} has an invalid work_item_id.",
+            )
+        if not re.fullmatch(r"R(?:00[1-9]|01[01])", rule_code):
+            raise SafeStop(
+                "expected_contract",
+                f"Expected-issues row {row_number} has an invalid rule_code.",
+            )
+        if field_name not in HEADERS:
+            raise SafeStop(
+                "expected_contract",
+                f"Expected-issues row {row_number} has an unknown field.",
+            )
+        if row["issue_id"] != f"{work_item_id}|{rule_code}|{field_name}":
+            raise SafeStop(
+                "expected_contract",
+                f"Expected-issues row {row_number} has an inconsistent issue_id.",
+            )
+        if row["severity"] not in {"medium", "high"} or not row[
+            "expected_message"
+        ].strip():
+            raise SafeStop(
+                "expected_contract",
+                f"Expected-issues row {row_number} has invalid expected evidence.",
+            )
     keys = {(row["work_item_id"], row["rule_code"], row["field"]) for row in rows}
     if len(keys) != len(rows):
         raise SafeStop("expected_contract", "Expected issue keys are not unique.")
@@ -2035,18 +2751,139 @@ prohibited in this Course 1 runner.
 """
 
 
-def _cleanup_prepare_staging(workspace: Path) -> None:
-    runs_root = workspace.resolve() / "runs"
+def _create_staging_marker(staging_directory: Path) -> None:
+    marker_path = staging_directory / STAGING_MARKER_NAME
+    marker_bytes = canonical_bytes(
+        {
+            "format": STAGING_MARKER_FORMAT,
+            "directory": staging_directory.name,
+            "operation_id": uuid.uuid4().hex,
+            "created_at": iso_utc(utc_now()),
+        }
+    )
     try:
-        if not runs_root.is_dir():
+        with marker_path.open("xb") as stream:
+            stream.write(marker_bytes)
+            stream.flush()
+            os.fsync(stream.fileno())
+    except OSError as error:
+        try:
+            marker_path.unlink(missing_ok=True)
+            staging_directory.rmdir()
+        except OSError:
+            pass
+        raise SafeStop(
+            "staging_marker_error",
+            "The private staging folder could not be ownership-marked. Nothing "
+            "was published.",
+        ) from error
+
+
+def _validate_staging_marker(staging_directory: Path) -> dict[str, Any]:
+    marker_path = staging_directory / STAGING_MARKER_NAME
+    try:
+        marker = read_json(marker_path)
+        _require_exact_keys(
+            marker,
+            {"format", "directory", "operation_id", "created_at"},
+            "staging ownership marker",
+        )
+    except SafeStop as error:
+        raise SafeStop(
+            "staging_ownership_mismatch",
+            "A private staging folder has no valid Course 1 ownership marker. "
+            "Nothing was removed.",
+        ) from error
+    if (
+        marker["format"] != STAGING_MARKER_FORMAT
+        or marker["directory"] != staging_directory.name
+        or not isinstance(marker["operation_id"], str)
+        or not re.fullmatch(r"[a-f0-9]{32}", marker["operation_id"])
+    ):
+        raise SafeStop(
+            "staging_ownership_mismatch",
+            "A private staging folder has no valid Course 1 ownership marker. "
+            "Nothing was removed.",
+        )
+    parse_datetime(marker["created_at"], "staging created_at")
+    return marker
+
+
+def _remove_owned_staging_tree(path: Path, staging_root: Path) -> None:
+    path_stat = path.lstat()
+    if stat.S_ISLNK(path_stat.st_mode) or _path_has_reparse_attribute(path_stat):
+        raise SafeStop(
+            "staging_ownership_mismatch",
+            "A private staging folder contains a link or reparse point. Nothing was removed.",
+        )
+    if stat.S_ISDIR(path_stat.st_mode):
+        for child in path.iterdir():
+            _remove_owned_staging_tree(child, staging_root)
+        path.rmdir()
+        return
+    if stat.S_ISREG(path_stat.st_mode):
+        path.unlink()
+        return
+    raise SafeStop(
+        "staging_ownership_mismatch",
+        "A private staging folder contains an unsupported file type. Nothing was removed.",
+    )
+
+
+def _discard_owned_staging_directory(staging_directory: Path) -> None:
+    try:
+        staging_directory.lstat()
+    except FileNotFoundError:
+        return
+    except OSError as error:
+        raise SafeStop(
+            "staging_cleanup_error",
+            "The private staging folder could not be safely inspected.",
+        ) from error
+    _validate_staging_marker(staging_directory)
+    try:
+        _remove_owned_staging_tree(staging_directory, staging_directory)
+    except SafeStop:
+        raise
+    except OSError as error:
+        raise SafeStop(
+            "staging_cleanup_error",
+            "The owned private staging folder could not be removed.",
+        ) from error
+
+
+def _cleanup_prepare_staging(workspace: Path) -> None:
+    runs_root = workspace.absolute() / "runs"
+    try:
+        if not runs_root.exists():
             return
-        staging_directories = [
-            path
-            for path in runs_root.iterdir()
-            if path.is_dir() and path.name.startswith(STAGING_PREFIX)
-        ]
-        for path in staging_directories:
-            shutil.rmtree(path)
+        root_stat = runs_root.lstat()
+        if (
+            not stat.S_ISDIR(root_stat.st_mode)
+            or stat.S_ISLNK(root_stat.st_mode)
+            or _path_has_reparse_attribute(root_stat)
+        ):
+            raise SafeStop(
+                "staging_cleanup_error",
+                "The controlled runs path is not an ordinary folder. Nothing was removed.",
+            )
+        for path in runs_root.iterdir():
+            if not path.name.startswith(STAGING_PREFIX):
+                continue
+            path_stat = path.lstat()
+            if (
+                not stat.S_ISDIR(path_stat.st_mode)
+                or stat.S_ISLNK(path_stat.st_mode)
+                or _path_has_reparse_attribute(path_stat)
+            ):
+                raise SafeStop(
+                    "staging_ownership_mismatch",
+                    "A staging-like path is not an owned ordinary folder. Nothing was removed.",
+                )
+            _validate_staging_marker(path)
+            _remove_owned_staging_tree(path, path)
+    except SafeStop:
+        raise
     except OSError as error:
         raise SafeStop(
             "staging_cleanup_error",
@@ -2060,9 +2897,11 @@ def _publish_staged_run(
     staged_run_dir: Path,
     final_run_dir: Path,
 ) -> None:
+    _validate_staging_marker(staging_parent)
     _load_run(staged_run_dir)
     try:
         os.replace(staged_run_dir, final_run_dir)
+        (staging_parent / STAGING_MARKER_NAME).unlink()
         staging_parent.rmdir()
     except OSError as error:
         raise SafeStop(
@@ -2079,6 +2918,47 @@ def _audit_matches(
     return event["event_type"] == event_type and all(
         event["details"].get(key) == value for key, value in details.items()
     )
+
+
+def _reconcile_safe_stop_history(
+    run_dir: Path,
+    events: list[dict[str, Any]],
+    *,
+    base_complete_index: int,
+) -> None:
+    safe_stop_positions = [
+        index
+        for index, event in enumerate(events)
+        if event["event_type"] == "safe_stop_recorded"
+    ]
+    seen_attempts: set[str] = set()
+    for index in safe_stop_positions:
+        event = events[index]
+        attempt_id = event["details"]["attempt_id"]
+        if index <= base_complete_index or attempt_id in seen_attempts:
+            raise SafeStop(
+                "audit_history_mismatch",
+                "Safe-stop audit evidence is duplicated or out of lifecycle order.",
+            )
+        seen_attempts.add(attempt_id)
+        attempt_number = int(attempt_id[1:])
+        history_path = run_dir / "failures" / f"a{attempt_number:04d}.json"
+        failure = read_json(history_path)
+        if (
+            failure.get("attempt_id") != attempt_id
+            or failure.get("error_code") != event["details"]["error_code"]
+            or failure.get("command") != event["details"]["command"]
+            or failure.get("state") != "failed_manual"
+            or type(failure.get("external_actions")) is not int
+            or failure.get("external_actions") != 0
+            or failure.get("audit_recorded") is not True
+            or failure.get("history_path")
+            != f"failures/a{attempt_number:04d}.json"
+        ):
+            raise SafeStop(
+                "audit_history_mismatch",
+                "Safe-stop audit evidence differs from its controlled failure record.",
+            )
 
 
 def _reconcile_audit_history(
@@ -2209,8 +3089,30 @@ def _reconcile_audit_history(
                 "audit_history_mismatch",
                 "No-action history contains an impossible review or export event.",
             )
+        allowed_no_action = {
+            "run_received",
+            "input_validated",
+            "no_verified_issues",
+            "duplicate_retry_ignored",
+            "safe_stop_recorded",
+        }
+        if any(event["event_type"] not in allowed_no_action for event in events):
+            raise SafeStop(
+                "audit_history_mismatch",
+                "No-action history contains an event from the issue-review lifecycle.",
+            )
+        _reconcile_safe_stop_history(
+            run_dir,
+            events,
+            base_complete_index=no_issues,
+        )
         return
 
+    if positions("no_verified_issues"):
+        raise SafeStop(
+            "audit_history_mismatch",
+            "Issue-bearing history contains a contradictory no-action event.",
+        )
     issues_created = one("issues_created")
     summary_event_type = (
         "summary_fallback"
@@ -2532,6 +3434,95 @@ def _reconcile_audit_history(
             "Audit history contains an impossible review-expiry event.",
         )
 
+    candidate_positions = positions("candidate_summary_validated")
+    candidate_pairs: set[tuple[int, str]] = set()
+    for index in candidate_positions:
+        event = events[index]
+        event_revision = event["details"]["draft_revision"]
+        candidate_key = (
+            event_revision,
+            event["details"]["candidate_sha256"],
+        )
+        if candidate_key in candidate_pairs:
+            raise SafeStop(
+                "audit_history_mismatch",
+                "Candidate validation audit evidence is duplicated.",
+            )
+        candidate_pairs.add(candidate_key)
+        if event_revision < 1 or event_revision > revision:
+            raise SafeStop(
+                "audit_history_mismatch",
+                "Candidate validation identifies an impossible draft revision.",
+            )
+        prerequisite = (
+            review_required
+            if event_revision == 1
+            else revision_positions[event_revision]
+        )
+        decision_position = decision_positions_by_revision.get(event_revision)
+        if index <= prerequisite or (
+            decision_position is not None and index >= decision_position
+        ):
+            raise SafeStop(
+                "audit_history_mismatch",
+                "Candidate validation is out of order for its draft revision.",
+            )
+
+    candidate_result_path = run_dir / "review" / "candidate-validation.json"
+    if candidate_result_path.exists():
+        candidate_result = read_json(candidate_result_path)
+        required_candidate_result = {
+            "run_id",
+            "candidate_sha256",
+            "draft_revision",
+            "status",
+            "prose_support_status",
+            "issue_reference_count",
+            "human_support_review_required",
+            "external_actions",
+        }
+        _require_exact_keys(
+            candidate_result,
+            required_candidate_result,
+            "candidate validation result",
+        )
+        matching_candidates = [
+            event
+            for event in events
+            if event["event_type"] == "candidate_summary_validated"
+            and event["details"]["candidate_sha256"]
+            == candidate_result["candidate_sha256"]
+            and event["details"]["draft_revision"]
+            == candidate_result["draft_revision"]
+        ]
+        if (
+            candidate_result["run_id"] != state["run_id"]
+            or candidate_result["status"]
+            != "bounded_structure_and_references_valid"
+            or candidate_result["prose_support_status"]
+            != "controlled_templates_only"
+            or candidate_result["issue_reference_count"] != len(issues)
+            or candidate_result["human_support_review_required"] is not True
+            or type(candidate_result["external_actions"]) is not int
+            or candidate_result["external_actions"] != 0
+            or len(matching_candidates) != 1
+        ):
+            raise SafeStop(
+                "audit_history_mismatch",
+                "Candidate validation result differs from its audit evidence.",
+            )
+    elif candidate_positions:
+        raise SafeStop(
+            "audit_history_mismatch",
+            "Candidate validation audit exists without its controlled result.",
+        )
+
+    _reconcile_safe_stop_history(
+        run_dir,
+        events,
+        base_complete_index=review_required,
+    )
+
 
 def _prepare_run_unlocked(
     input_path: Path,
@@ -2549,6 +3540,19 @@ def _prepare_run_unlocked(
             "invalid_argument",
             "Prepare paths must be Path values.",
         )
+    _validate_supported_path(workspace, "Workspace", workspace_root=True)
+    try:
+        if workspace.exists() and not workspace.is_dir():
+            raise SafeStop(
+                "workspace_not_directory",
+                "The selected workspace is a file, not a folder. Choose a short "
+                "ordinary local folder and retry.",
+            )
+    except OSError as error:
+        raise SafeStop(
+            "filesystem_check_error",
+            "Could not safely inspect the workspace.",
+        ) from error
     if synthetic_confirmation != SYNTHETIC_CONFIRMATION:
         raise SafeStop(
             "synthetic_confirmation_required",
@@ -2585,6 +3589,13 @@ def _prepare_run_unlocked(
             "Could not resolve the workspace path.",
         ) from error
     run_dir = resolved_workspace / "runs" / run_id
+    longest_generated = run_dir / "failures" / "a99999999.json"
+    if len(str(longest_generated)) >= 260:
+        raise SafeStop(
+            "workspace_path_too_long",
+            "This workspace would create a path at or above 260 characters. "
+            "Choose a shorter ordinary local folder, then retry.",
+        )
     state_path = run_dir / "state.json"
     try:
         workspace.mkdir(parents=True, exist_ok=True)
@@ -2638,6 +3649,7 @@ def _prepare_run_unlocked(
     try:
         runs_root.mkdir(parents=True, exist_ok=True)
         staging_parent = Path(tempfile.mkdtemp(prefix=STAGING_PREFIX, dir=runs_root))
+        _create_staging_marker(staging_parent)
         staged_run_dir = staging_parent / run_id
         staged_run_dir.mkdir()
     except OSError as error:
@@ -2913,14 +3925,11 @@ def _load_run(
             "State configuration fields differ from run_config.json.",
         )
     source_path = run_dir / "source" / "work_items.csv"
-    try:
-        source_bytes = source_path.read_bytes()
-    except FileNotFoundError as error:
-        raise SafeStop("missing_file", "Protected source file is missing.") from error
-    except OSError as error:
-        raise SafeStop(
-            "file_read_error", "Could not read protected source file."
-        ) from error
+    source_bytes = _read_regular_bytes(
+        source_path,
+        "protected source file",
+        max_bytes=MAX_WORK_ITEM_CSV_BYTES,
+    )
     if sha256_bytes(source_bytes) != state["input_sha256"]:
         raise SafeStop(
             "source_integrity_mismatch",
@@ -2941,12 +3950,11 @@ def _load_run(
             "Issue JSON differs from deterministic source evaluation.",
         )
     issues_csv_path = run_dir / "issues" / "issues.csv"
-    try:
-        issues_csv_bytes = issues_csv_path.read_bytes()
-    except FileNotFoundError as error:
-        raise SafeStop("missing_file", "Issue CSV is missing.") from error
-    except OSError as error:
-        raise SafeStop("file_read_error", "Could not read issue CSV.") from error
+    issues_csv_bytes = _read_regular_bytes(
+        issues_csv_path,
+        "controlled issue CSV",
+        max_bytes=MAX_JSON_BYTES,
+    )
     if issues_csv_bytes != _csv_bytes(issues, ISSUE_FIELDS):
         raise SafeStop(
             "issues_integrity_mismatch",
@@ -3328,7 +4336,11 @@ def _revise_draft_unlocked(
             "replacement_run_mismatch",
             "Replacement prompt version and generator must match this exact run.",
         )
-    source_bytes = (run_dir / "source" / "work_items.csv").read_bytes()
+    source_bytes = _read_regular_bytes(
+        run_dir / "source" / "work_items.csv",
+        "protected source file",
+        max_bytes=MAX_WORK_ITEM_CSV_BYTES,
+    )
     source_rows = _parse_csv_bytes(source_bytes, "work_items.csv")
     validate_summary(replacement, issues, state["run_id"], source_rows)
     replacement_bytes = canonical_bytes(replacement)
@@ -3440,13 +4452,44 @@ def _validate_candidate_summary_unlocked(
             "Candidate prompt version and generator must match this exact run.",
         )
     source_rows = _parse_csv_bytes(
-        (run_dir / "source" / "work_items.csv").read_bytes(),
+        _read_regular_bytes(
+            run_dir / "source" / "work_items.csv",
+            "protected source file",
+            max_bytes=MAX_WORK_ITEM_CSV_BYTES,
+        ),
         "work_items.csv",
     )
     validate_summary(candidate, issues, state["run_id"], source_rows)
     result_path = run_dir / "review" / "candidate-validation.json"
     audit_path = run_dir / "audit" / "events.jsonl"
     candidate_hash = sha256_bytes(canonical_bytes(candidate))
+    existing_events = _load_audit_events(
+        audit_path,
+        expected_run_id=state["run_id"],
+    )
+    duplicate = [
+        event
+        for event in existing_events
+        if event["event_type"] == "candidate_summary_validated"
+        and event["details"]["candidate_sha256"] == candidate_hash
+        and event["details"]["draft_revision"] == state["draft_revision"]
+    ]
+    if duplicate:
+        if len(duplicate) != 1 or not result_path.is_file():
+            raise SafeStop(
+                "audit_history_mismatch",
+                "Candidate validation retry evidence is incomplete or duplicated.",
+            )
+        existing_result = read_json(result_path)
+        if (
+            existing_result.get("candidate_sha256") != candidate_hash
+            or existing_result.get("draft_revision") != state["draft_revision"]
+        ):
+            raise SafeStop(
+                "audit_history_mismatch",
+                "Candidate validation result differs from its audit evidence.",
+            )
+        return result_path
 
     def commit_candidate_result() -> None:
         write_json(
@@ -3454,6 +4497,7 @@ def _validate_candidate_summary_unlocked(
             {
                 "run_id": state["run_id"],
                 "candidate_sha256": candidate_hash,
+                "draft_revision": state["draft_revision"],
                 "status": "bounded_structure_and_references_valid",
                 "prose_support_status": "controlled_templates_only",
                 "issue_reference_count": len(issues),
@@ -3469,6 +4513,7 @@ def _validate_candidate_summary_unlocked(
             "system",
             {
                 "candidate_sha256": candidate_hash,
+                "draft_revision": state["draft_revision"],
                 "issue_reference_count": len(issues),
                 "prose_support_status": "controlled_templates_only",
                 "human_support_review_required": True,
@@ -3595,14 +4640,18 @@ def _local_export_audit_count(
     )
 
 
-def _controlled_file_snapshot(path: Path, label: str) -> bytes | None:
+def _controlled_file_snapshot(
+    path: Path,
+    label: str,
+    *,
+    max_bytes: int = MAX_JSON_BYTES,
+) -> bytes | None:
     try:
-        return path.read_bytes() if path.exists() else None
-    except OSError as error:
-        raise SafeStop(
-            "file_read_error",
-            f"Could not snapshot {label} before export.",
-        ) from error
+        return _read_regular_bytes(path, label, max_bytes=max_bytes)
+    except SafeStop as error:
+        if error.code == "missing_file":
+            return None
+        raise
 
 
 def _restore_controlled_file(path: Path, snapshot: bytes | None) -> None:
@@ -3630,7 +4679,14 @@ def _execute_controlled_transaction(
 
     unique_paths = list(dict.fromkeys(paths))
     snapshots = {
-        path: _controlled_file_snapshot(path, path.name) for path in unique_paths
+        path: _controlled_file_snapshot(
+            path,
+            path.name,
+            max_bytes=(
+                MAX_AUDIT_BYTES if path.name == "events.jsonl" else MAX_JSON_BYTES
+            ),
+        )
+        for path in unique_paths
     }
     try:
         return action()
@@ -3737,7 +4793,12 @@ def _export_approved_unlocked(
         raise SafeStop("approval_run_mismatch", "Decision belongs to another run.")
     if decision.get("draft_revision") != state["draft_revision"]:
         raise SafeStop("stale_update", "Decision belongs to another revision.")
-    current_hash = sha256_bytes((run_dir / "draft" / "summary.json").read_bytes())
+    current_hash = sha256_bytes(
+        _read_bytes(
+            run_dir / "draft" / "summary.json",
+            "controlled summary draft",
+        )
+    )
     if current_hash != state["draft_sha256"]:
         raise SafeStop(
             "edited_draft_after_approval",
@@ -3809,6 +4870,19 @@ def _export_approved_unlocked(
     outbox = run_dir / "outbox"
     try:
         outbox.mkdir(parents=True, exist_ok=True)
+        _validate_supported_path(outbox, "Controlled outbox")
+        outbox_stat = outbox.lstat()
+        if (
+            not stat.S_ISDIR(outbox_stat.st_mode)
+            or stat.S_ISLNK(outbox_stat.st_mode)
+            or _path_has_reparse_attribute(outbox_stat)
+        ):
+            raise SafeStop(
+                "export_write_error",
+                "The controlled outbox is not an ordinary local folder.",
+            )
+    except SafeStop:
+        raise
     except OSError as error:
         raise SafeStop(
             "export_write_error",
@@ -3848,7 +4922,11 @@ def _export_approved_unlocked(
             evaluation_path,
             "evaluation.json",
         ),
-        audit_path: _controlled_file_snapshot(audit_path, "events.jsonl"),
+        audit_path: _controlled_file_snapshot(
+            audit_path,
+            "events.jsonl",
+            max_bytes=MAX_AUDIT_BYTES,
+        ),
     }
     incomplete_marker = outbox / "INCOMPLETE.txt"
     atomic_write_bytes(
@@ -3859,43 +4937,73 @@ def _export_approved_unlocked(
         ).encode("utf-8"),
     )
     finalization_started = already_exported
+    staging_dir: Path | None = None
+    promoted_outputs: set[Path] = set()
     try:
         if not already_exported:
-            with tempfile.TemporaryDirectory(prefix="s-", dir=outbox) as staging:
-                staging_dir = Path(staging)
-                staged_json = staging_dir / json_path.name
-                staged_csv = staging_dir / csv_path.name
-                try:
-                    staged_json.write_bytes(json_bytes)
-                    staged_csv.write_bytes(csv_bytes)
-                    if (
-                        staged_json.read_bytes() != json_bytes
-                        or staged_csv.read_bytes() != csv_bytes
-                    ):
-                        raise OSError("staged export verification failed")
-                except OSError as error:
-                    raise SafeStop(
-                        "export_write_error",
-                        "Could not stage the complete local JSON/CSV export pair.",
-                    ) from error
-                promoted: list[Path] = []
-                try:
-                    os.replace(staged_json, json_path)
-                    promoted.append(json_path)
-                    os.replace(staged_csv, csv_path)
-                    promoted.append(csv_path)
-                except OSError as error:
-                    for path in promoted:
-                        try:
-                            path.unlink(missing_ok=True)
-                        except OSError:
-                            pass
-                    raise SafeStop(
-                        "export_write_error",
-                        "The complete JSON/CSV pair could not be published; staged "
-                        "files were cleaned up.",
-                    ) from error
+            try:
+                staging_dir = Path(
+                    tempfile.mkdtemp(prefix=STAGING_PREFIX, dir=outbox)
+                )
+                _create_staging_marker(staging_dir)
+            except SafeStop:
+                raise
+            except OSError as error:
+                raise SafeStop(
+                    "export_write_error",
+                    "Could not create the owned private export staging folder.",
+                ) from error
+            staged_json = staging_dir / json_path.name
+            staged_csv = staging_dir / csv_path.name
+            try:
+                atomic_write_bytes(staged_json, json_bytes)
+                atomic_write_bytes(staged_csv, csv_bytes)
+                staging_verified = (
+                    _read_regular_bytes(
+                        staged_json,
+                        "staged JSON export",
+                        max_bytes=MAX_JSON_BYTES,
+                    )
+                    == json_bytes
+                    and _read_regular_bytes(
+                        staged_csv,
+                        "staged CSV export",
+                        max_bytes=MAX_JSON_BYTES,
+                    )
+                    == csv_bytes
+                )
+            except SafeStop as error:
+                raise SafeStop(
+                    "export_write_error",
+                    "Could not safely create and verify the private staged export pair.",
+                ) from error
+            if not staging_verified:
+                raise SafeStop(
+                    "export_write_error",
+                    "The staged JSON/CSV export pair did not verify byte for byte.",
+                )
+            try:
+                os.link(staged_json, json_path, follow_symlinks=False)
+                promoted_outputs.add(json_path)
+                os.link(staged_csv, csv_path, follow_symlinks=False)
+                promoted_outputs.add(csv_path)
+            except OSError as error:
+                raise SafeStop(
+                    "export_write_error",
+                    "The complete JSON/CSV pair could not be published without "
+                    "overwriting an existing path.",
+                ) from error
+            if (
+                _read_bytes(json_path, "approved JSON export") != json_bytes
+                or _read_bytes(csv_path, "approved CSV export") != csv_bytes
+            ):
+                raise SafeStop(
+                    "export_write_error",
+                    "The published JSON/CSV export pair did not verify byte for byte.",
+                )
             finalization_started = True
+            _discard_owned_staging_directory(staging_dir)
+            staging_dir = None
 
         state["current_state"] = "approved_draft"
         state["local_export_count"] = 2
@@ -3928,7 +5036,13 @@ def _export_approved_unlocked(
         return json_path, csv_path
     except Exception as error:
         rollback_errors: list[str] = []
-        for output_path in (json_path, csv_path):
+        if staging_dir is not None:
+            try:
+                _discard_owned_staging_directory(staging_dir)
+                staging_dir = None
+            except Exception:
+                rollback_errors.append(staging_dir.name)
+        for output_path in promoted_outputs:
             try:
                 output_path.unlink(missing_ok=True)
             except OSError:
@@ -4014,6 +5128,19 @@ def prepare_run(
 ) -> Path:
     if not isinstance(workspace, Path):
         raise SafeStop("invalid_argument", "Workspace must be a Path.")
+    _validate_supported_path(workspace, "Workspace", workspace_root=True)
+    try:
+        if workspace.exists() and not workspace.is_dir():
+            raise SafeStop(
+                "workspace_not_directory",
+                "The selected workspace is a file, not a folder. Choose a short "
+                "ordinary local folder and retry.",
+            )
+    except OSError as error:
+        raise SafeStop(
+            "filesystem_check_error",
+            "Could not safely inspect the workspace.",
+        ) from error
 
     def prepare_and_cleanup() -> Path:
         try:

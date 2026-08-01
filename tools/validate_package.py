@@ -15,13 +15,14 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import os
 import re
 import sys
 from collections import Counter
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path, PurePosixPath
 from typing import Any, Iterable
@@ -31,7 +32,7 @@ from urllib.parse import unquote
 EXPECTED_PROGRAM_ID = "controlled-ai-workflow-consultant-path"
 EXPECTED_COURSE_ID = "course-1-controlled-ai-workflow-foundations"
 EXPECTED_COURSE4_ID = "course-4-controlled-document-ai-systems"
-EXPECTED_SCHEMA_VERSION = 2
+EXPECTED_SCHEMA_VERSION = 3
 FIXED_ASSESSMENT_DATE_TEXT = "2026-07-26"
 FIXED_ASSESSMENT_DATE = date.fromisoformat(FIXED_ASSESSMENT_DATE_TEXT)
 
@@ -40,6 +41,117 @@ REVISION_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+$")
 WORK_ITEM_ID_RE = re.compile(r"^WI-\d{4}$")
 SOURCE_REFERENCE_RE = re.compile(r"^REF-\d{4}$")
+TECHNICAL_REQUIREMENT_RE = re.compile(
+    r"^C1-TA-(DATA|FS|IO|CAP|PWA|WEB|SW|SC|TEST|WIN|BR|REC)-\d{3}$"
+)
+TECHNICAL_TEST_RE = re.compile(r"^C1-TST-(?:[A-Z0-9]+-)+\d{3}$")
+TECHNICAL_REQUIREMENT_FAMILY_COUNTS = {
+    "DATA": 4,
+    "FS": 11,
+    "IO": 13,
+    "CAP": 7,
+    "PWA": 14,
+    "WEB": 8,
+    "SW": 10,
+    "SC": 12,
+    "TEST": 9,
+    "WIN": 12,
+    "BR": 8,
+    "REC": 10,
+}
+EXPECTED_TECHNICAL_TEST_IDS = {
+    "C1-TST-DATA-001",
+    "C1-TST-FS-001",
+    "C1-TST-FS-002",
+    "C1-TST-FS-003",
+    "C1-TST-FS-004",
+    "C1-TST-FS-005",
+    "C1-TST-FS-006",
+    "C1-TST-FS-007",
+    "C1-TST-FS-008",
+    "C1-TST-FS-009",
+    "C1-TST-FS-010",
+    "C1-TST-FS-011",
+    "C1-TST-IO-001",
+    "C1-TST-IO-002",
+    "C1-TST-CAP-001",
+    "C1-TST-CAP-002",
+    "C1-TST-CAP-003",
+    "C1-TST-CAP-005",
+    "C1-TST-PWA-NET-001",
+    "C1-TST-PWA-STORAGE-001",
+    "C1-TST-PWA-BACKUP-001",
+    "C1-TST-WEB-001",
+    "C1-TST-WEB-002",
+    "C1-TST-WEB-003",
+    "C1-TST-SW-001",
+    "C1-TST-SW-002",
+    "C1-TST-SC-001",
+    "C1-TST-PROV-001",
+    "C1-TST-ORACLE-001",
+    "C1-TST-QUALITY-001",
+    "C1-TST-WIN-E2E-001",
+    "C1-TST-BROWSER-MATRIX-001",
+    "C1-TST-RECOVERY-001",
+}
+TECHNICAL_EVIDENCE_CLASSES = {
+    "AUTOMATED_LOCAL",
+    "NATIVE_WINDOWS",
+    "REAL_BROWSER",
+    "CI_SUPPLY_CHAIN",
+    "POST_DEPLOY",
+    "INDEPENDENT_REVIEW",
+}
+TECHNICAL_ARTIFACT_KINDS = {
+    "COMMAND_LOG",
+    "RAW_RESULT",
+    "SCREENSHOT",
+    "BROWSER_TRACE",
+    "REVIEW_RECORD",
+    "ENVIRONMENT_ATTESTATION",
+}
+LEARNING_REQUIREMENT_RE = re.compile(r"^C1-LV-\d{3}$")
+EXPECTED_LEARNING_REQUIREMENT_IDS = tuple(
+    f"C1-LV-{number:03d}" for number in range(1, 18)
+)
+EXPECTED_LEARNING_METHOD_IDS = {
+    f"C1-LVM-{number:03d}" for number in range(1, 18)
+}
+LEARNING_EVIDENCE_CLASSES = {
+    "AUTOMATED_ARTIFACT",
+    "LEARNER_SELF_REFLECTION",
+    "INDEPENDENT_ARTIFACT_ASSESSMENT",
+    "INDEPENDENT_ORAL_ASSESSMENT",
+    "ROLE_SIMULATED_ACCEPTANCE_REHEARSAL",
+    "REAL_SYNTHETIC_UAT",
+    "LITERAL_BEGINNER_TRIAL",
+    "DELAYED_RETENTION",
+    "UNSEEN_TRANSFER",
+    "ACCESSIBILITY_REVIEW",
+}
+HUMAN_TRIAL_EVIDENCE_CLASSES = {
+    "INDEPENDENT_ARTIFACT_ASSESSMENT",
+    "INDEPENDENT_ORAL_ASSESSMENT",
+    "REAL_SYNTHETIC_UAT",
+    "LITERAL_BEGINNER_TRIAL",
+    "DELAYED_RETENTION",
+    "UNSEEN_TRANSFER",
+    "ACCESSIBILITY_REVIEW",
+}
+PREMODULE_STUDY_BLOCK_COUNTS = {
+    "BEGINNER_READINESS_CHECK.md": 2,
+    "BEGINNER_SOFTWARE_CHECK.md": 2,
+    "SETUP_WINDOWS.md": 5,
+    "foundations/01_FILES_AND_TEXT.md": 6,
+    "foundations/02_COMMAND_LINE_SURVIVAL.md": 7,
+    "foundations/03_CODE_AND_PYTHON.md": 9,
+    "foundations/04_WEB_APIS_AND_JSON.md": 6,
+    "foundations/05_GIT_AND_SAFE_CHANGES.md": 6,
+    "foundations/06_SPREADSHEETS_CSV_AND_DATA_QUALITY.md": 7,
+    "foundations/07_AI_AND_CONTROLLED_WORKFLOWS.md": 6,
+    "foundations/08_SAFE_AI_ASSISTED_BUILDING.md": 7,
+    "foundations/09_WORKFLOW_TOOLS_AND_DATA_STORES.md": 6,
+}
 
 REQUIRED_MODULE_HEADINGS = (
     "## Outcome",
@@ -273,6 +385,20 @@ STRATEGIC_FOCUS_REQUIREMENTS = {
     ),
 }
 
+PRODUCT_STATUSES = {"PASS", "REPAIR REQUIRED", "UNVERIFIED", "SUPERSEDED"}
+CURRENT_PRODUCT_STATUS_RE = re.compile(
+    r"^- Current status: \*\*`(?P<status>[^`\r\n]+)`\*\*$",
+    re.MULTILINE,
+)
+DISTRIBUTION_PURPOSES = {
+    "personal-synthetic-study",
+    "accepted-release-candidate",
+}
+CURRENT_DISTRIBUTION_PURPOSE_RE = re.compile(
+    r"^- Distribution purpose: \*\*`(?P<purpose>[^`\r\n]+)`\*\*$",
+    re.MULTILINE,
+)
+
 
 @dataclass
 class Report:
@@ -290,6 +416,191 @@ class Report:
     def warn(self, name: str, detail: str) -> None:
         self.checks.append({"status": "WARN", "name": name, "detail": detail})
         self.warnings.append(f"{name}: {detail}")
+
+
+def read_authoritative_product_status(root: Path) -> tuple[str | None, list[str]]:
+    """Read the one exact current-product marker from the authoritative ledger."""
+
+    failures: list[str] = []
+    path = root / "COURSE_1_AUDIT_STATUS_AND_REPAIR_LEDGER.md"
+    try:
+        text = path.read_text(encoding="utf-8", errors="strict")
+    except (OSError, UnicodeError) as exc:
+        return None, [f"could not read authoritative Course 1 ledger: {exc}"]
+
+    matches = list(CURRENT_PRODUCT_STATUS_RE.finditer(text))
+    if len(matches) != 1:
+        return None, [
+            "authoritative Course 1 ledger must contain exactly one exact "
+            "'- Current status: **`...`**' marker"
+        ]
+
+    status = matches[0].group("status")
+    if status not in PRODUCT_STATUSES:
+        failures.append(f"unsupported authoritative Course 1 product status: {status}")
+        return None, failures
+    return status, failures
+
+
+def read_authoritative_distribution_purpose(
+    root: Path,
+) -> tuple[str | None, list[str]]:
+    """Read the one exact distribution marker from the authoritative ledger."""
+
+    path = root / "COURSE_1_AUDIT_STATUS_AND_REPAIR_LEDGER.md"
+    try:
+        text = path.read_text(encoding="utf-8", errors="strict")
+    except (OSError, UnicodeError) as exc:
+        return None, [f"could not read authoritative Course 1 ledger: {exc}"]
+    matches = list(CURRENT_DISTRIBUTION_PURPOSE_RE.finditer(text))
+    if len(matches) != 1:
+        return None, [
+            "authoritative Course 1 ledger must contain exactly one exact "
+            "'- Distribution purpose: **`...`**' marker"
+        ]
+    purpose = matches[0].group("purpose")
+    if purpose not in DISTRIBUTION_PURPOSES:
+        return None, [
+            f"unsupported authoritative Course 1 distribution purpose: {purpose}"
+        ]
+    return purpose, []
+
+
+def validate_current_status_consumers(root: Path, report: Report) -> None:
+    """Keep active human-facing status consumers aligned with the ledger."""
+
+    status, failures = read_authoritative_product_status(root)
+    if status is None:
+        report.failed("current-product-status-consumers", compact(failures))
+        return
+    purpose, purpose_failures = read_authoritative_distribution_purpose(root)
+    failures.extend(purpose_failures)
+    if purpose is None:
+        report.failed("current-product-status-consumers", compact(failures))
+        return
+    consumer_patterns = {
+        "README.md": (
+            re.compile(
+                rf"Current product status:\s+\*\*`{re.escape(status)}`\*\*"
+            ),
+            re.compile(rf"Distribution purpose:\s+\*\*`{purpose}`\*\*"),
+        ),
+        "RELEASE_VALIDATION.md": (
+            re.compile(
+                rf"ledger currently records version 2\.6\.0 as\s+`{re.escape(status)}`",
+                re.DOTALL,
+            ),
+            re.compile(rf"distribution purpose remains\s+`{purpose}`", re.DOTALL),
+        ),
+        "PWA_AND_UPDATES.md": (
+            re.compile(
+                rf"current version 2\.6\.0 personal-study edition is "
+                rf"\*\*`{re.escape(status)}`\*\*",
+                re.IGNORECASE,
+            ),
+            re.compile(rf"distribution purpose is\s+`{purpose}`", re.DOTALL),
+        ),
+        "COURSE_CHANGELOG.md": (
+            re.compile(
+                rf"authoritative ledger currently\s+(?:>\s*)?"
+                rf"records `{re.escape(status)}`;",
+                re.IGNORECASE,
+            ),
+            re.compile(rf"distribution purpose `{purpose}`"),
+        ),
+    }
+    for relative, patterns in consumer_patterns.items():
+        path = root / relative
+        try:
+            text = path.read_text(encoding="utf-8", errors="strict")
+        except (OSError, UnicodeError) as exc:
+            failures.append(f"{relative} could not be read: {exc}")
+            continue
+        labels = (f"authoritative product status {status}", f"distribution purpose {purpose}")
+        for pattern, label in zip(patterns, labels, strict=True):
+            if pattern.search(text) is None:
+                failures.append(f"{relative} does not present {label}")
+
+    if failures:
+        report.failed("current-product-status-consumers", compact(failures))
+    else:
+        report.passed(
+            "current-product-status-consumers",
+            "the ledger and four active human-facing consumers agree on "
+            f"product status {status} and distribution purpose {purpose}",
+        )
+
+
+def validate_personal_study_learning_boundary(root: Path, report: Report) -> None:
+    """Prevent study publication from being presented as a final learner pass."""
+
+    purpose, failures = read_authoritative_distribution_purpose(root)
+    if purpose != "personal-synthetic-study":
+        if failures:
+            report.failed("personal-study-learning-boundary", compact(failures))
+        else:
+            report.passed(
+                "personal-study-learning-boundary",
+                "not applicable to the accepted-release distribution purpose",
+            )
+        return
+
+    required_fragments = {
+        "README.md": (
+            "recorded only after both the course product",
+            "ASSESSMENT PENDING",
+        ),
+        "BEGINNER_READINESS_CHECK.md": (
+            "do not record the final competence pass until",
+            "course-product `PASS`",
+        ),
+        "COURSE_OVERVIEW.md": (
+            "both the course product and the",
+            "independent human assessment",
+        ),
+        "ASSESSMENT_AND_RUBRIC.md": (
+            "course product also has an evidence-backed `PASS`",
+            "product gate or learner gate is missing",
+        ),
+        "modules/MODULE_09.md": (
+            "Prepare the final Course 1 PASS checkpoint in Git",
+            "do not run this final-pass",
+        ),
+        "worked_examples/module_09_assessment_record.md": (
+            "fictional calibration example",
+            "named course-product release",
+        ),
+        "COURSE_1_PRODUCT_THREAT_MODEL.md": (
+            "C1-THR-022",
+            "MUST NOT claim Course 1 product acceptance",
+        ),
+    }
+    texts: dict[str, str] = {}
+    for relative, fragments in required_fragments.items():
+        path = root / relative
+        try:
+            text = path.read_text(encoding="utf-8", errors="strict")
+        except (OSError, UnicodeError) as exc:
+            failures.append(f"{relative} could not be read: {exc}")
+            continue
+        texts[relative] = text
+        for fragment in fragments:
+            if fragment not in text:
+                failures.append(
+                    f"{relative} lacks personal-study boundary {fragment!r}"
+                )
+    module_text = texts.get("modules/MODULE_09.md", "")
+    if "### Record the final Course 1 PASS in Git" in module_text:
+        failures.append(
+            "modules/MODULE_09.md still gives an unconditional final-pass instruction"
+        )
+    if failures:
+        report.failed("personal-study-learning-boundary", compact(failures))
+    else:
+        report.passed(
+            "personal-study-learning-boundary",
+            "product acceptance and independent learner evidence both remain required for a final competence pass",
+        )
 
 
 def compact(items: Iterable[str], limit: int = 12) -> str:
@@ -318,6 +629,15 @@ def path_is_ignored(relative: Path) -> bool:
         return False
     if parts[0] in IGNORED_TOP_LEVEL_DIRECTORIES:
         return True
+    if (
+        len(parts) >= 2
+        and parts[0] == "release_evidence"
+        and parts[1] == "course1_ground_up_audit"
+    ):
+        # Ground-up audit packages are unbundled, candidate-specific evidence,
+        # not current course source. Their JSON and raw files must not change
+        # the learner validation report or PWA build identity.
+        return True
     return any(part in IGNORED_DIRECTORY_NAMES for part in parts)
 
 
@@ -340,11 +660,317 @@ def iter_current_files(root: Path, suffix: str) -> list[Path]:
     return sorted(matches)
 
 
+def reject_duplicate_json_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    value: dict[str, Any] = {}
+    for key, item in pairs:
+        if key in value:
+            raise ValueError(f"duplicate JSON key: {key}")
+        value[key] = item
+    return value
+
+
+def load_json_value(path: Path) -> Any:
+    return json.loads(
+        path.read_text(encoding="utf-8"),
+        object_pairs_hook=reject_duplicate_json_keys,
+    )
+
+
 def load_json_object(path: Path) -> dict[str, Any]:
-    value = json.loads(path.read_text(encoding="utf-8"))
+    value = load_json_value(path)
     if not isinstance(value, dict):
         raise ValueError("top-level JSON value is not an object")
     return value
+
+
+EXPECTED_CURRICULUM_DATE_CONTRACT = {
+    "sourceVerifiedThrough": {
+        "owner": "Source-claim owners",
+        "evidenceSource": (
+            "source_claims.json verifiedThrough and entries[].lastVerified"
+        ),
+        "consumers": {
+            "app/scripts/build.mjs",
+            "app/src/app.js",
+            "tools/audit_course1_sources.py",
+            "tools/validate_package.py",
+        },
+        "meaningTokens": ("research or source claim", "not a content-edit date"),
+    },
+    "contentRevisionThrough": {
+        "owner": "Curriculum maintainer",
+        "evidenceSource": "curriculum.json groups[].documents[].revision",
+        "consumers": {
+            "app/scripts/build.mjs",
+            "app/src/app.js",
+            "tools/validate_package.py",
+        },
+        "meaningTokens": ("Latest revision date", "does not assert"),
+    },
+    "verifiedThrough": {
+        "owner": "PWA compatibility maintainer",
+        "evidenceSource": "curriculum.json course.sourceVerifiedThrough",
+        "consumers": {
+            "app/scripts/build.mjs",
+            "app/src/sw.js",
+        },
+        "meaningTokens": ("compatibility alias", "never limits content revisions"),
+    },
+}
+
+
+def curriculum_date_metadata_failures(
+    root: Path,
+    curriculum: dict[str, Any],
+    *,
+    source_claims_override: dict[str, Any] | None = None,
+    contract_override: dict[str, Any] | None = None,
+) -> list[str]:
+    """Validate independent content-revision and source-review claims."""
+
+    failures: list[str] = []
+    if curriculum.get("schemaVersion") != EXPECTED_SCHEMA_VERSION:
+        failures.append(
+            f"curriculum schemaVersion must be {EXPECTED_SCHEMA_VERSION}"
+        )
+
+    course = curriculum.get("course")
+    if not isinstance(course, dict):
+        return failures + ["curriculum.course must be an object"]
+
+    source_verified = course.get("sourceVerifiedThrough")
+    content_revised = course.get("contentRevisionThrough")
+    compatibility_alias = course.get("verifiedThrough")
+    if not valid_revision(source_verified):
+        failures.append(
+            "course.sourceVerifiedThrough must be a valid ISO date"
+        )
+    if not valid_revision(content_revised):
+        failures.append(
+            "course.contentRevisionThrough must be a valid ISO date"
+        )
+    if not valid_revision(compatibility_alias):
+        failures.append(
+            "course.verifiedThrough compatibility alias must be a valid ISO date"
+        )
+    if (
+        valid_revision(source_verified)
+        and valid_revision(compatibility_alias)
+        and compatibility_alias != source_verified
+    ):
+        failures.append(
+            "course.verifiedThrough compatibility alias must equal "
+            "course.sourceVerifiedThrough"
+        )
+
+    revisions: list[str] = []
+    groups = curriculum.get("groups")
+    if isinstance(groups, list):
+        for group in groups:
+            if not isinstance(group, dict):
+                continue
+            documents = group.get("documents")
+            if not isinstance(documents, list):
+                continue
+            for document in documents:
+                if isinstance(document, dict) and valid_revision(
+                    document.get("revision")
+                ):
+                    revisions.append(document["revision"])
+    if not revisions:
+        failures.append("curriculum has no valid document revision dates")
+    elif valid_revision(content_revised) and content_revised != max(revisions):
+        failures.append(
+            "course.contentRevisionThrough must equal the latest document revision"
+        )
+
+    if source_claims_override is None:
+        try:
+            source_claims = load_json_object(root / "source_claims.json")
+        except Exception as exc:
+            source_claims = {}
+            failures.append(f"source_claims.json cannot be read: {exc}")
+    else:
+        source_claims = source_claims_override
+    if set(source_claims) != {"schemaVersion", "verifiedThrough", "entries"}:
+        failures.append("source_claims.json must use its exact closed top-level shape")
+    if source_claims.get("schemaVersion") != 1:
+        failures.append("source_claims.json schemaVersion must be 1")
+    claims_verified = source_claims.get("verifiedThrough")
+    if not valid_revision(claims_verified):
+        failures.append("source_claims.json verifiedThrough must be a valid ISO date")
+    elif valid_revision(source_verified) and claims_verified != source_verified:
+        failures.append(
+            "course.sourceVerifiedThrough must equal "
+            "source_claims.json verifiedThrough"
+        )
+    claim_entries = source_claims.get("entries")
+    claim_dates: list[str] = []
+    if not isinstance(claim_entries, list) or not claim_entries:
+        failures.append("source_claims.json entries must be a non-empty array")
+    else:
+        for index, entry in enumerate(claim_entries):
+            if not isinstance(entry, dict) or not valid_revision(
+                entry.get("lastVerified")
+            ):
+                failures.append(
+                    f"source_claims.json entries[{index}].lastVerified must "
+                    "be a valid ISO date"
+                )
+            else:
+                claim_dates.append(entry["lastVerified"])
+    if (
+        claim_dates
+        and valid_revision(claims_verified)
+        and claims_verified != min(claim_dates)
+    ):
+        failures.append(
+            "source_claims.json verifiedThrough must equal the oldest "
+            "entries[].lastVerified date"
+        )
+
+    if contract_override is None:
+        contract_path = (
+            root / "audit_control/course1/curriculum_date_contract.json"
+        )
+        try:
+            contract = load_json_object(contract_path)
+        except Exception as exc:
+            contract = {}
+            failures.append(
+                f"audit_control/course1/curriculum_date_contract.json "
+                f"cannot be read: {exc}"
+            )
+    else:
+        contract = contract_override
+    if set(contract) != {"schemaVersion", "courseId", "fields"}:
+        failures.append("curriculum date contract must use its exact closed shape")
+    if (
+        contract.get("schemaVersion")
+        != "course1-curriculum-date-contract-v1"
+    ):
+        failures.append("curriculum date contract schemaVersion is unsupported")
+    if contract.get("courseId") != EXPECTED_COURSE_ID:
+        failures.append("curriculum date contract courseId is incorrect")
+    fields = contract.get("fields")
+    if not isinstance(fields, dict):
+        failures.append("curriculum date contract fields must be an object")
+        fields = {}
+    if set(fields) != set(EXPECTED_CURRICULUM_DATE_CONTRACT):
+        failures.append(
+            "curriculum date contract must define exactly "
+            "sourceVerifiedThrough, contentRevisionThrough, and verifiedThrough"
+        )
+    for field_name, expected in EXPECTED_CURRICULUM_DATE_CONTRACT.items():
+        definition = fields.get(field_name)
+        if not isinstance(definition, dict):
+            failures.append(
+                f"curriculum date contract {field_name} must be an object"
+            )
+            continue
+        if set(definition) != {
+            "meaning",
+            "owner",
+            "evidenceSource",
+            "consumers",
+        }:
+            failures.append(
+                f"curriculum date contract {field_name} must use its exact "
+                "closed shape"
+            )
+        meaning = definition.get("meaning")
+        if not is_nonempty_string(meaning) or any(
+            token not in meaning for token in expected["meaningTokens"]
+        ):
+            failures.append(
+                f"curriculum date contract {field_name}.meaning is incomplete"
+            )
+        if definition.get("owner") != expected["owner"]:
+            failures.append(
+                f"curriculum date contract {field_name}.owner is incorrect"
+            )
+        if definition.get("evidenceSource") != expected["evidenceSource"]:
+            failures.append(
+                f"curriculum date contract {field_name}.evidenceSource is incorrect"
+            )
+        consumers = definition.get("consumers")
+        if (
+            not isinstance(consumers, list)
+            or len(consumers) != len(set(consumers))
+            or set(consumers) != expected["consumers"]
+        ):
+            failures.append(
+                f"curriculum date contract {field_name}.consumers are incomplete"
+            )
+            continue
+        for consumer in consumers:
+            if not (root / consumer).is_file():
+                failures.append(
+                    f"curriculum date contract {field_name} consumer is missing: "
+                    f"{consumer}"
+                )
+
+    schema_path = (
+        root / "audit_control/course1/curriculum_date_contract.schema.json"
+    )
+    try:
+        contract_schema = load_json_object(schema_path)
+    except Exception as exc:
+        failures.append(
+            "audit_control/course1/curriculum_date_contract.schema.json "
+            f"cannot be read: {exc}"
+        )
+    else:
+        if (
+            contract_schema.get("$schema")
+            != "https://json-schema.org/draft/2020-12/schema"
+            or contract_schema.get("additionalProperties") is not False
+        ):
+            failures.append(
+                "curriculum date contract schema must be closed Draft 2020-12"
+            )
+        try:
+            import jsonschema  # type: ignore
+        except (ModuleNotFoundError, ImportError):
+            pass
+        except Exception as exc:
+            failures.append(
+                f"jsonschema could not be imported for curriculum date contract: {exc}"
+            )
+        else:
+            try:
+                jsonschema.Draft202012Validator.check_schema(contract_schema)
+                jsonschema.Draft202012Validator(contract_schema).validate(contract)
+            except Exception as exc:
+                failures.append(
+                    f"curriculum date contract schema validation failed: {exc}"
+                )
+    return failures
+
+
+def validate_curriculum_date_metadata(
+    root: Path,
+    curriculum: dict[str, Any] | None,
+    report: Report,
+) -> None:
+    if not isinstance(curriculum, dict):
+        report.failed(
+            "curriculum-date-separation",
+            "cannot validate date meanings without curriculum.json",
+        )
+        return
+    failures = curriculum_date_metadata_failures(root, curriculum)
+    if failures:
+        report.failed("curriculum-date-separation", compact(failures, limit=20))
+    else:
+        course = curriculum["course"]
+        report.passed(
+            "curriculum-date-separation",
+            "content revised through "
+            f"{course['contentRevisionThrough']}; research and sources verified "
+            f"through {course['sourceVerifiedThrough']}; compatibility alias, "
+            "evidence sources, owners, and consumers match the closed contract",
+        )
 
 
 def validate_strategic_focus_guardrail(root: Path, report: Report) -> None:
@@ -436,14 +1062,43 @@ def validate_curriculum(root: Path, report: Report) -> dict[str, Any] | None:
         course.get("version", "")
     ):
         metadata_failures.append("course.version must use x.y.z")
+    if course.get("productStatus") != "UNVERIFIED":
+        metadata_failures.append(
+            "course.productStatus must be UNVERIFIED for personal study"
+        )
+    if course.get("distributionPurpose") != "personal-synthetic-study":
+        metadata_failures.append(
+            "course.distributionPurpose must be personal-synthetic-study"
+        )
     if (
         not isinstance(course.get("practiceRevision"), int)
         or course.get("practiceRevision") < 1
     ):
         metadata_failures.append("course.practiceRevision must be a positive integer")
+    source_verified_through = course.get("sourceVerifiedThrough")
+    content_revision_through = course.get("contentRevisionThrough")
     verified_through = course.get("verifiedThrough")
+    if not valid_revision(source_verified_through):
+        metadata_failures.append(
+            "course.sourceVerifiedThrough must be a valid ISO date"
+        )
+    if not valid_revision(content_revision_through):
+        metadata_failures.append(
+            "course.contentRevisionThrough must be a valid ISO date"
+        )
     if not valid_revision(verified_through):
-        metadata_failures.append("course.verifiedThrough must be a valid ISO date")
+        metadata_failures.append(
+            "course.verifiedThrough compatibility alias must be a valid ISO date"
+        )
+    if (
+        valid_revision(source_verified_through)
+        and valid_revision(verified_through)
+        and verified_through != source_verified_through
+    ):
+        metadata_failures.append(
+            "course.verifiedThrough compatibility alias must equal "
+            "course.sourceVerifiedThrough"
+        )
 
     estimated_hours = course.get("estimatedHours")
     if not isinstance(estimated_hours, dict):
@@ -483,7 +1138,9 @@ def validate_curriculum(root: Path, report: Report) -> dict[str, Any] | None:
     else:
         report.passed(
             "curriculum-metadata",
-            f"Course 1 metadata is complete through {verified_through}",
+            "Course 1 metadata separates source verification through "
+            f"{source_verified_through} from content revision through "
+            f"{content_revision_through}",
         )
 
     group_failures: list[str] = []
@@ -566,11 +1223,6 @@ def validate_curriculum(root: Path, report: Report) -> dict[str, Any] | None:
                 document_failures.append(
                     f"{document_id}.revision is not a valid ISO date"
                 )
-            elif valid_revision(verified_through) and revision > verified_through:
-                document_failures.append(
-                    f"{document_id}.revision is after course.verifiedThrough"
-                )
-
             if "title" in document and not is_nonempty_string(document.get("title")):
                 document_failures.append(
                     f"{document_id}.title is present but empty"
@@ -830,7 +1482,10 @@ def validate_release_metadata_sync(
 
     version = course.get("version")
     practice_revision = course.get("practiceRevision")
-    verified_through = course.get("verifiedThrough")
+    source_verified_through = course.get("sourceVerifiedThrough")
+    content_revision_through = course.get("contentRevisionThrough")
+    product_status = course.get("productStatus")
+    distribution_purpose = course.get("distributionPurpose")
     course_id = course.get("id")
     failures: list[str] = []
 
@@ -842,8 +1497,11 @@ def validate_release_metadata_sync(
         expected_stack_lines = (
             f"course_id: {course_id}",
             f"course_version: {version}",
+            f"product_status: {product_status}",
+            f"distribution_purpose: {distribution_purpose}",
             f"practice_revision: {practice_revision}",
-            f'last_verified: "{verified_through}"',
+            f'source_verified_through: "{source_verified_through}"',
+            f'content_revision_through: "{content_revision_through}"',
         )
         for line in expected_stack_lines:
             if line not in stack_text:
@@ -896,11 +1554,18 @@ def validate_course4_capstone_integration(
     root: Path,
     curriculum: dict[str, Any] | None,
     report: Report,
+    *,
+    include_course4_product: bool,
 ) -> None:
+    check_name = (
+        "course4-capstone-integration"
+        if include_course4_product
+        else "course4-structural-isolation"
+    )
     if not isinstance(curriculum, dict):
         report.failed(
-            "course4-capstone-integration",
-            "cannot validate the optional capstone without curriculum.json",
+            check_name,
+            "cannot validate Course 4 isolation without curriculum.json",
         )
         return
 
@@ -967,66 +1632,80 @@ def validate_course4_capstone_integration(
             continue
         text = path.read_text(encoding="utf-8")
         combined_text.append(text)
-        if source_path != "advanced_capstone/README.md":
+        if (
+            include_course4_product
+            and source_path != "advanced_capstone/README.md"
+        ):
             for heading in REQUIRED_PRACTICE_HEADINGS:
                 if heading not in text:
                     failures.append(f"{source_path} is missing {heading}")
 
-    joined = "\n".join(combined_text)
-    required_boundary_phrases = (
-        "synthetic",
-        "€60",
-        "Google Cloud Run",
-        "Document AI",
-        "Vertex AI",
-        "human approval",
-        "CSV",
-        "JSON",
-        "teardown",
-        "26 October 2026",
-    )
-    for phrase in required_boundary_phrases:
-        if phrase.casefold() not in joined.casefold():
-            failures.append(f"advanced capstone lessons omit required boundary: {phrase}")
-
-    implementation_root = (
-        root
-        / "future_courses"
-        / "course_04_controlled_document_ai"
-        / "controlled_document_intake_demo"
-    )
-    required_implementation_files = (
-        "Dockerfile",
-        "pyproject.toml",
-        "requirements.txt",
-        "requirements-ci.txt",
-        "src/controlled_intake/main.py",
-        "src/controlled_intake/pipeline.py",
-        "src/controlled_intake/providers.py",
-        "tests/test_contracts.py",
-        "tests/test_http.py",
-        "tests/test_pipeline.py",
-        "scripts/preflight.ps1",
-        "scripts/deploy.ps1",
-        "scripts/verify_live.ps1",
-        "scripts/teardown.ps1",
-    )
-    missing_implementation = [
-        relative
-        for relative in required_implementation_files
-        if not (implementation_root / Path(*PurePosixPath(relative).parts)).is_file()
-    ]
-    if missing_implementation:
-        failures.append(
-            f"controlled intake implementation is incomplete: {missing_implementation}"
+    if include_course4_product:
+        joined = "\n".join(combined_text)
+        required_boundary_phrases = (
+            "synthetic",
+            "€60",
+            "Google Cloud Run",
+            "Document AI",
+            "Vertex AI",
+            "human approval",
+            "CSV",
+            "JSON",
+            "teardown",
+            "26 October 2026",
         )
+        for phrase in required_boundary_phrases:
+            if phrase.casefold() not in joined.casefold():
+                failures.append(
+                    f"advanced capstone lessons omit required boundary: {phrase}"
+                )
+
+        implementation_root = (
+            root
+            / "future_courses"
+            / "course_04_controlled_document_ai"
+            / "controlled_document_intake_demo"
+        )
+        required_implementation_files = (
+            "Dockerfile",
+            "pyproject.toml",
+            "requirements.txt",
+            "requirements-ci.txt",
+            "src/controlled_intake/main.py",
+            "src/controlled_intake/pipeline.py",
+            "src/controlled_intake/providers.py",
+            "tests/test_contracts.py",
+            "tests/test_http.py",
+            "tests/test_pipeline.py",
+            "scripts/preflight.ps1",
+            "scripts/deploy.ps1",
+            "scripts/verify_live.ps1",
+            "scripts/teardown.ps1",
+        )
+        missing_implementation = [
+            relative
+            for relative in required_implementation_files
+            if not (
+                implementation_root / Path(*PurePosixPath(relative).parts)
+            ).is_file()
+        ]
+        if missing_implementation:
+            failures.append(
+                "controlled intake implementation is incomplete: "
+                f"{missing_implementation}"
+            )
 
     if failures:
-        report.failed("course4-capstone-integration", compact(failures, limit=20))
+        report.failed(check_name, compact(failures, limit=20))
+    elif include_course4_product:
+        report.passed(
+            check_name,
+            "11 non-core Course 4 pages, the frozen Course 1 sequence, and the runnable demo package are wired consistently",
+        )
     else:
         report.passed(
-            "course4-capstone-integration",
-            "11 non-core Course 4 pages, the frozen Course 1 sequence, and the runnable demo package are wired consistently",
+            check_name,
+            "Course 4 remains non-core, outside the Course 1 sequence, and readable by the shared PWA; Course 4 lesson and implementation acceptance was not run",
         )
 
 
@@ -1584,21 +2263,54 @@ def validate_integrated_course_contract(
 
     requirements_path = root / "requirements-course.txt"
     if requirements_path.is_file():
-        requirement_lines = [
-            line.strip()
-            for line in requirements_path.read_text(encoding="utf-8").splitlines()
-            if line.strip() and not line.lstrip().startswith("#")
-        ]
+        requirement_lines: list[str] = []
+        requirement_options: list[str] = []
+        logical_line = ""
+        for raw_line in requirements_path.read_text(
+            encoding="utf-8"
+        ).splitlines():
+            line = raw_line.strip()
+            if not line or line.startswith("#"):
+                continue
+            if line.startswith("--") and not logical_line:
+                requirement_options.append(line)
+                continue
+            logical_line += (" " if logical_line else "") + (
+                line[:-1].strip() if line.endswith("\\") else line
+            )
+            if line.endswith("\\"):
+                continue
+            requirement_lines.append(logical_line)
+            logical_line = ""
+        if logical_line:
+            dependency_failures.append(
+                "requirements-course.txt ends with an incomplete continuation"
+            )
+        expected_options = {
+            "--index-url=https://pypi.org/simple",
+            "--only-binary=:all:",
+            "--require-hashes",
+        }
+        if set(requirement_options) != expected_options or len(
+            requirement_options
+        ) != len(expected_options):
+            dependency_failures.append(
+                "requirements-course.txt must declare exactly the intended "
+                "index, binary-only mode, and hash-required mode"
+            )
         if not requirement_lines:
             dependency_failures.append(
                 "requirements-course.txt has no required offline dependency"
             )
         for requirement in requirement_lines:
             if not re.fullmatch(
-                r"[A-Za-z0-9_.-]+==[A-Za-z0-9_.+-]+", requirement
+                r"[A-Za-z0-9_.-]+==[A-Za-z0-9_.+-]+"
+                r"(?:\s+--hash=sha256:[0-9a-f]{64})+",
+                requirement,
             ):
                 dependency_failures.append(
-                    f"requirements-course.txt is not exactly pinned: {requirement!r}"
+                    "requirements-course.txt is not exactly version-and-hash "
+                    f"pinned: {requirement!r}"
                 )
         if any(line.casefold().startswith("openai") for line in requirement_lines):
             dependency_failures.append(
@@ -1788,6 +2500,81 @@ def validate_course1_beginner_execution_contract(
         for required in ("## Start or resume safely", "Suggested sessions:"):
             if required not in text:
                 failures.append(f"{source_path} lacks {required!r}")
+
+    beginner_block_contracts = {
+        "modules/MODULE_01.md": (
+            "Use eight focused blocks of 45–60 minutes",
+            "stop at 60 minutes",
+        ),
+        "modules/MODULE_02.md": (
+            "Use eight focused blocks of 45–60 minutes",
+            "Never continue a block past 60",
+        ),
+        "modules/MODULE_03.md": (
+            "Use ten focused blocks, each no longer than 60 minutes",
+            "published 8–10-hour author estimate",
+        ),
+        "modules/MODULE_05.md": (
+            "Use twelve focused blocks of 40–60 minutes",
+            "No block exceeds 60",
+        ),
+        "modules/MODULE_07.md": (
+            "Use twelve focused blocks of 40–60 minutes",
+            "No block may exceed 60",
+        ),
+    }
+    for source_path, required_fragments in beginner_block_contracts.items():
+        path = root / source_path
+        if not path.is_file():
+            continue
+        text = path.read_text(encoding="utf-8")
+        for fragment in (
+            *required_fragments,
+            "**UNDERSTAND**",
+            "**PROTECTED PLUMBING",
+        ):
+            if fragment not in text:
+                failures.append(
+                    f"{source_path} lacks beginner block-plan contract "
+                    f"{fragment!r}"
+                )
+        if re.search(
+            r"(?i)(?:sessions?\s+of\s+(?:about\s+)?2\s*[-–]\s*3\s+hours"
+            r"|2\s*[-–]\s*3[-– ]hour sessions?)",
+            text,
+        ):
+            failures.append(
+                f"{source_path} still recommends a 2–3-hour study session"
+            )
+
+    module_three_path = root / "modules" / "MODULE_03.md"
+    if module_three_path.is_file():
+        module_three = module_three_path.read_text(encoding="utf-8")
+        matrix_contract_fragments = (
+            "boundary_example,learner_explanation",
+            "function Test-RuleExampleMatrix",
+            "reason.Length -lt 20",
+            "learner_explanation must contain at least 100 characters",
+            "supplied_incorrect_matrix_case.csv",
+            "supplied_corrected_matrix_case.csv",
+            "matrix_checker_deliberate_failure.txt",
+            "matrix_checker_correction_pass.txt",
+            "EXPECTED FAILURE:",
+            "The first record must remain failed",
+            "case=R001-V; field=title;",
+            "case=R011-D; field=status+due_date+assessment_date;",
+            "Codex review below must inspect",
+        )
+        for fragment in matrix_contract_fragments:
+            if fragment not in module_three:
+                failures.append(
+                    "Module 3 lacks bounded matrix/fail-retest contract "
+                    f"{fragment!r}"
+                )
+        if "PASS: 11 rules x 4 example categories are present" in module_three:
+            failures.append(
+                "Module 3 still contains the obsolete nonblank-only matrix pass"
+            )
 
     if isinstance(curriculum, dict):
         course = curriculum.get("course", {})
@@ -2042,22 +2829,34 @@ def validate_course1_beginner_execution_contract(
     if module_nine_path.is_file():
         module_nine = module_nine_path.read_text(encoding="utf-8")
         for fragment in (
-            "UAT-01",
-            "UAT-09",
-            "UAT-D01",
-            "FINAL POST-UAT",
+            "TECH-01",
+            "TECH-09",
+            "TECH-D01",
+            "FINAL POST-REHEARSAL",
             "recreated_course_assessment.md",
             "All ten oral questions",
-            "function New-UatAttemptFolder",
+            "function New-TechAttemptFolder",
             "attempt-info.json",
             "prior_attempts_preserved",
+            "unseen_second_domain_transfer_lock.json",
+            "retention_task_card.md",
+            "lock_schema = 'course1-transfer-lock-v1'",
+            "locked_at_utc",
+            "transfer_sha256",
+            "retention_task_card_sha256",
+            "$checkedAt = [DateTimeOffset]::UtcNow",
+            "$elapsedTotalDays = ($checkedAt - $lockedAt).TotalDays",
+            "$elapsedWholeDays = [math]::Floor($elapsedTotalDays)",
+            "$dueStart = $lockedAt.AddDays(7)",
+            "$dueEndExclusive = $lockedAt.AddDays(15)",
+            "WORKED ANSWERS OPENED BEFORE CHECK: YES / NO",
         ):
             if fragment not in module_nine:
                 failures.append(
                     f"Module 9 lacks executable closeout contract {fragment!r}"
                 )
         for scenario_number in range(1, 10):
-            scenario_id = f"UAT-{scenario_number:02d}"
+            scenario_id = f"TECH-{scenario_number:02d}"
             match = re.search(
                 rf"(?ms)^#### {re.escape(scenario_id)}\b.*?(?=^#### |^### )",
                 module_nine,
@@ -2072,17 +2871,38 @@ def validate_course1_beginner_execution_contract(
                         f"Module 9 {scenario_id} lacks explicit {label.strip('*:')}"
                     )
             workspace_token = (
-                f"$uat{scenario_number:02d}Workspace = "
-                f"New-UatAttemptFolder -ScenarioId '{scenario_id}'"
+                f"$tech{scenario_number:02d}Workspace = "
+                f"New-TechAttemptFolder -ScenarioId '{scenario_id}'"
             )
             if workspace_token not in scenario:
                 failures.append(
                     f"Module 9 {scenario_id} does not create a fresh isolated attempt"
                 )
-        if "$defectFolder = New-UatAttemptFolder -ScenarioId 'UAT-D01'" not in module_nine:
+        if (
+            "$defectFolder = New-TechAttemptFolder -ScenarioId 'TECH-D01'"
+            not in module_nine
+        ):
             failures.append(
-                "Module 9 UAT-D01 does not create a fresh isolated attempt"
+                "Module 9 TECH-D01 does not create a fresh isolated attempt"
             )
+        if re.search(
+            r"(?m)^####\s+UAT-(?:0[1-9]|D01)\b"
+            r"|New-TechAttemptFolder\s+-ScenarioId\s+['\"]UAT-",
+            module_nine,
+        ):
+            failures.append(
+                "Module 9 still labels solo technical rehearsals with reserved UAT IDs"
+            )
+        for required_uat_boundary in (
+            "external_synthetic_uat.md",
+            "task IDs `UAT-01` onward",
+            "REAL SYNTHETIC UAT: VERIFIED",
+        ):
+            if required_uat_boundary not in module_nine:
+                failures.append(
+                    "Module 9 lacks the separate intended-user UAT boundary "
+                    f"{required_uat_boundary!r}"
+                )
         for required_fragment in (
             "latest_attempt_state",
             "last valid `current_state`",
@@ -2101,13 +2921,71 @@ def validate_course1_beginner_execution_contract(
     if uat_template_path.is_file() and uat_example_path.is_file():
         uat_template = uat_template_path.read_text(encoding="utf-8")
         uat_example = uat_example_path.read_text(encoding="utf-8")
-        for fragment in ("UAT-[NN]", "**Given**", "**When**", "**Then**"):
+        for fragment in (
+            "### TECH-[NN] — [Technical scenario name]",
+            "### UAT-[NN] — [Intended-user task name]",
+            "NOT EXECUTED — EXTERNAL UAT NOT VERIFIED",
+            "**Given**",
+            "**When**",
+            "**Then**",
+        ):
             if fragment not in uat_template:
                 failures.append(f"UAT template lacks {fragment!r}")
         for scenario_number in range(1, 10):
-            scenario_id = f"UAT-{scenario_number:02d}"
+            scenario_id = f"TECH-{scenario_number:02d}"
             if scenario_id not in uat_example:
-                failures.append(f"completed UAT example lacks {scenario_id}")
+                failures.append(
+                    f"completed role-simulated rehearsal example lacks {scenario_id}"
+                )
+        candidate_heading = re.search(
+            r"(?im)^##\s+Candidate intended-user task[^\r\n]*$",
+            uat_example,
+        )
+        if not candidate_heading:
+            failures.append(
+                "role-simulated rehearsal example lacks a separate candidate "
+                "intended-user task section"
+            )
+        else:
+            candidate_start = candidate_heading.start()
+            following_heading = re.search(
+                r"(?m)^##\s+", uat_example[candidate_heading.end() :]
+            )
+            candidate_end = (
+                candidate_heading.end() + following_heading.start()
+                if following_heading
+                else len(uat_example)
+            )
+            candidate_uat = uat_example[candidate_start:candidate_end]
+            solo_example = (
+                uat_example[:candidate_start] + uat_example[candidate_end:]
+            )
+            for task_number in range(1, 7):
+                task_id = f"UAT-{task_number:02d}"
+                if task_id not in candidate_uat:
+                    failures.append(
+                        "candidate intended-user task section lacks "
+                        f"{task_id}"
+                    )
+            if (
+                "NOT EXECUTED — EXTERNAL UAT NOT VERIFIED"
+                not in candidate_uat
+            ):
+                failures.append(
+                    "candidate intended-user tasks are not explicitly marked "
+                    "NOT EXECUTED — EXTERNAL UAT NOT VERIFIED"
+                )
+            if re.search(r"\bUAT-(?:0[1-9]|D01)\b", solo_example):
+                failures.append(
+                    "role-simulated rehearsal example records reserved UAT IDs "
+                    "outside the unexecuted candidate-user section"
+                )
+        if not candidate_heading and re.search(
+            r"\bUAT-(?:0[1-9]|D01)\b", uat_example
+        ):
+            failures.append(
+                "role-simulated rehearsal example uses IDs reserved for real UAT"
+            )
         if re.search(r"\bUAT-\d{3}\b", uat_template + "\n" + uat_example):
             failures.append("UAT template/example still uses three-digit scenario IDs")
 
@@ -2286,7 +3164,7 @@ def validate_current_json(root: Path, report: Report) -> None:
     json_files = iter_current_files(root, ".json")
     for path in json_files:
         try:
-            json.loads(path.read_text(encoding="utf-8"))
+            load_json_value(path)
         except Exception as exc:
             failures.append(f"{path.relative_to(root)}: {exc}")
     if failures:
@@ -2296,6 +3174,1951 @@ def validate_current_json(root: Path, report: Report) -> None:
             "current-json-syntax",
             f"{len(json_files)} in-scope JSON files parsed",
         )
+
+
+def exact_keys(
+    value: Any,
+    expected: set[str],
+    label: str,
+    failures: list[str],
+) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        failures.append(f"{label} must be an object")
+        return {}
+    missing = sorted(expected - set(value))
+    unknown = sorted(set(value) - expected)
+    if missing:
+        failures.append(f"{label} is missing keys: {missing}")
+    if unknown:
+        failures.append(f"{label} has unknown keys: {unknown}")
+    return value
+
+
+def safe_repository_file(
+    root: Path,
+    locator: Any,
+    *,
+    label: str,
+    failures: list[str],
+    release_evidence_only: bool = False,
+    release_evidence_json_only: bool = True,
+) -> Path | None:
+    if not is_nonempty_string(locator):
+        failures.append(f"{label} must be a non-empty relative path")
+        return None
+    text = str(locator)
+    pure = PurePosixPath(text)
+    if (
+        pure.is_absolute()
+        or "\\" in text
+        or "//" in text
+        or not pure.parts
+        or any(part in {"", ".", ".."} for part in pure.parts)
+    ):
+        failures.append(f"{label} is not a safe repository-relative path: {text}")
+        return None
+    if release_evidence_only and (
+        pure.parts[0] != "release_evidence"
+        or len(pure.parts) < 2
+        or pure.parts[1] == "templates"
+        or not pure.suffix
+        or (
+            release_evidence_json_only
+            and pure.suffix.casefold() != ".json"
+        )
+    ):
+        failures.append(
+            f"{label} must name a non-template "
+            f"{'JSON ' if release_evidence_json_only else ''}"
+            f"file inside release_evidence/: {text}"
+        )
+        return None
+    resolved = (root / Path(*pure.parts)).resolve()
+    try:
+        resolved.relative_to(root.resolve())
+    except ValueError:
+        failures.append(f"{label} escapes the repository: {text}")
+        return None
+    if not resolved.is_file():
+        failures.append(f"{label} does not exist: {text}")
+        return None
+    return resolved
+
+
+def markdown_cells(line: str) -> list[str] | None:
+    stripped = line.strip()
+    if not stripped.startswith("|") or not stripped.endswith("|"):
+        return None
+    return [cell.strip() for cell in stripped[1:-1].split("|")]
+
+
+def expected_technical_requirements() -> set[str]:
+    return {
+        f"C1-TA-{family}-{number:03d}"
+        for family, count in TECHNICAL_REQUIREMENT_FAMILY_COUNTS.items()
+        for number in range(1, count + 1)
+    }
+
+
+def expand_requirement_references(
+    cell: str,
+    *,
+    label: str,
+    failures: list[str],
+) -> set[str]:
+    values = set(re.findall(r"C1-TA-[A-Z]+-\d{3}", cell))
+    range_re = re.compile(
+        r"C1-TA-(?P<first_family>[A-Z]+)-(?P<first>\d{3})"
+        r"`?\s*[–—]\s*`?"
+        r"C1-TA-(?P<last_family>[A-Z]+)-(?P<last>\d{3})"
+    )
+    for match in range_re.finditer(cell):
+        first_family = match.group("first_family")
+        last_family = match.group("last_family")
+        first = int(match.group("first"))
+        last = int(match.group("last"))
+        if first_family != last_family or first > last:
+            failures.append(f"{label} contains an invalid requirement range")
+            continue
+        values.update(
+            f"C1-TA-{first_family}-{number:03d}"
+            for number in range(first, last + 1)
+        )
+    return values
+
+
+def parse_technical_contract(
+    contract_text: str,
+    failures: list[str],
+) -> tuple[
+    dict[str, set[str]],
+    dict[str, set[str]],
+]:
+    requirement_rows: dict[str, set[str]] = {}
+    test_rows: dict[str, set[str]] = {}
+    seen_requirement_ids: list[str] = []
+    seen_test_ids: list[str] = []
+
+    for line_number, line in enumerate(contract_text.splitlines(), 1):
+        cells = markdown_cells(line)
+        if cells is None or not cells:
+            continue
+        first = cells[0]
+        if "C1-TA-" in first:
+            match = re.fullmatch(r"`(C1-TA-[A-Z]+-\d{3})`", first)
+            if match is None:
+                failures.append(
+                    f"technical contract line {line_number} has a malformed requirement ID"
+                )
+                continue
+            requirement_id = match.group(1)
+            seen_requirement_ids.append(requirement_id)
+            if len(cells) not in {2, 3, 4}:
+                failures.append(
+                    f"{requirement_id} row has {len(cells)} cells; expected 2, 3, or 4"
+                )
+            direct_tests = set(re.findall(r"C1-TST-(?:[A-Z0-9]+-)+\d{3}", line))
+            requirement_rows[requirement_id] = direct_tests
+        elif "C1-TST-" in first:
+            match = re.fullmatch(r"`(C1-TST-(?:[A-Z0-9]+-)+\d{3})`", first)
+            if match is None:
+                failures.append(
+                    f"technical contract line {line_number} has a malformed test ID"
+                )
+                continue
+            test_id = match.group(1)
+            seen_test_ids.append(test_id)
+            if len(cells) != 4:
+                failures.append(
+                    f"{test_id} row has {len(cells)} cells; expected exactly 4"
+                )
+                mapped = set()
+            else:
+                mapped = expand_requirement_references(
+                    cells[2],
+                    label=f"{test_id} mapping",
+                    failures=failures,
+                )
+            test_rows[test_id] = mapped
+        elif first.startswith("`C1-") or first.startswith("C1-"):
+            failures.append(
+                f"technical contract line {line_number} has an unsupported ID family"
+            )
+
+    duplicate_requirements = sorted(
+        identifier
+        for identifier, count in Counter(seen_requirement_ids).items()
+        if count > 1
+    )
+    duplicate_tests = sorted(
+        identifier
+        for identifier, count in Counter(seen_test_ids).items()
+        if count > 1
+    )
+    if duplicate_requirements:
+        failures.append(
+            f"technical contract has duplicate requirement rows: {duplicate_requirements}"
+        )
+    if duplicate_tests:
+        failures.append(
+            f"technical contract has duplicate test rows: {duplicate_tests}"
+        )
+    return requirement_rows, test_rows
+
+
+def validate_technical_evidence_record(
+    value: Any,
+    *,
+    root: Path,
+    evidence_record_path: Path,
+    label: str,
+    expected_test_id: str,
+    expected_evidence_class: str,
+    expected_result: str,
+    expected_procedures: set[tuple[str, str]],
+    expected_environments: set[str],
+    failures: list[str],
+    seen_artifact_paths: set[str] | None = None,
+) -> tuple[str | None, dict[str, Any] | None]:
+    record = exact_keys(
+        value,
+        {
+            "schemaVersion",
+            "evidenceId",
+            "testId",
+            "candidate",
+            "result",
+            "evidenceClass",
+            "recordedAt",
+            "reviewer",
+            "artifacts",
+        },
+        label,
+        failures,
+    )
+    if record.get("schemaVersion") != "course1-technical-evidence-v1":
+        failures.append(f"{label}.schemaVersion is unsupported")
+    evidence_id = record.get("evidenceId")
+    if not isinstance(evidence_id, str) or not re.fullmatch(
+        r"C1-EV-[A-Z0-9-]+-\d{3}", evidence_id
+    ):
+        failures.append(f"{label}.evidenceId is malformed")
+        evidence_id = None
+    if record.get("testId") != expected_test_id:
+        failures.append(f"{label}.testId does not match {expected_test_id}")
+    if record.get("result") != expected_result:
+        failures.append(f"{label}.result does not match {expected_result}")
+    if record.get("evidenceClass") != expected_evidence_class:
+        failures.append(
+            f"{label}.evidenceClass does not match {expected_evidence_class}"
+        )
+    timestamp = record.get("recordedAt")
+    if not is_nonempty_string(timestamp):
+        failures.append(f"{label}.recordedAt must be an ISO 8601 timestamp")
+    else:
+        try:
+            normalized = timestamp[:-1] + "+00:00" if timestamp.endswith("Z") else timestamp
+            parsed = datetime.fromisoformat(normalized)
+            if parsed.tzinfo is None:
+                raise ValueError("timezone missing")
+        except ValueError:
+            failures.append(
+                f"{label}.recordedAt must be a valid ISO 8601 timestamp with timezone"
+            )
+
+    candidate = exact_keys(
+        record.get("candidate"),
+        {"commit", "courseVersion", "buildId", "contentHash"},
+        f"{label}.candidate",
+        failures,
+    )
+    if not re.fullmatch(r"[0-9a-f]{40}", str(candidate.get("commit", ""))):
+        failures.append(f"{label}.candidate.commit must be a full Git SHA")
+    if not SEMVER_RE.fullmatch(str(candidate.get("courseVersion", ""))):
+        failures.append(f"{label}.candidate.courseVersion must use x.y.z")
+    if not re.fullmatch(r"[0-9a-f]{12}", str(candidate.get("buildId", ""))):
+        failures.append(f"{label}.candidate.buildId must be 12 lowercase hex")
+    if not re.fullmatch(r"[0-9a-f]{64}", str(candidate.get("contentHash", ""))):
+        failures.append(f"{label}.candidate.contentHash must be SHA-256")
+
+    reviewer = exact_keys(
+        record.get("reviewer"),
+        {"name", "independentOfImplementation"},
+        f"{label}.reviewer",
+        failures,
+    )
+    if not is_nonempty_string(reviewer.get("name")):
+        failures.append(f"{label}.reviewer.name must be recorded")
+    if not isinstance(reviewer.get("independentOfImplementation"), bool):
+        failures.append(
+            f"{label}.reviewer.independentOfImplementation must be boolean"
+        )
+    if (
+        expected_evidence_class == "INDEPENDENT_REVIEW"
+        and reviewer.get("independentOfImplementation") is not True
+    ):
+        failures.append(
+            f"{label} independent-review evidence requires an independent reviewer"
+        )
+
+    artifacts = record.get("artifacts")
+    if (
+        not isinstance(artifacts, list)
+        or not artifacts
+        or any(not isinstance(item, dict) for item in artifacts)
+    ):
+        failures.append(
+            f"{label}.artifacts must be a non-empty list of closed artifact objects"
+        )
+        artifacts = []
+    artifact_paths: list[str] = []
+    bindings: list[tuple[str, str, str, str]] = []
+    actual_procedures: set[tuple[str, str]] = set()
+    actual_environments: set[str] = set()
+    evidence_record_relative = evidence_record_path.relative_to(root).as_posix()
+    for index, raw_artifact in enumerate(artifacts):
+        artifact_label = f"{label}.artifacts[{index}]"
+        artifact = exact_keys(
+            raw_artifact,
+            {
+                "path",
+                "sha256",
+                "kind",
+                "procedureLocator",
+                "procedureSelector",
+                "environment",
+            },
+            artifact_label,
+            failures,
+        )
+        artifact_path_text = artifact.get("path")
+        if isinstance(artifact_path_text, str):
+            artifact_paths.append(artifact_path_text)
+            if seen_artifact_paths is not None:
+                if artifact_path_text in seen_artifact_paths:
+                    failures.append(
+                        f"duplicate raw technical artifact path: {artifact_path_text}"
+                    )
+                seen_artifact_paths.add(artifact_path_text)
+            if artifact_path_text == evidence_record_relative:
+                failures.append(
+                    f"{artifact_label}.path cannot be its own evidence record"
+                )
+        expected_hash = artifact.get("sha256")
+        if not isinstance(expected_hash, str) or not re.fullmatch(
+            r"[0-9a-f]{64}", expected_hash
+        ):
+            failures.append(
+                f"{artifact_label}.sha256 must be lowercase SHA-256"
+            )
+        artifact_kind = artifact.get("kind")
+        if artifact_kind not in TECHNICAL_ARTIFACT_KINDS:
+            failures.append(f"{artifact_label}.kind is unsupported")
+        procedure_locator = artifact.get("procedureLocator")
+        procedure_selector = artifact.get("procedureSelector")
+        environment = artifact.get("environment")
+        if (
+            is_nonempty_string(procedure_locator)
+            and is_nonempty_string(procedure_selector)
+            and is_nonempty_string(environment)
+            and isinstance(artifact_kind, str)
+        ):
+            procedure = (
+                str(procedure_locator),
+                str(procedure_selector),
+            )
+            actual_procedures.add(procedure)
+            actual_environments.add(str(environment))
+            bindings.append(
+                (
+                    procedure[0],
+                    procedure[1],
+                    str(environment),
+                    artifact_kind,
+                )
+            )
+        else:
+            failures.append(
+                f"{artifact_label} procedure and environment binding must be recorded"
+            )
+        artifact_path = safe_repository_file(
+            root,
+            artifact_path_text,
+            label=f"{artifact_label}.path",
+            failures=failures,
+            release_evidence_only=True,
+            release_evidence_json_only=False,
+        )
+        if artifact_path is None:
+            continue
+        try:
+            artifact_bytes = artifact_path.read_bytes()
+        except OSError as exc:
+            failures.append(f"{artifact_label}.path could not be read: {exc}")
+            continue
+        if not artifact_bytes:
+            failures.append(f"{artifact_label}.path is empty")
+        if expected_hash != hashlib.sha256(artifact_bytes).hexdigest():
+            failures.append(
+                f"{artifact_label}.sha256 does not match the artifact file"
+            )
+    duplicate_artifact_paths = sorted(
+        path
+        for path, count in Counter(artifact_paths).items()
+        if count > 1
+    )
+    duplicate_bindings = sorted(
+        binding
+        for binding, count in Counter(bindings).items()
+        if count > 1
+    )
+    if duplicate_artifact_paths:
+        failures.append(
+            f"{label} has duplicate artifact paths: {duplicate_artifact_paths}"
+        )
+    if duplicate_bindings:
+        failures.append(
+            f"{label} has duplicate procedure/environment/kind bindings: "
+            f"{duplicate_bindings}"
+        )
+    missing_procedures = sorted(expected_procedures - actual_procedures)
+    unexpected_procedures = sorted(actual_procedures - expected_procedures)
+    missing_environments = sorted(expected_environments - actual_environments)
+    unexpected_environments = sorted(actual_environments - expected_environments)
+    if missing_procedures:
+        failures.append(
+            f"{label} is missing declared procedure artifact coverage: "
+            f"{missing_procedures}"
+        )
+    if unexpected_procedures:
+        failures.append(
+            f"{label} has undeclared procedure artifact bindings: "
+            f"{unexpected_procedures}"
+        )
+    if missing_environments:
+        failures.append(
+            f"{label} is missing declared environment artifact coverage: "
+            f"{missing_environments}"
+        )
+    if unexpected_environments:
+        failures.append(
+            f"{label} has undeclared environment artifact bindings: "
+            f"{unexpected_environments}"
+        )
+    return evidence_id, candidate or None
+
+
+def technical_audit_control_failures(
+    root: Path,
+    *,
+    contract_text: str | None = None,
+    graph: dict[str, Any] | None = None,
+    manifest: dict[str, Any] | None = None,
+) -> list[str]:
+    failures: list[str] = []
+    contract_path = root / "COURSE_1_TECHNICAL_ACCEPTANCE_CONTRACT.md"
+    graph_path = root / "audit_control/course1/technical_requirement_graph.json"
+    manifest_path = root / "audit_control/course1/technical_test_manifest.json"
+    schema_paths = (
+        root / "audit_control/course1/technical_requirement_graph.schema.json",
+        root / "audit_control/course1/technical_test_manifest.schema.json",
+        root / "audit_control/course1/technical_evidence_record.schema.json",
+        root / "audit_control/course1/promotion_record.schema.json",
+        root / "audit_control/course1/final_acceptance_record.schema.json",
+        root / "audit_control/course1/rollback_record.schema.json",
+    )
+
+    for path in (contract_path, graph_path, manifest_path, *schema_paths):
+        if not path.is_file():
+            failures.append(f"required audit-control file is missing: {path.relative_to(root)}")
+    if failures:
+        return failures
+
+    try:
+        if contract_text is None:
+            contract_text = contract_path.read_text(encoding="utf-8")
+        if graph is None:
+            graph = load_json_object(graph_path)
+        if manifest is None:
+            manifest = load_json_object(manifest_path)
+        schemas = [load_json_object(path) for path in schema_paths]
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        return [f"could not load technical audit control: {exc}"]
+
+    contract_requirements, contract_tests = parse_technical_contract(
+        contract_text,
+        failures,
+    )
+    expected_requirements = expected_technical_requirements()
+    if set(contract_requirements) != expected_requirements:
+        missing = sorted(expected_requirements - set(contract_requirements))
+        unknown = sorted(set(contract_requirements) - expected_requirements)
+        failures.append(
+            f"technical contract requirement inventory mismatch; missing={missing}, unknown={unknown}"
+        )
+    if set(contract_tests) != EXPECTED_TECHNICAL_TEST_IDS:
+        missing = sorted(EXPECTED_TECHNICAL_TEST_IDS - set(contract_tests))
+        unknown = sorted(set(contract_tests) - EXPECTED_TECHNICAL_TEST_IDS)
+        failures.append(
+            f"technical contract test inventory mismatch; missing={missing}, unknown={unknown}"
+        )
+
+    graph = exact_keys(
+        graph,
+        {"schemaVersion", "courseId", "contractPath", "requirements", "tests"},
+        "technical requirement graph",
+        failures,
+    )
+    if graph.get("schemaVersion") != "course1-technical-requirement-graph-v1":
+        failures.append("technical requirement graph schemaVersion is unsupported")
+    if graph.get("courseId") != EXPECTED_COURSE_ID:
+        failures.append("technical requirement graph courseId is not Course 1")
+    if graph.get("contractPath") != contract_path.name:
+        failures.append("technical requirement graph contractPath is not authoritative")
+
+    graph_requirement_rows = graph.get("requirements")
+    graph_test_rows = graph.get("tests")
+    if not isinstance(graph_requirement_rows, list):
+        failures.append("technical requirement graph requirements must be an array")
+        graph_requirement_rows = []
+    if not isinstance(graph_test_rows, list):
+        failures.append("technical requirement graph tests must be an array")
+        graph_test_rows = []
+
+    requirements_to_tests: dict[str, set[str]] = {}
+    graph_requirement_ids: list[str] = []
+    for index, raw in enumerate(graph_requirement_rows):
+        row = exact_keys(
+            raw,
+            {"id", "family", "tests"},
+            f"technical requirement graph requirements[{index}]",
+            failures,
+        )
+        requirement_id = row.get("id")
+        if not isinstance(requirement_id, str) or not TECHNICAL_REQUIREMENT_RE.fullmatch(
+            requirement_id
+        ):
+            failures.append(
+                f"technical requirement graph requirements[{index}].id is malformed"
+            )
+            continue
+        graph_requirement_ids.append(requirement_id)
+        family = TECHNICAL_REQUIREMENT_RE.fullmatch(requirement_id).group(1)
+        if row.get("family") != family:
+            failures.append(f"{requirement_id} family does not match its ID")
+        test_ids = row.get("tests")
+        if not isinstance(test_ids, list) or not test_ids:
+            failures.append(f"{requirement_id} must map to at least one test")
+            test_ids = []
+        if any(not isinstance(item, str) or not TECHNICAL_TEST_RE.fullmatch(item) for item in test_ids):
+            failures.append(f"{requirement_id} has a malformed test mapping")
+        if len(test_ids) != len(set(item for item in test_ids if isinstance(item, str))):
+            failures.append(f"{requirement_id} has duplicate test mappings")
+        requirements_to_tests[requirement_id] = {
+            item for item in test_ids if isinstance(item, str)
+        }
+
+    duplicate_requirement_ids = sorted(
+        identifier
+        for identifier, count in Counter(graph_requirement_ids).items()
+        if count > 1
+    )
+    if duplicate_requirement_ids:
+        failures.append(
+            f"technical graph has duplicate requirement IDs: {duplicate_requirement_ids}"
+        )
+    if set(requirements_to_tests) != expected_requirements:
+        failures.append(
+            "technical graph requirement inventory does not exactly match the 118-ID contract"
+        )
+
+    tests_to_requirements: dict[str, set[str]] = {}
+    graph_test_ids: list[str] = []
+    for index, raw in enumerate(graph_test_rows):
+        row = exact_keys(
+            raw,
+            {"id", "requirements"},
+            f"technical requirement graph tests[{index}]",
+            failures,
+        )
+        test_id = row.get("id")
+        if not isinstance(test_id, str) or not TECHNICAL_TEST_RE.fullmatch(test_id):
+            failures.append(
+                f"technical requirement graph tests[{index}].id is malformed"
+            )
+            continue
+        graph_test_ids.append(test_id)
+        requirement_ids = row.get("requirements")
+        if not isinstance(requirement_ids, list) or not requirement_ids:
+            failures.append(f"{test_id} must map to at least one requirement")
+            requirement_ids = []
+        if any(
+            not isinstance(item, str) or not TECHNICAL_REQUIREMENT_RE.fullmatch(item)
+            for item in requirement_ids
+        ):
+            failures.append(f"{test_id} has a malformed requirement mapping")
+        if len(requirement_ids) != len(
+            set(item for item in requirement_ids if isinstance(item, str))
+        ):
+            failures.append(f"{test_id} has duplicate requirement mappings")
+        tests_to_requirements[test_id] = {
+            item for item in requirement_ids if isinstance(item, str)
+        }
+
+    duplicate_test_ids = sorted(
+        identifier
+        for identifier, count in Counter(graph_test_ids).items()
+        if count > 1
+    )
+    if duplicate_test_ids:
+        failures.append(f"technical graph has duplicate test IDs: {duplicate_test_ids}")
+    if set(tests_to_requirements) != EXPECTED_TECHNICAL_TEST_IDS:
+        failures.append(
+            "technical graph test inventory does not exactly match the 33-ID contract"
+        )
+
+    derived_tests_to_requirements: dict[str, set[str]] = {
+        test_id: set()
+        for mapped_test_ids in requirements_to_tests.values()
+        for test_id in mapped_test_ids
+    }
+    for requirement_id, test_ids in requirements_to_tests.items():
+        for test_id in test_ids:
+            derived_tests_to_requirements.setdefault(test_id, set()).add(requirement_id)
+    if derived_tests_to_requirements != tests_to_requirements:
+        failures.append(
+            "technical graph requirement-to-test and test-to-requirement mappings disagree"
+        )
+    if contract_tests != tests_to_requirements:
+        failures.append(
+            "technical contract Section 14 mappings do not exactly match the technical graph"
+        )
+    for requirement_id, direct_tests in contract_requirements.items():
+        unknown = sorted(direct_tests - EXPECTED_TECHNICAL_TEST_IDS)
+        missing_reverse = sorted(
+            test_id
+            for test_id in direct_tests
+            if requirement_id not in tests_to_requirements.get(test_id, set())
+        )
+        if unknown:
+            failures.append(
+                f"{requirement_id} references undeclared tests: {unknown}"
+            )
+        if missing_reverse:
+            failures.append(
+                f"{requirement_id} direct test references contradict the graph: {missing_reverse}"
+            )
+
+    manifest = exact_keys(
+        manifest,
+        {"schemaVersion", "courseId", "graphPath", "tests"},
+        "technical test manifest",
+        failures,
+    )
+    if manifest.get("schemaVersion") != "course1-technical-test-manifest-v1":
+        failures.append("technical test manifest schemaVersion is unsupported")
+    if manifest.get("courseId") != EXPECTED_COURSE_ID:
+        failures.append("technical test manifest courseId is not Course 1")
+    if manifest.get("graphPath") != graph_path.relative_to(root).as_posix():
+        failures.append("technical test manifest graphPath is not authoritative")
+    manifest_rows = manifest.get("tests")
+    if not isinstance(manifest_rows, list):
+        failures.append("technical test manifest tests must be an array")
+        manifest_rows = []
+
+    manifest_ids: list[str] = []
+    evidence_paths: set[str] = set()
+    raw_artifact_paths: set[str] = set()
+    evidence_ids: set[str] = set()
+    evidence_candidate: dict[str, Any] | None = None
+    for index, raw in enumerate(manifest_rows):
+        label = f"technical test manifest tests[{index}]"
+        row = exact_keys(
+            raw,
+            {
+                "id",
+                "type",
+                "owner",
+                "environments",
+                "evidenceClass",
+                "procedures",
+                "currentEvidence",
+            },
+            label,
+            failures,
+        )
+        test_id = row.get("id")
+        if not isinstance(test_id, str) or not TECHNICAL_TEST_RE.fullmatch(test_id):
+            failures.append(f"{label}.id is malformed")
+            continue
+        manifest_ids.append(test_id)
+        if row.get("type") not in {"executable", "manual", "hybrid"}:
+            failures.append(f"{test_id}.type is unsupported")
+        if not is_nonempty_string(row.get("owner")):
+            failures.append(f"{test_id}.owner must be recorded")
+        environments = row.get("environments")
+        if (
+            not isinstance(environments, list)
+            or not environments
+            or any(not is_nonempty_string(item) for item in environments)
+            or len(environments) != len(set(item for item in environments if isinstance(item, str)))
+        ):
+            failures.append(f"{test_id}.environments must be non-empty and unique")
+        evidence_class = row.get("evidenceClass")
+        if evidence_class not in TECHNICAL_EVIDENCE_CLASSES:
+            failures.append(f"{test_id}.evidenceClass is unsupported")
+
+        procedures = row.get("procedures")
+        procedure_bindings: set[tuple[str, str]] = set()
+        if not isinstance(procedures, list) or not procedures:
+            failures.append(f"{test_id}.procedures must be a non-empty array")
+            procedures = []
+        for procedure_index, raw_procedure in enumerate(procedures):
+            procedure_label = f"{test_id}.procedures[{procedure_index}]"
+            procedure = exact_keys(
+                raw_procedure,
+                {"locator", "selector", "command", "expected"},
+                procedure_label,
+                failures,
+            )
+            for field in ("selector", "command", "expected"):
+                if not is_nonempty_string(procedure.get(field)):
+                    failures.append(f"{procedure_label}.{field} must be recorded")
+            if (
+                is_nonempty_string(procedure.get("locator"))
+                and is_nonempty_string(procedure.get("selector"))
+            ):
+                binding = (
+                    str(procedure["locator"]),
+                    str(procedure["selector"]),
+                )
+                if binding in procedure_bindings:
+                    failures.append(
+                        f"{test_id}.procedures contain a duplicate locator/selector binding"
+                    )
+                procedure_bindings.add(binding)
+            locator_path = safe_repository_file(
+                root,
+                procedure.get("locator"),
+                label=f"{procedure_label}.locator",
+                failures=failures,
+            )
+            if locator_path is not None and is_nonempty_string(procedure.get("selector")):
+                try:
+                    locator_text = locator_path.read_text(
+                        encoding="utf-8",
+                        errors="strict",
+                    )
+                except (OSError, UnicodeError) as exc:
+                    failures.append(f"{procedure_label}.locator could not be read: {exc}")
+                else:
+                    if procedure["selector"] not in locator_text:
+                        failures.append(
+                            f"{procedure_label}.selector is absent from {procedure.get('locator')}"
+                        )
+
+        current = exact_keys(
+            row.get("currentEvidence"),
+            {"status", "records"},
+            f"{test_id}.currentEvidence",
+            failures,
+        )
+        status = current.get("status")
+        records = current.get("records")
+        if status not in {"UNVERIFIED", "PASS", "FAIL"}:
+            failures.append(f"{test_id}.currentEvidence.status is unsupported")
+        if not isinstance(records, list):
+            failures.append(f"{test_id}.currentEvidence.records must be an array")
+            records = []
+        if status == "UNVERIFIED" and records:
+            failures.append(f"{test_id} UNVERIFIED evidence must have no records")
+        if status in {"PASS", "FAIL"} and not records:
+            failures.append(f"{test_id} {status} evidence must have records")
+
+        for record_index, raw_locator in enumerate(records):
+            locator_label = f"{test_id}.currentEvidence.records[{record_index}]"
+            locator = exact_keys(
+                raw_locator,
+                {"path", "sha256"},
+                locator_label,
+                failures,
+            )
+            evidence_path_text = locator.get("path")
+            if evidence_path_text in evidence_paths:
+                failures.append(f"duplicate technical evidence path: {evidence_path_text}")
+            elif isinstance(evidence_path_text, str):
+                evidence_paths.add(evidence_path_text)
+            expected_hash = locator.get("sha256")
+            if not isinstance(expected_hash, str) or not re.fullmatch(
+                r"[0-9a-f]{64}", expected_hash
+            ):
+                failures.append(f"{locator_label}.sha256 must be lowercase SHA-256")
+            evidence_path = safe_repository_file(
+                root,
+                evidence_path_text,
+                label=f"{locator_label}.path",
+                failures=failures,
+                release_evidence_only=True,
+            )
+            if evidence_path is None:
+                continue
+            try:
+                evidence_bytes = evidence_path.read_bytes()
+            except OSError as exc:
+                failures.append(f"{locator_label}.path could not be read: {exc}")
+                continue
+            actual_hash = hashlib.sha256(evidence_bytes).hexdigest()
+            if expected_hash != actual_hash:
+                failures.append(f"{locator_label}.sha256 does not match the evidence file")
+            try:
+                evidence_record = json.loads(
+                    evidence_bytes.decode("utf-8"),
+                    object_pairs_hook=reject_duplicate_json_keys,
+                )
+                if not isinstance(evidence_record, dict):
+                    raise ValueError("top-level evidence JSON must be one object")
+            except (UnicodeError, ValueError, json.JSONDecodeError) as exc:
+                failures.append(f"{locator_label}.path is invalid JSON: {exc}")
+                continue
+            evidence_id, candidate = validate_technical_evidence_record(
+                evidence_record,
+                root=root,
+                evidence_record_path=evidence_path,
+                label=str(evidence_path.relative_to(root)),
+                expected_test_id=test_id,
+                expected_evidence_class=str(evidence_class),
+                expected_result=str(status),
+                expected_procedures=procedure_bindings,
+                expected_environments={
+                    str(environment)
+                    for environment in environments
+                    if is_nonempty_string(environment)
+                },
+                failures=failures,
+                seen_artifact_paths=raw_artifact_paths,
+            )
+            if evidence_id is not None:
+                if evidence_id in evidence_ids:
+                    failures.append(f"duplicate technical evidenceId: {evidence_id}")
+                evidence_ids.add(evidence_id)
+            if candidate is not None:
+                if evidence_candidate is None:
+                    evidence_candidate = candidate
+                elif evidence_candidate != candidate:
+                    failures.append(
+                        "technical evidence records are bound to different candidates"
+                    )
+
+    duplicate_manifest_ids = sorted(
+        identifier
+        for identifier, count in Counter(manifest_ids).items()
+        if count > 1
+    )
+    if duplicate_manifest_ids:
+        failures.append(
+            f"technical test manifest has duplicate test IDs: {duplicate_manifest_ids}"
+        )
+    if set(manifest_ids) != EXPECTED_TECHNICAL_TEST_IDS:
+        failures.append(
+            "technical test manifest does not exactly cover all 33 declared tests"
+        )
+
+    try:
+        import jsonschema  # type: ignore
+    except (ModuleNotFoundError, ImportError):
+        pass
+    except Exception as exc:
+        failures.append(f"jsonschema could not be imported for audit schemas: {exc}")
+    else:
+        schema_instances = (
+            (schemas[0], graph, "technical requirement graph"),
+            (schemas[1], manifest, "technical test manifest"),
+        )
+        for schema, instance, label in schema_instances:
+            try:
+                jsonschema.Draft202012Validator.check_schema(schema)
+                jsonschema.Draft202012Validator(
+                    schema,
+                    format_checker=jsonschema.FormatChecker(),
+                ).validate(instance)
+            except Exception as exc:
+                failures.append(f"{label} schema validation failed: {exc}")
+        for path, schema in zip(schema_paths[2:], schemas[2:]):
+            try:
+                jsonschema.Draft202012Validator.check_schema(schema)
+            except Exception as exc:
+                failures.append(
+                    f"{path.relative_to(root)} meta-validation failed: {exc}"
+                )
+    return failures
+
+
+def validate_course1_technical_audit_control(root: Path, report: Report) -> None:
+    failures = technical_audit_control_failures(root)
+    if failures:
+        report.failed(
+            "course1-technical-audit-control",
+            compact(failures, limit=30),
+        )
+        return
+    graph = load_json_object(
+        root / "audit_control/course1/technical_requirement_graph.json"
+    )
+    manifest = load_json_object(
+        root / "audit_control/course1/technical_test_manifest.json"
+    )
+    edge_count = sum(len(row["tests"]) for row in graph["requirements"])
+    unverified_count = sum(
+        row["currentEvidence"]["status"] == "UNVERIFIED"
+        for row in manifest["tests"]
+    )
+    report.passed(
+        "course1-technical-audit-control",
+        "118 requirements and 33 declared tests are bound bidirectionally "
+        f"across {edge_count} edges; {unverified_count} candidate test results "
+        "remain honestly UNVERIFIED",
+    )
+
+
+def learning_content_repair_failures(
+    root: Path,
+    *,
+    text_overrides: dict[str, str] | None = None,
+) -> list[str]:
+    failures: list[str] = []
+    overrides = text_overrides or {}
+
+    def read(relative_path: str) -> str:
+        if relative_path in overrides:
+            return overrides[relative_path]
+        path = root / relative_path
+        if not path.is_file():
+            failures.append(f"required learning-content file is missing: {relative_path}")
+            return ""
+        try:
+            return path.read_text(encoding="utf-8", errors="strict")
+        except (OSError, UnicodeError) as exc:
+            failures.append(f"{relative_path} could not be read: {exc}")
+            return ""
+
+    for relative_path, expected_count in PREMODULE_STUDY_BLOCK_COUNTS.items():
+        text = read(relative_path)
+        heading_match = re.search(
+            r"^## Study plan\b.*$",
+            text,
+            flags=re.MULTILINE,
+        )
+        if heading_match is None:
+            failures.append(f"{relative_path} is missing its visible study plan")
+            continue
+        next_heading = re.search(
+            r"^## (?!Study plan\b).+$",
+            text[heading_match.end() :],
+            flags=re.MULTILINE,
+        )
+        section_end = (
+            heading_match.end() + next_heading.start()
+            if next_heading is not None
+            else len(text)
+        )
+        section = text[heading_match.start() : section_end]
+        section_flat = " ".join(section.split())
+        block_rows = re.findall(
+            r"^\|\s*(\d+)\s*\|\s*(\d+)\s+minutes\s*\|",
+            section,
+            flags=re.MULTILINE,
+        )
+        if len(block_rows) != expected_count:
+            failures.append(
+                f"{relative_path} study plan has {len(block_rows)} blocks; "
+                f"expected {expected_count}"
+            )
+        block_numbers = [int(number) for number, _ in block_rows]
+        if block_numbers != list(range(1, expected_count + 1)):
+            failures.append(
+                f"{relative_path} study blocks are not numbered 1 through {expected_count}"
+            )
+        excessive = [
+            f"block {number}={minutes}"
+            for number, minutes in block_rows
+            if int(minutes) > 60
+        ]
+        if excessive:
+            failures.append(
+                f"{relative_path} has a planned block over 60 minutes: {excessive}"
+            )
+        for required_phrase in (
+            "AUTHOR ESTIMATE — NOT BEGINNER MEASURED",
+            "60 focused minutes",
+            "take a break",
+            "Resume",
+        ):
+            if required_phrase.casefold() not in section_flat.casefold():
+                failures.append(
+                    f"{relative_path} study plan is missing: {required_phrase}"
+                )
+
+    note_files = (
+        "README.md",
+        "SETUP_WINDOWS.md",
+        "modules/MODULE_01.md",
+        "app/README.md",
+        "COURSE_CHANGELOG.md",
+    )
+    for relative_path in note_files:
+        text = read(relative_path)
+        if re.search(r"\bprivate (?:course )?notes?\b", text, flags=re.IGNORECASE):
+            failures.append(
+                f"{relative_path} still describes shared-origin learner notes as private"
+            )
+    if (
+        "not private from other applications served from the same website origin"
+        not in " ".join(read("README.md").split())
+    ):
+        failures.append("README.md is missing the shared-origin note boundary")
+
+    module_09 = read("modules/MODULE_09.md")
+    module_09_flat = " ".join(module_09.split())
+    if "# Worked UAT and handover" in module_09:
+        failures.append("Module 9 still titles role simulation as Worked UAT")
+    for phrase in (
+        "# Worked role-simulated acceptance rehearsal and handover",
+        "EXTERNAL UAT NOT VERIFIED",
+        "participation is voluntary",
+        "pause, skip a task, or stop at any time",
+        "screen, audio, video, or quotations",
+        "name who may access the structured record",
+        "planned deletion date",
+        "employment, medical, or professional evaluation",
+        "invalidates the evidence",
+        "weak, vague, or unsupported",
+        "`I do not know`",
+        "safe next step",
+    ):
+        if phrase not in module_09_flat:
+            failures.append(f"modules/MODULE_09.md is missing: {phrase}")
+
+    assessment = read("ASSESSMENT_AND_RUBRIC.md")
+    assessment_flat = " ".join(assessment.split())
+    for phrase in (
+        "weak, vague, or",
+        "`I do not know`",
+        "safe next step",
+        "requires separate explicit consent",
+    ):
+        if phrase not in assessment_flat:
+            failures.append(f"ASSESSMENT_AND_RUBRIC.md is missing: {phrase}")
+
+    uat_template = read("templates/uat_script.md")
+    uat_template_flat = " ".join(uat_template.split())
+    for phrase in (
+        "# Role-Simulated Operational Acceptance Rehearsal and Candidate User Acceptance Test Record",
+        "### Required participant briefing — complete before consent",
+        "Voluntary choice explained",
+        "Exact observations proposed",
+        "Who may access the structured record",
+        "Planned retention/deletion date",
+        "participation is not employment, medical, or professional",
+        "Screen recording proposed",
+        "Audio recording proposed",
+        "Video recording proposed",
+        "Quotation proposed",
+        "Missing consent",
+        "invalidates the evidence",
+    ):
+        if phrase not in uat_template_flat:
+            failures.append(f"templates/uat_script.md is missing: {phrase}")
+
+    for number in range(1, 10):
+        relative_path = f"modules/MODULE_{number:02d}.md"
+        module = read(relative_path)
+        if not re.search(
+            r"AUTHOR\s+ESTIMATE\s+—\s+NOT\s+BEGINNER\s+MEASURED",
+            module,
+        ):
+            failures.append(f"{relative_path} is missing its author-estimate label")
+
+    app_source = read("app/src/app.js")
+    for phrase in (
+        "Practice — AUTHOR ESTIMATE, NOT BEGINNER MEASURED:",
+        "AUTHOR ESTIMATE — NOT BEGINNER MEASURED:",
+    ):
+        if phrase not in app_source:
+            failures.append(f"app/src/app.js is missing: {phrase}")
+
+    if "Manual fallback Standard Operating Procedure (SOP)" not in read(
+        "templates/runbook_and_fallback.md"
+    ):
+        failures.append(
+            "templates/runbook_and_fallback.md does not expand Standard Operating Procedure"
+        )
+    if (
+        "Recovery Time Objective (RTO) / Recovery Point Objective (RPO)"
+        not in read("templates/runbook_and_fallback.md")
+    ):
+        failures.append(
+            "templates/runbook_and_fallback.md does not expand RTO and RPO"
+        )
+    if "Accounts Payable (AP) list" not in read("templates/data_flow_avg_ai_act.md"):
+        failures.append(
+            "templates/data_flow_avg_ai_act.md does not expand the Accounts Payable list"
+        )
+
+    module_06 = read("modules/MODULE_06.md")
+    hard_coded_test_counts = (
+        r"`Ran \d+ tests?`",
+        r"\$expectedCourseOneTests\s*=\s*\d+",
+        r"exactly \d+ of \d+ expected tests",
+        r"Exactly \d+ automated tests",
+    )
+    if any(
+        re.search(pattern, module_06, flags=re.IGNORECASE)
+        for pattern in hard_coded_test_counts
+    ):
+        failures.append(
+            "modules/MODULE_06.md hard-codes the Course 1 automated test count"
+        )
+    for phrase in (
+        r"course1_capstone\tests\test_manifest.json",
+        "$expectedCourseOneTests = $declaredCourseOneTests.Count",
+        "$testsRun -eq $expectedCourseOneTests",
+        "manifest-declared automated test total",
+    ):
+        if phrase not in module_06:
+            failures.append(
+                "modules/MODULE_06.md does not bind learner acceptance to "
+                f"the named-test manifest: {phrase}"
+            )
+    return failures
+
+
+def validate_course1_learning_content_repairs(root: Path, report: Report) -> None:
+    failures = learning_content_repair_failures(root)
+    if failures:
+        report.failed(
+            "course1-learning-content-repair-contract",
+            compact(failures, limit=30),
+        )
+        return
+    report.passed(
+        "course1-learning-content-repair-contract",
+        "12 pre-module pages expose 69 separately numbered study blocks of at "
+        "most 60 minutes; note privacy, role-simulated UAT, oral, consent, "
+        "author-estimate, and optional abbreviation wording is structurally "
+        "present (this does not prove human learning)",
+    )
+
+
+def parse_learning_contract(
+    contract_text: str,
+    failures: list[str],
+) -> tuple[list[str], list[str]]:
+    requirement_ids: list[str] = []
+    for line_number, line in enumerate(contract_text.splitlines(), 1):
+        if not line.startswith("###") or "C1-LV-" not in line:
+            continue
+        match = re.match(r"^### `(C1-LV-\d{3})`(?:\s|$)", line)
+        if match is None:
+            failures.append(
+                f"learning contract line {line_number} has a malformed requirement heading"
+            )
+            continue
+        requirement_ids.append(match.group(1))
+
+    duplicate_requirements = sorted(
+        identifier
+        for identifier, count in Counter(requirement_ids).items()
+        if count > 1
+    )
+    if duplicate_requirements:
+        failures.append(
+            f"learning contract has duplicate requirement headings: {duplicate_requirements}"
+        )
+
+    evidence_classes: list[str] = []
+    start_marker = "## Evidence classes must remain separate"
+    end_marker = "## Release and learner-result language"
+    if start_marker not in contract_text or end_marker not in contract_text:
+        failures.append("learning contract evidence-class table markers are missing")
+    else:
+        evidence_section = contract_text.split(start_marker, 1)[1].split(
+            end_marker,
+            1,
+        )[0]
+        for line in evidence_section.splitlines():
+            cells = markdown_cells(line)
+            if cells is None or not cells:
+                continue
+            match = re.fullmatch(r"`([A-Z][A-Z0-9_]+)`", cells[0])
+            if match is not None:
+                evidence_classes.append(match.group(1))
+
+    duplicate_classes = sorted(
+        identifier
+        for identifier, count in Counter(evidence_classes).items()
+        if count > 1
+    )
+    if duplicate_classes:
+        failures.append(
+            f"learning contract has duplicate evidence classes: {duplicate_classes}"
+        )
+    return requirement_ids, evidence_classes
+
+
+def validate_learning_evidence_record(
+    value: Any,
+    *,
+    label: str,
+    expected_requirement_id: str | None,
+    allowed_evidence_classes: set[str],
+    allowed_method_ids: set[str],
+    expected_overall_status: str | None,
+    failures: list[str],
+) -> tuple[
+    str | None,
+    dict[str, Any] | None,
+    str | None,
+    str | None,
+]:
+    record = exact_keys(
+        value,
+        {
+            "schemaVersion",
+            "evidenceId",
+            "requirementId",
+            "evidenceClass",
+            "candidate",
+            "recordedAt",
+            "environment",
+            "people",
+            "task",
+            "observations",
+            "privacy",
+            "limitation",
+            "decision",
+        },
+        label,
+        failures,
+    )
+    if record.get("schemaVersion") != "course1-learning-evidence-v1":
+        failures.append(f"{label}.schemaVersion is unsupported")
+
+    evidence_id = record.get("evidenceId")
+    if not isinstance(evidence_id, str) or not re.fullmatch(
+        r"C1-LV-EV-[A-Z0-9-]+-\d{3}",
+        evidence_id,
+    ):
+        failures.append(f"{label}.evidenceId is malformed")
+        evidence_id = None
+
+    requirement_id = record.get("requirementId")
+    if (
+        not isinstance(requirement_id, str)
+        or not LEARNING_REQUIREMENT_RE.fullmatch(requirement_id)
+    ):
+        failures.append(f"{label}.requirementId is malformed")
+    elif expected_requirement_id is not None and requirement_id != expected_requirement_id:
+        failures.append(
+            f"{label}.requirementId does not match {expected_requirement_id}"
+        )
+
+    evidence_class = record.get("evidenceClass")
+    if evidence_class not in LEARNING_EVIDENCE_CLASSES:
+        failures.append(f"{label}.evidenceClass is unsupported")
+        evidence_class = None
+    elif evidence_class not in allowed_evidence_classes:
+        failures.append(
+            f"{label}.evidenceClass is not allowed for {expected_requirement_id}"
+        )
+
+    candidate = exact_keys(
+        record.get("candidate"),
+        {
+            "commit",
+            "courseVersion",
+            "practiceRevision",
+            "buildId",
+            "contentHash",
+        },
+        f"{label}.candidate",
+        failures,
+    )
+    if not re.fullmatch(r"[0-9a-f]{40}", str(candidate.get("commit", ""))):
+        failures.append(f"{label}.candidate.commit must be a full Git SHA")
+    if not SEMVER_RE.fullmatch(str(candidate.get("courseVersion", ""))):
+        failures.append(f"{label}.candidate.courseVersion must use x.y.z")
+    if (
+        not isinstance(candidate.get("practiceRevision"), int)
+        or isinstance(candidate.get("practiceRevision"), bool)
+        or candidate.get("practiceRevision", 0) < 1
+    ):
+        failures.append(f"{label}.candidate.practiceRevision must be a positive integer")
+    if not re.fullmatch(r"[0-9a-f]{12}", str(candidate.get("buildId", ""))):
+        failures.append(f"{label}.candidate.buildId must be 12 lowercase hex")
+    if not re.fullmatch(r"[0-9a-f]{64}", str(candidate.get("contentHash", ""))):
+        failures.append(f"{label}.candidate.contentHash must be SHA-256")
+
+    recorded_at = record.get("recordedAt")
+    if not is_nonempty_string(recorded_at):
+        failures.append(f"{label}.recordedAt must be an ISO 8601 timestamp")
+    else:
+        try:
+            normalized = (
+                recorded_at[:-1] + "+00:00"
+                if str(recorded_at).endswith("Z")
+                else str(recorded_at)
+            )
+            parsed = datetime.fromisoformat(normalized)
+            if parsed.tzinfo is None:
+                raise ValueError("timezone missing")
+        except ValueError:
+            failures.append(
+                f"{label}.recordedAt must be a valid ISO 8601 timestamp with timezone"
+            )
+
+    environment = exact_keys(
+        record.get("environment"),
+        {
+            "operatingSystem",
+            "shellOrBrowser",
+            "locale",
+            "timezone",
+            "context",
+        },
+        f"{label}.environment",
+        failures,
+    )
+    for field in (
+        "operatingSystem",
+        "shellOrBrowser",
+        "locale",
+        "timezone",
+        "context",
+    ):
+        if not is_nonempty_string(environment.get(field)):
+            failures.append(f"{label}.environment.{field} must be recorded")
+
+    people = record.get("people")
+    if not isinstance(people, list) or not people:
+        failures.append(f"{label}.people must be a non-empty array")
+        people = []
+    participant_codes: list[str] = []
+    for index, raw_person in enumerate(people):
+        person = exact_keys(
+            raw_person,
+            {
+                "participantCode",
+                "role",
+                "relevantPriorExperience",
+                "conflictOrAssistance",
+            },
+            f"{label}.people[{index}]",
+            failures,
+        )
+        participant_code = person.get("participantCode")
+        if not isinstance(participant_code, str) or not re.fullmatch(
+            r"[A-Z0-9-]{3,40}",
+            participant_code,
+        ):
+            failures.append(f"{label}.people[{index}].participantCode is malformed")
+        else:
+            participant_codes.append(participant_code)
+        for field in ("role", "relevantPriorExperience", "conflictOrAssistance"):
+            if not is_nonempty_string(person.get(field)):
+                failures.append(f"{label}.people[{index}].{field} must be recorded")
+    if len(participant_codes) != len(set(participant_codes)):
+        failures.append(f"{label}.people has duplicate participant codes")
+
+    task = exact_keys(
+        record.get("task"),
+        {"methodId", "predefinedTask", "passCriteria"},
+        f"{label}.task",
+        failures,
+    )
+    method_id = task.get("methodId")
+    if not isinstance(method_id, str) or not re.fullmatch(
+        r"C1-LVM-\d{3}",
+        method_id,
+    ):
+        failures.append(f"{label}.task.methodId is malformed")
+        method_id = None
+    elif method_id not in allowed_method_ids:
+        failures.append(f"{label}.task.methodId is not mapped to the requirement")
+    for field in ("predefinedTask", "passCriteria"):
+        if not is_nonempty_string(task.get(field)):
+            failures.append(f"{label}.task.{field} must be recorded")
+
+    observations = exact_keys(
+        record.get("observations"),
+        {"result", "help", "deviations", "defects", "retest"},
+        f"{label}.observations",
+        failures,
+    )
+    observation_result = observations.get("result")
+    if observation_result not in {"PASS", "FAIL"}:
+        failures.append(f"{label}.observations.result is unsupported")
+    for field in ("help", "deviations", "defects", "retest"):
+        if not is_nonempty_string(observations.get(field)):
+            failures.append(f"{label}.observations.{field} must be recorded")
+
+    privacy = exact_keys(
+        record.get("privacy"),
+        {
+            "syntheticOnly",
+            "purposeAndExpectedTimeStated",
+            "voluntaryAndRightToStopStated",
+            "observationScopeStated",
+            "participationConsent",
+            "recordingConsent",
+            "accessStatement",
+            "retentionDeletionDate",
+            "nonEvaluationDisclaimerStated",
+            "dataMinimisationStatement",
+            "prohibitedDataFound",
+        },
+        f"{label}.privacy",
+        failures,
+    )
+    for field in (
+        "syntheticOnly",
+        "purposeAndExpectedTimeStated",
+        "voluntaryAndRightToStopStated",
+        "observationScopeStated",
+        "nonEvaluationDisclaimerStated",
+        "prohibitedDataFound",
+    ):
+        if not isinstance(privacy.get(field), bool):
+            failures.append(f"{label}.privacy.{field} must be boolean")
+    if privacy.get("participationConsent") not in {"YES", "NO", "NOT APPLICABLE"}:
+        failures.append(f"{label}.privacy.participationConsent is unsupported")
+    if privacy.get("recordingConsent") not in {
+        "NOT PROPOSED",
+        "DECLINED",
+        "GRANTED",
+        "NOT APPLICABLE",
+    }:
+        failures.append(f"{label}.privacy.recordingConsent is unsupported")
+    for field in ("accessStatement", "dataMinimisationStatement"):
+        if not is_nonempty_string(privacy.get(field)):
+            failures.append(f"{label}.privacy.{field} must be recorded")
+    retention_date = privacy.get("retentionDeletionDate")
+    if retention_date != "NOT APPLICABLE":
+        try:
+            date.fromisoformat(str(retention_date))
+        except ValueError:
+            failures.append(
+                f"{label}.privacy.retentionDeletionDate must be YYYY-MM-DD or NOT APPLICABLE"
+            )
+
+    if evidence_class in HUMAN_TRIAL_EVIDENCE_CLASSES:
+        human_requirements = {
+            "syntheticOnly": True,
+            "purposeAndExpectedTimeStated": True,
+            "voluntaryAndRightToStopStated": True,
+            "observationScopeStated": True,
+            "participationConsent": "YES",
+            "nonEvaluationDisclaimerStated": True,
+            "prohibitedDataFound": False,
+        }
+        for field, expected in human_requirements.items():
+            if privacy.get(field) != expected:
+                failures.append(
+                    f"{label}.privacy.{field} must be {expected!r} for human evidence"
+                )
+        if privacy.get("recordingConsent") == "NOT APPLICABLE":
+            failures.append(
+                f"{label}.privacy.recordingConsent must state the separate human choice"
+            )
+        if retention_date == "NOT APPLICABLE":
+            failures.append(
+                f"{label}.privacy.retentionDeletionDate is required for human evidence"
+            )
+
+    if not is_nonempty_string(record.get("limitation")):
+        failures.append(f"{label}.limitation must be recorded")
+
+    decision = exact_keys(
+        record.get("decision"),
+        {"status", "reviewerCode", "reviewerRole", "reason"},
+        f"{label}.decision",
+        failures,
+    )
+    decision_status = decision.get("status")
+    if decision_status not in {"PASS", "FAIL"}:
+        failures.append(f"{label}.decision.status is unsupported")
+    reviewer_code = decision.get("reviewerCode")
+    if not isinstance(reviewer_code, str) or not re.fullmatch(
+        r"[A-Z0-9-]{3,40}",
+        reviewer_code,
+    ):
+        failures.append(f"{label}.decision.reviewerCode is malformed")
+    for field in ("reviewerRole", "reason"):
+        if not is_nonempty_string(decision.get(field)):
+            failures.append(f"{label}.decision.{field} must be recorded")
+
+    if expected_overall_status in {"PASS", "FAIL"}:
+        if observation_result != expected_overall_status:
+            failures.append(
+                f"{label}.observations.result does not match {expected_overall_status}"
+            )
+        if decision_status != expected_overall_status:
+            failures.append(
+                f"{label}.decision.status does not match {expected_overall_status}"
+            )
+
+    return evidence_id, candidate or None, evidence_class, method_id
+
+
+def learning_audit_control_failures(
+    root: Path,
+    *,
+    contract_text: str | None = None,
+    matrix: dict[str, Any] | None = None,
+    template: dict[str, Any] | None = None,
+) -> list[str]:
+    failures: list[str] = []
+    contract_path = root / "COURSE_1_LEARNING_VALIDATION_CONTRACT.md"
+    matrix_path = root / "audit_control/course1/learning_claim_evidence_matrix.json"
+    matrix_schema_path = (
+        root / "audit_control/course1/learning_claim_evidence_matrix.schema.json"
+    )
+    evidence_schema_path = (
+        root / "audit_control/course1/learning_evidence_record.schema.json"
+    )
+    template_path = (
+        root
+        / "release_evidence/templates/COURSE_1_LEARNING_EVIDENCE_RECORD.template.json"
+    )
+    evidence_root = root / "release_evidence/course1_learning_validation"
+    required_paths = (
+        contract_path,
+        matrix_path,
+        matrix_schema_path,
+        evidence_schema_path,
+        template_path,
+    )
+    for path in required_paths:
+        if not path.is_file():
+            failures.append(
+                f"required learning audit-control file is missing: {path.relative_to(root)}"
+            )
+    if not evidence_root.is_dir():
+        failures.append(
+            "required learning evidence root is missing: "
+            "release_evidence/course1_learning_validation"
+        )
+    if failures:
+        return failures
+
+    try:
+        if contract_text is None:
+            contract_text = contract_path.read_text(encoding="utf-8")
+        if matrix is None:
+            matrix = load_json_object(matrix_path)
+        if template is None:
+            template = load_json_object(template_path)
+        matrix_schema = load_json_object(matrix_schema_path)
+        evidence_schema = load_json_object(evidence_schema_path)
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        return [f"could not load learning audit control: {exc}"]
+
+    contract_requirement_ids, contract_evidence_classes = parse_learning_contract(
+        contract_text,
+        failures,
+    )
+    if contract_requirement_ids != list(EXPECTED_LEARNING_REQUIREMENT_IDS):
+        failures.append(
+            "learning contract requirement inventory/order does not exactly match C1-LV-001 through C1-LV-017"
+        )
+    if set(contract_evidence_classes) != LEARNING_EVIDENCE_CLASSES:
+        failures.append(
+            "learning contract evidence-class inventory does not exactly match the closed 10-class vocabulary"
+        )
+
+    matrix = exact_keys(
+        matrix,
+        {
+            "schemaVersion",
+            "courseId",
+            "contractPath",
+            "evidenceRecordSchemaPath",
+            "evidenceRecordTemplatePath",
+            "releaseEvidenceRoot",
+            "requirements",
+        },
+        "learning claim/evidence matrix",
+        failures,
+    )
+    expected_metadata = {
+        "schemaVersion": "course1-learning-claim-evidence-matrix-v1",
+        "courseId": EXPECTED_COURSE_ID,
+        "contractPath": contract_path.name,
+        "evidenceRecordSchemaPath": evidence_schema_path.relative_to(root).as_posix(),
+        "evidenceRecordTemplatePath": template_path.relative_to(root).as_posix(),
+        "releaseEvidenceRoot": "release_evidence/course1_learning_validation",
+    }
+    for field, expected in expected_metadata.items():
+        if matrix.get(field) != expected:
+            failures.append(f"learning claim/evidence matrix {field} is not authoritative")
+
+    rows = matrix.get("requirements")
+    if not isinstance(rows, list):
+        failures.append("learning claim/evidence matrix requirements must be an array")
+        rows = []
+
+    row_ids: list[str] = []
+    method_ids: list[str] = []
+    evidence_paths: set[str] = set()
+    evidence_ids: set[str] = set()
+    evidence_candidate: dict[str, Any] | None = None
+    for index, raw_row in enumerate(rows):
+        label = f"learning claim/evidence matrix requirements[{index}]"
+        row = exact_keys(
+            raw_row,
+            {
+                "requirementId",
+                "owner",
+                "observableCapability",
+                "claim",
+                "evidenceClasses",
+                "assessmentMethods",
+                "limitation",
+                "laterBoundary",
+                "currentEvidence",
+                "learningDecision",
+            },
+            label,
+            failures,
+        )
+        requirement_id = row.get("requirementId")
+        if (
+            not isinstance(requirement_id, str)
+            or not LEARNING_REQUIREMENT_RE.fullmatch(requirement_id)
+        ):
+            failures.append(f"{label}.requirementId is malformed")
+            continue
+        row_ids.append(requirement_id)
+
+        for field in (
+            "owner",
+            "observableCapability",
+            "claim",
+            "limitation",
+            "laterBoundary",
+        ):
+            if not is_nonempty_string(row.get(field)):
+                failures.append(f"{requirement_id}.{field} must be recorded")
+
+        evidence_classes = row.get("evidenceClasses")
+        if not isinstance(evidence_classes, list) or not evidence_classes:
+            failures.append(
+                f"{requirement_id}.evidenceClasses must be a non-empty array"
+            )
+            evidence_classes = []
+        if any(item not in LEARNING_EVIDENCE_CLASSES for item in evidence_classes):
+            failures.append(f"{requirement_id} has an unsupported evidence class")
+        if len(evidence_classes) != len(set(evidence_classes)):
+            failures.append(f"{requirement_id} has duplicate evidence classes")
+        evidence_class_set = {
+            item for item in evidence_classes if item in LEARNING_EVIDENCE_CLASSES
+        }
+
+        methods = row.get("assessmentMethods")
+        if not isinstance(methods, list) or not methods:
+            failures.append(
+                f"{requirement_id}.assessmentMethods must be a non-empty array"
+            )
+            methods = []
+        row_method_ids: set[str] = set()
+        for method_index, raw_method in enumerate(methods):
+            method_label = f"{requirement_id}.assessmentMethods[{method_index}]"
+            method = exact_keys(
+                raw_method,
+                {
+                    "methodId",
+                    "type",
+                    "locator",
+                    "selector",
+                    "environment",
+                    "passCondition",
+                },
+                method_label,
+                failures,
+            )
+            method_id = method.get("methodId")
+            if not isinstance(method_id, str) or not re.fullmatch(
+                r"C1-LVM-\d{3}",
+                method_id,
+            ):
+                failures.append(f"{method_label}.methodId is malformed")
+            else:
+                method_ids.append(method_id)
+                row_method_ids.add(method_id)
+            if method.get("type") not in {"automated", "manual", "hybrid"}:
+                failures.append(f"{method_label}.type is unsupported")
+            for field in ("selector", "environment", "passCondition"):
+                if not is_nonempty_string(method.get(field)):
+                    failures.append(f"{method_label}.{field} must be recorded")
+            locator_path = safe_repository_file(
+                root,
+                method.get("locator"),
+                label=f"{method_label}.locator",
+                failures=failures,
+            )
+            if locator_path is not None and is_nonempty_string(method.get("selector")):
+                try:
+                    locator_text = locator_path.read_text(
+                        encoding="utf-8",
+                        errors="strict",
+                    )
+                except (OSError, UnicodeError) as exc:
+                    failures.append(f"{method_label}.locator could not be read: {exc}")
+                else:
+                    if method["selector"] not in locator_text:
+                        failures.append(
+                            f"{method_label}.selector is absent from {method.get('locator')}"
+                        )
+
+        current = exact_keys(
+            row.get("currentEvidence"),
+            {"status", "records"},
+            f"{requirement_id}.currentEvidence",
+            failures,
+        )
+        current_status = current.get("status")
+        records = current.get("records")
+        if current_status not in {"UNVERIFIED", "PASS", "FAIL"}:
+            failures.append(f"{requirement_id}.currentEvidence.status is unsupported")
+        if not isinstance(records, list):
+            failures.append(
+                f"{requirement_id}.currentEvidence.records must be an array"
+            )
+            records = []
+        if current_status == "UNVERIFIED" and records:
+            failures.append(
+                f"{requirement_id} UNVERIFIED evidence must have no records"
+            )
+        if current_status in {"PASS", "FAIL"} and not records:
+            failures.append(
+                f"{requirement_id} {current_status} evidence must have records"
+            )
+
+        decision = exact_keys(
+            row.get("learningDecision"),
+            {"status", "reason"},
+            f"{requirement_id}.learningDecision",
+            failures,
+        )
+        decision_status = decision.get("status")
+        if decision_status not in {"PASS", "NOT YET", "NOT APPLICABLE"}:
+            failures.append(f"{requirement_id}.learningDecision.status is unsupported")
+        if not is_nonempty_string(decision.get("reason")):
+            failures.append(f"{requirement_id}.learningDecision.reason must be recorded")
+        if current_status == "PASS" and decision_status != "PASS":
+            failures.append(f"{requirement_id} PASS evidence requires a PASS decision")
+        if current_status in {"UNVERIFIED", "FAIL"} and decision_status != "NOT YET":
+            failures.append(
+                f"{requirement_id} {current_status} evidence requires a NOT YET decision"
+            )
+        if decision_status == "NOT APPLICABLE" and "contract" not in str(
+            decision.get("reason", "")
+        ).casefold():
+            failures.append(
+                f"{requirement_id} NOT APPLICABLE requires a contract-supported reason"
+            )
+
+        covered_classes: set[str] = set()
+        for record_index, raw_locator in enumerate(records):
+            locator_label = (
+                f"{requirement_id}.currentEvidence.records[{record_index}]"
+            )
+            locator = exact_keys(
+                raw_locator,
+                {"path", "sha256"},
+                locator_label,
+                failures,
+            )
+            evidence_path_text = locator.get("path")
+            if evidence_path_text in evidence_paths:
+                failures.append(f"duplicate learning evidence path: {evidence_path_text}")
+            elif isinstance(evidence_path_text, str):
+                evidence_paths.add(evidence_path_text)
+            expected_hash = locator.get("sha256")
+            if not isinstance(expected_hash, str) or not re.fullmatch(
+                r"[0-9a-f]{64}",
+                expected_hash,
+            ):
+                failures.append(f"{locator_label}.sha256 must be lowercase SHA-256")
+
+            pure = (
+                PurePosixPath(evidence_path_text)
+                if isinstance(evidence_path_text, str)
+                else PurePosixPath("")
+            )
+            if (
+                len(pure.parts) < 4
+                or pure.parts[:2]
+                != ("release_evidence", "course1_learning_validation")
+                or not SEMVER_RE.fullmatch(pure.parts[2])
+                or pure.suffix.casefold() != ".json"
+            ):
+                failures.append(
+                    f"{locator_label}.path must be versioned JSON under release_evidence/course1_learning_validation/"
+                )
+            evidence_path = safe_repository_file(
+                root,
+                evidence_path_text,
+                label=f"{locator_label}.path",
+                failures=failures,
+                release_evidence_only=True,
+            )
+            if evidence_path is None:
+                continue
+            try:
+                evidence_bytes = evidence_path.read_bytes()
+            except OSError as exc:
+                failures.append(f"{locator_label}.path could not be read: {exc}")
+                continue
+            actual_hash = hashlib.sha256(evidence_bytes).hexdigest()
+            if expected_hash != actual_hash:
+                failures.append(
+                    f"{locator_label}.sha256 does not match the evidence file"
+                )
+            try:
+                evidence_record = json.loads(
+                    evidence_bytes.decode("utf-8"),
+                    object_pairs_hook=reject_duplicate_json_keys,
+                )
+                if not isinstance(evidence_record, dict):
+                    raise ValueError("top-level evidence JSON must be one object")
+            except (UnicodeError, ValueError, json.JSONDecodeError) as exc:
+                failures.append(f"{locator_label}.path is invalid JSON: {exc}")
+                continue
+
+            evidence_id, candidate, record_class, _ = (
+                validate_learning_evidence_record(
+                    evidence_record,
+                    label=str(evidence_path.relative_to(root)),
+                    expected_requirement_id=requirement_id,
+                    allowed_evidence_classes=evidence_class_set,
+                    allowed_method_ids=row_method_ids,
+                    expected_overall_status=current_status,
+                    failures=failures,
+                )
+            )
+            if evidence_id is not None:
+                if evidence_id in evidence_ids:
+                    failures.append(f"duplicate learning evidenceId: {evidence_id}")
+                evidence_ids.add(evidence_id)
+            if record_class is not None:
+                covered_classes.add(record_class)
+            if candidate is not None:
+                if len(pure.parts) >= 3 and pure.parts[2] != candidate.get(
+                    "courseVersion"
+                ):
+                    failures.append(
+                        f"{locator_label}.path version does not match candidate courseVersion"
+                    )
+                if evidence_candidate is None:
+                    evidence_candidate = candidate
+                elif evidence_candidate != candidate:
+                    failures.append(
+                        "learning evidence records are bound to different candidates"
+                    )
+
+        if current_status == "PASS" and covered_classes != evidence_class_set:
+            missing_classes = sorted(evidence_class_set - covered_classes)
+            unknown_classes = sorted(covered_classes - evidence_class_set)
+            failures.append(
+                f"{requirement_id} PASS evidence-class coverage mismatch; "
+                f"missing={missing_classes}, unknown={unknown_classes}"
+            )
+
+    duplicate_row_ids = sorted(
+        identifier
+        for identifier, count in Counter(row_ids).items()
+        if count > 1
+    )
+    if duplicate_row_ids:
+        failures.append(
+            f"learning claim/evidence matrix has duplicate requirement IDs: {duplicate_row_ids}"
+        )
+    if row_ids != list(EXPECTED_LEARNING_REQUIREMENT_IDS):
+        failures.append(
+            "learning claim/evidence matrix does not exactly cover C1-LV-001 through C1-LV-017 in order"
+        )
+
+    duplicate_method_ids = sorted(
+        identifier
+        for identifier, count in Counter(method_ids).items()
+        if count > 1
+    )
+    if duplicate_method_ids:
+        failures.append(
+            f"learning claim/evidence matrix has duplicate method IDs: {duplicate_method_ids}"
+        )
+    if set(method_ids) != EXPECTED_LEARNING_METHOD_IDS:
+        failures.append(
+            "learning claim/evidence matrix does not exactly cover C1-LVM-001 through C1-LVM-017"
+        )
+
+    template_failures: list[str] = []
+    template_id, _, _, _ = validate_learning_evidence_record(
+        template,
+        label=str(template_path.relative_to(root)),
+        expected_requirement_id="C1-LV-001",
+        allowed_evidence_classes=LEARNING_EVIDENCE_CLASSES,
+        allowed_method_ids=EXPECTED_LEARNING_METHOD_IDS,
+        expected_overall_status=None,
+        failures=template_failures,
+    )
+    if template_id != "C1-LV-EV-TEMPLATE-000":
+        template_failures.append("learning evidence template evidenceId is not the fixed template marker")
+    failures.extend(template_failures)
+
+    try:
+        import jsonschema  # type: ignore
+    except (ModuleNotFoundError, ImportError):
+        pass
+    except Exception as exc:
+        failures.append(f"jsonschema could not be imported for learning schemas: {exc}")
+    else:
+        for schema, instance, label in (
+            (matrix_schema, matrix, "learning claim/evidence matrix"),
+            (evidence_schema, template, "learning evidence record template"),
+        ):
+            try:
+                jsonschema.Draft202012Validator.check_schema(schema)
+                jsonschema.Draft202012Validator(
+                    schema,
+                    format_checker=jsonschema.FormatChecker(),
+                ).validate(instance)
+            except Exception as exc:
+                failures.append(f"{label} schema validation failed: {exc}")
+    return failures
+
+
+def validate_course1_learning_audit_control(root: Path, report: Report) -> None:
+    failures = learning_audit_control_failures(root)
+    if failures:
+        report.failed(
+            "course1-learning-audit-control",
+            compact(failures, limit=30),
+        )
+        return
+    matrix = load_json_object(
+        root / "audit_control/course1/learning_claim_evidence_matrix.json"
+    )
+    unverified_count = sum(
+        row["currentEvidence"]["status"] == "UNVERIFIED"
+        for row in matrix["requirements"]
+    )
+    report.passed(
+        "course1-learning-audit-control",
+        "17 stable learning requirements and 17 assessment methods are closed, "
+        f"mapped, and fail-closed; {unverified_count} candidate learning results "
+        "remain honestly UNVERIFIED and NOT YET",
+    )
 
 
 def validate_json_schemas(root: Path, report: Report) -> None:
@@ -2977,12 +5800,18 @@ def write_report(
     report: Report,
     output: Path,
     curriculum: dict[str, Any] | None,
+    *,
+    scope: str,
 ) -> None:
     result = "PASS" if not report.errors else "FAIL"
+    product_status, _ = read_authoritative_product_status(root)
+    rendered_product_status = product_status or "INVALID"
     course = curriculum.get("course", {}) if isinstance(curriculum, dict) else {}
     course_title = course.get("title", "Course 1")
     course_version = course.get("version", "unknown")
-    verified_through = course.get("verifiedThrough", "unknown")
+    source_verified_through = course.get("sourceVerifiedThrough", "unknown")
+    content_revision_through = course.get("contentRevisionThrough", "unknown")
+    distribution_purpose = course.get("distributionPurpose", "unknown")
 
     lines = [
         "# Course 1 Package Validation Report",
@@ -2991,19 +5820,31 @@ def write_report(
         "",
         f"Course version: `{course_version}`",
         "",
-        f"Curriculum verified through: `{verified_through}`",
+        f"Research and sources verified through: `{source_verified_through}`",
         "",
-        f"Result: **{result}**",
+        f"Course content revised through: `{content_revision_through}`",
+        "",
+        f"Deterministic package result: **{result}**",
+        "",
+        f"Current Course 1 product status: **`{rendered_product_status}`**",
+        "",
+        f"Distribution purpose: **`{distribution_purpose}`**",
         "",
         f"Checks: {len(report.checks)}; failures: {len(report.errors)}; warnings: {len(report.warnings)}",
         "",
         "## Scope",
         "",
         "This report covers the curriculum manifest, configured lesson files, the 9",
-        "foundation and 9 module Course 1 progress lessons, the 11-page non-core",
-        "Course 4 capstone integration, its required runnable package surface, current",
-        "JSON contracts, synthetic practice data, the strategic-focus guardrail, and",
-        "current internal links.",
+        "foundation and 9 module Course 1 progress lessons, current JSON contracts,",
+        "synthetic practice data, the strategic-focus guardrail, and current internal",
+        "links.",
+        (
+            "Course 4 is checked only for structural isolation and shared-reader "
+            "compatibility; its lesson and implementation acceptance are outside this "
+            "Course 1 report."
+            if scope == "course1"
+            else "The full scope also checks the 11-page non-core Course 4 capstone and its required runnable package surface."
+        ),
         "Archived Course 4 source material, `app/dist/`, dependency folders, Git",
         "metadata, caches, live cloud resources, and external websites are outside",
         "this deterministic validation.",
@@ -3027,11 +5868,14 @@ def write_report(
             "",
             "## Limits",
             "",
-            "A PASS confirms deterministic package structure; it does not confirm external",
+            "The deterministic package result above covers package structure only; it",
+            "does not change the authoritative Course 1 product status or confirm external",
             "source currency, legal compliance, production security, model quality, visual",
             "layout, accessibility, or a learner's implementation. Those require the live",
             "source audit, PWA tests and visual review, and the course evaluation and UAT",
-            "gates.",
+            "gates. Follow `COURSE_1_AUDIT_STATUS_AND_REPAIR_LEDGER.md`; missing",
+            "immutable, human, repository, installed-client, device, or live evidence",
+            "keeps the current personal-study release `UNVERIFIED` rather than `PASS`.",
             "",
         ]
     )
@@ -3041,7 +5885,7 @@ def write_report(
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Validate Course 1 and its optional Course 4 capstone"
+        description="Validate Course 1 or the full package including Course 4"
     )
     parser.add_argument(
         "--root",
@@ -3054,6 +5898,12 @@ def main() -> int:
         type=Path,
         default=None,
         help="report path (default: <root>/VALIDATION_REPORT.md)",
+    )
+    parser.add_argument(
+        "--scope",
+        choices=("course1", "full"),
+        default="course1",
+        help="course1 excludes Course 4 lesson and implementation acceptance",
     )
     args = parser.parse_args()
     root = args.root.resolve()
@@ -3073,23 +5923,34 @@ def main() -> int:
 
     report = Report()
     validate_strategic_focus_guardrail(root, report)
+    validate_current_status_consumers(root, report)
+    validate_personal_study_learning_boundary(root, report)
     curriculum = validate_curriculum(root, report)
+    validate_curriculum_date_metadata(root, curriculum, report)
     validate_release_metadata_sync(root, curriculum, report)
-    validate_course4_capstone_integration(root, curriculum, report)
+    validate_course4_capstone_integration(
+        root,
+        curriculum,
+        report,
+        include_course4_product=args.scope == "full",
+    )
     validate_progress_lessons(root, curriculum, report)
     validate_module_structure(root, curriculum, report)
     validate_beginner_practice_contract(root, curriculum, report)
     validate_beginner_terminology(root, report)
     validate_integrated_course_contract(root, curriculum, report)
     validate_course1_beginner_execution_contract(root, curriculum, report)
+    validate_course1_learning_content_repairs(root, report)
     validate_current_json(root, report)
+    validate_course1_technical_audit_control(root, report)
+    validate_course1_learning_audit_control(root, report)
     validate_json_schemas(root, report)
     validate_optional_yaml(root, report)
     validate_practice_data(root, report)
     validate_internal_links(root, report)
 
     try:
-        write_report(root, report, output, curriculum)
+        write_report(root, report, output, curriculum, scope=args.scope)
     except Exception as exc:
         print(
             json.dumps(
@@ -3104,6 +5965,10 @@ def main() -> int:
 
     summary = {
         "result": "PASS" if not report.errors else "FAIL",
+        "product_status": read_authoritative_product_status(root)[0] or "INVALID",
+        "distribution_purpose": (
+            read_authoritative_distribution_purpose(root)[0] or "INVALID"
+        ),
         "checks": len(report.checks),
         "failures": report.errors,
         "warnings": report.warnings,

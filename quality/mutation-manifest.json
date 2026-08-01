@@ -1,0 +1,152 @@
+{
+  "schemaVersion": 1,
+  "manifestId": "course1-security-mutations-v1",
+  "mutants": [
+    {
+      "id": "C1-MUT-DETERMINISTIC-RULES-001",
+      "family": "deterministic-rules",
+      "target": "course1_capstone/workflow.py",
+      "find": "            elif amount < 0:",
+      "replace": "            elif amount <= 0:",
+      "workingDirectory": ".",
+      "command": [
+        "{python}",
+        "-m",
+        "pytest",
+        "-q",
+        "course1_capstone/tests/test_workflow.py",
+        "-k",
+        "recreated_input_detects_exact_five_triple_keys"
+      ],
+      "expectedFailurePattern": "recreated_input_detects_exact_five"
+    },
+    {
+      "id": "C1-MUT-APPROVAL-BINDING-001",
+      "family": "approval-binding",
+      "target": "course1_capstone/workflow.py",
+      "find": "    if approval[\"decision_id\"] != expected_decision_id:",
+      "replace": "    if False and approval[\"decision_id\"] != expected_decision_id:",
+      "workingDirectory": ".",
+      "command": [
+        "{python}",
+        "-m",
+        "pytest",
+        "-q",
+        "course1_capstone/tests/test_workflow.py",
+        "-k",
+        "every_material_decision_field_is_locally_fingerprinted"
+      ],
+      "expectedFailurePattern": "every_material_decision_field"
+    },
+    {
+      "id": "C1-MUT-AUDIT-RECONCILIATION-001",
+      "family": "audit-reconciliation",
+      "target": "course1_capstone/workflow.py",
+      "find": "        if len(found) != 1:",
+      "replace": "        if not found:",
+      "workingDirectory": ".",
+      "command": [
+        "{python}",
+        "-m",
+        "pytest",
+        "-q",
+        "course1_capstone/tests/test_workflow.py",
+        "-k",
+        "audit_lifecycle_rejects_duplicate_contradictory_and_reordered_events"
+      ],
+      "expectedFailurePattern": "audit_lifecycle_rejects"
+    },
+    {
+      "id": "C1-MUT-TRANSACTION-ROLLBACK-001",
+      "family": "transaction-rollback",
+      "target": "course1_capstone/workflow.py",
+      "find": "                _restore_controlled_file(controlled_path, snapshot)",
+      "replace": "                pass  # mutation: controlled snapshot was not restored",
+      "workingDirectory": ".",
+      "command": [
+        "{python}",
+        "-m",
+        "pytest",
+        "-q",
+        "course1_capstone/tests/test_workflow.py",
+        "-k",
+        "failed_export_rollback_leaves_a_blocking_incomplete_marker"
+      ],
+      "expectedFailurePattern": "failed_export_rollback"
+    },
+    {
+      "id": "C1-MUT-PATH-GUARDS-001",
+      "family": "path-guards",
+      "target": "course1_capstone/workflow.py",
+      "find": "        if stem in WINDOWS_RESERVED_NAMES:",
+      "replace": "        if False and stem in WINDOWS_RESERVED_NAMES:",
+      "workingDirectory": ".",
+      "command": [
+        "{python}",
+        "-m",
+        "pytest",
+        "-q",
+        "quality/test_runner_properties.py",
+        "-k",
+        "reserved_device_names_never_pass_path_preflight"
+      ],
+      "expectedFailurePattern": "reserved_device_names"
+    },
+    {
+      "id": "C1-MUT-MARKDOWN-URL-SAFETY-001",
+      "family": "markdown-url-safety",
+      "target": "app/src/markdown.js",
+      "find": "      url.protocol === \"https:\" &&",
+      "replace": "      (url.protocol === \"https:\" || url.protocol === \"http:\") &&",
+      "workingDirectory": "app",
+      "command": [
+        "{node}",
+        "--test",
+        "tests/property-security.test.mjs"
+      ],
+      "expectedFailurePattern": "not ok|fail"
+    },
+    {
+      "id": "C1-MUT-BACKUP-VALIDATION-001",
+      "family": "backup-validation",
+      "target": "app/src/state.js",
+      "find": "    if (noteLength > MAX_NOTE_CODE_POINTS) {\n      throw new Error(\"A progress-backup note is too long.\");",
+      "replace": "    if (noteLength >= MAX_NOTE_CODE_POINTS) {\n      throw new Error(\"A progress-backup note is too long.\");",
+      "workingDirectory": "app",
+      "command": [
+        "{node}",
+        "--test",
+        "tests/property-security.test.mjs"
+      ],
+      "expectedFailurePattern": "not ok|fail"
+    },
+    {
+      "id": "C1-MUT-STORAGE-CONFLICT-001",
+      "family": "storage-conflict",
+      "target": "app/src/state.js",
+      "find": "    if (localChanged && remoteChanged && !sameValue(local[field], remote[field])) {",
+      "replace": "    if ((localChanged || remoteChanged) && !sameValue(local[field], remote[field])) {",
+      "workingDirectory": "app",
+      "command": [
+        "{node}",
+        "--test",
+        "tests/property-security.test.mjs"
+      ],
+      "expectedFailurePattern": "not ok|fail"
+    },
+    {
+      "id": "C1-MUT-SERVICE-WORKER-IDENTITY-001",
+      "family": "service-worker-identity",
+      "target": "app/src/sw.js",
+      "find": "    manifest.contentHash !== CONTENT_HASH ||",
+      "replace": "    false ||",
+      "workingDirectory": "app",
+      "command": [
+        "{node}",
+        "--test",
+        "tests/property-security.test.mjs"
+      ],
+      "expectedFailurePattern": "not ok|fail"
+    }
+  ]
+}

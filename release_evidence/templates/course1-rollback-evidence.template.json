@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "result": "PASS_OR_FAIL",
+  "drillType": "LOCAL_REHEARSAL_OR_PRODUCTION_ROLLBACK",
+  "startedAt": "REPLACE_WITH_ISO_8601_TIMESTAMP_AND_TIMEZONE",
+  "completedAt": "REPLACE_WITH_ISO_8601_TIMESTAMP_AND_TIMEZONE",
+  "trigger": "REPLACE_WITH_REHEARSAL_SCENARIO_OR_OBSERVED_FAILURE",
+  "failedCandidate": {
+    "commit": "REPLACE_WITH_FULL_COMMIT_SHA",
+    "buildId": "REPLACE_WITH_VERSION_JSON_VALUE",
+    "contentHash": "REPLACE_WITH_VERSION_JSON_VALUE"
+  },
+  "restoredLastKnownGood": {
+    "commit": "REPLACE_WITH_FULL_COMMIT_SHA",
+    "buildId": "REPLACE_WITH_VERSION_JSON_VALUE",
+    "contentHash": "REPLACE_WITH_VERSION_JSON_VALUE",
+    "acceptanceRecord": "REPLACE_WITH_EVIDENCE_LOCATOR"
+  },
+  "learnerState": {
+    "backupCreated": true,
+    "sha256Before": "REPLACE_WITH_SHA256",
+    "sha256After": "REPLACE_WITH_SHA256",
+    "preserved": true
+  },
+  "verification": {
+    "publicIdentityMatched": false,
+    "offlineColdReopenPassed": false,
+    "installedClientStatePassed": false,
+    "consoleClean": false
+  },
+  "workflowRun": "REPLACE_WITH_WORKFLOW_RUN_URL_OR_LOCAL_REPORT_PATH",
+  "reviewer": "REPLACE_WITH_NAME",
+  "failuresAndFollowUp": []
+}

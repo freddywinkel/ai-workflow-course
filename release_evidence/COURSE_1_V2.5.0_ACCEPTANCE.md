@@ -1,5 +1,14 @@
 # Course 1 version 2.5.0 acceptance record
 
+> **Historical record — `SUPERSEDED` for current status on 2026-07-28.**
+> This file preserves the release decision made from the evidence available at
+> that time. Later technical, curriculum, and audit-governance reviews reopened
+> High and Medium requirements. The authoritative current status is always the
+> value in
+> [`COURSE_1_AUDIT_STATUS_AND_REPAIR_LEDGER.md`](../COURSE_1_AUDIT_STATUS_AND_REPAIR_LEDGER.md).
+> Do not use the historical `PASS` below as a current clean-audit result or as
+> proof of Course 2 readiness.
+
 - Verified: 2026-07-28
 - Reviewer: Codex, with independent curriculum and Progressive Web App (PWA)
   audits

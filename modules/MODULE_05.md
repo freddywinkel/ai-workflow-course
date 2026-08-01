@@ -2,9 +2,10 @@
 
 ## Outcome
 
-You will add an offline mock of an Artificial Intelligence (AI) summary after
-the proven R001-R011 issues. The mock behaves like provider output but makes no
-network call and costs nothing.
+You will configure and test the supplied offline mock of an artificial
+intelligence (AI) summary after the proven R001-R011 issues. You will then
+design—but not implement—a different bounded offline AI contract. The supplied
+mock behaves like provider output but makes no network call and costs nothing.
 
 It may only:
 
@@ -255,6 +256,48 @@ again.
 Safe stopping points are after Stage 3, after the five failure cases, after
 Recreation 3, and after Recreation 4. On return, run only this start block,
 then continue at the next unfinished stage.
+
+Suggested sessions:
+
+Use twelve focused blocks of 40–60 minutes. Never continue past 60 minutes or
+combine blocks to catch up. This preserves the published 8–12-hour author
+estimate.
+
+- **UNDERSTAND** means you must explain the rule/AI/human boundary, evidence
+  link, schema, validator, failure, fallback, or support decision in your own
+  words.
+- **PROTECTED PLUMBING — RUN AND OBSERVE** means you may run the supplied
+  path/hash, saved-run resolver, runner, and Git commands without memorising
+  their syntax. You must understand the input, expected output, protected
+  boundary, and stop condition before running them.
+
+1. **PROTECTED PLUMBING — RUN AND OBSERVE:** run the complete start/resume
+   block, verify the runner and fixture hashes, and locate any saved runs.
+2. **PROTECTED PLUMBING + UNDERSTAND:** prepare the worked offline-mock run in
+   Stage 1 and explain its state, verified issue input, and zero external
+   actions.
+3. **UNDERSTAND:** inspect the exact mock input/output in Stage 2 and trace
+   every generated statement and action to verified issue identifiers.
+4. **UNDERSTAND:** perform Stage 3's sentence-level human support review and
+   explain why valid structure is not proof of supported meaning.
+5. **PROTECTED PLUMBING + UNDERSTAND:** run disabled, timeout, and refusal
+   cases from Stage 4; explain the deterministic fallback for each.
+6. **PROTECTED PLUMBING + UNDERSTAND:** finish malformed-output and invented-ID
+   cases, then prove in Stage 5 that instructions inside data remain inert.
+7. **PROTECTED PLUMBING — RUN AND OBSERVE:** prepare the different five-issue
+   recreation and verify the saved run before editing any candidate.
+8. **UNDERSTAND:** author the different bounded response using only allowed
+   issue identifiers, fixed labels, source links, and human-review actions.
+9. **PROTECTED PLUMBING + UNDERSTAND:** validate the candidate, diagnose any
+   exact structural/reference failure, and preserve correction evidence.
+10. **UNDERSTAND:** perform your own sentence-level support review and record
+    supported, unsupported, edited, or rejected wording.
+11. **UNDERSTAND:** design the second-domain offline AI contract, including
+    fixed inputs/outputs, citations, adversarial cases, validators, fallback,
+    and human authority, without claiming implementation.
+12. **UNDERSTAND + PROTECTED PLUMBING:** run the bounded Codex review, make your
+    own corrections, check every pass criterion, and run only the supplied
+    Module 5 Git checkpoint commands.
 
 ## Follow along — I show you exactly how
 
@@ -650,6 +693,60 @@ Complete the table with one row per sentence. Then record:
 - whether the candidate is accepted for the Module 6 review package;
 - the deterministic fallback route.
 
+### Recreation 5 — Design a different bounded offline AI contract
+
+The five-issue candidate proves that you can operate and inspect the supplied
+contract. Now design—not execute—a different bounded contract for this new
+synthetic case:
+
+> A fictional workshop has a deterministic equipment-inspection rule engine.
+> It has already produced verified finding IDs with rule code, field, exact
+> controlled message, and severity. A possible language step may group those
+> findings for an internal reviewer. It must not inspect raw maintenance notes,
+> invent a finding, change severity, schedule work, message a technician, or
+> update a system.
+
+Create the design record once:
+
+```powershell
+$secondAiContract = Join-Path $moduleFolder 'second_domain_ai_contract.md'
+if (Test-Path -LiteralPath $secondAiContract) {
+    if (-not (Test-Path -LiteralPath $secondAiContract -PathType Leaf) -or
+        (Get-Content -LiteralPath $secondAiContract -TotalCount 1) -cne '# Second-domain bounded AI contract') {
+        throw 'Existing second-domain AI contract is unfamiliar. Preserve it and stop.'
+    }
+    Write-Host "KEEPING existing $secondAiContract"
+} else {
+    '# Second-domain bounded AI contract' |
+        Set-Content -LiteralPath $secondAiContract -Encoding utf8
+    Write-Host "CREATED $secondAiContract"
+}
+notepad $secondAiContract
+```
+
+Design the contract yourself using what the worked contract taught you. It must
+contain:
+
+1. intended user, exact purpose, and negative scope;
+2. the smallest verified input fields and why raw notes are excluded;
+3. a structured JavaScript Object Notation (JSON) output example and a field
+   table with type, allowed values, required/optional status, and meaning;
+4. two or more learner-chosen fixed group labels and two or more fixed headline
+   options; the AI may select only among those candidates;
+5. exact finding-ID citations and one `human_review` action per finding;
+6. deterministic post-generation checks for unknown, omitted, duplicated, or
+   unsupported finding references;
+7. timeout, refusal, malformed output, and unsupported-statement behavior;
+8. a deterministic fallback that remains usable without AI;
+9. the human evidence review and permitted approve/edit/reject choice;
+10. version fields, reassessment trigger, and the explicit statement
+    `OFFLINE CONTRACT DESIGN — NO MODEL CALL`;
+11. one example that must pass and two adversarial examples that must fail.
+
+Do not reuse the Operations Exception Assistant's nouns, group labels, or
+headline. Do not choose a provider or model. This design proves a transferable
+control pattern, not that the contract has been implemented or run.
+
 ## Ask Codex to check your work
 
 Run these three commands and paste each full path into its matching placeholder:
@@ -694,10 +791,16 @@ human_review action with external_action false;
 6. human sentence-level support reviews and deterministic fallback;
 7. evidence for disabled, timeout, refusal, malformed JSON, unknown ID, and
 untrusted free-text handling;
-8. whether the authorised artifacts show any configured network call, secret,
+8. second_domain_ai_contract.md uses the different synthetic equipment-
+inspection case; has bounded verified inputs, learner-chosen candidate labels,
+structured output, exact citations, deterministic checks and fallback, human
+authority, version/reassessment fields, one pass case and two rejected cases;
+it contains OFFLINE CONTRACT DESIGN — NO MODEL CALL and makes no implementation
+claim;
+9. whether the authorised artifacts show any configured network call, secret,
 paid service, or external action; say explicitly that non-detection is not
 proof of absence;
-9. the smallest learner-made corrections if NOT YET.
+10. the smallest learner-made corrections if NOT YET.
 
 Remain read-only. Do not generate a replacement summary.
 ```
@@ -714,6 +817,11 @@ Remain read-only. Do not generate a replacement summary.
 - [ ] Human review checks every sentence against evidence.
 - [ ] All five AI failure modes use deterministic fallback.
 - [ ] Untrusted free text remains inert source data.
+- [ ] I designed a different bounded offline AI contract with fixed candidates,
+      structured output, citations, validation, fallback, human authority, and
+      adversarial cases.
+- [ ] The second-domain contract states `OFFLINE CONTRACT DESIGN — NO MODEL
+      CALL` and does not claim implementation.
 - [ ] No provider, key, network, real data, or external action is used.
 - [ ] Codex returns `PASS` in read-only mode.
 
@@ -750,7 +858,8 @@ and cannot create an export.
 
 `evidence/module-05` contains the worked mock, human support review, five
 fallback runs, untrusted-text result, learner-created five-issue candidate,
-candidate validation, and recreated support review.
+candidate validation, recreated support review, and learner-designed
+second-domain offline AI contract.
 
 ## Test gate
 
@@ -774,6 +883,5 @@ action, uses a provider key, or lacks a deterministic fallback.
 
 ## Estimated time
 
-8-12 hours, best completed as three to five sessions.
-
-Suggested sessions: three to five sessions of about 2-3 hours.
+8–12 hours, using the twelve beginner-safe blocks above. No block exceeds 60
+minutes. This is an **AUTHOR ESTIMATE — NOT BEGINNER MEASURED**.

@@ -1,0 +1,139 @@
+name: Course 1 post-deployment final technical adjudication
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_commit:
+        description: Full 40-character commit SHA of the deployed candidate
+        required: true
+        type: string
+      promotion_run_id:
+        description: Numeric workflow run ID that preserved and deployed the candidate artifact
+        required: true
+        type: string
+      final_record:
+        description: Final acceptance JSON path inside release_evidence/
+        required: true
+        type: string
+      final_record_commit:
+        description: Full commit SHA containing the post-deployment record and all evidence
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: course1-final-adjudication-${{ inputs.candidate_commit }}
+  cancel-in-progress: false
+
+jobs:
+  verify-all-33:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out the trusted final-adjudication controls
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: control
+          persist-credentials: false
+
+      - name: Reject moving or abbreviated references
+        shell: bash
+        env:
+          CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
+          PROMOTION_RUN_ID: ${{ inputs.promotion_run_id }}
+          FINAL_RECORD_COMMIT: ${{ inputs.final_record_commit }}
+          CONTROL_REF: ${{ github.ref }}
+        run: |
+          if [[ "$CONTROL_REF" != "refs/heads/main" ]]; then
+            echo "final adjudication must be dispatched from main"
+            exit 1
+          fi
+          if [[ ! "$CANDIDATE_COMMIT" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "candidate_commit must be a full lower-case 40-character Git SHA"
+            exit 1
+          fi
+          if [[ ! "$FINAL_RECORD_COMMIT" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "final_record_commit must be a full lower-case 40-character Git SHA"
+            exit 1
+          fi
+          if [[ ! "$PROMOTION_RUN_ID" =~ ^[1-9][0-9]*$ ]]; then
+            echo "promotion_run_id must be a positive numeric GitHub Actions run ID"
+            exit 1
+          fi
+
+      - name: Prove the referenced run deployed this accepted candidate
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
+          PROMOTION_RUN_ID: ${{ inputs.promotion_run_id }}
+        run: |
+          set -euo pipefail
+          run_json="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$PROMOTION_RUN_ID")"
+          jq -e \
+            --arg commit "$CANDIDATE_COMMIT" \
+            '.conclusion == "success" and
+             .event == "workflow_dispatch" and
+             .head_branch == "main" and
+             .head_sha == $commit and
+             .path == ".github/workflows/pages.yml"' \
+            <<<"$run_json" >/dev/null
+          jobs_json="$(gh api --paginate \
+            "repos/$GITHUB_REPOSITORY/actions/runs/$PROMOTION_RUN_ID/jobs?per_page=100")"
+          for required_job in prepare-accepted-pages-artifact deploy; do
+            jq -e \
+              --arg name "$required_job" \
+              '.jobs | any(.name == $name and .conclusion == "success")' \
+              <<<"$jobs_json" >/dev/null
+          done
+
+      - name: Check out the immutable post-deployment evidence commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.final_record_commit }}
+          path: acceptance-control
+          persist-credentials: false
+
+      - name: Download the exact artifact preserved by the promotion run
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: course1-candidate-${{ inputs.candidate_commit }}
+          path: app/dist
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.promotion_run_id }}
+
+      - name: Set up the pinned verifier Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14.6"
+
+      - name: Require the prior promotion record and exact all-33 evidence set
+        shell: bash
+        env:
+          CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
+          PROMOTION_RUN_ID: ${{ inputs.promotion_run_id }}
+          FINAL_RECORD: ${{ inputs.final_record }}
+        run: |
+          set -o pipefail
+          mkdir -p final-adjudication
+          python control/tools/verify_course1_final_acceptance.py \
+            --record "$FINAL_RECORD" \
+            --expected-commit "$CANDIDATE_COMMIT" \
+            --promotion-run-id "$PROMOTION_RUN_ID" \
+            --dist app/dist \
+            --evidence-root acceptance-control \
+            --ledger acceptance-control/COURSE_1_AUDIT_STATUS_AND_REPAIR_LEDGER.md \
+            --report final-adjudication/course1-final.json \
+            | tee final-adjudication/course1-final.stdout.json
+
+      - name: Preserve the final machine decision
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: course1-final-adjudication-${{ inputs.candidate_commit }}
+          path: final-adjudication
+          if-no-files-found: error
+          retention-days: 90

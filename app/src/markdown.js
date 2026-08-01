@@ -17,17 +17,31 @@ function escapeAttribute(value) {
 function safeLink(value) {
   const href = String(value).trim();
   if (
-    href.startsWith("#") ||
-    href.startsWith("/") ||
-    href.startsWith("./") ||
-    href.startsWith("../") ||
+    !href ||
+    /[\u0000-\u001F\u007F\\]/.test(href) ||
+    /^\/\//.test(href) ||
+    /%(?:00|0a|0d|2f|5c)/i.test(href)
+  ) {
+    return "#unsafe-link";
+  }
+  if (
+    /^#[A-Za-z0-9_.:-]+$/.test(href) ||
+    /^\/(?!\/)[A-Za-z0-9_.#?&=%/-]+$/.test(href) ||
+    /^(?:\.{1,2}\/)*[A-Za-z0-9_.-]+(?:\/[A-Za-z0-9_.#?&=%-]+)*$/.test(href) ||
     /^[a-zA-Z0-9_.-]+(?:\/[a-zA-Z0-9_.#?&=%-]+)*$/.test(href)
   ) {
     return href;
   }
   try {
     const url = new URL(href);
-    if (["https:", "http:", "mailto:"].includes(url.protocol)) return href;
+    if (
+      url.protocol === "https:" &&
+      !url.username &&
+      !url.password &&
+      !/[\u0000-\u001F\u007F]/.test(url.href)
+    ) {
+      return url.href;
+    }
   } catch {
     // Invalid or unsafe links become inert text targets.
   }
@@ -47,7 +61,7 @@ function renderInline(rawValue) {
   value = value.replace(/\[([^\]\n]+)\]\(([^)\n]+)\)/g, (_match, label, rawHref) => {
     const href = rawHref.trim().replace(/\s+"[^"]*"$/, "");
     const safe = safeLink(href);
-    const external = /^https?:\/\//i.test(safe);
+    const external = /^https:\/\//i.test(safe);
     const token = `\u0000LINK${tokens.length}\u0000`;
     tokens.push(
       `<a href="${escapeAttribute(safe)}"${external ? ' target="_blank" rel="noopener noreferrer"' : ""}>${escapeHtml(label)}</a>`,

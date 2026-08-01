@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "decision": "ACCEPTED_FOR_ROLLBACK",
+  "courseId": "course-1-controlled-ai-workflow-foundations",
+  "candidate": {
+    "artifactFormat": "REPLACE_WITH_manifest-v1_OR_legacy-v2.5",
+    "commit": "REPLACE_WITH_FULL_LAST_KNOWN_GOOD_COMMIT_SHA",
+    "courseVersion": "REPLACE_WITH_REBUILT_LAST_KNOWN_GOOD_VERSION_VALUE",
+    "buildId": "REPLACE_WITH_REBUILT_LAST_KNOWN_GOOD_VERSION_VALUE",
+    "contentHash": "REPLACE_WITH_REBUILT_LAST_KNOWN_GOOD_VERSION_VALUE",
+    "assetManifestSha256": "REPLACE_WITH_SHA256_OR_USE_JSON_NULL_FOR_legacy-v2.5",
+    "artifactTreeSha256": "REPLACE_WITH_WHOLE_ARTIFACT_TREE_SHA256"
+  },
+  "acceptedAt": "REPLACE_WITH_ISO_8601_TIMESTAMP_AND_TIMEZONE",
+  "authorizedBy": {
+    "name": "REPLACE_WITH_AUTHORIZER_NAME"
+  },
+  "gates": {
+    "artifactIdentity": true,
+    "lastKnownGoodAcceptance": true,
+    "learnerStateRecoveryPlan": true,
+    "rollbackAuthorized": true
+  },
+  "rollback": {
+    "failedCandidateCommit": "REPLACE_WITH_FULL_FAILED_COMMIT_SHA",
+    "trigger": "REPLACE_WITH_OBSERVED_PRODUCTION_FAILURE",
+    "lastKnownGoodAcceptanceRecord": {
+      "path": "release_evidence/REPLACE_WITH_ACCEPTED_PROMOTION_RECORD.json",
+      "sha256": "REPLACE_WITH_SHA256_OF_THE_EXACT_ACCEPTED_PROMOTION_RECORD"
+    },
+    "learnerStateRisk": "REPLACE_WITH_BACKUP_AND_PRESERVATION_ASSESSMENT"
+  },
+  "evidence": [
+    {
+      "path": "release_evidence/C1-TST-PROV-001.json",
+      "sha256": "REPLACE_WITH_SHA256_OF_THE_EXACT_EVIDENCE_FILE"
+    },
+    {
+      "path": "release_evidence/C1-TST-RECOVERY-001.json",
+      "sha256": "REPLACE_WITH_SHA256_OF_THE_EXACT_EVIDENCE_FILE"
+    },
+    {
+      "path": "release_evidence/C1-TST-SW-002.json",
+      "sha256": "REPLACE_WITH_SHA256_OF_THE_EXACT_EVIDENCE_FILE"
+    }
+  ]
+}

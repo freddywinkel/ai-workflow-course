@@ -1,22 +1,83 @@
 # Course 1 — Controlled Artificial Intelligence (AI) Workflow Foundations for Dutch Small and Medium-sized Enterprises (SMEs)
 
-- Version: 2.5.0
-- Verified through: 2026-07-28
+- Version: 2.6.0 personal-study edition
+- Current product status: **`UNVERIFIED`**; follow
+  `COURSE_1_AUDIT_STATUS_AND_REPAIR_LEDGER.md`
+- Distribution purpose: **`personal-synthetic-study`** (personal study with
+  synthetic data only)
+- Research and source claims verified through: 2026-07-28
+- Course content revised through: 2026-08-02
 - Language: English, with Dutch and European Union (EU) terms where useful
 - Format: self-paced, gate-based learning—you continue after proving a skill,
   not merely after spending a set number of days
-- Estimated effort for a literal beginner: 137–181 hours, equal to the sum of
-  the 21 required page ranges
-- End result: a private, **reproducible** portfolio demonstration—someone can
+- Author estimate for a literal beginner: 137–181 hours, equal to the sum of
+  the 21 required page ranges. This is not yet measured full-course beginner
+  completion time.
+- Personal-study result, if completed: a private, **reproducible** portfolio
+  demonstration—someone can
   repeat the documented steps and obtain the same result—using fictional
   practice data
 
-Course reader: [open the installable progressive web app (PWA)](https://freddywinkel.github.io/ai-workflow-course/).
+> **UNVERIFIED personal-study release.** You may use this version to read the
+> course and run its synthetic exercises. It has not passed the complete Course
+> 1 learner, assessor, device, installed-client, and live-release gates. It
+> cannot award Course 1 completion or prove Course 2, consulting, client, or
+> production readiness. Never enter real employer, client, medical, personal,
+> confidential, or credential data.
+
+The known local implementation defects have been repaired, but the required
+human, full support-matrix, installed-client, and final acceptance evidence does
+not yet exist.
+`C1-GOV-007` and `C1-GOV-011` are therefore `EVIDENCE PENDING`;
+the all-33-test final-adjudication gate for `C1-GOV-011` is implemented, but
+its 33 candidate-bound acceptance records do not yet exist. `C1-GOV-013` and
+`C1-GOV-015` are `CLOSED`. This is why the honest product status is
+`UNVERIFIED`, not `PASS`.
+
+Public course reader: [open the currently deployed progressive web app (PWA)](https://freddywinkel.github.io/ai-workflow-course/).
+That public deployment is a separate artifact. Before studying, verify that it
+shows version 2.6.0, product status `UNVERIFIED`, and the personal synthetic
+study purpose; public availability is not Course 1 acceptance.
 A PWA is a website that can also be installed and used like an app.
 
 Course repository: [freddywinkel/ai-workflow-course](https://github.com/freddywinkel/ai-workflow-course).
 A **repository** is the project folder whose files and changes are tracked
 together.
+
+## Human assessment requirement — know this before starting
+
+You can study every lesson, run every synthetic exercise, and prepare the full
+evidence pack alone. You do **not** need an assessor to begin. However, the
+official result `COURSE 1 COMPETENCE: PASS` cannot be self-awarded or assigned
+by Codex.
+
+This published version is also an `UNVERIFIED` course-product release. You may
+prepare every learner record now, but the final competence result may be
+recorded only after both the course product has a later evidence-backed `PASS`
+and your own independent human assessment passes. Until then, use
+`ASSESSMENT PENDING`.
+
+The final gate requires:
+
+- at least two independent calibration assessors;
+- one calibrated assessor to score the artifacts; and
+- an independent assessor to hear the live oral assessment.
+
+The artifact and oral roles may be performed by the same two eligible adults
+who completed calibration, so the practical minimum is two other people—not
+four. An eligible assessor is a consenting adult who did not create, edit, or
+correct the learner's evidence, can read the rubric and calibration cases, and
+declares any conflict or help. The oral assessor must personally hear the live
+answers. No assessor may receive workplace, client, medical, or personal data;
+all material remains synthetic.
+
+For planning only, the course author estimates 30–45 minutes for the second
+calibrator and 2–4 hours for the primary calibrator/artifact/oral work,
+depending on evidence quality and whether the roles are shared. These timings
+have not yet been measured with real beginner cohorts. If eligible people are
+not available, finish the learning and keep the honest status
+`ASSESSMENT PENDING`; your practice remains useful, but it is not an official
+competence pass.
 
 ## The purpose of this course
 
@@ -28,14 +89,17 @@ medium-sized enterprise, and **PWA** means progressive web app.
 The durable job is not “drawing automation boxes” or knowing one AI product.
 It is learning to:
 
-- observe how work is actually done;
+- rehearse how to observe work before proposing technology, using a fully
+  synthetic process in Course 1;
 - measure the problem before proposing technology;
 - decide whether the right answer is process improvement, ordinary rules,
   existing software, a bounded AI step, or no automation;
 - design a workflow with visible states, tests, human control, and a manual
   fallback;
 - evaluate usefulness, cost, failure behaviour, and adoption honestly;
-- explain assumptions, limitations, and escalation needs to a client.
+- prepare a plain-language explanation of assumptions, limitations, and
+  escalation needs. Real client discovery and demonstrated client communication
+  belong to later courses.
 
 The PWA's separate **Career Path** tab and the
 [Career Sequence](CAREER_SEQUENCE.md) show the later courses that add paid
@@ -58,10 +122,13 @@ or `STRATEGIC FIT: REJECT`. A paused or rejected proposal is not implemented.
 Changing the main goal requires a documented comparison and the user's explicit
 approval, so this rule protects the course from both distraction and inertia.
 
-## What you will build
+## What you will assemble, operate, and partly author
 
-You will build a **Synthetic SME Operations Exception Assistant**. Here,
-**synthetic** means completely fictional rather than copied from real work.
+You will safely assemble and operate the supplied **Synthetic SME Operations
+Exception Assistant**, then independently author and test one isolated rule.
+That is the exact Course 1 build boundary; you are not claiming to have
+engineered the full runner. Here, **synthetic** means completely fictional
+rather than copied from real work.
 
 Before reading the flow below:
 
@@ -118,8 +185,9 @@ do. Every foundation and module uses the same four-part loop:
    exact Windows clicks or commands, an explanation of what each action does,
    the result you should see, and a small troubleshooting check.
 2. **Now recreate it yourself.** You repeat the skill with different fictional
-   names or data. This checks whether you understood the idea instead of merely
-   copying.
+   names or data. This provides near-term practice with changed material.
+   Delayed retention and an unseen second-domain transfer are checked
+   separately at final assessment.
 3. **Ask Codex to check your work.** **Codex** is the course workspace assistant
    you are using now. The lesson provides a copy-and-paste prompt. You replace
    its placeholder with the full path to that lesson's practice folder. Codex
@@ -142,31 +210,43 @@ If a lesson names a technical term before it makes sense to you, stop and ask:
 The course spells out abbreviations at their first use. Product names are also
 introduced before use. For example, **Git** is the name of a version-control
 tool that records changes to files; it is not an abbreviation.
+Use the searchable
+[Beginner Glossary](foundations/GLOSSARY.md) whenever you meet an unfamiliar
+abbreviation, short form, product name, or course term. It is an optional
+lookup page and does not add another required lesson.
 
 ## What completing Course 1 proves
 
 You can:
 
-- map one **bounded** administrative process, with a clear start, end, and
-  scope, and identify its owner, users, systems, handoffs between people or
-  systems, exceptions, and manual fallback;
-- create a **baseline**, meaning measurements of the current volume, handling
-  time, waiting time, and rework before a change;
+- rehearse mapping one **bounded synthetic** administrative process, with a
+  clear start, end, and scope, and identify its fictional owner, users,
+  systems, handoffs between people or systems, exceptions, and manual
+  fallback;
+- create a **synthetic baseline** from fictional cases, meaning practice
+  measurements of volume, handling time, waiting time, and rework before a
+  change; this is not evidence about a real business process;
 - write an intended purpose, exclusions, and a **build-versus-buy decision**
   that compares creating something with purchasing existing software;
 - define a small **data contract**—the agreed required fields, formats, and
   allowed values—and deterministic business rules;
-- build a reproducible rule-first workflow;
-- design one optional, schema-constrained AI contribution and prove its
-  controls with a deterministic offline mock, without making a live model call;
+- safely assemble and operate the supplied reproducible rule-first workflow,
+  then author one bounded deterministic rule with normal, boundary, and failure
+  tests;
+- design one optional, schema-constrained offline AI contribution for a
+  different synthetic case and explain its input, output, evidence, fallback,
+  and human-review boundary without making a live model call;
 - design meaningful human review and prevent unapproved actions;
 - run a practical Dutch SME privacy, AI, vendor, and security **pre-screen**, an
   early check for obvious concerns that need a specialist;
 - evaluate normal cases, **edge cases** at unusual but possible boundaries,
   failures, time, cost, and usability;
-- produce a **user acceptance testing (UAT)** script for intended users to check
-  the workflow, a **runbook** with operating and recovery instructions, a
-  limitations record, handover pack, and honest portfolio demonstration.
+- produce a candidate **user acceptance testing (UAT)** script for intended
+  users, perform a clearly labelled role-simulated operational acceptance
+  rehearsal, and produce a **runbook** with operating and recovery
+  instructions, limitations record, handover pack, and honest portfolio
+  demonstration. Real UAT requires another consenting person and remains
+  unverified during solo practice.
 
 ## What it does not prove
 
@@ -208,8 +288,8 @@ a workflow keeps information. Start here if you have no technical experience.
 6. Keep humans in control.
 7. Apply Dutch SME guardrails and choose the right tool.
 8. Evaluate usefulness and business value.
-9. Run user acceptance testing (UAT), plan adoption, and hand over the
-   demonstration.
+9. Rehearse operational acceptance, plan adoption, hand over the demonstration,
+   and complete the independently assessed Course 1 gate.
 
 Each module has an **evidence artifact**, a file that proves what you did, and a
 **gate**, a checklist that must pass before you continue. A calendar is not a
@@ -267,12 +347,17 @@ authorizes a client pilot, real data, production use, or external action.
    Use [CAPSTONE_SPECIFICATION.md](CAPSTONE_SPECIFICATION.md) and
    [ASSESSMENT_AND_RUBRIC.md](ASSESSMENT_AND_RUBRIC.md) for final acceptance.
 
-## PWA versus the workflow you build
+## PWA versus the workflow you assemble
 
 The PWA is an offline course reader and progress tracker. It contains no AI and
 does not run either the Course 1 workflow or the optional Course 4 cloud
-capstone. You build and run those separately while following their lessons.
-Progress and private notes remain in the browser or installed app.
+capstone. You assemble and run the supplied Course 1 workflow separately while
+following its lessons; the optional Course 4 capstone remains a later,
+separately gated build. Progress and learner notes remain in that browser or
+installed app. They are local to that browser profile, but they are **not
+private from other applications served from the same website origin**. Use
+synthetic course content only and do not enter personal, employer, client,
+medical, confidential, or credential information.
 
 ## Design rule for a fast-changing AI market
 

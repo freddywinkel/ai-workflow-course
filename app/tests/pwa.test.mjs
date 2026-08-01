@@ -20,6 +20,8 @@ let manifest;
 let version;
 let packageMetadata;
 let appSource;
+let stateSource;
+let bootstrapSource;
 let serviceWorkerSource;
 let htmlSource;
 let cssSource;
@@ -35,6 +37,8 @@ before(async () => {
     await readFile(join(appRoot, "package.json"), "utf8"),
   );
   appSource = await readFile(join(distRoot, "app.js"), "utf8");
+  stateSource = await readFile(join(distRoot, "state.js"), "utf8");
+  bootstrapSource = await readFile(join(distRoot, "bootstrap.js"), "utf8");
   serviceWorkerSource = await readFile(join(distRoot, "sw.js"), "utf8");
   htmlSource = await readFile(join(distRoot, "index.html"), "utf8");
   cssSource = await readFile(join(distRoot, "styles.css"), "utf8");
@@ -75,6 +79,14 @@ test("schema-v2 bundle contains nine foundations and nine implementation modules
   assert.equal(bundle.course.foundationCount, 9);
   assert.equal(bundle.course.moduleCount, 9);
   assert.equal(bundle.course.coreLessonCount, 18);
+  assert.equal(bundle.course.productStatus, "UNVERIFIED");
+  assert.equal(bundle.course.distributionPurpose, "personal-synthetic-study");
+  assert.equal(bundle.course.sourceVerifiedThrough, "2026-07-28");
+  assert.equal(bundle.course.contentRevisionThrough, "2026-08-02");
+  assert.equal(
+    bundle.course.verifiedThrough,
+    bundle.course.sourceVerifiedThrough,
+  );
   assert.ok(
     bundle.documents.some((document) => document.sourcePath === "COURSE_CHANGELOG.md"),
   );
@@ -105,6 +117,221 @@ test("every bundled course page has stable revisioned metadata and content", () 
   for (const id of ids) assert.equal(aliases.has(id), false, `id also used as alias ${id}`);
   for (const group of bundle.groups) {
     for (const id of group.documents) assert.ok(ids.has(id), `missing grouped id ${id}`);
+  }
+});
+
+test("beginner glossary is complete, searchable, and outside required progress", () => {
+  const glossary = bundle.documents.find(
+    (document) => document.id === "course-1-glossary",
+  );
+  const referenceGroup = bundle.groups.find((group) => group.id === "reference");
+  const suppliedReferenceTerms = [
+    "API",
+    "SDK",
+    "IDE",
+    "CLI",
+    "GUI",
+    "UI",
+    "UX",
+    "OS",
+    "DB",
+    "SQL",
+    "JSON",
+    "HTML",
+    "CSS",
+    "JS",
+    "TS",
+    "URL",
+    "HTTP",
+    "HTTPS",
+    "DNS",
+    "IP",
+    "PWA",
+    "SPA",
+    "MVP",
+    "PoC",
+    "QA",
+    "AI",
+    "ML",
+    "DL",
+    "NN",
+    "LLM",
+    "SLM",
+    "GPT",
+    "GenAI",
+    "NLP",
+    "NLU",
+    "NLG",
+    "CV",
+    "VLM",
+    "MLLM",
+    "RAG",
+    "MCP",
+    "AGI",
+    "ANI",
+    "ASI",
+    "RL",
+    "RLHF",
+    "RLAIF",
+    "SFT",
+    "DPO",
+    "LoRA",
+    "PEFT",
+    "MoE",
+    "GAN",
+    "OCR",
+    "ASR",
+    "STT",
+    "TTS",
+    "DOM",
+    "REST",
+    "CRUD",
+    "SSR",
+    "CSR",
+    "SSG",
+    "CDN",
+    "CORS",
+    "JWT",
+    "OAuth",
+    "MFA",
+    "2FA",
+    "SSL",
+    "TLS",
+    "TCP",
+    "UDP",
+    "RPC",
+    "URI",
+    "WASM",
+    "VCS",
+    "DVCS",
+    "repo",
+    "PR",
+    "MR",
+    "SHA",
+    "SSH",
+    "CI",
+    "CD",
+    "CI/CD",
+    "CSV",
+    "XML",
+    "YAML",
+    "DBMS",
+    "RDBMS",
+    "ORM",
+    "ETL",
+    "ELT",
+    "ACID",
+    "NoSQL",
+    "CPU",
+    "GPU",
+    "NPU",
+    "TPU",
+    "RAM",
+    "VRAM",
+    "SSD",
+    "HDD",
+    "I/O",
+    "VM",
+    "VPS",
+    "SaaS",
+    "PaaS",
+    "IaaS",
+    "FaaS",
+    "AWS",
+    "GCP",
+    "LTS",
+    "TDD",
+    "BDD",
+    "E2E",
+    "UAT",
+    "SLA",
+    "SLO",
+    "KPI",
+    "WCAG",
+    "a11y",
+    "i18n",
+    "npm",
+    "npx",
+    "JSX",
+    "TSX",
+    "ES",
+    "ESM",
+    "CJS",
+    "NVM",
+  ];
+  const courseSpecificTerms = [
+    "SME",
+    "ID",
+    "IO",
+    "PS",
+    "JSONL",
+    "SHA-256 / SHA256",
+    "UTF-8 / UTF8",
+    "GB",
+    "EUR / USD",
+    "UTC",
+    "EU / UK / NL",
+    "AVG",
+    "GDPR",
+    "ISO",
+    "CBS",
+    "AP",
+    "NCSC",
+    "DTC",
+    "NIST",
+    "RMF",
+    "OECD",
+    "UWV",
+    "IT",
+    "BV",
+    "B2B",
+    "ADR",
+    "SBOM",
+    "PyPI",
+    "PDF",
+    "DOCX",
+    "GUID",
+    "MSI",
+    "MSIX",
+    "DPIA",
+    "DPA",
+    "SCC",
+    "SSRF",
+    "ERP",
+    "CRM",
+    "DMS",
+    "eQMS",
+    "SOP",
+    "RTO",
+    "RPO",
+    "CAPA",
+    "BSN",
+    "ROI",
+    "ZDR",
+    "MAM",
+    "OSV",
+    "N/A",
+  ];
+
+  assert.ok(glossary);
+  assert.equal(glossary.sourcePath, "foundations/GLOSSARY.md");
+  assert.equal(glossary.revision, "2026-07-30");
+  assert.equal(glossary.group, "reference");
+  assert.equal(glossary.core, false);
+  assert.ok(referenceGroup?.documents.includes(glossary.id));
+  assert.equal(bundle.course.learningSequenceIds.includes(glossary.id), false);
+  assert.match(glossary.markdown, /You do \*\*not\*\* need to memorise/);
+  assert.match(glossary.markdown, /Git is a product name, not an abbreviation/);
+  assert.match(glossary.markdown, /AP.*Autoriteit Persoonsgegevens or Accounts Payable/);
+  assert.match(glossary.markdown, /NN.*replace this with a number/);
+
+  const glossaryRows = new Set(
+    [...glossary.markdown.matchAll(/^\| \*\*([^*]+)\*\* \|/gm)].map(
+      (match) => match[1],
+    ),
+  );
+  for (const term of [...suppliedReferenceTerms, ...courseSpecificTerms]) {
+    assert.ok(glossaryRows.has(term), `missing glossary row for ${term}`);
   }
 });
 
@@ -329,14 +556,49 @@ test("content hashes and build ids are stable for identical inputs", async () =>
   assert.equal(secondVersion.programId, bundle.program.id);
   assert.equal(secondVersion.courseId, bundle.course.id);
   assert.match(secondVersion.courseVersion, /^\d+\.\d+\.\d+$/);
+  assert.equal(secondVersion.productStatus, "UNVERIFIED");
+  assert.equal(secondVersion.distributionPurpose, "personal-synthetic-study");
+  assert.equal(
+    secondVersion.sourceVerifiedThrough,
+    bundle.course.sourceVerifiedThrough,
+  );
+  assert.equal(
+    secondVersion.contentRevisionThrough,
+    bundle.course.contentRevisionThrough,
+  );
+  assert.equal(
+    secondVersion.verifiedThrough,
+    secondVersion.sourceVerifiedThrough,
+  );
 });
 
-test("build ids also change when the build and generated-asset logic changes", () => {
+test("legacy schema-v2 curriculum dates migrate without changing source currency", async () => {
+  const current = JSON.parse(
+    await readFile(join(courseRoot, "curriculum.json"), "utf8"),
+  );
+  const legacy = structuredClone(current);
+  legacy.schemaVersion = 2;
+  delete legacy.course.sourceVerifiedThrough;
+  delete legacy.course.contentRevisionThrough;
+  const migrated = buildModule.normaliseCurriculumMetadata(legacy);
+
+  assert.equal(migrated.schemaVersion, 3);
+  assert.equal(migrated.course.sourceVerifiedThrough, "2026-07-28");
+  assert.equal(migrated.course.contentRevisionThrough, "2026-08-02");
+  assert.equal(
+    migrated.course.verifiedThrough,
+    migrated.course.sourceVerifiedThrough,
+  );
+  assert.equal(legacy.course.sourceVerifiedThrough, undefined);
+});
+
+test("build ids change with commit provenance and generated-asset logic", () => {
   const inputs = {
     contentHash: "content-hash",
     sourceAssets: [["app.js", "application source"]],
     buildScriptSource: "manifest and icon logic version one",
     basePath: "/ai-workflow-course/",
+    commit: "1111111111111111111111111111111111111111",
   };
   const first = buildModule.createBuildId(inputs);
   const repeated = buildModule.createBuildId(inputs);
@@ -344,9 +606,75 @@ test("build ids also change when the build and generated-asset logic changes", (
     ...inputs,
     buildScriptSource: "manifest and icon logic version two",
   });
+  const changedCommit = buildModule.createBuildId({
+    ...inputs,
+    commit: "2222222222222222222222222222222222222222",
+  });
   assert.equal(repeated, first);
   assert.notEqual(changed, first);
+  assert.notEqual(changedCommit, first);
   assert.match(first, /^[a-f0-9]{12}$/);
+  assert.throws(
+    () => buildModule.createBuildId({ ...inputs, commit: "" }),
+    /commit provenance is required/,
+  );
+});
+
+test("candidate provenance requires one clean full-commit source identity", () => {
+  const commit = "1".repeat(40);
+  assert.equal(
+    buildModule.selectBuildProvenance({
+      mode: "candidate",
+      workflowCommit: commit,
+      repositoryCommit: commit,
+      repositoryClean: true,
+    }),
+    commit,
+  );
+  assert.equal(
+    buildModule.selectBuildProvenance({
+      mode: "development",
+      workflowCommit: commit,
+      repositoryCommit: commit,
+      repositoryClean: false,
+    }),
+    "working-copy",
+  );
+  for (const candidate of [
+    {
+      mode: "candidate",
+      workflowCommit: commit.slice(0, 12),
+      repositoryCommit: commit,
+      repositoryClean: true,
+    },
+    {
+      mode: "candidate",
+      workflowCommit: commit,
+      repositoryCommit: "2".repeat(40),
+      repositoryClean: true,
+    },
+    {
+      mode: "candidate",
+      workflowCommit: commit,
+      repositoryCommit: commit,
+      repositoryClean: false,
+    },
+  ]) {
+    assert.throws(
+      () => buildModule.selectBuildProvenance(candidate),
+      /Candidate/,
+    );
+  }
+  assert.throws(
+    () =>
+      buildModule.selectBuildProvenance({
+        mode: "audit-ish",
+        workflowCommit: commit,
+        repositoryCommit: commit,
+        repositoryClean: true,
+      }),
+    /COURSE1_BUILD_MODE/,
+  );
 });
 
 test("career metadata separates the current course from the later consultant path", () => {
@@ -384,6 +712,34 @@ test("career metadata separates the current course from the later consultant pat
   assert.match(bundle.course.capstone.title, /SME Operations Exception Assistant/);
 });
 
+test("personal-study publication is persistently visible and cannot imply competence", () => {
+  assert.match(htmlSource, /UNVERIFIED personal-study release/);
+  assert.match(htmlSource, /Use synthetic data only/);
+  assert.match(htmlSource, /cannot award Course 1 completion/);
+  assert.match(htmlSource, /Course 2, consulting, client, or production readiness/);
+  assert.match(htmlSource, /id="settings-product-status"/);
+  assert.match(htmlSource, /id="settings-distribution-purpose"/);
+  assert.match(htmlSource, /Product status: UNVERIFIED personal-study release/);
+  assert.match(appSource, /Start personal study/);
+  assert.match(appSource, /assemble, test, and extend one/);
+  assert.match(appSource, /candidate\.course\.productStatus !== "UNVERIFIED"/);
+  assert.match(
+    appSource,
+    /An UNVERIFIED personal-study update is available/,
+  );
+  assert.match(appSource, /Course 1 · taught here/);
+  assert.match(
+    appSource,
+    /candidate\.course\.distributionPurpose !== "personal-synthetic-study"/,
+  );
+  assert.match(bootstrapSource, /productStatus: "UNVERIFIED"/);
+  assert.match(
+    bootstrapSource,
+    /distributionPurpose: "personal-synthetic-study"/,
+  );
+  assert.doesNotMatch(htmlSource, /Course 1 (?:competence )?PASS awarded/i);
+});
+
 test("GitHub Pages base path is used everywhere it must be", () => {
   assert.equal(manifest.start_url, "/ai-workflow-course/");
   assert.equal(manifest.scope, "/ai-workflow-course/");
@@ -395,6 +751,8 @@ test("GitHub Pages base path is used everywhere it must be", () => {
     assert.equal(source.includes("__BASE_PATH__"), false);
     assert.equal(source.includes("__BUILD_ID__"), false);
   }
+  assert.equal(serviceWorkerSource.includes("__BUILD_PROVENANCE__"), false);
+  assert.equal(serviceWorkerSource.includes("__ASSET_MANIFEST_SHA256__"), false);
 });
 
 test("service worker preserves a learner-controlled waiting update", () => {
@@ -402,15 +760,62 @@ test("service worker preserves a learner-controlled waiting update", () => {
     /self\.addEventListener\("install"[\s\S]+?\n}\);/,
   )?.[0];
   assert.ok(installHandler);
-  assert.match(installHandler, /cache: "reload"/);
   assert.doesNotMatch(installHandler, /skipWaiting/);
-  assert.match(serviceWorkerSource, /type === "SKIP_WAITING"/);
+  assert.doesNotMatch(installHandler, /startsWith\(CACHE_PREFIX\)/);
+  assert.match(serviceWorkerSource, /cache = "reload"/);
+  assert.match(serviceWorkerSource, /loadVerifiedNetworkManifest/);
+  assert.match(serviceWorkerSource, /fetchVerifiedAsset/);
+  assert.match(
+    serviceWorkerSource,
+    /CANDIDATE_CACHE_NAME =\s*\n?\s*`\$\{CACHE_PREFIX\}\$\{BUILD_ID\}-\$\{ASSET_MANIFEST_SHA256\}`/,
+  );
+  assert.match(
+    serviceWorkerSource,
+    /caches\.delete\(CANDIDATE_CACHE_NAME\)/,
+  );
+  assert.match(serviceWorkerSource, /type !== "SKIP_WAITING"/);
   assert.match(serviceWorkerSource, /self\.skipWaiting\(\)/);
-  assert.match(serviceWorkerSource, /caches\.delete/);
-  assert.match(serviceWorkerSource, /const cache = await caches\.open\(CACHE_NAME\)/);
+  assert.match(serviceWorkerSource, /isLegacyExplicitAction/);
+  assert.match(serviceWorkerSource, /isCurrentExplicitAction/);
+  assert.match(serviceWorkerSource, /event\.source\?\.type !== "window"/);
+  assert.match(
+    serviceWorkerSource,
+    /await validateCachedRelease\(CANDIDATE_CACHE_NAME\);\s+await self\.skipWaiting\(\)/,
+  );
+  assert.match(serviceWorkerSource, /\^\[a-f0-9\]\{40\}\$/);
+  assert.match(serviceWorkerSource, /validateCachedRelease\(CANDIDATE_CACHE_NAME\)/);
+  assert.match(serviceWorkerSource, /loadVerifiedCachedManifest/);
+  assert.match(serviceWorkerSource, /loadVerifiedCachedAsset/);
+  assert.match(serviceWorkerSource, /repairActiveRelease/);
+  assert.match(serviceWorkerSource, /status: 503/);
+  assert.match(serviceWorkerSource, /BUILD_PROVENANCE/);
+  assert.match(serviceWorkerSource, /manifest\.provenance\?\.commit/);
+  assert.match(serviceWorkerSource, /Asset manifest does not contain the exact release asset set/);
   assert.match(serviceWorkerSource, /request\.mode === "navigate"/);
   assert.match(serviceWorkerSource, /course-content\.json/);
   assert.match(serviceWorkerSource, /markdown\.js/);
+
+  const activationHandler = serviceWorkerSource.match(
+    /self\.addEventListener\("activate"[\s\S]+?\n}\);/,
+  )?.[0];
+  assert.ok(activationHandler);
+  assert.ok(
+    activationHandler.indexOf("validateCachedRelease(CANDIDATE_CACHE_NAME)") <
+      activationHandler.indexOf("caches.keys()"),
+  );
+
+  const verifiedServe = serviceWorkerSource.match(
+    /async function serveVerifiedCachedPath[\s\S]+?^\}/m,
+  )?.[0];
+  assert.ok(verifiedServe);
+  assert.match(verifiedServe, /loadVerifiedCachedManifest\(cache\)/);
+  assert.match(verifiedServe, /loadVerifiedCachedAsset\(cache/);
+  assert.match(verifiedServe, /repairActiveRelease\(\)/);
+  assert.match(verifiedServe, /unavailableResponse\(unavailableMessage\)/);
+  assert.match(
+    serviceWorkerSource,
+    /fetchStructurallyValidNetworkVersion\(\)\.catch\(\(\) =>\s*serveVerifiedCachedPath\(/,
+  );
 });
 
 test("Markdown lists keep wrapped lines inside their list items", () => {
@@ -580,7 +985,10 @@ test("app checks on startup, focus, foreground return and manual action", () => 
   assert.match(appSource, /addEventListener\("focus"/);
   assert.match(appSource, /visibilitychange/);
   assert.match(appSource, /update-button/);
-  assert.match(appSource, /postMessage\(\{ type: "SKIP_WAITING" \}\)/);
+  assert.match(
+    appSource,
+    /postMessage\(\{[\s\S]+?type: "SKIP_WAITING"[\s\S]+?workerScriptUrl: waiting\.scriptURL/,
+  );
   assert.match(appSource, /pendingUpdateWorker/);
   assert.match(appSource, /reloadingForUpdate/);
 });
@@ -693,8 +1101,9 @@ test("learner notes are captured before navigation and report real storage resul
   const captureNoteInState = Function(
     "state",
     "noteStorageDirty",
+    "MAX_NOTE_CODE_POINTS",
     `${captureSource}; return captureNoteInState;`,
-  )(noteState, false);
+  )(noteState, false, 50000);
   captureNoteInState("lesson-one", "Keep this note");
   assert.equal(noteState.notes["lesson-one"], "Keep this note");
   captureNoteInState("lesson-two", "x".repeat(50010));
@@ -702,36 +1111,11 @@ test("learner notes are captured before navigation and report real storage resul
   captureNoteInState("lesson-one", "   ");
   assert.equal("lesson-one" in noteState.notes, false);
 
-  const saveSource = appSource.match(
-    /function saveState\(\) \{[\s\S]+?^\}/m,
-  )?.[0];
-  assert.ok(saveSource);
-  const messages = [];
-  const makeSaveState = (storage) =>
-    Function(
-      "localStorage",
-      "STORAGE_KEY",
-      "state",
-      "showToast",
-      "noteStorageDirty",
-      `${saveSource}; return saveState;`,
-    )(
-      storage,
-      "course-state",
-      noteState,
-      (message) => messages.push(message),
-      true,
-    );
-  assert.equal(makeSaveState({ setItem() {} })(), true);
-  assert.equal(
-    makeSaveState({
-      setItem() {
-        throw new Error("storage full");
-      },
-    })(),
-    false,
-  );
-  assert.match(messages.at(-1), /could not be saved/);
+  assert.match(appSource, /localStorage\.setItem\(STORAGE_KEY, encoded\)/);
+  assert.match(appSource, /localStorage\.getItem\(STORAGE_KEY\) !== encoded/);
+  assert.match(appSource, /Progress could not be saved on this device/);
+  assert.match(appSource, /mergeConcurrentState\(base, state, remote\.state\)/);
+  assert.match(appSource, /Another course window changed the same item/);
 
   const wireEventsSource = appSource.match(
     /function wireEvents\(\) \{[\s\S]+?^}/m,
@@ -958,7 +1342,10 @@ test("effort and installation language reflect real practice and all devices", (
   assert.match(appSource, /total course hours/);
   assert.match(appSource, /estimatedPracticeHours \|\| courseDocument\?\.practiceHours/);
   assert.match(appSource, /Read: about \$\{readingMinutes\}/);
-  assert.match(appSource, /Practice: \$\{practiceHours\.minimum\}/);
+  assert.match(
+    appSource,
+    /Practice — AUTHOR ESTIMATE, NOT BEGINNER MEASURED: \$\{practiceHours\.minimum\}\\u2013\$\{practiceHours\.maximum\} hours/,
+  );
   assert.match(appSource, /class="reader-effort-reading"/);
   assert.match(appSource, /class="reader-effort-practice"/);
   assert.doesNotMatch(appSource, /allow extra practice time/);
@@ -980,7 +1367,7 @@ test("visual refresh stays purposeful, offline and theme-safe", () => {
   ]) {
     assert.match(appSource, new RegExp(label));
   }
-  assert.match(appSource, /class="progress-ring"/);
+  assert.match(appSource, /class="progress-ring \$\{progressClass\(percent\)\}"/);
   assert.match(appSource, /courseDocument\.kind === "foundation"/);
   assert.match(appSource, /courseDocument\.kind === "module"/);
   assert.match(appSource, /Required page \$\{requiredPosition \+ 1\}/);
@@ -1077,7 +1464,7 @@ test("first visible abbreviations are expanded in beginner language", () => {
   assert.match(appSource, /progressive web app \(PWA\)/);
   assert.doesNotMatch(htmlSource, /<strong>Controlled AI Workflow<\/strong>/);
   assert.doesNotMatch(htmlSource, /Dutch SME consulting path/);
-  assert.match(appSource, /build fixed, rule-based checks/);
+  assert.match(appSource, /author and test one fixed rule/);
   assert.match(appSource, /Made-up practice data only/);
   assert.match(appSource, /Made-up final practice project/);
   assert.match(appSource, /Problems found by fixed rules/);
@@ -1085,7 +1472,11 @@ test("first visible abbreviations are expanded in beginner language", () => {
     appSource,
     /Cannot send or change anything outside the practice files/,
   );
-  assert.match(appSource, /Research review date/);
+  assert.match(appSource, /Research and source review date/);
+  assert.match(appSource, /Sources verified through:/);
+  assert.match(appSource, /Course content revised through:/);
+  assert.match(htmlSource, /Research and sources verified through/);
+  assert.match(htmlSource, /Course content revised through/);
   assert.match(htmlSource, /Application and reading settings/);
   assert.match(appSource, /different fictional names or data/);
   assert.match(
@@ -1095,7 +1486,11 @@ test("first visible abbreviations are expanded in beginner language", () => {
   assert.match(appSource, /Read: about \$\{readingMinutes\}/);
   assert.match(htmlSource, />Escape<\/kbd>/);
   assert.match(htmlSource, /Safari<\/strong>, Apple’s web browser/);
-  assert.match(htmlSource, /GitHub, the online service that hosts this course/);
+  assert.match(
+    htmlSource,
+    /does not send progress or notes to GitHub or an artificial intelligence provider/,
+  );
+  assert.match(htmlSource, /same freddywinkel\.github\.io website origin/);
   assert.doesNotMatch(appSource, /build deterministic checks/);
   assert.doesNotMatch(appSource, /Synthetic capstone/);
   assert.doesNotMatch(appSource, /Source currency/);
@@ -1124,7 +1519,8 @@ test("learning sequence and checkpoints use bundle metadata rather than old path
 
 test("schema-v1 progress migrates to stable revisioned lesson ids", () => {
   assert.match(appSource, /localStorage\.setItem\(STORAGE_KEY/);
-  assert.match(appSource, /const STATE_SCHEMA_VERSION = 2/);
+  assert.match(stateSource, /STATE_SCHEMA_VERSION = 3/);
+  assert.match(stateSource, /STORAGE_FORMAT = "ai-workflow-course-storage-v1"/);
   assert.match(appSource, /parsed\.schemaVersion === 1/);
   assert.match(appSource, /function migrateSchemaV1\(legacy\)/);
   assert.match(appSource, /courseDocument\.legacyIds\.includes\(storedId\)/);
@@ -1133,22 +1529,43 @@ test("schema-v1 progress migrates to stable revisioned lesson ids", () => {
   assert.match(appSource, /notes:/);
   assert.match(appSource, /archivedLegacyNotes:/);
   assert.match(appSource, /lastDocument:/);
-  assert.match(appSource, /payload\?\.courseId !== courseBundle\.course\.id/);
-  assert.match(appSource, /const previousState = JSON\.parse\(JSON\.stringify\(state\)\)/);
+  assert.match(appSource, /validateBackupPayload\(payload/);
+  assert.match(appSource, /const runtimeSnapshot = captureRuntimeSnapshot\(\)/);
+  assert.match(appSource, /const previousVisible = runtimeSnapshot\.state/);
+  assert.match(appSource, /recoveryType: "pre-import-state"/);
+  assert.match(appSource, /rollbackStateTransaction\(/);
+  assert.match(appSource, /concurrentRecoveryPreserved/);
+  assert.match(appSource, /primarySnapshotVerified/);
+  assert.match(appSource, /resetBarrierSnapshotVerified/);
+  assert.match(appSource, /recoverySnapshotVerified/);
+  assert.match(appSource, /runtimeStateVerified/);
+  assert.match(appSource, /visibleRenderVerified/);
+  assert.match(appSource, /reconciliationRequired/);
   assert.match(
     appSource,
-    /if \(!saveState\(\)\) \{[\s\S]+?replaceState\(previousState\)[\s\S]+?backup was not imported/,
+    /current !== transactionOwned\[property\][\s\S]+?current !== snapshot\[property\]/,
   );
+  assert.match(appSource, /changed externally and preserved/);
+  assert.match(appSource, /Overall rollback:/);
+  assert.match(appSource, /renderCourseNavigation\(\)[\s\S]+?renderRoute\(\)/);
+  assert.match(appSource, /stateStorageQuarantined = false/);
+  assert.match(appSource, /allowedPracticalDocumentIds: practicalDocumentIds/);
+  assert.match(appSource, /allowedBundleSchemaVersions: bundleSchemaVersions/);
   assert.match(
     appSource,
-    /localStorage\.removeItem\(STORAGE_KEY\)[\s\S]+?navigate\("home"\)/,
+    /writeStorageValueAndVerify\(STORAGE_KEY, resetRaw\)[\s\S]+?window\.history\.replaceState[\s\S]+?renderRoute\(\)/,
   );
   assert.match(
     appSource,
     /state\.completionRevisions\[courseDocument\.id\] ===[\s\S]+?completionRevisionFor\(courseDocument\)/,
   );
-  assert.match(appSource, /\[1, STATE_SCHEMA_VERSION\]\.includes/);
-  assert.match(appSource, /window\.confirm\(/);
+  assert.match(appSource, /\[1, 2, STATE_SCHEMA_VERSION\]\.includes/);
+  assert.match(appSource, /requestInAppConfirmation/);
+  assert.match(appSource, /action-confirmation-dialog/);
+  assert.doesNotMatch(appSource, /window\.confirm\(/);
+  assert.doesNotMatch(appSource, /sessionStorage/);
+  assert.match(appSource, /stateStorageQuarantined = true/);
+  assert.match(appSource, /if \(!stateStorageQuarantined\) saveState\(\)/);
   assert.doesNotMatch(serviceWorkerSource, /localStorage/);
 });
 
@@ -1180,7 +1597,7 @@ test("page reading and practical self-checks are separate backward-compatible re
   );
   assert.match(
     htmlSource,
-    /pages read, practical self-checks, private notes, and reading settings/,
+    /pages read, practical self-checks, local learning notes, and reading settings/,
   );
 
   const defaultStateSource = appSource.match(
@@ -1190,7 +1607,7 @@ test("page reading and practical self-checks are separate backward-compatible re
   const createDefaultState = Function(
     "STATE_SCHEMA_VERSION",
     `${defaultStateSource}; return defaultState;`,
-  )(2);
+  )(3);
   const freshState = createDefaultState();
   assert.deepEqual(freshState.completed, []);
   assert.deepEqual(freshState.practicalPassed, []);
@@ -1235,12 +1652,12 @@ test("course practice revision reopens old completions without changing lesson d
     appSource,
     /\^\\d\{4\}-\\d\{2\}-\\d\{2\}\(\?:\\\|practice:\[1-9\]\\d\*\)\?\$/,
   );
-  assert.match(appSource, /notes: parsed\.notes/);
-  assert.match(appSource, /theme: \["system", "light", "dark"\]/);
+  assert.match(appSource, /notes: safeMap\(source\.notes\)/);
+  assert.match(appSource, /\["system", "light", "dark"\]\.includes\(source\.theme\)/);
 });
 
 test("built JavaScript is syntactically valid and required artifacts exist", async () => {
-  for (const file of ["app.js", "markdown.js", "sw.js"]) {
+  for (const file of ["app.js", "bootstrap.js", "markdown.js", "state.js", "sw.js"]) {
     execFileSync(nodeExecutable, ["--check", join(distRoot, file)], {
       stdio: "pipe",
     });
@@ -1257,9 +1674,12 @@ test("built JavaScript is syntactically valid and required artifacts exist", asy
   }
   for (const file of [
     "index.html",
+    "bootstrap.js",
     "app.js",
     "markdown.js",
+    "state.js",
     "styles.css",
+    "asset-manifest.json",
     "course-content.json",
     "manifest.webmanifest",
     "sw.js",

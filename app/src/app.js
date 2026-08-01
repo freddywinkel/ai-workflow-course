@@ -4,10 +4,24 @@ import {
   renderMarkdown as renderCourseMarkdown,
   stripLeadingDocumentTitle,
 } from "./markdown.js";
+import {
+  BACKUP_MAX_BYTES,
+  MAX_ARCHIVED_NOTES,
+  MAX_NOTE_CODE_POINTS,
+  STATE_SCHEMA_VERSION,
+  assertBoundedJson,
+  cloneJson,
+  createStorageEnvelope,
+  decodeStorageRecord,
+  mergeConcurrentState,
+  validateBackupPayload,
+} from "./state.js";
 
 const config = window.__COURSE_APP__;
 const STORAGE_KEY = "ai-workflow-course-state-v1";
-const STATE_SCHEMA_VERSION = 2;
+const RECOVERY_KEY = "ai-workflow-course-recovery-v1";
+const RESET_BARRIER_KEY = "ai-workflow-course-reset-barrier-v1";
+const WRITER_ID = createWriterId();
 const FOUNDATION_PRACTICE_HOURS = Object.freeze({
   "course-1-foundation-01": { minimum: 4, maximum: 6 },
   "course-1-foundation-02": { minimum: 4, maximum: 6 },
@@ -41,13 +55,23 @@ let noteStorageDirty = false;
 let lastAutomaticUpdateCheck = 0;
 let pendingRouteFocus = false;
 let pendingLegacyState = null;
+let persistedRevision = 0;
+let persistedBaseState = null;
+let lastWriteBaseState = null;
+let lastWrittenRevision = 0;
+let lastWrittenState = null;
+let recentResetNoticeUntil = 0;
+let stateLoadIssue = null;
+let stateStorageQuarantined = false;
 
 const state = loadState();
+persistedBaseState = cloneJson(state);
 
 const ICON_PATHS = Object.freeze({
   arrow: '<path d="M5 12h14m-5-5 5 5-5 5"/>',
   check: '<path d="m5 12.5 4.2 4.2L19 7"/>',
   chevron: '<path d="m7 9 5 5 5-5"/>',
+  close: '<path d="m6 6 12 12M18 6 6 18"/>',
   clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   document:
     '<path d="M7 3h7l4 4v14H7Z"/><path d="M14 3v5h5M10 12h5M10 16h5"/>',
@@ -97,6 +121,12 @@ function practiceContractMarkup({ compact = false } = {}) {
   `;
 }
 
+function createWriterId() {
+  return typeof crypto.randomUUID === "function"
+    ? crypto.randomUUID()
+    : `writer-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
 function defaultState() {
   return {
     schemaVersion: STATE_SCHEMA_VERSION,
@@ -112,45 +142,95 @@ function defaultState() {
     lastUpdateCheck: null,
     expandedGroups: ["foundations"],
     migration: null,
+    resetEpoch: null,
   };
 }
 
 function normaliseV2State(parsed) {
   const fallback = defaultState();
+  const source =
+    parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+  const safeStringArray = (value) =>
+    Array.isArray(value)
+      ? value.filter((item) => typeof item === "string").slice(0, 500)
+      : [];
+  const safeMap = (value) =>
+    value && typeof value === "object" && !Array.isArray(value) ? value : {};
   return {
-    ...fallback,
-    ...parsed,
     schemaVersion: STATE_SCHEMA_VERSION,
-    completed: Array.isArray(parsed.completed) ? parsed.completed : [],
+    completed: safeStringArray(source.completed),
     completionRevisions:
-      parsed.completionRevisions && typeof parsed.completionRevisions === "object"
-        ? parsed.completionRevisions
-        : {},
-    practicalPassed: Array.isArray(parsed.practicalPassed)
-      ? parsed.practicalPassed
-      : [],
-    practicalPassRevisions:
-      parsed.practicalPassRevisions &&
-      typeof parsed.practicalPassRevisions === "object"
-        ? parsed.practicalPassRevisions
-        : {},
-    notes: parsed.notes && typeof parsed.notes === "object" ? parsed.notes : {},
-    archivedLegacyNotes:
-      parsed.archivedLegacyNotes && typeof parsed.archivedLegacyNotes === "object"
-        ? parsed.archivedLegacyNotes
-        : {},
-    expandedGroups: Array.isArray(parsed.expandedGroups)
-      ? parsed.expandedGroups
+      safeMap(source.completionRevisions),
+    practicalPassed: safeStringArray(source.practicalPassed),
+    practicalPassRevisions: safeMap(source.practicalPassRevisions),
+    notes: safeMap(source.notes),
+    archivedLegacyNotes: safeMap(source.archivedLegacyNotes),
+    lastDocument: typeof source.lastDocument === "string" ? source.lastDocument : null,
+    theme: ["system", "light", "dark"].includes(source.theme)
+      ? source.theme
+      : fallback.theme,
+    fontSize: Math.max(90, Math.min(125, Number(source.fontSize) || 100)),
+    lastUpdateCheck:
+      typeof source.lastUpdateCheck === "string" &&
+      !Number.isNaN(Date.parse(source.lastUpdateCheck))
+        ? source.lastUpdateCheck
+        : null,
+    expandedGroups: safeStringArray(source.expandedGroups).length
+      ? safeStringArray(source.expandedGroups)
       : fallback.expandedGroups,
+    migration:
+      source.migration &&
+      typeof source.migration === "object" &&
+      !Array.isArray(source.migration)
+        ? source.migration
+        : null,
+    resetEpoch:
+      typeof source.resetEpoch === "string" &&
+      /^reset-[A-Za-z0-9-]{8,80}$/.test(source.resetEpoch)
+        ? source.resetEpoch
+        : null,
   };
+}
+
+function preserveRecoveryRecord(raw, reason) {
+  if (!raw) return false;
+  try {
+    const recovery = JSON.stringify({
+      recoveryType: "course-state-recovery",
+      savedAt: new Date().toISOString(),
+      reason,
+      raw,
+    });
+    localStorage.setItem(RECOVERY_KEY, recovery);
+    return localStorage.getItem(RECOVERY_KEY) === recovery;
+  } catch {
+    // The visible warning remains even when storage is unavailable or full.
+    return false;
+  }
 }
 
 function loadState() {
   const fallback = defaultState();
+  let raw = null;
   try {
-    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+    raw = localStorage.getItem(STORAGE_KEY);
+  } catch {
+    stateStorageQuarantined = true;
+    stateLoadIssue =
+      "Browser storage could not be read. Progress will not be overwritten in this window; use a verified reset or backup import after storage is available.";
+    return fallback;
+  }
+  try {
+    if (raw && new Blob([raw]).size > BACKUP_MAX_BYTES) {
+      throw new Error("Saved course state exceeds the supported size.");
+    }
+    const record = decodeStorageRecord(raw);
+    persistedRevision = record.revision;
+    const parsed = record.state;
     if (!parsed) return fallback;
-    if (parsed.schemaVersion === STATE_SCHEMA_VERSION) return normaliseV2State(parsed);
+    if ([2, STATE_SCHEMA_VERSION].includes(parsed.schemaVersion)) {
+      return normaliseV2State(parsed);
+    }
     if (parsed.schemaVersion === 1) {
       pendingLegacyState = parsed;
       return {
@@ -162,17 +242,189 @@ function loadState() {
         lastUpdateCheck: parsed.lastUpdateCheck || null,
       };
     }
-    return fallback;
+    throw new Error("Saved course state uses an unsupported schema.");
   } catch {
+    stateStorageQuarantined = true;
+    preserveRecoveryRecord(raw, "Saved course state could not be validated.");
+    stateLoadIssue =
+      "Saved course data uses an invalid or unsupported format. It was quarantined, not overwritten, and a recovery copy was kept where browser storage allowed. Reset or import a valid backup to continue saving.";
     return fallback;
   }
 }
 
+function currentRemoteState() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  const record = decodeStorageRecord(raw);
+  let remote = record.state;
+  if (!remote) remote = defaultState();
+  else if (remote.schemaVersion === 1) remote = migrateSchemaV1(remote);
+  else if ([2, STATE_SCHEMA_VERSION].includes(remote.schemaVersion)) {
+    remote = normaliseV2State(remote);
+  } else {
+    throw new Error("Saved course state uses an unsupported schema.");
+  }
+  if (courseBundle) remote = sanitiseV2StateForCurrentCourse(remote);
+  return { raw, revision: record.revision, writerId: record.writerId, state: remote };
+}
+
+function currentResetBarrier() {
+  const raw = localStorage.getItem(RESET_BARRIER_KEY);
+  if (!raw) return null;
+  const record = decodeStorageRecord(raw);
+  if (
+    record.kind !== "envelope" ||
+    ![2, STATE_SCHEMA_VERSION].includes(record.state?.schemaVersion)
+  ) {
+    throw new Error("The reset barrier is invalid.");
+  }
+  let barrierState = normaliseV2State(record.state);
+  if (courseBundle) {
+    barrierState = sanitiseV2StateForCurrentCourse(barrierState);
+  }
+  if (!barrierState.resetEpoch) {
+    throw new Error("The reset barrier has no reset identifier.");
+  }
+  return {
+    raw,
+    revision: record.revision,
+    writerId: record.writerId,
+    state: barrierState,
+  };
+}
+
+function adoptRemoteReset(resetState, revision) {
+  const hadPendingLocalNote = noteStorageDirty;
+  let pendingNotePreserved = false;
+  if (hadPendingLocalNote) {
+    pendingNotePreserved = preserveRecoveryRecord(
+      JSON.stringify(
+        createStorageEnvelope(
+          state,
+          Math.max(1, revision + 1),
+          WRITER_ID,
+        ),
+      ),
+      "Pending local note preserved because another window reset course progress.",
+    );
+  }
+  window.clearTimeout(noteTimer);
+  noteTimer = null;
+  noteStorageDirty = false;
+  replaceState(resetState);
+  recentResetNoticeUntil = Date.now() + 7000;
+  persistedRevision = revision;
+  persistedBaseState = cloneJson(resetState);
+  lastWriteBaseState = null;
+  lastWrittenRevision = 0;
+  lastWrittenState = null;
+  renderCourseNavigation();
+  updateProgressUi();
+  applyAppearance();
+  navigate("home");
+  showToast(
+    hadPendingLocalNote
+      ? pendingNotePreserved
+        ? "Course progress was reset in another window. Your unsaved note was kept in the browser recovery record; do not reset again, and ask Codex to help recover it."
+        : "Course progress was reset in another window while you had an unsaved note. The note could not be verified in recovery; stop using this window and ask Codex for help."
+      : "Course progress was reset in another open window. Restore an exported backup if that was not intended.",
+    hadPendingLocalNote ? 8500 : 6500,
+  );
+}
+
 function saveState() {
+  if (stateStorageQuarantined) {
+    showToast(
+      "Progress was not saved because existing browser data is quarantined. Use Reset or import a valid backup first.",
+      6000,
+    );
+    return false;
+  }
+  let remote;
+  let resetBarrier;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    resetBarrier = currentResetBarrier();
+    if (
+      resetBarrier &&
+      resetBarrier.state.resetEpoch !== state.resetEpoch
+    ) {
+      adoptRemoteReset(resetBarrier.state, resetBarrier.revision);
+      return false;
+    }
+    remote = currentRemoteState();
+  } catch {
+    stateStorageQuarantined = true;
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      preserveRecoveryRecord(raw, "Saved course state became invalid while this window was open.");
+    } catch {
+      // The quarantine still prevents a blind overwrite.
+    }
+    showToast(
+      "Progress was not saved because browser data became invalid. It was quarantined instead of overwritten.",
+      6000,
+    );
+    return false;
+  }
+  if (
+    remote.state.resetEpoch &&
+    remote.state.resetEpoch !== state.resetEpoch
+  ) {
+    adoptRemoteReset(remote.state, remote.revision);
+    return false;
+  }
+  try {
+    const remoteMatchesLastWrite =
+      lastWrittenState !== null &&
+      remote.writerId === WRITER_ID &&
+      remote.revision === lastWrittenRevision &&
+      JSON.stringify(remote.state) === JSON.stringify(lastWrittenState);
+    if (remoteMatchesLastWrite) {
+      lastWriteBaseState = null;
+    }
+    const base = lastWriteBaseState || persistedBaseState || remote.state;
+    const merged = mergeConcurrentState(base, state, remote.state);
+    const hadConflicts = merged.conflicts.length > 0;
+    if (hadConflicts) {
+      preserveRecoveryRecord(
+        JSON.stringify(createStorageEnvelope(state, remote.revision + 1, WRITER_ID)),
+        `Concurrent edit conflict: ${merged.conflicts.join(", ")}`,
+      );
+      showToast(
+        "Another course window changed the same item. Nothing was overwritten; close one window and retry.",
+        6000,
+      );
+    }
+    const previousBase = cloneJson(base);
+    const nextRevision = Math.max(persistedRevision, remote.revision) + 1;
+    const envelope = createStorageEnvelope(merged.state, nextRevision, WRITER_ID);
+    const encoded = JSON.stringify(envelope);
+    localStorage.setItem(STORAGE_KEY, encoded);
+    const barrierAfterWrite = currentResetBarrier();
+    if (
+      barrierAfterWrite &&
+      barrierAfterWrite.state.resetEpoch !== merged.state.resetEpoch
+    ) {
+      localStorage.setItem(STORAGE_KEY, barrierAfterWrite.raw);
+      if (localStorage.getItem(STORAGE_KEY) !== barrierAfterWrite.raw) {
+        throw new Error("A reset raced with this save and could not be restored.");
+      }
+      adoptRemoteReset(
+        barrierAfterWrite.state,
+        barrierAfterWrite.revision,
+      );
+      return false;
+    }
+    if (localStorage.getItem(STORAGE_KEY) !== encoded) {
+      throw new Error("Saved state could not be read back.");
+    }
+    replaceState(merged.state);
+    lastWriteBaseState = previousBase;
+    lastWrittenRevision = nextRevision;
+    lastWrittenState = cloneJson(merged.state);
+    persistedRevision = nextRevision;
+    persistedBaseState = cloneJson(merged.state);
     noteStorageDirty = false;
-    return true;
+    return !hadConflicts;
   } catch {
     showToast("Progress could not be saved on this device.");
     return false;
@@ -412,7 +664,7 @@ function effortFor(courseDocument) {
     readingMinutes,
     readingLabel: `Read: about ${readingMinutes} minute${readingMinutes === 1 ? "" : "s"}`,
     practiceLabel: practiceHours
-      ? `Practice: ${practiceHours.minimum}\u2013${practiceHours.maximum} hours`
+      ? `Practice — AUTHOR ESTIMATE, NOT BEGINNER MEASURED: ${practiceHours.minimum}\u2013${practiceHours.maximum} hours`
       : requiresPracticalSelfCheck(courseDocument)
         ? "Practice: plan several focused sessions"
         : null,
@@ -438,6 +690,18 @@ function practicalPassedCoreCount() {
   ).length;
 }
 
+function progressClass(value) {
+  const bounded = Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
+  return `progress-pct-${bounded}`;
+}
+
+function setProgressClass(element, value) {
+  for (const className of [...element.classList]) {
+    if (/^progress-pct-\d+$/.test(className)) element.classList.remove(className);
+  }
+  element.classList.add(progressClass(value));
+}
+
 function updateProgressUi() {
   const documents = learningSequenceDocuments();
   const completed = completedCoreCount();
@@ -449,7 +713,7 @@ function updateProgressUi() {
   document.querySelector("#sidebar-progress-label").textContent = `${percent}% pages read`;
   document.querySelector("#sidebar-progress-count").textContent =
     `${completed} of ${documents.length} pages`;
-  document.querySelector("#sidebar-progress-bar").style.width = `${percent}%`;
+  setProgressClass(document.querySelector(".progress-track"), percent);
   const progress = document.querySelector(".progress-track");
   progress.setAttribute("aria-valuenow", String(percent));
   progress.setAttribute(
@@ -458,8 +722,10 @@ function updateProgressUi() {
   );
   document.querySelector("#sidebar-practice-count").textContent =
     `${practicalPassed} of ${documents.length} self-checks`;
-  document.querySelector("#sidebar-practice-bar").style.width =
-    `${practicalPercent}%`;
+  setProgressClass(
+    document.querySelector(".progress-track-practice"),
+    practicalPercent,
+  );
   const practicalProgress = document.querySelector(".progress-track-practice");
   practicalProgress.setAttribute("aria-valuenow", String(practicalPercent));
   practicalProgress.setAttribute(
@@ -629,9 +895,11 @@ function renderHome() {
   const effortLabel =
     Number.isFinite(estimatedHours?.minimum) &&
     Number.isFinite(estimatedHours?.maximum)
-      ? `${estimatedHours.minimum}–${estimatedHours.maximum} total course hours`
+      ? `AUTHOR ESTIMATE — NOT BEGINNER MEASURED: ${estimatedHours.minimum}–${estimatedHours.maximum} total course hours`
       : null;
-  const verifiedDate = new Date(`${courseBundle.course.verifiedThrough}T12:00:00`);
+  const verifiedDate = new Date(
+    `${courseBundle.course.sourceVerifiedThrough}T12:00:00`,
+  );
   const ageDays = Number.isNaN(verifiedDate.getTime())
     ? null
     : Math.floor((Date.now() - verifiedDate.getTime()) / 86400000);
@@ -646,11 +914,11 @@ function renderHome() {
     <section class="hero">
       <div class="hero-copy">
         <span class="hero-kicker"><span aria-hidden="true"></span>Course 1 of the consultant path</span>
-        <h1>Learn to build one <em>controlled business workflow.</em></h1>
-        <p>Start from zero technical knowledge. Learn to inspect the work, choose a small problem with clear limits, build fixed, rule-based checks, design a bounded artificial intelligence (AI) contribution, test its controls with an offline stand-in, and keep a human responsible for every consequential decision. Course 1 makes no live AI call.</p>
+        <h1>Learn to assemble, test, and extend one <em>controlled business workflow.</em></h1>
+        <p>Start from zero technical knowledge. Learn to inspect the work, choose a small problem with clear limits, assemble the supplied workflow, author and test one fixed rule, design a bounded artificial intelligence (AI) contribution, test its controls with an offline stand-in, and keep a human responsible for every consequential decision. Course 1 makes no live AI call.</p>
         <div class="hero-actions">
           <button class="button" type="button" data-home-action="resume">
-            <span>${resume ? `Continue: ${escapeHtml(resume.title)}` : "Start the course"}</span>
+            <span>${resume ? `Continue: ${escapeHtml(resume.title)}` : "Start personal study"}</span>
             ${iconSvg("arrow")}
           </button>
           <button class="button button-quiet" type="button" data-home-action="career">See the full career sequence</button>
@@ -693,12 +961,12 @@ function renderHome() {
     </section>
     <section class="progress-overview" aria-label="Course progress summary">
       <article class="progress-card progress-card-main">
-        <div class="progress-ring" style="--progress: ${percent}" role="img" aria-label="${completed} of ${requiredDocs.length} required Course 1 pages read">
+        <div class="progress-ring ${progressClass(percent)}" role="img" aria-label="${completed} of ${requiredDocs.length} required Course 1 pages read">
           <span><strong>${percent}%</strong><small>pages read</small></span>
         </div>
         <div>
           <span class="eyebrow">Reading progress</span>
-          <h2>${completed === requiredDocs.length ? "All required pages read" : completed ? "Keep reading and building" : "Your foundation is ready"}</h2>
+          <h2>${completed === requiredDocs.length ? "All required pages read" : completed ? "Keep reading and building" : "Start with the readiness check"}</h2>
           <p>${completed} of ${requiredDocs.length} required pages read, including readiness and setup. Reading every page does not mean you passed the practical work.</p>
         </div>
       </article>
@@ -708,7 +976,7 @@ function renderHome() {
           <span>Practical self-checks</span>
           <strong>${practicalPassed}<small> / ${requiredDocs.length}</small></strong>
         </div>
-        <div class="mini-progress mini-progress-gold" role="progressbar" aria-label="Practical task self-checks" aria-valuemin="0" aria-valuemax="${requiredDocs.length}" aria-valuenow="${practicalPassed}" aria-valuetext="${practicalPassed} of ${requiredDocs.length} required practical tasks self-attested"><span style="width:${practicalPercent}%"></span></div>
+        <div class="mini-progress mini-progress-gold ${progressClass(practicalPercent)}" role="progressbar" aria-label="Practical task self-checks" aria-valuemin="0" aria-valuemax="${requiredDocs.length}" aria-valuenow="${practicalPassed}" aria-valuetext="${practicalPassed} of ${requiredDocs.length} required practical tasks self-attested"><span></span></div>
         <p class="practice-progress-note">Your own checklist record, not an independent assessment.</p>
       </article>
       <article class="progress-card">
@@ -717,7 +985,7 @@ function renderHome() {
           <span>Foundations read</span>
           <strong>${foundationCompleted}<small> / ${foundationDocs.length}</small></strong>
         </div>
-        <div class="mini-progress" aria-hidden="true"><span style="width:${foundationPercent}%"></span></div>
+        <div class="mini-progress ${progressClass(foundationPercent)}" aria-hidden="true"><span></span></div>
       </article>
       <article class="progress-card">
         <span class="progress-card-icon progress-card-icon-gold">${iconSvg("document")}</span>
@@ -725,7 +993,7 @@ function renderHome() {
           <span>Modules read</span>
           <strong>${moduleCompleted}<small> / ${moduleDocs.length}</small></strong>
         </div>
-        <div class="mini-progress mini-progress-gold" aria-hidden="true"><span style="width:${modulePercent}%"></span></div>
+        <div class="mini-progress mini-progress-gold ${progressClass(modulePercent)}" aria-hidden="true"><span></span></div>
       </article>
     </section>
     <div class="dashboard-grid">
@@ -756,10 +1024,11 @@ function renderHome() {
           <span class="freshness-icon">${iconSvg("shield")}</span>
           <span class="version-chip">Version ${escapeHtml(courseBundle.course.version)}</span>
         </div>
-        <span class="eyebrow">Research review date</span>
+        <span class="eyebrow">Research and source review date</span>
         <h2>${escapeHtml(freshness)}</h2>
-        <time datetime="${escapeAttribute(courseBundle.course.verifiedThrough)}">${escapeHtml(courseBundle.course.verifiedThrough)}</time>
-        <p>Review the research sources after important legal, security, artificial intelligence model, or supplier changes.</p>
+        <p><strong>Sources verified through:</strong> <time datetime="${escapeAttribute(courseBundle.course.sourceVerifiedThrough)}">${escapeHtml(courseBundle.course.sourceVerifiedThrough)}</time></p>
+        <p><strong>Course content revised through:</strong> <time datetime="${escapeAttribute(courseBundle.course.contentRevisionThrough)}">${escapeHtml(courseBundle.course.contentRevisionThrough)}</time></p>
+        <p>The content date records edits to bundled pages. It does not claim that the research was rechecked. Review the research sources after important legal, security, artificial intelligence model, or supplier changes.</p>
         <button class="button button-quiet" type="button" data-home-action="updates">${iconSvg("shield")}Open update centre</button>
       </section>
     </div>
@@ -842,7 +1111,7 @@ function renderCareer() {
     : rawCareerSummary.replace(/\bPWA\b/, "progressive web app (PWA)");
   const nextLesson = resumeDocument();
   const careerStatusLabel = (course) => {
-    if (course.status === "current") return "Current · taught here";
+    if (course.status === "current") return "Course 1 · taught here";
     if (course.status === "prototype-capstone-available") {
       return "Optional advanced capstone available";
     }
@@ -993,7 +1262,7 @@ function wireCourseLinks(container, courseDocument) {
       }
       return;
     }
-    if (/^(https?:|mailto:)/i.test(href)) return;
+    if (/^https:/i.test(href)) return;
 
     if (href.startsWith("#")) {
       link.addEventListener("click", (event) => {
@@ -1009,9 +1278,24 @@ function wireCourseLinks(container, courseDocument) {
     try {
       const resolvedUrl = new URL(
         href,
-        `https://course.invalid/${courseDocument.sourcePath}`,
+        `https://course.invalid/repository/${courseDocument.sourcePath}`,
       );
-      const resolvedPath = decodeURIComponent(resolvedUrl.pathname.replace(/^\//, ""));
+      if (
+        resolvedUrl.origin !== "https://course.invalid" ||
+        !resolvedUrl.pathname.startsWith("/repository/") ||
+        /%(?:00|0a|0d|2f|5c)/i.test(resolvedUrl.pathname)
+      ) {
+        throw new Error("Course link escapes the repository boundary.");
+      }
+      const resolvedPath = decodeURIComponent(
+        resolvedUrl.pathname.slice("/repository/".length),
+      );
+      if (
+        !resolvedPath ||
+        resolvedPath.split("/").some((part) => !part || part === "." || part === "..")
+      ) {
+        throw new Error("Course link has an unsafe repository path.");
+      }
       const linkedDocument = documentByPath.get(resolvedPath);
       if (linkedDocument) {
         link.addEventListener("click", (event) => {
@@ -1063,8 +1347,9 @@ function renderDocument(id) {
 
   showOnly("reader");
   currentDocument = courseDocument;
+  const routeChanged = state.lastDocument !== id;
   state.lastDocument = id;
-  const routeStateSaved = saveState();
+  const routeStateSaved = routeChanged ? saveState() : true;
 
   document.querySelector("#reader-group").textContent = groupTitle(courseDocument.group);
   document.querySelector("#reader-title").textContent = courseDocument.title;
@@ -1263,7 +1548,12 @@ function applyAppearance() {
   const systemIsDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
   const dark = state.theme === "dark" || (state.theme === "system" && systemIsDark);
   document.querySelector("#theme-color-meta").content = dark ? "#0d1917" : "#f6f3ec";
-  document.documentElement.style.setProperty("--reader-scale", state.fontSize / 100);
+  for (const className of [...document.documentElement.classList]) {
+    if (/^reader-scale-\d+$/.test(className)) {
+      document.documentElement.classList.remove(className);
+    }
+  }
+  document.documentElement.classList.add(`reader-scale-${state.fontSize}`);
   document.querySelector("#font-size").value = String(state.fontSize);
   document.querySelector("#font-size-output").value = `${state.fontSize}%`;
   document.querySelectorAll("[data-theme-value]").forEach((button) => {
@@ -1276,8 +1566,16 @@ function renderSettings() {
   currentDocument = null;
   document.querySelector("#settings-course-version").textContent =
     `Version ${courseBundle.course.version}`;
-  document.querySelector("#settings-verified-date").textContent =
-    courseBundle.course.verifiedThrough;
+  document.querySelector("#settings-product-status").textContent =
+    courseBundle.course.productStatus;
+  document.querySelector("#settings-distribution-purpose").textContent =
+    courseBundle.course.distributionPurpose === "personal-synthetic-study"
+      ? "Personal study with synthetic data only"
+      : courseBundle.course.distributionPurpose;
+  document.querySelector("#settings-source-verified-date").textContent =
+    courseBundle.course.sourceVerifiedThrough;
+  document.querySelector("#settings-content-revision-date").textContent =
+    courseBundle.course.contentRevisionThrough;
   document.querySelector("#settings-build-id").textContent = config.buildId;
   document.querySelector("#last-update-check").textContent = state.lastUpdateCheck
     ? new Date(state.lastUpdateCheck).toLocaleString()
@@ -1442,7 +1740,7 @@ function setNoteSaveStatus(message, { error = false } = {}) {
 
 function captureNoteInState(documentId, noteValue) {
   if (!documentId) return;
-  const note = String(noteValue).slice(0, 50000);
+  const note = [...String(noteValue)].slice(0, MAX_NOTE_CODE_POINTS).join("");
   if (note.trim()) state.notes[documentId] = note;
   else delete state.notes[documentId];
   noteStorageDirty = true;
@@ -1470,15 +1768,93 @@ function showInstallDialog() {
   else dialog.setAttribute("open", "");
 }
 
+function actionConfirmationDialog() {
+  let dialog = document.querySelector("#action-confirmation-dialog");
+  if (dialog) return dialog;
+  dialog = document.createElement("dialog");
+  dialog.className = "install-dialog";
+  dialog.id = "action-confirmation-dialog";
+  dialog.setAttribute("aria-labelledby", "action-confirmation-title");
+  dialog.setAttribute("aria-describedby", "action-confirmation-message");
+  dialog.innerHTML = `
+    <form method="dialog">
+      <button class="dialog-close" value="cancel" aria-label="Cancel this action">
+        ${iconSvg("close")}
+      </button>
+      <span class="eyebrow">Check before continuing</span>
+      <h2 id="action-confirmation-title"></h2>
+      <p id="action-confirmation-message"></p>
+      <div class="button-row">
+        <button class="button button-quiet dialog-action" value="cancel" type="submit">Keep current data</button>
+        <button class="button dialog-action" id="action-confirm-button" value="confirm" type="submit"></button>
+      </div>
+    </form>
+  `;
+  document.body.append(dialog);
+  return dialog;
+}
+
+function requestInAppConfirmation({ title, message, confirmLabel }) {
+  const dialog = actionConfirmationDialog();
+  const previousFocus = document.activeElement;
+  dialog.querySelector("#action-confirmation-title").textContent = title;
+  dialog.querySelector("#action-confirmation-message").textContent = message;
+  const confirmButton = dialog.querySelector("#action-confirm-button");
+  confirmButton.textContent = confirmLabel;
+  dialog.returnValue = "cancel";
+  return new Promise((resolve) => {
+    let settled = false;
+    const form = dialog.querySelector("form");
+    const cleanup = () => {
+      form.removeEventListener("click", handleButtonClick);
+      dialog.removeEventListener("cancel", handleCancel);
+      dialog.removeEventListener("close", handleClose);
+    };
+    const finish = (confirmed) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      dialog.returnValue = confirmed ? "confirm" : "cancel";
+      if (dialog.open) dialog.close(dialog.returnValue);
+      dialog.remove();
+      window.queueMicrotask(() => {
+        if (previousFocus instanceof HTMLElement && previousFocus.isConnected) {
+          previousFocus.focus();
+        }
+        resolve(confirmed);
+      });
+    };
+    const handleButtonClick = (event) => {
+      const button = event.target.closest("button[value]");
+      if (!button || !form.contains(button)) return;
+      event.preventDefault();
+      finish(button.value === "confirm");
+    };
+    const handleCancel = (event) => {
+      event.preventDefault();
+      finish(false);
+    };
+    const handleClose = () => finish(dialog.returnValue === "confirm");
+    form.addEventListener("click", handleButtonClick);
+    dialog.addEventListener("cancel", handleCancel);
+    dialog.addEventListener("close", handleClose);
+    if (typeof dialog.showModal === "function") dialog.showModal();
+    else dialog.setAttribute("open", "");
+    window.queueMicrotask(() => confirmButton.focus());
+  });
+}
+
 function exportProgress() {
   flushPendingNote();
+  const exportedState = cloneJson(state);
+  delete exportedState.resetEpoch;
   const payload = {
     exportType: "ai-workflow-course-progress",
     exportedAt: new Date().toISOString(),
     bundleSchemaVersion: courseBundle.schemaVersion,
     courseId: courseBundle.course.id,
     courseVersion: courseBundle.course.version,
-    state,
+    state: exportedState,
   };
   const blob = new Blob([`${JSON.stringify(payload, null, 2)}\n`], {
     type: "application/json",
@@ -1519,12 +1895,13 @@ function sanitiseV2StateForCurrentCourse(rawState) {
   imported.notes = Object.fromEntries(
     Object.entries(imported.notes)
       .filter(([id, note]) => documentById.has(id) && typeof note === "string")
-      .map(([id, note]) => [id, note.slice(0, 50000)]),
+      .map(([id, note]) => [id, [...note].slice(0, MAX_NOTE_CODE_POINTS).join("")]),
   );
   imported.archivedLegacyNotes = Object.fromEntries(
     Object.entries(imported.archivedLegacyNotes)
       .filter(([_id, note]) => typeof note === "string")
-      .map(([id, note]) => [id, note.slice(0, 50000)]),
+      .slice(0, MAX_ARCHIVED_NOTES)
+      .map(([id, note]) => [id, [...note].slice(0, MAX_NOTE_CODE_POINTS).join("")]),
   );
   imported.lastDocument = documentById.has(imported.lastDocument)
     ? imported.lastDocument
@@ -1544,66 +1921,581 @@ function replaceState(replacement) {
   Object.assign(state, replacement);
 }
 
-async function importProgress(file) {
+const LEGACY_STATE_KEYS = [
+  "schemaVersion",
+  "completed",
+  "notes",
+  "lastDocument",
+  "theme",
+  "fontSize",
+  "lastUpdateCheck",
+  "expandedGroups",
+];
+const BACKUP_STATE_KEYS = Object.keys(defaultState()).filter(
+  (key) => key !== "resetEpoch",
+);
+
+function readStorageSnapshot() {
+  return {
+    primaryRaw: localStorage.getItem(STORAGE_KEY),
+    recoveryRaw: localStorage.getItem(RECOVERY_KEY),
+    resetBarrierRaw: localStorage.getItem(RESET_BARRIER_KEY),
+  };
+}
+
+function writeStorageValueAndVerify(key, raw) {
+  if (raw === null) localStorage.removeItem(key);
+  else localStorage.setItem(key, raw);
+  if (localStorage.getItem(key) !== raw) {
+    throw new Error("Browser storage did not match the requested value.");
+  }
+}
+
+function restoreStorageSnapshot(snapshot, transactionOwned = null) {
+  const errors = [];
+  const effective = {};
+  const concurrentKeys = [];
+  for (const [key, property] of [
+    [STORAGE_KEY, "primaryRaw"],
+    [RESET_BARRIER_KEY, "resetBarrierRaw"],
+    [RECOVERY_KEY, "recoveryRaw"],
+  ]) {
+    let raw = snapshot[property];
+    try {
+      if (transactionOwned) {
+        const current = localStorage.getItem(key);
+        if (
+          current !== transactionOwned[property] &&
+          current !== snapshot[property]
+        ) {
+          raw = current;
+          concurrentKeys.push(key);
+        }
+      }
+      effective[property] = raw;
+      writeStorageValueAndVerify(key, raw);
+    } catch (error) {
+      errors.push(error);
+    }
+  }
+  const actual = {};
+  let verified = false;
   try {
-    const payload = JSON.parse(await file.text());
-    if (
-      payload?.exportType !== "ai-workflow-course-progress" ||
-      payload?.courseId !== courseBundle.course.id ||
-      ![1, STATE_SCHEMA_VERSION].includes(payload?.state?.schemaVersion)
-    ) {
-      throw new Error("Not a supported course progress backup.");
-    }
-    if (!window.confirm("Replace progress and notes on this device with this backup?")) {
-      return;
-    }
-    const imported =
-      payload.state.schemaVersion === 1
-        ? migrateSchemaV1(payload.state)
-        : sanitiseV2StateForCurrentCourse(payload.state);
-    const previousState = JSON.parse(JSON.stringify(state));
-    replaceState(imported);
-    if (!saveState()) {
-      replaceState(previousState);
-      throw new Error(
-        "The backup was not imported because this browser could not save it.",
-      );
-    }
+    actual.primaryRaw = localStorage.getItem(STORAGE_KEY);
+    actual.recoveryRaw = localStorage.getItem(RECOVERY_KEY);
+    actual.resetBarrierRaw = localStorage.getItem(RESET_BARRIER_KEY);
+    verified =
+      actual.primaryRaw === effective.primaryRaw &&
+      actual.recoveryRaw === effective.recoveryRaw &&
+      actual.resetBarrierRaw === effective.resetBarrierRaw;
+  } catch (error) {
+    errors.push(error);
+  }
+  return {
+    verified,
+    errors,
+    concurrentKeys,
+    primarySnapshotVerified: actual.primaryRaw === snapshot.primaryRaw,
+    recoverySnapshotVerified: actual.recoveryRaw === snapshot.recoveryRaw,
+    resetBarrierSnapshotVerified:
+      actual.resetBarrierRaw === snapshot.resetBarrierRaw,
+  };
+}
+
+function storageTransactionError(error, rollback) {
+  const result = new Error(error.message || "The storage change failed.");
+  result.storageRollbackVerified = rollback.verified;
+  result.concurrentRecoveryPreserved = rollback.concurrentRecoveryPreserved;
+  result.rollbackResult = rollback;
+  return result;
+}
+
+function revisionFromStoredRaw(raw) {
+  try {
+    return decodeStorageRecord(raw).revision;
+  } catch {
+    return 0;
+  }
+}
+
+function captureVisibleCourseState() {
+  return {
+    activeViewId:
+      [...document.querySelectorAll(".view")].find((view) => !view.hidden)?.id ||
+      null,
+    courseNavigationHtml:
+      document.querySelector("#course-nav")?.innerHTML || "",
+    mainContentHtml:
+      document.querySelector("#main-content")?.innerHTML || "",
+    controlState: [
+      ...document.querySelectorAll(
+        "#main-content input, #main-content textarea, #main-content select, #main-content button",
+      ),
+    ].map((control) => ({
+      tagName: control.tagName,
+      id: control.id || null,
+      type: control.getAttribute("type"),
+      value: "value" in control ? control.value : null,
+      checked: "checked" in control ? control.checked : null,
+      disabled: control.disabled,
+      ariaPressed: control.getAttribute("aria-pressed"),
+      ariaExpanded: control.getAttribute("aria-expanded"),
+    })),
+    documentTitle: document.title,
+    fontSizeOutput:
+      document.querySelector("#font-size-output")?.value || null,
+    theme: document.documentElement.dataset.theme || "",
+  };
+}
+
+function captureRuntimeSnapshot() {
+  return {
+    state: cloneJson(state),
+    persistedRevision,
+    persistedBaseState: cloneJson(persistedBaseState || state),
+    lastWriteBaseState:
+      lastWriteBaseState === null ? null : cloneJson(lastWriteBaseState),
+    lastWrittenRevision,
+    lastWrittenState:
+      lastWrittenState === null ? null : cloneJson(lastWrittenState),
+    stateStorageQuarantined,
+    noteStorageDirty,
+    recentResetNoticeUntil,
+    pendingRouteFocus,
+    currentDocumentId: currentDocument?.id || null,
+    relativeUrl: `${window.location.pathname}${window.location.search}${window.location.hash}`,
+    visible: captureVisibleCourseState(),
+  };
+}
+
+function applyRuntimeTrackers(snapshot) {
+  persistedRevision = snapshot.persistedRevision;
+  persistedBaseState = cloneJson(snapshot.persistedBaseState);
+  lastWriteBaseState =
+    snapshot.lastWriteBaseState === null
+      ? null
+      : cloneJson(snapshot.lastWriteBaseState);
+  lastWrittenRevision = snapshot.lastWrittenRevision;
+  lastWrittenState =
+    snapshot.lastWrittenState === null
+      ? null
+      : cloneJson(snapshot.lastWrittenState);
+  stateStorageQuarantined = snapshot.stateStorageQuarantined;
+  recentResetNoticeUntil = snapshot.recentResetNoticeUntil;
+  pendingRouteFocus = snapshot.pendingRouteFocus;
+  currentDocument = snapshot.currentDocumentId
+    ? documentById.get(snapshot.currentDocumentId) || null
+    : null;
+}
+
+function restoreRuntimeSnapshot(snapshot) {
+  const errors = [];
+  window.clearTimeout(noteTimer);
+  noteTimer = null;
+  noteStorageDirty = false;
+  replaceState(snapshot.state);
+  applyRuntimeTrackers(snapshot);
+  try {
+    window.history.replaceState(null, "", snapshot.relativeUrl);
     renderCourseNavigation();
     updateProgressUi();
     applyAppearance();
     renderRoute();
+  } catch (error) {
+    errors.push(error);
+  }
+  replaceState(snapshot.state);
+  applyRuntimeTrackers(snapshot);
+  noteStorageDirty = snapshot.noteStorageDirty;
+  if (noteStorageDirty) {
+    noteTimer = window.setTimeout(persistPendingNote, 450);
+  }
+  const runtimeStateVerified =
+    JSON.stringify(state) === JSON.stringify(snapshot.state) &&
+    persistedRevision === snapshot.persistedRevision &&
+    JSON.stringify(persistedBaseState) ===
+      JSON.stringify(snapshot.persistedBaseState) &&
+    JSON.stringify(lastWriteBaseState) ===
+      JSON.stringify(snapshot.lastWriteBaseState) &&
+    lastWrittenRevision === snapshot.lastWrittenRevision &&
+    JSON.stringify(lastWrittenState) ===
+      JSON.stringify(snapshot.lastWrittenState) &&
+    stateStorageQuarantined === snapshot.stateStorageQuarantined &&
+    noteStorageDirty === snapshot.noteStorageDirty &&
+    recentResetNoticeUntil === snapshot.recentResetNoticeUntil &&
+    pendingRouteFocus === snapshot.pendingRouteFocus &&
+    (currentDocument?.id || null) === snapshot.currentDocumentId;
+  const routeVerified =
+    `${window.location.pathname}${window.location.search}${window.location.hash}` ===
+      snapshot.relativeUrl;
+  const visibleRenderVerified =
+    errors.length === 0 &&
+    JSON.stringify(captureVisibleCourseState()) ===
+      JSON.stringify(snapshot.visible);
+  return {
+    verified: runtimeStateVerified && routeVerified && visibleRenderVerified,
+    runtimeStateVerified,
+    routeVerified,
+    visibleRenderVerified,
+    errors,
+  };
+}
+
+function rollbackStateTransaction(
+  storageSnapshot,
+  runtimeSnapshot,
+  transactionOwned,
+) {
+  const firstDurableRollback = restoreStorageSnapshot(
+    storageSnapshot,
+    transactionOwned,
+  );
+  const runtimeRollback = restoreRuntimeSnapshot(runtimeSnapshot);
+  const durableRollback = restoreStorageSnapshot(
+    storageSnapshot,
+    transactionOwned,
+  );
+  const concurrentRecoveryPreserved =
+    !durableRollback.recoverySnapshotVerified &&
+    [
+      ...firstDurableRollback.concurrentKeys,
+      ...durableRollback.concurrentKeys,
+    ].includes(RECOVERY_KEY);
+  const externalKeys = [
+    ...new Set([
+      ...firstDurableRollback.concurrentKeys,
+      ...durableRollback.concurrentKeys,
+    ]),
+  ];
+  const fullyVerified =
+    durableRollback.verified &&
+    durableRollback.primarySnapshotVerified &&
+    durableRollback.resetBarrierSnapshotVerified &&
+    (durableRollback.recoverySnapshotVerified ||
+      concurrentRecoveryPreserved) &&
+    runtimeRollback.runtimeStateVerified &&
+    runtimeRollback.routeVerified &&
+    runtimeRollback.visibleRenderVerified;
+  return {
+    verified: fullyVerified,
+    durableVerified: durableRollback.verified,
+    primarySnapshotVerified: durableRollback.primarySnapshotVerified,
+    resetBarrierSnapshotVerified:
+      durableRollback.resetBarrierSnapshotVerified,
+    recoverySnapshotVerified: durableRollback.recoverySnapshotVerified,
+    runtimeStateVerified: runtimeRollback.runtimeStateVerified,
+    routeVerified: runtimeRollback.routeVerified,
+    visibleRenderVerified: runtimeRollback.visibleRenderVerified,
+    reconciliationRequired:
+      !durableRollback.primarySnapshotVerified ||
+      !durableRollback.resetBarrierSnapshotVerified,
+    externalKeys,
+    concurrentRecoveryPreserved,
+    errors: [
+      ...firstDurableRollback.errors,
+      ...durableRollback.errors,
+      ...runtimeRollback.errors,
+    ],
+  };
+}
+
+function rollbackResultText(rollback) {
+  const keyResult = (verified, storageKey) =>
+    verified
+      ? "restored"
+      : rollback.externalKeys.includes(storageKey)
+        ? "changed externally and preserved"
+        : "unverified";
+  return [
+    `Primary data: ${keyResult(rollback.primarySnapshotVerified, STORAGE_KEY)}.`,
+    `Reset barrier: ${keyResult(
+      rollback.resetBarrierSnapshotVerified,
+      RESET_BARRIER_KEY,
+    )}.`,
+    `Recovery copy: ${
+      rollback.concurrentRecoveryPreserved
+        ? "changed externally and preserved"
+        : keyResult(rollback.recoverySnapshotVerified, RECOVERY_KEY)
+    }.`,
+    `Runtime state: ${rollback.runtimeStateVerified ? "restored" : "unverified"}.`,
+    `Route: ${rollback.routeVerified ? "restored" : "unverified"}.`,
+    `Visible course: ${
+      rollback.visibleRenderVerified ? "restored" : "unverified"
+    }.`,
+    `Overall rollback: ${rollback.verified ? "verified" : "not fully verified"}.`,
+  ].join(" ");
+}
+
+function installImportedState(imported) {
+  const storageSnapshot = readStorageSnapshot();
+  const runtimeSnapshot = captureRuntimeSnapshot();
+  const previousVisible = runtimeSnapshot.state;
+  const recovery = JSON.stringify({
+    recoveryType: "pre-import-state",
+    savedAt: new Date().toISOString(),
+    raw: storageSnapshot.primaryRaw,
+  });
+  let nextRevision = 0;
+  let encoded = "";
+  try {
+    if (localStorage.getItem(STORAGE_KEY) !== storageSnapshot.primaryRaw) {
+      throw new Error("Another course window changed storage before import.");
+    }
+    writeStorageValueAndVerify(RECOVERY_KEY, recovery);
+    writeStorageValueAndVerify(RESET_BARRIER_KEY, null);
+    nextRevision =
+      Math.max(
+        runtimeSnapshot.persistedRevision,
+        revisionFromStoredRaw(storageSnapshot.primaryRaw),
+      ) + 1;
+    encoded = JSON.stringify(
+      createStorageEnvelope(imported, nextRevision, WRITER_ID),
+    );
+    writeStorageValueAndVerify(STORAGE_KEY, encoded);
+    const verified = decodeStorageRecord(localStorage.getItem(STORAGE_KEY));
+    if (
+      verified.kind !== "envelope" ||
+      verified.revision !== nextRevision ||
+      verified.writerId !== WRITER_ID ||
+      JSON.stringify(verified.state) !== JSON.stringify(imported)
+    ) {
+      throw new Error("The imported state could not be verified.");
+    }
+    if (
+      localStorage.getItem(STORAGE_KEY) !== encoded ||
+      localStorage.getItem(RESET_BARRIER_KEY) !== null ||
+      localStorage.getItem(RECOVERY_KEY) !== recovery
+    ) {
+      throw new Error("Another course window changed storage during import.");
+    }
+    replaceState(imported);
+    persistedRevision = nextRevision;
+    persistedBaseState = cloneJson(imported);
+    lastWriteBaseState = cloneJson(previousVisible);
+    lastWrittenRevision = nextRevision;
+    lastWrittenState = cloneJson(imported);
+    noteStorageDirty = false;
+    stateStorageQuarantined = false;
+    renderCourseNavigation();
+    updateProgressUi();
+    applyAppearance();
+    renderRoute();
+    const committed = currentRemoteState();
+    if (
+      JSON.stringify(committed.state) !== JSON.stringify(state) ||
+      localStorage.getItem(RECOVERY_KEY) !== recovery ||
+      localStorage.getItem(RESET_BARRIER_KEY) !== null
+    ) {
+      throw new Error("The imported state changed during visible installation.");
+    }
+    writeStorageValueAndVerify(RECOVERY_KEY, storageSnapshot.recoveryRaw);
+    const finalCommitted = currentRemoteState();
+    if (
+      JSON.stringify(finalCommitted.state) !== JSON.stringify(state) ||
+      localStorage.getItem(RECOVERY_KEY) !== storageSnapshot.recoveryRaw ||
+      localStorage.getItem(RESET_BARRIER_KEY) !== null
+    ) {
+      throw new Error("The imported state could not be finalised safely.");
+    }
+  } catch (error) {
+    const rollback = rollbackStateTransaction(
+      storageSnapshot,
+      runtimeSnapshot,
+      {
+        primaryRaw: encoded,
+        recoveryRaw: recovery,
+        resetBarrierRaw: null,
+      },
+    );
+    throw storageTransactionError(error, rollback);
+  }
+}
+
+async function importProgress(file) {
+  try {
+    if (file.size > BACKUP_MAX_BYTES) {
+      throw new Error("That backup is larger than the supported 5 MiB limit.");
+    }
+    const payload = JSON.parse(await file.text());
+    const backupSchema = payload?.state?.schemaVersion;
+    if (![1, 2, STATE_SCHEMA_VERSION].includes(backupSchema)) {
+      throw new Error("Not a supported course progress backup.");
+    }
+    const documentIds = new Set(documentById.keys());
+    const groupIds = new Set(courseBundle.groups.map((group) => group.id));
+    const practicalDocumentIds = new Set(
+      courseBundle.course.learningSequenceIds.filter((id) =>
+        documentById.has(id),
+      ),
+    );
+    const bundleSchemaVersions = new Set([courseBundle.schemaVersion]);
+    validateBackupPayload(payload, {
+      courseId: courseBundle.course.id,
+      allowedStateKeys:
+        backupSchema === 1 ? LEGACY_STATE_KEYS : BACKUP_STATE_KEYS,
+      allowedDocumentIds: documentIds,
+      allowedGroupIds: groupIds,
+      allowedPracticalDocumentIds: practicalDocumentIds,
+      allowedBundleSchemaVersions: bundleSchemaVersions,
+      legacy: backupSchema === 1,
+    });
+    const imported =
+      backupSchema === 1
+        ? migrateSchemaV1(payload.state)
+        : sanitiseV2StateForCurrentCourse(payload.state);
+    imported.resetEpoch = null;
+    const boundedState = cloneJson(imported);
+    delete boundedState.resetEpoch;
+    const boundedPayload = { ...payload, state: boundedState };
+    validateBackupPayload(boundedPayload, {
+      courseId: courseBundle.course.id,
+      allowedStateKeys: BACKUP_STATE_KEYS,
+      allowedDocumentIds: documentIds,
+      allowedGroupIds: groupIds,
+      allowedPracticalDocumentIds: practicalDocumentIds,
+      allowedBundleSchemaVersions: bundleSchemaVersions,
+    });
+    const noteCount =
+      Object.keys(imported.notes).length +
+      Object.keys(imported.archivedLegacyNotes).length;
+    const confirmed = await requestInAppConfirmation({
+      title: "Replace this device's course progress?",
+      message:
+        `${imported.completed.length} pages read, ` +
+        `${imported.practicalPassed.length} practical self-checks, and ` +
+        `${noteCount} local learning notes will be imported. ` +
+        "Close other course windows first. The existing browser data is protected and verified during import.",
+      confirmLabel: "Import and replace",
+    });
+    if (!confirmed) {
+      return;
+    }
+    installImportedState(imported);
     showToast(
-      payload.state.schemaVersion === 1
+      backupSchema === 1
         ? "Older backup imported and migrated."
         : "Progress backup imported.",
     );
   } catch (error) {
-    showToast(error.message || "That backup could not be imported.", 4500);
+    const outcome = error.rollbackResult
+      ? `${rollbackResultText(error.rollbackResult)} ${
+          error.rollbackResult.verified
+            ? "The failed import did not replace the transaction-owned course state."
+            : "Stop using this window, reload it, and ask Codex to reconcile the reported dimensions before continuing."
+        }`
+      : "No verified course-state change was completed.";
+    showToast(
+      `The backup was not imported. ${error.message || "The selected file could not be used."} ${outcome}`,
+      7500,
+    );
   } finally {
     document.querySelector("#import-progress").value = "";
   }
 }
 
-function resetProgress() {
-  const confirmed = window.confirm(
-    "Reset every page-read mark, practical self-check, private note, and reading preference on this device? This cannot be undone unless you exported a backup.",
-  );
+async function resetProgress() {
+  const confirmed = await requestInAppConfirmation({
+    title: "Reset all local course data?",
+    message:
+      "This removes every page-read mark, practical self-check, local learning note, reading preference, and saved recovery copy on this device. It cannot be undone unless you exported a backup.",
+    confirmLabel: "Yes, reset local data",
+  });
   if (!confirmed) return;
+  let storageSnapshot;
   try {
-    localStorage.removeItem(STORAGE_KEY);
+    storageSnapshot = readStorageSnapshot();
   } catch {
     showToast(
-      "Nothing was reset because this browser could not change local storage.",
-      4500,
+      "Reset could not start because browser storage could not be read. No reset result can be verified.",
+      6000,
     );
     return;
   }
-  replaceState(defaultState());
-  renderCourseNavigation();
-  updateProgressUi();
-  applyAppearance();
-  navigate("home");
+  const runtimeSnapshot = captureRuntimeSnapshot();
+  const resetState = defaultState();
+  resetState.resetEpoch = `reset-${createWriterId()}`;
+  const resetRevision =
+    Math.max(
+      persistedRevision,
+      revisionFromStoredRaw(storageSnapshot.primaryRaw),
+    ) + 1;
+  const resetRaw = JSON.stringify(
+    createStorageEnvelope(resetState, resetRevision, WRITER_ID),
+  );
+  try {
+    writeStorageValueAndVerify(RECOVERY_KEY, null);
+    writeStorageValueAndVerify(RESET_BARRIER_KEY, resetRaw);
+    let primaryResetVerified = false;
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      try {
+        writeStorageValueAndVerify(STORAGE_KEY, resetRaw);
+        if (localStorage.getItem(STORAGE_KEY) === resetRaw) {
+          primaryResetVerified = true;
+          break;
+        }
+      } catch {
+        // A save already in flight in another tab may briefly win; the
+        // persistent reset barrier makes that tab stop and lets us retry.
+      }
+    }
+    if (
+      !primaryResetVerified ||
+      localStorage.getItem(RESET_BARRIER_KEY) !== resetRaw
+    ) {
+      throw new Error("Another course window changed storage during reset.");
+    }
+    window.clearTimeout(noteTimer);
+    noteTimer = null;
+    noteStorageDirty = false;
+    stateStorageQuarantined = false;
+    replaceState(resetState);
+    recentResetNoticeUntil = Date.now() + 7000;
+    persistedRevision = resetRevision;
+    persistedBaseState = cloneJson(state);
+    lastWriteBaseState = null;
+    lastWrittenRevision = resetRevision;
+    lastWrittenState = cloneJson(state);
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${window.location.search}#home`,
+    );
+    pendingRouteFocus = true;
+    renderCourseNavigation();
+    updateProgressUi();
+    applyAppearance();
+    renderRoute();
+    if (
+      localStorage.getItem(STORAGE_KEY) !== resetRaw ||
+      localStorage.getItem(RECOVERY_KEY) !== null ||
+      localStorage.getItem(RESET_BARRIER_KEY) !== resetRaw ||
+      JSON.stringify(state) !== JSON.stringify(resetState) ||
+      window.location.hash !== "#home"
+    ) {
+      throw new Error("The reset could not be verified after rendering.");
+    }
+  } catch (error) {
+    const rollback = rollbackStateTransaction(
+      storageSnapshot,
+      runtimeSnapshot,
+      {
+        primaryRaw: resetRaw,
+        recoveryRaw: null,
+        resetBarrierRaw: resetRaw,
+      },
+    );
+    showToast(
+      `${rollback.verified ? "Nothing was reset." : "Reset did not finish."} ${
+        error.message || "The reset could not finish"
+      } ${rollbackResultText(rollback)} ${
+        rollback.verified
+          ? "The failed reset did not replace the transaction-owned course state."
+          : "Stop using this window, reload it, and ask Codex to reconcile the reported dimensions before continuing."
+      }`,
+      7500,
+    );
+    return;
+  }
   showToast("Local reading, practical self-checks, and notes reset.");
 }
 
@@ -1650,10 +2542,14 @@ async function checkForUpdates({ manual = false } = {}) {
       });
       const latest = response.ok ? await response.json() : null;
       if (latest?.buildId && latest.buildId !== config.buildId) {
-        showToast("A published course update is available; preparing it…");
+        showToast(
+          "An UNVERIFIED personal-study update is available; preparing it…",
+        );
         await serviceWorkerRegistration.update();
       } else {
-        showToast(`You have the latest published course (Version ${config.courseVersion}).`);
+        showToast(
+          `You have the latest published personal-study version (Version ${config.courseVersion}; status ${config.productStatus}).`,
+        );
       }
     }
     if (!views.settings.hidden) renderSettings();
@@ -1716,6 +2612,128 @@ function setCourseShellReady() {
   document.querySelector(".brand").setAttribute("aria-disabled", "false");
 }
 
+function handleStorageChange(event) {
+  if (event.storageArea !== localStorage || !courseBundle) {
+    return;
+  }
+  if (event.key === RESET_BARRIER_KEY) {
+    if (event.newValue === null) return;
+    try {
+      const barrier = currentResetBarrier();
+      if (
+        barrier?.raw === event.newValue &&
+        barrier.state.resetEpoch !== state.resetEpoch
+      ) {
+        adoptRemoteReset(barrier.state, barrier.revision);
+      }
+    } catch {
+      stateStorageQuarantined = true;
+      preserveRecoveryRecord(
+        event.newValue,
+        "Another course window wrote an invalid reset barrier.",
+      );
+      showToast(
+        "Another course window wrote an invalid reset marker. It was not trusted; close other windows and ask Codex for help.",
+        6500,
+      );
+    }
+    return;
+  }
+  if (event.key !== STORAGE_KEY) return;
+  try {
+    if (event.newValue === null) {
+      const hadPendingLocalNote = noteStorageDirty;
+      let pendingNotePreserved = false;
+      if (hadPendingLocalNote) {
+        pendingNotePreserved = preserveRecoveryRecord(
+          JSON.stringify(
+            createStorageEnvelope(
+              state,
+              Math.max(1, persistedRevision + 1),
+              WRITER_ID,
+            ),
+          ),
+          "Pending local note preserved because another window reset course progress.",
+        );
+      }
+      window.clearTimeout(noteTimer);
+      noteTimer = null;
+      noteStorageDirty = false;
+      replaceState(defaultState());
+      recentResetNoticeUntil = Date.now() + 7000;
+      persistedRevision = 0;
+      persistedBaseState = cloneJson(state);
+      lastWriteBaseState = null;
+      lastWrittenRevision = 0;
+      lastWrittenState = null;
+      renderCourseNavigation();
+      updateProgressUi();
+      applyAppearance();
+      navigate("home");
+      showToast(
+        hadPendingLocalNote
+          ? pendingNotePreserved
+            ? "Course progress was reset in another window. Your unsaved note was kept in the browser recovery record; do not reset again, and ask Codex to help recover it."
+            : "Course progress was reset in another window while you had an unsaved note. The note could not be verified in recovery; stop using this window and ask Codex for help."
+          : "Course progress was reset in another open window. Restore an exported backup if that was not intended.",
+        hadPendingLocalNote ? 8500 : 6500,
+      );
+      return;
+    }
+    const remote = currentRemoteState();
+    if (remote.raw !== event.newValue) return;
+    if (remote.writerId === WRITER_ID || !remote.state) return;
+    if (
+      remote.state.resetEpoch &&
+      remote.state.resetEpoch !== state.resetEpoch
+    ) {
+      adoptRemoteReset(remote.state, remote.revision);
+      return;
+    }
+    const incoming = remote.state;
+    const mergeBase = lastWriteBaseState || persistedBaseState || state;
+    const merged = mergeConcurrentState(mergeBase, state, incoming);
+    const hadConflicts = merged.conflicts.length > 0;
+    if (hadConflicts) {
+      preserveRecoveryRecord(
+        JSON.stringify(createStorageEnvelope(state, remote.revision + 1, WRITER_ID)),
+        `Cross-window conflict: ${merged.conflicts.join(", ")}`,
+      );
+      showToast(
+        "Another course window changed the same item. Your version was preserved; close one window before retrying.",
+        6500,
+      );
+    }
+    const needsRepersist = JSON.stringify(merged.state) !== JSON.stringify(incoming);
+    replaceState(merged.state);
+    persistedRevision = remote.revision;
+    persistedBaseState = cloneJson(incoming);
+    if (!needsRepersist) {
+      lastWriteBaseState = null;
+      lastWrittenRevision = 0;
+      lastWrittenState = null;
+    }
+    renderCourseNavigation();
+    updateProgressUi();
+    applyAppearance();
+    if (needsRepersist) {
+      saveState();
+      if (!hadConflicts && Date.now() > recentResetNoticeUntil) {
+        showToast("Changes from another course window were merged safely.", 4200);
+      }
+    } else if (!hadConflicts && Date.now() > recentResetNoticeUntil) {
+      showToast("Progress was updated from another course window.", 3200);
+    }
+  } catch {
+    stateStorageQuarantined = true;
+    preserveRecoveryRecord(event.newValue, "Another course window wrote invalid state.");
+    showToast(
+      "Another course window wrote invalid state. It was not trusted; close other windows and export a backup.",
+      6500,
+    );
+  }
+}
+
 function wireEvents() {
   window.addEventListener("hashchange", () => {
     pendingRouteFocus = true;
@@ -1723,6 +2741,7 @@ function wireEvents() {
   });
   window.addEventListener("online", updateConnectionStatus);
   window.addEventListener("offline", updateConnectionStatus);
+  window.addEventListener("storage", handleStorageChange);
   window.addEventListener("focus", () => checkForUpdates());
   window.addEventListener("pagehide", flushPendingNote);
   document.addEventListener("visibilitychange", () => {
@@ -1848,8 +2867,134 @@ function wireEvents() {
       return;
     }
     document.querySelector("#apply-update").disabled = true;
-    waiting.postMessage({ type: "SKIP_WAITING" });
+    waiting.postMessage({
+      type: "SKIP_WAITING",
+      workerScriptUrl: waiting.scriptURL,
+    });
   });
+}
+
+function isExactIsoDate(value) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+  const parsed = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+}
+
+function normaliseCourseDateMetadata(candidate) {
+  const revisions = Array.isArray(candidate?.documents)
+    ? candidate.documents
+        .map((courseDocument) => courseDocument?.revision)
+        .filter(isExactIsoDate)
+    : [];
+  const latestDocumentRevision = revisions.length
+    ? [...revisions].sort().at(-1)
+    : null;
+  const sourceVerifiedThrough =
+    candidate?.course?.sourceVerifiedThrough ?? candidate?.course?.verifiedThrough;
+  const contentRevisionThrough =
+    candidate?.course?.contentRevisionThrough ?? latestDocumentRevision;
+  if (
+    !isExactIsoDate(sourceVerifiedThrough) ||
+    !isExactIsoDate(contentRevisionThrough) ||
+    (candidate?.course?.verifiedThrough !== undefined &&
+      candidate.course.verifiedThrough !== sourceVerifiedThrough) ||
+    contentRevisionThrough !== latestDocumentRevision
+  ) {
+    throw new Error("Course bundle has contradictory date metadata");
+  }
+  candidate.course.sourceVerifiedThrough = sourceVerifiedThrough;
+  candidate.course.contentRevisionThrough = contentRevisionThrough;
+  candidate.course.verifiedThrough = sourceVerifiedThrough;
+  return candidate;
+}
+
+function validateCourseBundle(candidate) {
+  assertBoundedJson(candidate, {
+    maxDepth: 16,
+    maxProperties: 500,
+    maxItems: 500,
+    label: "Course bundle",
+  });
+  if (
+    candidate?.schemaVersion !== 2 ||
+    !candidate.course ||
+    !candidate.program ||
+    !Array.isArray(candidate.documents) ||
+    !Array.isArray(candidate.groups) ||
+    !Array.isArray(candidate.career?.courses)
+  ) {
+    throw new Error("Course bundle has an unsupported shape");
+  }
+  if (
+    candidate.course.id !== "course-1-controlled-ai-workflow-foundations" ||
+    candidate.course.version !== config.courseVersion ||
+    candidate.course.productStatus !== "UNVERIFIED" ||
+    candidate.course.productStatus !== config.productStatus ||
+    candidate.course.distributionPurpose !== "personal-synthetic-study" ||
+    candidate.course.distributionPurpose !== config.distributionPurpose ||
+    candidate.course.contentHash !== config.contentHash ||
+    !/^[a-f0-9]{64}$/.test(candidate.course.contentHash)
+  ) {
+    throw new Error("Course bundle does not match this application release");
+  }
+  normaliseCourseDateMetadata(candidate);
+  const expectedSourceVerifiedThrough =
+    config.sourceVerifiedThrough ?? config.verifiedThrough;
+  const expectedContentRevisionThrough =
+    config.contentRevisionThrough ?? candidate.course.contentRevisionThrough;
+  if (
+    candidate.course.sourceVerifiedThrough !== expectedSourceVerifiedThrough ||
+    candidate.course.contentRevisionThrough !== expectedContentRevisionThrough
+  ) {
+    throw new Error("Course bundle date metadata does not match this release");
+  }
+  const ids = new Set();
+  const paths = new Set();
+  let totalMarkdownBytes = 0;
+  for (const courseDocument of candidate.documents) {
+    if (
+      !courseDocument ||
+      typeof courseDocument !== "object" ||
+      !/^[a-z0-9-]{3,120}$/.test(courseDocument.id) ||
+      ids.has(courseDocument.id) ||
+      typeof courseDocument.title !== "string" ||
+      courseDocument.title.length > 500 ||
+      typeof courseDocument.markdown !== "string" ||
+      !isExactIsoDate(courseDocument.revision) ||
+      typeof courseDocument.sourcePath !== "string" ||
+      !/^[A-Za-z0-9_.-]+(?:\/[A-Za-z0-9_.-]+)*$/.test(
+        courseDocument.sourcePath,
+      ) ||
+      paths.has(courseDocument.sourcePath)
+    ) {
+      throw new Error("Course bundle contains an invalid page");
+    }
+    ids.add(courseDocument.id);
+    paths.add(courseDocument.sourcePath);
+    totalMarkdownBytes += new Blob([courseDocument.markdown]).size;
+  }
+  if (candidate.documents.length > 500 || totalMarkdownBytes > 8 * 1024 * 1024) {
+    throw new Error("Course bundle exceeds the supported size");
+  }
+  for (const group of candidate.groups) {
+    if (
+      !group ||
+      !/^[a-z0-9-]{2,80}$/.test(group.id) ||
+      !Array.isArray(group.documents) ||
+      new Set(group.documents).size !== group.documents.length ||
+      group.documents.some((id) => !ids.has(id))
+    ) {
+      throw new Error("Course bundle contains an invalid course section");
+    }
+  }
+  if (
+    !Array.isArray(candidate.course.learningSequenceIds) ||
+    candidate.course.learningSequenceIds.some((id) => !ids.has(id))
+  ) {
+    throw new Error("Course bundle has an invalid learning sequence");
+  }
 }
 
 async function initialise() {
@@ -1860,14 +3005,7 @@ async function initialise() {
     const response = await fetch(`${config.basePath}course-content.json`);
     if (!response.ok) throw new Error(`Course bundle returned ${response.status}`);
     courseBundle = await response.json();
-    if (
-      courseBundle?.schemaVersion !== 2 ||
-      !Array.isArray(courseBundle.documents) ||
-      !Array.isArray(courseBundle.groups) ||
-      !Array.isArray(courseBundle.career?.courses)
-    ) {
-      throw new Error("Course bundle has an unsupported shape");
-    }
+    validateCourseBundle(courseBundle);
     documentById = new Map(
       courseBundle.documents.map((courseDocument) => [
         courseDocument.id,
@@ -1886,12 +3024,16 @@ async function initialise() {
     } else {
       replaceState(sanitiseV2StateForCurrentCourse(state));
     }
-    saveState();
+    if (!stateStorageQuarantined) saveState();
     renderCourseNavigation();
     updateProgressUi();
     wireEvents();
     setCourseShellReady();
     renderRoute();
+    if (stateLoadIssue) {
+      showToast(stateLoadIssue, 7000);
+      stateLoadIssue = null;
+    }
     if (state.migration?.fromSchemaVersion === 1) {
       const archivedCount = state.migration.unmappedNoteIds?.length || 0;
       showToast(

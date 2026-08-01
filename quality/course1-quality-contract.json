@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "contractId": "C1-TST-QUALITY-001",
+  "requirements": [
+    "C1-TA-TEST-003",
+    "C1-TA-TEST-004",
+    "C1-TA-TEST-005",
+    "C1-TA-TEST-006",
+    "C1-TA-TEST-007",
+    "C1-TA-TEST-008",
+    "C1-TA-TEST-009"
+  ],
+  "coverage": {
+    "minimumLinePercent": 90.0,
+    "minimumBranchPercent": 90.0,
+    "pythonModules": [
+      "course1_capstone/cli.py",
+      "course1_capstone/workflow.py"
+    ],
+    "pwaModules": [
+      "app/src/markdown.js",
+      "app/src/state.js"
+    ],
+    "pwaLimitation": "Service-worker branches execute in controlled browser tests and are mutation-tested separately; Node unit coverage applies to importable security modules."
+  },
+  "properties": {
+    "persistentCorpus": "quality/property-regression-corpus.json",
+    "pythonSuite": "quality/test_runner_properties.py",
+    "pwaSuite": "app/tests/property-security.test.mjs",
+    "requiredPrefixes": [
+      "test_prop_runner_",
+      "PWA-PROP-"
+    ]
+  },
+  "mutationManifest": "quality/mutation-manifest.json",
+  "requiredMutationFamilies": [
+    "deterministic-rules",
+    "approval-binding",
+    "audit-reconciliation",
+    "transaction-rollback",
+    "path-guards",
+    "markdown-url-safety",
+    "backup-validation",
+    "storage-conflict",
+    "service-worker-identity"
+  ],
+  "negativeControlManifest": "quality/negative-control-manifest.json",
+  "requiredNegativeControlFamilies": [
+    "DATA",
+    "FS",
+    "IO",
+    "CAP",
+    "PWA",
+    "WEB",
+    "SW",
+    "SC",
+    "TEST",
+    "WIN",
+    "BR",
+    "REC"
+  ],
+  "learnerRequirementFiles": [
+    "requirements-course.txt"
+  ],
+  "maintainerRequirementFiles": [
+    "tools/requirements-maintainer.txt"
+  ]
+}

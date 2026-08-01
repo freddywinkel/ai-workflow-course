@@ -1,0 +1,281 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/course1/rollback-record.schema.json",
+  "title": "Course 1 rollback acceptance record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "decision",
+    "courseId",
+    "candidate",
+    "acceptedAt",
+    "authorizedBy",
+    "gates",
+    "rollback",
+    "evidence"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "decision": {
+      "const": "ACCEPTED_FOR_ROLLBACK"
+    },
+    "courseId": {
+      "const": "course-1-controlled-ai-workflow-foundations"
+    },
+    "candidate": {
+      "$ref": "#/$defs/rollbackCandidate"
+    },
+    "acceptedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "authorizedBy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "gates": {
+      "$ref": "#/$defs/rollbackGates"
+    },
+    "rollback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "failedCandidateCommit",
+        "trigger",
+        "lastKnownGoodAcceptanceRecord",
+        "learnerStateRisk"
+      ],
+      "properties": {
+        "failedCandidateCommit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "trigger": {
+          "type": "string",
+          "minLength": 1
+        },
+        "lastKnownGoodAcceptanceRecord": {
+          "$ref": "#/$defs/acceptanceLocator"
+        },
+        "learnerStateRisk": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/evidenceLocator"
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "candidate": {
+            "properties": {
+              "artifactFormat": {
+                "const": "legacy-v2.5"
+              }
+            },
+            "required": [
+              "artifactFormat"
+            ]
+          }
+        },
+        "required": [
+          "candidate"
+        ]
+      },
+      "then": {
+        "properties": {
+          "rollback": {
+            "properties": {
+              "lastKnownGoodAcceptanceRecord": {
+                "properties": {
+                  "path": {
+                    "const": "release_evidence/COURSE_1_V2.5.0_ACCEPTANCE.md"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "rollback": {
+            "properties": {
+              "lastKnownGoodAcceptanceRecord": {
+                "properties": {
+                  "path": {
+                    "pattern": "^release_evidence/(?!templates(?:/|$))(?!\\.\\.?/)(?!.*//)(?!.*(?:/\\.\\.?)(?:/|$))[A-Za-z0-9._/-]+\\.json$"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "acceptanceLocator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "oneOf": [
+            {
+              "pattern": "^release_evidence/(?!templates(?:/|$))(?!\\.\\.?/)(?!.*//)(?!.*(?:/\\.\\.?)(?:/|$))[A-Za-z0-9._/-]+\\.json$"
+            },
+            {
+              "const": "release_evidence/COURSE_1_V2.5.0_ACCEPTANCE.md"
+            }
+          ]
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "rollbackCandidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifactFormat",
+        "commit",
+        "courseVersion",
+        "buildId",
+        "contentHash",
+        "assetManifestSha256",
+        "artifactTreeSha256"
+      ],
+      "properties": {
+        "artifactFormat": {
+          "enum": [
+            "manifest-v1",
+            "legacy-v2.5"
+          ]
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "courseVersion": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "buildId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{12}$"
+        },
+        "contentHash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "assetManifestSha256": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "artifactTreeSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "artifactFormat": {
+                "const": "manifest-v1"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "assetManifestSha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "assetManifestSha256": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "rollbackGates": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifactIdentity",
+        "lastKnownGoodAcceptance",
+        "learnerStateRecoveryPlan",
+        "rollbackAuthorized"
+      ],
+      "properties": {
+        "artifactIdentity": {
+          "const": true
+        },
+        "lastKnownGoodAcceptance": {
+          "const": true
+        },
+        "learnerStateRecoveryPlan": {
+          "const": true
+        },
+        "rollbackAuthorized": {
+          "const": true
+        }
+      }
+    },
+    "evidenceLocator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^release_evidence/(?!templates(?:/|$))(?!\\.\\.?/)(?!.*//)(?!.*(?:/\\.\\.?)(?:/|$))[A-Za-z0-9._/-]+\\.json$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    }
+  }
+}

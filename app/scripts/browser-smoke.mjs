@@ -120,6 +120,8 @@ async function main() {
   let previewProcess;
   let chromeProcess;
   let client;
+  let secondClient;
+  let secondTargetId;
 
   try {
     previewProcess = spawn(process.execPath, ["scripts/serve.mjs"], {
@@ -143,6 +145,7 @@ async function main() {
       [
         "--headless=new",
         "--disable-gpu",
+        "--disable-popup-blocking",
         "--no-first-run",
         "--no-default-browser-check",
         `--remote-debugging-port=${debugPort}`,
@@ -177,8 +180,8 @@ async function main() {
     });
     await client.call("Page.navigate", { url: previewUrl });
 
-    const evaluate = async (expression) => {
-      const result = await client.call("Runtime.evaluate", {
+    const evaluateOn = async (targetClient, expression) => {
+      const result = await targetClient.call("Runtime.evaluate", {
         expression,
         returnByValue: true,
         awaitPromise: true,
@@ -187,6 +190,113 @@ async function main() {
         throw new Error(result.exceptionDetails.text || "Browser evaluation failed.");
       }
       return result.result.value;
+    };
+    const evaluate = (expression) => evaluateOn(client, expression);
+    const waitForAutomaticUpdateCheckOn = (targetEvaluate, label) =>
+      waitFor(
+        () =>
+          targetEvaluate(`(() => {
+            const raw = localStorage.getItem(
+              "ai-workflow-course-state-v1"
+            );
+            if (!raw) return false;
+            const checkedAt = Date.parse(
+              JSON.parse(raw).state.lastUpdateCheck || ""
+            );
+            const updateButtons = [
+              document.querySelector("#update-button"),
+              document.querySelector("#settings-update-button"),
+              document.querySelector("#checkpoint-update-button")
+            ].filter(Boolean);
+            return Number.isFinite(checkedAt) &&
+              checkedAt >= performance.timeOrigin &&
+              updateButtons.every(
+                (button) => button.getAttribute("aria-busy") !== "true"
+              );
+          })()`),
+        `${label} automatic update check`,
+      );
+    const assertReleaseBoundary = async (label) => {
+      const release = await evaluate(`(() => {
+        const boundary = document.querySelector("#release-boundary");
+        const pill = document.querySelector(".release-pill");
+        const boundaryStyle = boundary ? getComputedStyle(boundary) : null;
+        const pillStyle = pill ? getComputedStyle(pill) : null;
+        return {
+          boundaryText: boundary?.textContent?.replace(/\\s+/g, " ").trim() || "",
+          boundaryVisible: Boolean(
+            boundary &&
+            !boundary.hidden &&
+            boundaryStyle.display !== "none" &&
+            boundaryStyle.visibility !== "hidden" &&
+            boundary.getClientRects().length
+          ),
+          pillText: pill?.textContent?.trim() || "",
+          pillLabel: pill?.getAttribute("aria-label") || "",
+          pillVisible: Boolean(
+            pill &&
+            !pill.hidden &&
+            pillStyle.display !== "none" &&
+            pillStyle.visibility !== "hidden" &&
+            pill.getClientRects().length
+          ),
+          productStatus: window.__COURSE_APP__?.productStatus || "",
+          distributionPurpose:
+            window.__COURSE_APP__?.distributionPurpose || "",
+        };
+      })()`);
+      assert.equal(release.boundaryVisible, true, `${label}: release boundary hidden`);
+      assert.match(release.boundaryText, /UNVERIFIED personal-study release/);
+      assert.match(release.boundaryText, /Use synthetic data only/);
+      assert.match(release.boundaryText, /cannot award Course 1 completion/);
+      assert.equal(release.pillVisible, true, `${label}: release pill hidden`);
+      assert.equal(release.pillText, "UNVERIFIED");
+      assert.match(release.pillLabel, /UNVERIFIED personal-study release/);
+      assert.equal(release.productStatus, "UNVERIFIED");
+      assert.equal(release.distributionPurpose, "personal-synthetic-study");
+    };
+    const approveActionDialog = async (label) => {
+      try {
+        await waitFor(
+          () =>
+            evaluate(`document.querySelector("#action-confirmation-dialog")?.open === true`),
+          `${label} confirmation dialog`,
+        );
+      } catch (error) {
+        const diagnostic = await evaluate(`({
+          toast: document.querySelector("#toast")?.textContent || "",
+          dialogExists: Boolean(
+            document.querySelector("#action-confirmation-dialog")
+          ),
+          dialogOpen:
+            document.querySelector("#action-confirmation-dialog")?.open ?? null
+        })`);
+        throw new Error(
+          `${error.message} State=${JSON.stringify(diagnostic)}`,
+        );
+      }
+      const accessibility = await evaluate(`(() => {
+        const dialog = document.querySelector("#action-confirmation-dialog");
+        const confirmButton = dialog.querySelector("#action-confirm-button");
+        return {
+          modal: dialog.open,
+          labelledBy: dialog.getAttribute("aria-labelledby"),
+          describedBy: dialog.getAttribute("aria-describedby"),
+          confirmLabel: confirmButton.textContent.trim(),
+          activeInside: dialog.contains(document.activeElement),
+        };
+      })()`);
+      assert.equal(accessibility.modal, true);
+      assert.equal(accessibility.labelledBy, "action-confirmation-title");
+      assert.equal(accessibility.describedBy, "action-confirmation-message");
+      assert.ok(accessibility.confirmLabel.length > 0);
+      assert.equal(accessibility.activeInside, true);
+      await evaluate(`document.querySelector("#action-confirm-button").click()`);
+      await waitFor(
+        () =>
+          evaluate(`!document.querySelector("#action-confirmation-dialog")?.open`),
+        `${label} confirmation close`,
+      );
     };
     const setViewport = async (width, height) => {
       await client.call("Emulation.setDeviceMetricsOverride", {
@@ -241,13 +351,24 @@ async function main() {
       });
     };
 
-    await waitFor(
-      () =>
-        evaluate(`document.readyState === "complete" &&
-          document.querySelector("#loading-card")?.hidden === true &&
-          document.querySelector("#home-view")?.hidden === false`),
-      "Course home",
-    );
+    try {
+      await waitFor(
+        () =>
+          evaluate(`document.readyState === "complete" &&
+            document.querySelector("#loading-card")?.hidden === true &&
+            document.querySelector("#home-view")?.hidden === false`),
+        "Course home",
+      );
+    } catch (error) {
+      const diagnostic = await evaluate(`(() => ({
+        readyState: document.readyState,
+        loadingHidden: document.querySelector("#loading-card")?.hidden,
+        loadingText: document.querySelector("#loading-card")?.textContent?.trim(),
+        homeHidden: document.querySelector("#home-view")?.hidden,
+        appConfig: window.__COURSE_APP__ || null,
+      }))()`);
+      throw new Error(`${error.message} Browser state: ${JSON.stringify(diagnostic)}`);
+    }
     // The first service worker takes control and the application deliberately
     // reloads once. Wait for that PWA lifecycle transition before interacting.
     await waitFor(
@@ -262,7 +383,371 @@ async function main() {
           document.querySelector("#home-view")?.hidden === false`),
       "Stable course home",
     );
+    await waitForAutomaticUpdateCheckOn(evaluate, "Primary startup");
+    await assertReleaseBoundary("Home");
 
+    const mainWriterBeforeDuplicate = await evaluate(`(() => {
+      const envelope = JSON.parse(
+        localStorage.getItem("ai-workflow-course-state-v1")
+      );
+      sessionStorage.setItem(
+        "ai-workflow-course-writer-v1",
+        envelope.writerId
+      );
+      return envelope.writerId;
+    })()`);
+    const targetsBeforeDuplicate = new Set(
+      (
+        await (
+          await fetch(`http://127.0.0.1:${debugPort}/json/list`)
+        ).json()
+      ).map((candidate) => candidate.id),
+    );
+    assert.equal(
+      await evaluate(`window.open(${JSON.stringify(previewUrl)}, "_blank") !== null`),
+      true,
+    );
+    const secondTarget = await waitFor(async () => {
+      const response = await fetch(`http://127.0.0.1:${debugPort}/json/list`);
+      if (!response.ok) return null;
+      const targets = await response.json();
+      return targets.find(
+        (candidate) =>
+          candidate.type === "page" &&
+          !targetsBeforeDuplicate.has(candidate.id) &&
+          candidate.url.startsWith(previewUrl),
+      );
+    }, "Opener-created duplicate course window");
+    secondTargetId = secondTarget.id;
+    secondClient = await createCdpClient(secondTarget.webSocketDebuggerUrl);
+    await secondClient.call("Page.enable");
+    await secondClient.call("Runtime.enable");
+    const evaluateSecond = (expression) => evaluateOn(secondClient, expression);
+    await waitFor(
+      () =>
+        evaluateSecond(`document.readyState === "complete" &&
+          document.querySelector("#loading-card")?.hidden === true &&
+          navigator.serviceWorker?.controller !== null`),
+      "Second controlled course window",
+    );
+    await waitForAutomaticUpdateCheckOn(evaluateSecond, "Second-window startup");
+    const duplicateWriterIdentity = await evaluateSecond(`(() => {
+      const envelope = JSON.parse(
+        localStorage.getItem("ai-workflow-course-state-v1")
+      );
+      return {
+        inheritedSessionWriter: sessionStorage.getItem(
+          "ai-workflow-course-writer-v1"
+        ),
+        storedWriter: envelope.writerId,
+      };
+    })()`);
+    assert.equal(
+      duplicateWriterIdentity.inheritedSessionWriter,
+      mainWriterBeforeDuplicate,
+      "The opener regression did not reproduce inherited session storage.",
+    );
+    assert.notEqual(
+      duplicateWriterIdentity.storedWriter,
+      mainWriterBeforeDuplicate,
+      "A duplicated/opener tab reused the first page context's writer identity.",
+    );
+
+    await Promise.all([
+      evaluate(`location.hash = "#doc=course-1-foundation-01"`),
+      evaluateSecond(`location.hash = "#doc=course-1-foundation-02"`),
+    ]);
+    await waitFor(
+      async () =>
+        (await evaluate(
+          `document.querySelector("#reader-view")?.hidden === false`,
+        )) &&
+        (await evaluateSecond(
+          `document.querySelector("#reader-view")?.hidden === false`,
+        )),
+      "Two-window lesson routes",
+    );
+    await assertReleaseBoundary("Lesson");
+    await Promise.all([
+      evaluate(`document.querySelector("#complete-button").click()`),
+      evaluateSecond(`document.querySelector("#complete-button").click()`),
+    ]);
+    try {
+      await waitFor(
+        () =>
+          evaluate(`(() => {
+            const envelope = JSON.parse(
+              localStorage.getItem("ai-workflow-course-state-v1")
+            );
+            return envelope.revision >= 3 &&
+              envelope.state.completed.includes("course-1-foundation-01") &&
+              envelope.state.completed.includes("course-1-foundation-02");
+          })()`),
+        "Merged two-window progress",
+      );
+    } catch (error) {
+      const [mainState, otherState] = await Promise.all([
+        evaluate(`({
+          raw: localStorage.getItem("ai-workflow-course-state-v1"),
+          toast: document.querySelector("#toast")?.textContent || "",
+          route: location.hash,
+          pressed: document.querySelector("#complete-button")?.getAttribute("aria-pressed")
+        })`),
+        evaluateSecond(`({
+          raw: localStorage.getItem("ai-workflow-course-state-v1"),
+          toast: document.querySelector("#toast")?.textContent || "",
+          route: location.hash,
+          pressed: document.querySelector("#complete-button")?.getAttribute("aria-pressed")
+        })`),
+      ]);
+      throw new Error(
+        `${error.message} Main=${JSON.stringify(mainState)} Other=${JSON.stringify(otherState)}`,
+      );
+    }
+
+    await Promise.all([
+      evaluate(`location.hash = "#doc=course-1-foundation-03"`),
+      evaluateSecond(`location.hash = "#doc=course-1-foundation-03"`),
+    ]);
+    await waitFor(
+      async () =>
+        (await evaluate(`document.querySelector("#learner-note") !== null`)) &&
+        (await evaluateSecond(
+          `document.querySelector("#learner-note") !== null`,
+        )),
+      "Two-window note editors",
+    );
+    await Promise.all([
+      evaluate(`(() => {
+        const note = document.querySelector("#learner-note");
+        note.value = "Concurrent note from window A.";
+        note.dispatchEvent(new Event("input", { bubbles: true }));
+      })()`),
+      evaluateSecond(`(() => {
+        const note = document.querySelector("#learner-note");
+        note.value = "Concurrent note from window B.";
+        note.dispatchEvent(new Event("input", { bubbles: true }));
+      })()`),
+    ]);
+    await waitFor(
+      async () => {
+        const mainToast = await evaluate(
+          `document.querySelector("#toast")?.textContent || ""`,
+        );
+        const secondToast = await evaluateSecond(
+          `document.querySelector("#toast")?.textContent || ""`,
+        );
+        const recoveryReason = await evaluate(`(() => {
+          const raw = localStorage.getItem("ai-workflow-course-recovery-v1");
+          return raw ? JSON.parse(raw).reason : "";
+        })()`);
+        return (
+          /same item|nothing was overwritten/i.test(`${mainToast} ${secondToast}`) &&
+          /conflict/i.test(recoveryReason)
+        );
+      },
+      "Visible same-note conflict",
+    );
+    const concurrentState = await evaluate(`(() => {
+      const envelope = JSON.parse(
+        localStorage.getItem("ai-workflow-course-state-v1")
+      );
+      return {
+        revision: envelope.revision,
+        writerId: envelope.writerId,
+        note: envelope.state.notes["course-1-foundation-03"],
+      };
+    })()`);
+    assert.ok(concurrentState.revision >= 4);
+    assert.match(concurrentState.writerId, /^[A-Za-z0-9-]{8,80}$/);
+    assert.ok(
+      [
+        "Concurrent note from window A.",
+        "Concurrent note from window B.",
+      ].includes(concurrentState.note),
+    );
+    await evaluate(`location.hash = "#settings"`);
+    await waitFor(
+      () =>
+        evaluate(`document.querySelector("#settings-view")?.hidden === false`),
+      "Settings before reset cancellation",
+    );
+    const stateBeforeCancelledReset = await evaluate(
+      `localStorage.getItem("ai-workflow-course-state-v1")`,
+    );
+    await evaluate(`(() => {
+      const resetButton = document.querySelector("#reset-progress");
+      resetButton.focus();
+      resetButton.click();
+    })()`);
+    await waitFor(
+      () =>
+        evaluate(`document.querySelector("#action-confirmation-dialog")?.open === true`),
+      "Reset cancellation dialog",
+    );
+    await client.call("Input.dispatchKeyEvent", {
+      type: "keyDown",
+      key: "Escape",
+      code: "Escape",
+      windowsVirtualKeyCode: 27,
+    });
+    await client.call("Input.dispatchKeyEvent", {
+      type: "keyUp",
+      key: "Escape",
+      code: "Escape",
+      windowsVirtualKeyCode: 27,
+    });
+    await waitFor(
+      () =>
+        evaluate(`!document.querySelector("#action-confirmation-dialog")?.open`),
+      "Escape-cancelled reset",
+    );
+    assert.equal(
+      await evaluate(`localStorage.getItem("ai-workflow-course-state-v1")`),
+      stateBeforeCancelledReset,
+    );
+    assert.equal(
+      await evaluate(
+        `document.activeElement === document.querySelector("#reset-progress")`,
+      ),
+      true,
+      "Focus did not return to the reset control after cancellation.",
+    );
+    await evaluate(`location.hash = "#doc=course-1-foundation-03"`);
+    await waitFor(
+      () =>
+        evaluate(`document.querySelector("#learner-note") !== null`),
+      "Note editor after reset cancellation",
+    );
+    const pendingResetNote = "Unsaved note present when the other window reset.";
+    await Promise.all([
+      evaluate(`window.confirm = () => {
+        throw new Error("Native confirm must not be used.");
+      }`),
+      evaluateSecond(`window.confirm = () => {
+        throw new Error("Native confirm must not be used.");
+      }`),
+    ]);
+    await evaluate(`(() => {
+      window.__toastHistory = [];
+      const toast = document.querySelector("#toast");
+      new MutationObserver(() => {
+        if (toast.textContent) window.__toastHistory.push(toast.textContent);
+      }).observe(toast, { childList: true, subtree: true });
+    })()`);
+    await evaluate(`document.querySelector("#reset-progress").click()`);
+    await waitFor(
+      () =>
+        evaluate(`document.querySelector("#action-confirmation-dialog")?.open === true`),
+      "Cross-window reset confirmation dialog",
+    );
+    await evaluateSecond(`(() => {
+      const note = document.querySelector("#learner-note");
+      note.value = ${JSON.stringify(pendingResetNote)};
+      note.dispatchEvent(new Event("input", { bubbles: true }));
+    })()`);
+    await evaluate(`document.querySelector("#action-confirm-button").click()`);
+    await waitFor(
+      () =>
+        evaluate(`!document.querySelector("#action-confirmation-dialog")?.open`),
+      "Cross-window reset confirmation close",
+    );
+    try {
+      await waitFor(
+        async () => {
+          const [mainReset, otherReset] = await Promise.all([
+            evaluate(`({
+              route: location.hash,
+              stored: localStorage.getItem("ai-workflow-course-state-v1")
+            })`),
+            evaluateSecond(`({
+              route: location.hash,
+              stored: localStorage.getItem("ai-workflow-course-state-v1"),
+              toast: document.querySelector("#toast")?.textContent || "",
+              recovery: localStorage.getItem("ai-workflow-course-recovery-v1")
+            })`),
+          ]);
+          let pendingRecovery = false;
+          if (otherReset.recovery) {
+            const recovery = JSON.parse(otherReset.recovery);
+            const recoveredEnvelope = JSON.parse(recovery.raw);
+            pendingRecovery =
+              /pending local note/i.test(recovery.reason) &&
+              recoveredEnvelope.state.notes["course-1-foundation-03"] ===
+                pendingResetNote;
+          }
+          return (
+            mainReset.route === "#home" &&
+            (!mainReset.stored ||
+              (() => {
+                const state = JSON.parse(mainReset.stored).state;
+                return (
+                  state.completed.length === 0 &&
+                  state.practicalPassed.length === 0 &&
+                  Object.keys(state.notes).length === 0
+                );
+              })()) &&
+            otherReset.route === "#home" &&
+            (!otherReset.stored ||
+              (() => {
+                const state = JSON.parse(otherReset.stored).state;
+                return (
+                  state.completed.length === 0 &&
+                  state.practicalPassed.length === 0 &&
+                  Object.keys(state.notes).length === 0
+                );
+              })()) &&
+            /reset in another window/i.test(otherReset.toast) &&
+            /unsaved note|recovery record/i.test(otherReset.toast) &&
+            pendingRecovery
+          );
+        },
+        "Cross-window reset with pending-note recovery",
+      );
+    } catch (error) {
+      const [mainReset, otherReset] = await Promise.all([
+        evaluate(`({
+          route: location.hash,
+          stored: localStorage.getItem("ai-workflow-course-state-v1"),
+          barrier: localStorage.getItem("ai-workflow-course-reset-barrier-v1"),
+          recovery: localStorage.getItem("ai-workflow-course-recovery-v1"),
+          toastHistory: window.__toastHistory || [],
+          toast: document.querySelector("#toast")?.textContent || ""
+        })`),
+        evaluateSecond(`({
+          route: location.hash,
+          stored: localStorage.getItem("ai-workflow-course-state-v1"),
+          barrier: localStorage.getItem("ai-workflow-course-reset-barrier-v1"),
+          recovery: localStorage.getItem("ai-workflow-course-recovery-v1"),
+          toast: document.querySelector("#toast")?.textContent || ""
+        })`),
+      ]);
+      throw new Error(
+        `${error.message} Main=${JSON.stringify(mainReset)} Other=${JSON.stringify(otherReset)}`,
+      );
+    }
+    await client.call("Target.closeTarget", { targetId: secondTargetId });
+    secondClient.close();
+    secondClient = null;
+    secondTargetId = null;
+    await client.call("Page.reload", { ignoreCache: false });
+    await waitFor(
+      () =>
+        evaluate(`document.readyState === "complete" &&
+          document.querySelector("#loading-card")?.hidden === true`),
+      "Primary window reload after conflict",
+    );
+    await waitForAutomaticUpdateCheckOn(evaluate, "Primary post-conflict reload");
+
+    if ((await evaluate(`location.hash`)) === "#home") {
+      await evaluate(`location.hash = "#career"`);
+      await waitFor(
+        () =>
+          evaluate(`location.hash === "#career" &&
+            document.querySelector("#career-view")?.hidden === false`),
+        "Temporary career route before Home focus check",
+      );
+    }
     await evaluate(`location.hash = "#home"`);
     await waitFor(
       () =>
@@ -314,6 +799,8 @@ async function main() {
       "Skip-link keyboard target without route change",
     );
 
+    const minimumTargetSize = 44;
+    const targetSizeTolerance = 0.01;
     const viewportCases = [
       { width: 320, height: 568, label: "small phone portrait" },
       { width: 390, height: 844, label: "phone portrait" },
@@ -331,6 +818,7 @@ async function main() {
             Boolean(document.querySelector('[data-home-action="resume"]'))`),
         `${viewport.label} home`,
       );
+      await assertReleaseBoundary(`${viewport.label} home`);
       const viewportLayout = await evaluate(`(async () => {
         const primary = document.querySelector('[data-home-action="resume"]');
         primary.scrollIntoView({ block: "center", behavior: "instant" });
@@ -403,8 +891,8 @@ async function main() {
         `${viewport.label} body scroll width was ${viewportLayout.bodyScrollWidth}`,
       );
       assert.ok(
-        viewportLayout.primaryHeight >= 44,
-        `${viewport.label} primary control was shorter than 44 pixels`,
+        viewportLayout.primaryHeight + targetSizeTolerance >= minimumTargetSize,
+        `${viewport.label} primary control was ${viewportLayout.primaryHeight} pixels high; expected at least ${minimumTargetSize} allowing ${targetSizeTolerance} pixel browser rounding`,
       );
       assert.equal(
         viewportLayout.primaryVisible,
@@ -428,8 +916,9 @@ async function main() {
         for (const [index, button] of viewportLayout.buttonChecks.entries()) {
           assert.equal(button.enabled, true, `${viewport.label} tab ${index + 1}`);
           assert.ok(
-            button.width >= 44 && button.height >= 44,
-            `${viewport.label} tab ${index + 1} was smaller than 44 by 44 pixels`,
+            button.width + targetSizeTolerance >= minimumTargetSize &&
+              button.height + targetSizeTolerance >= minimumTargetSize,
+            `${viewport.label} tab ${index + 1} measured ${button.width} by ${button.height} pixels; expected at least ${minimumTargetSize} by ${minimumTargetSize} allowing ${targetSizeTolerance} pixel browser-rounding tolerance`,
           );
           assert.equal(
             button.insideViewport,
@@ -494,6 +983,13 @@ async function main() {
     assert.equal(forcedColourFocus.focused, true);
     assert.equal(forcedColourFocus.visible, true);
     assert.notEqual(forcedColourFocus.colour, forcedColourFocus.background);
+    await assertReleaseBoundary("Forced colours");
+    assert.notEqual(
+      await evaluate(
+        `getComputedStyle(document.querySelector("#release-boundary")).borderBottomStyle`,
+      ),
+      "none",
+    );
     await client.call("Emulation.setEmulatedMedia", { features: [] });
 
     await client.call("Emulation.setEmulatedMedia", {
@@ -622,7 +1118,7 @@ async function main() {
     await waitFor(
       () =>
         evaluate(`document.querySelector("#font-size-output").value === "125%" &&
-          JSON.parse(localStorage.getItem("ai-workflow-course-state-v1")).fontSize === 125`),
+          JSON.parse(localStorage.getItem("ai-workflow-course-state-v1")).state.fontSize === 125`),
       "125 percent reader text setting",
     );
     await evaluate(
@@ -726,7 +1222,10 @@ async function main() {
     assert.ok(reader.text.includes("All files (*.*)"));
     assert.ok(!reader.text.includes("All files (.)"));
     assert.match(reader.meta, /Read: about \d+ minutes?/);
-    assert.match(reader.meta, /Practice: \d+–\d+ hours/);
+    assert.match(
+      reader.meta,
+      /Practice — AUTHOR ESTIMATE, NOT BEGINNER MEASURED: \d+–\d+ hours/,
+    );
     assert.equal(reader.practicalPanelHidden, false);
 
     if (
@@ -747,7 +1246,7 @@ async function main() {
     await waitFor(
       () =>
         evaluate(
-          `JSON.parse(localStorage.getItem("ai-workflow-course-state-v1"))
+          `JSON.parse(localStorage.getItem("ai-workflow-course-state-v1")).state
             .completed.includes("course-1-foundation-01")`,
         ),
       "Page-read state",
@@ -765,13 +1264,13 @@ async function main() {
     await waitFor(
       () =>
         evaluate(
-          `JSON.parse(localStorage.getItem("ai-workflow-course-state-v1"))
+          `JSON.parse(localStorage.getItem("ai-workflow-course-state-v1")).state
             .practicalPassed.includes("course-1-foundation-01")`,
         ),
       "Practical self-check state",
     );
     const stored = await evaluate(
-      `JSON.parse(localStorage.getItem("ai-workflow-course-state-v1"))`,
+      `JSON.parse(localStorage.getItem("ai-workflow-course-state-v1")).state`,
     );
     assert.ok(
       stored.completed.includes("course-1-foundation-01"),
@@ -809,6 +1308,7 @@ async function main() {
         ),
       "Career path",
     );
+    await assertReleaseBoundary("Career");
     assert.equal(
       await evaluate(
         `document.querySelector(".later-course-disclosure") instanceof HTMLDetailsElement`,
@@ -877,6 +1377,19 @@ async function main() {
             document.querySelector("#settings-view")?.hidden === false`,
         ),
       "Keyboard navigation to Settings",
+    );
+    await assertReleaseBoundary("Settings");
+    assert.deepEqual(
+      await evaluate(`({
+        productStatus:
+          document.querySelector("#settings-product-status")?.textContent?.trim(),
+        distributionPurpose:
+          document.querySelector("#settings-distribution-purpose")?.textContent?.trim()
+      })`),
+      {
+        productStatus: "UNVERIFIED",
+        distributionPurpose: "Personal study with synthetic data only",
+      },
     );
     await waitFor(
       () =>
@@ -986,21 +1499,23 @@ async function main() {
       true,
     );
 
-    await evaluate(`window.confirm = () => true;
+    await evaluate(`window.confirm = () => {
+        throw new Error("Native confirm must not be used.");
+      };
       document.querySelector("#reset-progress").click();`);
+    await approveActionDialog("Confirmed reset");
     await waitFor(
       () =>
         evaluate(`(() => {
           const stored = localStorage.getItem("ai-workflow-course-state-v1");
           return location.hash === "#home" &&
-            (!stored || JSON.parse(stored).completed.length === 0);
+            (!stored || JSON.parse(stored).state.completed.length === 0);
         })()`),
       "Confirmed reset and Home route",
     );
 
     const backupText = JSON.stringify(backupPayload);
     await evaluate(`(() => {
-      window.confirm = () => true;
       const input = document.querySelector("#import-progress");
       const transfer = new DataTransfer();
       transfer.items.add(new File(
@@ -1011,9 +1526,10 @@ async function main() {
       input.files = transfer.files;
       input.dispatchEvent(new Event("change", { bubbles: true }));
     })()`);
+    await approveActionDialog("Progress import");
     await waitFor(
       () =>
-        evaluate(`JSON.parse(localStorage.getItem("ai-workflow-course-state-v1"))
+        evaluate(`JSON.parse(localStorage.getItem("ai-workflow-course-state-v1")).state
           .practicalPassed.includes("course-1-foundation-01")`),
       "Progress-backup import",
     );
@@ -1054,13 +1570,77 @@ async function main() {
     const stateBeforeFailedSave = await evaluate(
       `localStorage.getItem("ai-workflow-course-state-v1")`,
     );
-    const failedSaveMessage = await evaluate(`(async () => {
-      const originalSetItem = Storage.prototype.setItem;
-      Storage.prototype.setItem = function () {
-        throw new DOMException("Storage is blocked.", "QuotaExceededError");
-      };
-      try {
-        window.confirm = () => true;
+    const blockedStorageImportDiagnostic = () =>
+      evaluate(`(() => {
+        const probe = window.__blockedStorageImportProbe;
+        const input = document.querySelector("#import-progress");
+        const dialog = document.querySelector("#action-confirmation-dialog");
+        return {
+          probePresent: Boolean(probe),
+          stubInstalled: Boolean(
+            probe && Storage.prototype.setItem === probe.stubSetItem
+          ),
+          setItemCalls: probe?.setItemCalls || [],
+          toast: document.querySelector("#toast")?.textContent || "",
+          toastHidden: document.querySelector("#toast")?.hidden ?? null,
+          inputValue: input?.value ?? null,
+          inputFiles: input
+            ? [...input.files].map((file) => ({
+                name: file.name,
+                size: file.size,
+                type: file.type
+              }))
+            : null,
+          dialogExists: Boolean(dialog),
+          dialogOpen: dialog?.open ?? null,
+          dialogTitle:
+            dialog?.querySelector("#action-confirmation-title")
+              ?.textContent || "",
+          activeElement: document.activeElement?.id || "",
+          storage: {
+            primary: localStorage.getItem("ai-workflow-course-state-v1"),
+            recovery: localStorage.getItem(
+              "ai-workflow-course-recovery-v1"
+            ),
+            barrier: localStorage.getItem(
+              "ai-workflow-course-reset-barrier-v1"
+            )
+          },
+          location: location.href,
+          readyState: document.readyState
+        };
+      })()`);
+    let blockedStorageImportError = null;
+    let blockedStorageFailureDiagnostic = null;
+    let blockedStorageImportResult = null;
+    let blockedStorageCleanup = null;
+    try {
+      await evaluate(`(() => {
+        if (window.__blockedStorageImportProbe) {
+          throw new Error("Blocked-storage import probe was already installed.");
+        }
+        const originalSetItem = Storage.prototype.setItem;
+        const probe = {
+          originalSetItem,
+          setItemCalls: []
+        };
+        probe.stubSetItem = function (key) {
+          probe.setItemCalls.push({
+            key: String(key),
+            storageArea:
+              this === localStorage
+                ? "localStorage"
+                : this === sessionStorage
+                  ? "sessionStorage"
+                  : "other"
+          });
+          throw new DOMException("Storage is blocked.", "QuotaExceededError");
+        };
+        window.__blockedStorageImportProbe = probe;
+        Storage.prototype.setItem = probe.stubSetItem;
+        const toast = document.querySelector("#toast");
+        toast.hidden = true;
+        toast.textContent = "";
         const input = document.querySelector("#import-progress");
         const transfer = new DataTransfer();
         transfer.items.add(new File(
@@ -1070,21 +1650,836 @@ async function main() {
         ));
         input.files = transfer.files;
         input.dispatchEvent(new Event("change", { bubbles: true }));
-        for (let attempt = 0; attempt < 60; attempt += 1) {
-          if (/backup was not imported/i.test(
-            document.querySelector("#toast").textContent
-          )) break;
-          await new Promise((resolve) => setTimeout(resolve, 25));
-        }
-        return document.querySelector("#toast").textContent;
-      } finally {
-        Storage.prototype.setItem = originalSetItem;
+      })()`);
+      await approveActionDialog("Blocked-storage import");
+      blockedStorageImportResult = await waitFor(
+        async () => {
+          const diagnostic = await blockedStorageImportDiagnostic();
+          const deniedLocalStorageWrite = diagnostic.setItemCalls.some(
+            (call) => call.storageArea === "localStorage",
+          );
+          const importFinished =
+            diagnostic.inputValue === "" &&
+            diagnostic.dialogOpen !== true;
+          return deniedLocalStorageWrite && importFinished
+            ? diagnostic
+            : null;
+        },
+        "Blocked-storage import completion",
+      );
+      assert.equal(
+        blockedStorageImportResult.stubInstalled,
+        true,
+        "The full Storage.prototype.setItem denial was not active through import completion.",
+      );
+      assert.match(
+        blockedStorageImportResult.toast,
+        /backup was not imported/i,
+      );
+      assert.equal(
+        blockedStorageImportResult.storage.primary,
+        stateBeforeFailedSave,
+      );
+    } catch (error) {
+      blockedStorageImportError = error;
+      try {
+        blockedStorageFailureDiagnostic =
+          await blockedStorageImportDiagnostic();
+      } catch (diagnosticError) {
+        blockedStorageFailureDiagnostic = {
+          diagnosticError: diagnosticError.message
+        };
       }
+    } finally {
+      try {
+        blockedStorageCleanup = await evaluate(`(() => {
+          const probe = window.__blockedStorageImportProbe;
+          if (!probe) {
+            return {
+              probePresent: false,
+              stubWasInstalled: false,
+              restored: false,
+              setItemCalls: []
+            };
+          }
+          const stubWasInstalled =
+            Storage.prototype.setItem === probe.stubSetItem;
+          Storage.prototype.setItem = probe.originalSetItem;
+          const restored =
+            Storage.prototype.setItem === probe.originalSetItem;
+          const setItemCalls = [...probe.setItemCalls];
+          delete window.__blockedStorageImportProbe;
+          return {
+            probePresent: true,
+            stubWasInstalled,
+            restored,
+            setItemCalls
+          };
+        })()`);
+      } catch (error) {
+        blockedStorageImportError ||= error;
+        if (!blockedStorageFailureDiagnostic) {
+          try {
+            blockedStorageFailureDiagnostic =
+              await blockedStorageImportDiagnostic();
+          } catch (diagnosticError) {
+            blockedStorageFailureDiagnostic = {
+              diagnosticError: diagnosticError.message
+            };
+          }
+        }
+      }
+    }
+    if (blockedStorageImportError) {
+      throw new Error(
+        `${blockedStorageImportError.message} ` +
+          `State=${JSON.stringify(blockedStorageFailureDiagnostic)} ` +
+          `Cleanup=${JSON.stringify(blockedStorageCleanup)}`,
+      );
+    }
+    assert.equal(
+      blockedStorageCleanup?.stubWasInstalled,
+      true,
+      "The blocked-storage stub was replaced before test cleanup.",
+    );
+    assert.equal(
+      blockedStorageCleanup?.restored,
+      true,
+      "Storage.prototype.setItem was not restored after the blocked-storage import.",
+    );
+    assert.ok(
+      blockedStorageCleanup.setItemCalls.some(
+        (call) => call.storageArea === "localStorage",
+      ),
+      "The blocked-storage import did not exercise a denied localStorage write.",
+    );
+
+    const transactionImportSnapshot = await evaluate(`({
+      primary: localStorage.getItem("ai-workflow-course-state-v1"),
+      recovery: localStorage.getItem("ai-workflow-course-recovery-v1"),
+      barrier: localStorage.getItem("ai-workflow-course-reset-barrier-v1")
+    })`);
+    await evaluate(`(() => {
+      window.__originalStorageRemoveItem = Storage.prototype.removeItem;
+      let failedOnce = false;
+      Storage.prototype.removeItem = function (key) {
+        if (
+          !failedOnce &&
+          key === "ai-workflow-course-recovery-v1"
+        ) {
+          failedOnce = true;
+          throw new DOMException("Simulated finalisation failure.", "QuotaExceededError");
+        }
+        return window.__originalStorageRemoveItem.call(this, key);
+      };
+      const input = document.querySelector("#import-progress");
+      const transfer = new DataTransfer();
+      transfer.items.add(new File(
+        [${JSON.stringify(JSON.stringify(changedBackupPayload))}],
+        "rollback-import.json",
+        { type: "application/json" }
+      ));
+      input.files = transfer.files;
+      input.dispatchEvent(new Event("change", { bubbles: true }));
     })()`);
-    assert.match(failedSaveMessage, /backup was not imported/i);
+    await approveActionDialog("Rollback import");
+    const rollbackImportMessage = await waitFor(
+      async () => {
+        const message = await evaluate(
+          `document.querySelector("#toast")?.textContent || ""`,
+        );
+        return /backup was not imported/i.test(message) ? message : null;
+      },
+      "Rolled-back import result",
+    );
+    await evaluate(`(() => {
+      Storage.prototype.removeItem = window.__originalStorageRemoveItem;
+      delete window.__originalStorageRemoveItem;
+    })()`);
+    assert.match(rollbackImportMessage, /overall rollback: verified/i);
+    assert.match(rollbackImportMessage, /primary data: restored/i);
+    assert.match(rollbackImportMessage, /visible course: restored/i);
+    assert.deepEqual(
+      await evaluate(`({
+        primary: localStorage.getItem("ai-workflow-course-state-v1"),
+        recovery: localStorage.getItem("ai-workflow-course-recovery-v1"),
+        barrier: localStorage.getItem("ai-workflow-course-reset-barrier-v1")
+      })`),
+      transactionImportSnapshot,
+    );
+
+    const renderImportSnapshot = await evaluate(`({
+      primary: localStorage.getItem("ai-workflow-course-state-v1"),
+      recovery: localStorage.getItem("ai-workflow-course-recovery-v1"),
+      barrier: localStorage.getItem("ai-workflow-course-reset-barrier-v1"),
+      route: location.hash,
+      fontValue: document.querySelector("#font-size-output").value,
+      theme: document.documentElement.dataset.theme,
+      title: document.title
+    })`);
+    const renderFailureImportPayload = structuredClone(changedBackupPayload);
+    renderFailureImportPayload.state.fontSize =
+      Number(renderImportSnapshot.fontValue.replace("%", "")) === 90 ? 125 : 90;
+    renderFailureImportPayload.state.theme =
+      renderImportSnapshot.theme === "dark" ? "light" : "dark";
+    await evaluate(`(() => {
+      const originalReplaceChildren = Element.prototype.replaceChildren;
+      let injected = false;
+      Element.prototype.replaceChildren = function (...nodes) {
+        if (!injected && this.id === "course-nav") {
+          injected = true;
+          Element.prototype.replaceChildren = originalReplaceChildren;
+          throw new Error("Simulated render-stage import failure.");
+        }
+        return originalReplaceChildren.apply(this, nodes);
+      };
+      const input = document.querySelector("#import-progress");
+      const transfer = new DataTransfer();
+      transfer.items.add(new File(
+        [${JSON.stringify(JSON.stringify(renderFailureImportPayload))}],
+        "render-failure-import.json",
+        { type: "application/json" }
+      ));
+      input.files = transfer.files;
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    })()`);
+    await approveActionDialog("Render-failure import");
+    const renderImportFailureMessage = await waitFor(
+      async () => {
+        const message = await evaluate(
+          `document.querySelector("#toast")?.textContent || ""`,
+        );
+        return /backup was not imported/i.test(message) ? message : null;
+      },
+      "Render-stage import rollback result",
+    );
+    assert.match(renderImportFailureMessage, /overall rollback: verified/i);
+    assert.match(renderImportFailureMessage, /visible course: restored/i);
+    assert.deepEqual(
+      await evaluate(`({
+        primary: localStorage.getItem("ai-workflow-course-state-v1"),
+        recovery: localStorage.getItem("ai-workflow-course-recovery-v1"),
+        barrier: localStorage.getItem("ai-workflow-course-reset-barrier-v1"),
+        route: location.hash,
+        fontValue: document.querySelector("#font-size-output").value,
+        theme: document.documentElement.dataset.theme,
+        title: document.title
+      })`),
+      renderImportSnapshot,
+    );
+
+    const resetRecoverySentinel = JSON.stringify({
+      recoveryType: "test-existing-recovery",
+      savedAt: "2026-07-28T12:00:00.000Z",
+      raw: transactionImportSnapshot.primary,
+    });
+    await evaluate(
+      `localStorage.setItem("ai-workflow-course-recovery-v1", ${JSON.stringify(resetRecoverySentinel)})`,
+    );
+    const resetTransactionSnapshot = await evaluate(`({
+      primary: localStorage.getItem("ai-workflow-course-state-v1"),
+      recovery: localStorage.getItem("ai-workflow-course-recovery-v1"),
+      barrier: localStorage.getItem("ai-workflow-course-reset-barrier-v1")
+    })`);
+    await evaluate(`(() => {
+      window.__originalStorageSetItem = Storage.prototype.setItem;
+      let failedOnce = false;
+      Storage.prototype.setItem = function (key, value) {
+        if (
+          !failedOnce &&
+          key === "ai-workflow-course-reset-barrier-v1"
+        ) {
+          failedOnce = true;
+          throw new DOMException("Simulated reset failure.", "QuotaExceededError");
+        }
+        return window.__originalStorageSetItem.call(this, key, value);
+      };
+      document.querySelector("#reset-progress").click();
+    })()`);
+    await approveActionDialog("Rollback reset");
+    const rollbackResetMessage = await waitFor(
+      async () => {
+        const message = await evaluate(
+          `document.querySelector("#toast")?.textContent || ""`,
+        );
+        return /nothing was reset/i.test(message) ? message : null;
+      },
+      "Rolled-back reset result",
+    );
+    await evaluate(`(() => {
+      Storage.prototype.setItem = window.__originalStorageSetItem;
+      delete window.__originalStorageSetItem;
+    })()`);
+    assert.match(rollbackResetMessage, /overall rollback: verified/i);
+    assert.match(rollbackResetMessage, /primary data: restored/i);
+    assert.match(rollbackResetMessage, /visible course: restored/i);
+    assert.deepEqual(
+      await evaluate(`({
+        primary: localStorage.getItem("ai-workflow-course-state-v1"),
+        recovery: localStorage.getItem("ai-workflow-course-recovery-v1"),
+        barrier: localStorage.getItem("ai-workflow-course-reset-barrier-v1")
+      })`),
+      resetTransactionSnapshot,
+    );
+
+    const renderResetSnapshot = await evaluate(`({
+      primary: localStorage.getItem("ai-workflow-course-state-v1"),
+      recovery: localStorage.getItem("ai-workflow-course-recovery-v1"),
+      barrier: localStorage.getItem("ai-workflow-course-reset-barrier-v1"),
+      route: location.hash,
+      fontValue: document.querySelector("#font-size-output").value,
+      theme: document.documentElement.dataset.theme,
+      title: document.title
+    })`);
+    await evaluate(`(() => {
+      const originalReplaceChildren = Element.prototype.replaceChildren;
+      let injected = false;
+      Element.prototype.replaceChildren = function (...nodes) {
+        if (!injected && this.id === "course-nav") {
+          injected = true;
+          Element.prototype.replaceChildren = originalReplaceChildren;
+          throw new Error("Simulated render-stage reset failure.");
+        }
+        return originalReplaceChildren.apply(this, nodes);
+      };
+      document.querySelector("#reset-progress").click();
+    })()`);
+    await approveActionDialog("Render-failure reset");
+    const renderResetFailureMessage = await waitFor(
+      async () => {
+        const message = await evaluate(
+          `document.querySelector("#toast")?.textContent || ""`,
+        );
+        return /nothing was reset/i.test(message) ? message : null;
+      },
+      "Render-stage reset rollback result",
+    );
+    assert.match(
+      renderResetFailureMessage,
+      /visible course: restored/i,
+    );
+    assert.match(renderResetFailureMessage, /overall rollback: verified/i);
+    assert.deepEqual(
+      await evaluate(`({
+        primary: localStorage.getItem("ai-workflow-course-state-v1"),
+        recovery: localStorage.getItem("ai-workflow-course-recovery-v1"),
+        barrier: localStorage.getItem("ai-workflow-course-reset-barrier-v1"),
+        route: location.hash,
+        fontValue: document.querySelector("#font-size-output").value,
+        theme: document.documentElement.dataset.theme,
+        title: document.title
+      })`),
+      renderResetSnapshot,
+    );
+
+    const raceTargetsBeforeOpen = new Set(
+      (
+        await (
+          await fetch(`http://127.0.0.1:${debugPort}/json/list`)
+        ).json()
+      ).map((candidate) => candidate.id),
+    );
+    assert.equal(
+      await evaluate(`(() => {
+        window.__rollbackRaceWindow = window.open(
+          ${JSON.stringify(previewUrl)},
+          "_blank"
+        );
+        return window.__rollbackRaceWindow !== null;
+      })()`),
+      true,
+    );
+    const raceTarget = await waitFor(async () => {
+      const response = await fetch(`http://127.0.0.1:${debugPort}/json/list`);
+      if (!response.ok) return null;
+      const targets = await response.json();
+      return targets.find(
+        (candidate) =>
+          candidate.type === "page" &&
+          !raceTargetsBeforeOpen.has(candidate.id) &&
+          candidate.url.startsWith(previewUrl),
+      );
+    }, "Combined rollback-race course window");
+    secondTargetId = raceTarget.id;
+    secondClient = await createCdpClient(raceTarget.webSocketDebuggerUrl);
+    await secondClient.call("Page.enable");
+    await secondClient.call("Runtime.enable");
+    await waitFor(
+      () =>
+        evaluateSecond(`document.readyState === "complete" &&
+          document.querySelector("#loading-card")?.hidden === true &&
+          navigator.serviceWorker?.controller !== null`),
+      "Combined rollback-race controlled window",
+    );
+    const recoveryInjectionReason =
+      "Test harness injected one external recovery after the reset barrier; this write is not attributed to the product.";
+    const injectionSetup = await evaluateSecond(`(() => {
+        const storageKey = "ai-workflow-course-state-v1";
+        const recoveryKey = "ai-workflow-course-recovery-v1";
+        const barrierKey = "ai-workflow-course-reset-barrier-v1";
+        const baseRaw = localStorage.getItem(storageKey);
+        const recoveryBefore = localStorage.getItem(recoveryKey);
+        let injectionCount = 0;
+        window.__injectExternalRecoveryAfterResetBarrier = () => {
+          const barrierRaw = localStorage.getItem(barrierKey);
+          if (!barrierRaw) {
+            throw new Error("The reset barrier was not visible in window B.");
+          }
+          injectionCount += 1;
+          const recovery = JSON.stringify({
+            recoveryType: "course-state-recovery",
+            savedAt: "2026-07-29T00:00:00.000Z",
+            reason: ${JSON.stringify(recoveryInjectionReason)},
+            raw: baseRaw,
+          });
+          localStorage.setItem(recoveryKey, recovery);
+          if (localStorage.getItem(recoveryKey) !== recovery) {
+            throw new Error("Window B could not verify its injected recovery.");
+          }
+          window.__externalRecoveryInjection = {
+            injectionCount,
+            recoveryBefore,
+            recoveryAfter: recovery,
+            primaryAtInjection: localStorage.getItem(storageKey),
+            barrierAtInjection: barrierRaw,
+            reason: ${JSON.stringify(recoveryInjectionReason)}
+          };
+          return recovery;
+        };
+        return { baseRaw, recoveryBefore };
+      })()`);
+    const combinedRaceSnapshot = await evaluate(`({
+      primary: localStorage.getItem("ai-workflow-course-state-v1"),
+      recovery: localStorage.getItem("ai-workflow-course-recovery-v1"),
+      barrier: localStorage.getItem("ai-workflow-course-reset-barrier-v1"),
+      route: location.hash,
+      fontValue: document.querySelector("#font-size-output").value,
+      theme: document.documentElement.dataset.theme,
+      title: document.title
+    })`);
+    await evaluate(`(() => {
+      const originalReplaceChildren = Element.prototype.replaceChildren;
+      let injected = false;
+      Element.prototype.replaceChildren = function (...nodes) {
+        if (!injected && this.id === "course-nav") {
+          injected = true;
+          Element.prototype.replaceChildren = originalReplaceChildren;
+          window.__combinedRaceRecovery =
+            window.__rollbackRaceWindow
+              .__injectExternalRecoveryAfterResetBarrier();
+          throw new Error(
+            "Simulated render-stage reset failure after window B recovery."
+          );
+        }
+        return originalReplaceChildren.apply(this, nodes);
+      };
+      document.querySelector("#reset-progress").click();
+    })()`);
+    await approveActionDialog("Combined two-window render-failure reset");
+    const combinedRaceMessage = await waitFor(
+      async () => {
+        const message = await evaluate(
+          `document.querySelector("#toast")?.textContent || ""`,
+        );
+        return /overall rollback: verified/i.test(message) ? message : null;
+      },
+      "Combined two-window render-failure rollback result",
+    );
+    assert.match(
+      combinedRaceMessage,
+      /recovery copy: changed externally and preserved/i,
+    );
+    assert.match(combinedRaceMessage, /primary data: restored/i);
+    assert.match(combinedRaceMessage, /reset barrier: restored/i);
+    assert.match(combinedRaceMessage, /runtime state: restored/i);
+    assert.match(combinedRaceMessage, /visible course: restored/i);
+    const combinedRaceResult = await evaluate(`(() => {
+      const recovery = localStorage.getItem(
+        "ai-workflow-course-recovery-v1"
+      );
+      return {
+        primary: localStorage.getItem("ai-workflow-course-state-v1"),
+        recovery,
+        barrier: localStorage.getItem(
+          "ai-workflow-course-reset-barrier-v1"
+        ),
+        route: location.hash,
+        fontValue: document.querySelector("#font-size-output").value,
+        theme: document.documentElement.dataset.theme,
+        title: document.title,
+        injectedRecovery: window.__combinedRaceRecovery
+      };
+    })()`);
+    const recoveryInjectionEvidence = await evaluateSecond(
+      `window.__externalRecoveryInjection`,
+    );
+    assert.equal(combinedRaceResult.primary, combinedRaceSnapshot.primary);
+    assert.equal(combinedRaceResult.barrier, combinedRaceSnapshot.barrier);
+    assert.equal(combinedRaceResult.route, combinedRaceSnapshot.route);
+    assert.equal(combinedRaceResult.fontValue, combinedRaceSnapshot.fontValue);
+    assert.equal(combinedRaceResult.theme, combinedRaceSnapshot.theme);
+    assert.equal(combinedRaceResult.title, combinedRaceSnapshot.title);
+    assert.equal(
+      combinedRaceResult.recovery,
+      combinedRaceResult.injectedRecovery,
+      "Rollback overwrote the recovery copy written by window B.",
+    );
+    assert.notEqual(
+      combinedRaceResult.recovery,
+      combinedRaceSnapshot.recovery,
+      "The combined regression did not create a distinct concurrent recovery.",
+    );
+    assert.equal(recoveryInjectionEvidence.injectionCount, 1);
+    assert.equal(
+      recoveryInjectionEvidence.recoveryBefore,
+      combinedRaceSnapshot.recovery,
+    );
+    assert.equal(
+      recoveryInjectionEvidence.recoveryAfter,
+      combinedRaceResult.recovery,
+    );
+    assert.equal(recoveryInjectionEvidence.reason, recoveryInjectionReason);
+    assert.equal(injectionSetup.baseRaw, combinedRaceSnapshot.primary);
+    assert.equal(injectionSetup.recoveryBefore, combinedRaceSnapshot.recovery);
+    assert.notEqual(
+      recoveryInjectionEvidence.barrierAtInjection,
+      combinedRaceSnapshot.barrier,
+      "The harness recovery was not deterministically injected after the reset barrier.",
+    );
+    assert.notEqual(
+      recoveryInjectionEvidence.primaryAtInjection,
+      combinedRaceSnapshot.primary,
+      "The harness recovery was not deterministically injected after the reset primary write.",
+    );
+    await client.call("Target.closeTarget", { targetId: secondTargetId });
+    secondClient?.close();
+    secondClient = null;
+    secondTargetId = null;
+    await evaluate(`(() => {
+      const recoveryKey = "ai-workflow-course-recovery-v1";
+      const previousRecovery = ${JSON.stringify(combinedRaceSnapshot.recovery)};
+      if (previousRecovery === null) localStorage.removeItem(recoveryKey);
+      else localStorage.setItem(recoveryKey, previousRecovery);
+      delete window.__combinedRaceRecovery;
+      delete window.__rollbackRaceWindow;
+    })()`);
+
+    const externalKeyPlan = await evaluate(`(() => {
+      const primaryBefore = localStorage.getItem(
+        "ai-workflow-course-state-v1"
+      );
+      const recoveryBefore = localStorage.getItem(
+        "ai-workflow-course-recovery-v1"
+      );
+      const barrierBefore = localStorage.getItem(
+        "ai-workflow-course-reset-barrier-v1"
+      );
+      const primaryEnvelope = JSON.parse(primaryBefore);
+      primaryEnvelope.revision += 1000;
+      primaryEnvelope.writerId = "test-harness-external-primary";
+      const barrierEnvelope = structuredClone(primaryEnvelope);
+      barrierEnvelope.revision += 1;
+      barrierEnvelope.writerId = "test-harness-external-barrier";
+      barrierEnvelope.state.resetEpoch = "test-harness-external-reset";
+      return {
+        primaryBefore,
+        recoveryBefore,
+        barrierBefore,
+        primaryExternal: JSON.stringify(primaryEnvelope),
+        barrierExternal: JSON.stringify(barrierEnvelope)
+      };
+    })()`);
+    await evaluate(`(() => {
+      const plan = ${JSON.stringify(externalKeyPlan)};
+      const originalReplaceChildren = Element.prototype.replaceChildren;
+      let injectionCount = 0;
+      Element.prototype.replaceChildren = function (...nodes) {
+        if (injectionCount === 0 && this.id === "course-nav") {
+          injectionCount += 1;
+          Element.prototype.replaceChildren = originalReplaceChildren;
+          localStorage.setItem(
+            "ai-workflow-course-state-v1",
+            plan.primaryExternal
+          );
+          localStorage.setItem(
+            "ai-workflow-course-reset-barrier-v1",
+            plan.barrierExternal
+          );
+          window.__externalOwnedKeyInjection = {
+            injectionCount,
+            primaryAfter: localStorage.getItem(
+              "ai-workflow-course-state-v1"
+            ),
+            barrierAfter: localStorage.getItem(
+              "ai-workflow-course-reset-barrier-v1"
+            ),
+            recoveryAtInjection: localStorage.getItem(
+              "ai-workflow-course-recovery-v1"
+            ),
+            attribution:
+              "Test harness wrote both values; neither write is attributed to the product."
+          };
+          throw new Error(
+            "Simulated render failure after external primary and barrier writes."
+          );
+        }
+        return originalReplaceChildren.apply(this, nodes);
+      };
+      document.querySelector("#reset-progress").click();
+    })()`);
+    await approveActionDialog("External primary-and-barrier rollback");
+    const externalKeyMessage = await waitFor(
+      async () => {
+        const message = await evaluate(
+          `document.querySelector("#toast")?.textContent || ""`,
+        );
+        return /primary data: changed externally and preserved/i.test(message) &&
+          /reset barrier: changed externally and preserved/i.test(message) &&
+          /overall rollback: not fully verified/i.test(message)
+          ? message
+          : null;
+      },
+      "External primary-and-barrier reconciliation result",
+    );
+    assert.match(externalKeyMessage, /recovery copy: restored/i);
+    assert.match(externalKeyMessage, /runtime state: restored/i);
+    assert.match(externalKeyMessage, /visible course: restored/i);
+    assert.match(externalKeyMessage, /stop using this window/i);
+    const externalKeyResult = await evaluate(`({
+      primary: localStorage.getItem("ai-workflow-course-state-v1"),
+      recovery: localStorage.getItem("ai-workflow-course-recovery-v1"),
+      barrier: localStorage.getItem("ai-workflow-course-reset-barrier-v1"),
+      injection: window.__externalOwnedKeyInjection
+    })`);
+    assert.equal(externalKeyResult.primary, externalKeyPlan.primaryExternal);
+    assert.equal(externalKeyResult.barrier, externalKeyPlan.barrierExternal);
+    assert.equal(externalKeyResult.recovery, externalKeyPlan.recoveryBefore);
+    assert.equal(externalKeyResult.injection.injectionCount, 1);
+    assert.equal(
+      externalKeyResult.injection.primaryAfter,
+      externalKeyPlan.primaryExternal,
+    );
+    assert.equal(
+      externalKeyResult.injection.barrierAfter,
+      externalKeyPlan.barrierExternal,
+    );
+    assert.equal(
+      externalKeyResult.injection.attribution,
+      "Test harness wrote both values; neither write is attributed to the product.",
+    );
+    await evaluate(`(() => {
+      const plan = ${JSON.stringify(externalKeyPlan)};
+      localStorage.setItem(
+        "ai-workflow-course-state-v1",
+        plan.primaryBefore
+      );
+      if (plan.recoveryBefore === null) {
+        localStorage.removeItem("ai-workflow-course-recovery-v1");
+      } else {
+        localStorage.setItem(
+          "ai-workflow-course-recovery-v1",
+          plan.recoveryBefore
+        );
+      }
+      if (plan.barrierBefore === null) {
+        localStorage.removeItem("ai-workflow-course-reset-barrier-v1");
+      } else {
+        localStorage.setItem(
+          "ai-workflow-course-reset-barrier-v1",
+          plan.barrierBefore
+        );
+      }
+      delete window.__externalOwnedKeyInjection;
+    })()`);
+
+    await evaluate(`(() => {
+      window.__originalStorageRemoveItem = Storage.prototype.removeItem;
+      window.__originalStorageSetItem = Storage.prototype.setItem;
+      Storage.prototype.removeItem = function (key) {
+        if (key === "ai-workflow-course-reset-barrier-v1") {
+          throw new DOMException("Simulated barrier rollback failure.", "QuotaExceededError");
+        }
+        return window.__originalStorageRemoveItem.call(this, key);
+      };
+      Storage.prototype.setItem = function (key, value) {
+        if (key === "ai-workflow-course-state-v1") {
+          throw new DOMException("Simulated state-write failure.", "QuotaExceededError");
+        }
+        return window.__originalStorageSetItem.call(this, key, value);
+      };
+      document.querySelector("#reset-progress").click();
+    })()`);
+    await approveActionDialog("Unverified reset");
+    const unverifiedResetMessage = await waitFor(
+      async () => {
+        const message = await evaluate(
+          `document.querySelector("#toast")?.textContent || ""`,
+        );
+        return /overall rollback: not fully verified/i.test(message)
+          ? message
+          : null;
+      },
+      "Unverified reset warning",
+    );
+    assert.doesNotMatch(unverifiedResetMessage, /nothing was reset/i);
+    assert.match(unverifiedResetMessage, /reset barrier: unverified/i);
+    assert.match(unverifiedResetMessage, /stop using this window/i);
+    await evaluate(`(() => {
+      Storage.prototype.removeItem = window.__originalStorageRemoveItem;
+      Storage.prototype.setItem = window.__originalStorageSetItem;
+      delete window.__originalStorageRemoveItem;
+      delete window.__originalStorageSetItem;
+      localStorage.setItem(
+        "ai-workflow-course-state-v1",
+        ${JSON.stringify(resetTransactionSnapshot.primary)}
+      );
+      localStorage.setItem(
+        "ai-workflow-course-recovery-v1",
+        ${JSON.stringify(resetTransactionSnapshot.recovery)}
+      );
+      localStorage.removeItem("ai-workflow-course-reset-barrier-v1");
+    })()`);
+
+    const storageBeforeBlockedStartup = await evaluate(
+      `localStorage.getItem("ai-workflow-course-state-v1")`,
+    );
+    const blockedStorageScript = await client.call(
+      "Page.addScriptToEvaluateOnNewDocument",
+      {
+        source: `(() => {
+          const originalGetItem = Storage.prototype.getItem;
+          window.__readStorageWithoutBlock = (key) =>
+            originalGetItem.call(localStorage, key);
+          Storage.prototype.getItem = function (key) {
+            if (
+              this === localStorage &&
+              key === "ai-workflow-course-state-v1"
+            ) {
+              throw new DOMException("Storage read blocked.", "SecurityError");
+            }
+            return originalGetItem.call(this, key);
+          };
+        })();`,
+      },
+    );
+    await client.call("Page.reload", { ignoreCache: false });
+    await waitFor(
+      () =>
+        evaluate(`document.readyState === "complete" &&
+          document.querySelector("#loading-card")?.hidden === true`),
+      "Blocked-storage startup",
+    );
+    const blockedStartup = await waitFor(async () => {
+      const result = await evaluate(`({
+        homeLoaded: document.querySelector("#home-view")?.hidden === false,
+        toast: document.querySelector("#toast")?.textContent || "",
+        raw: window.__readStorageWithoutBlock(
+          "ai-workflow-course-state-v1"
+        )
+      })`);
+      return /could not be read/i.test(result.toast) ? result : null;
+    }, "Blocked-storage startup warning");
+    assert.equal(blockedStartup.homeLoaded, true);
+    assert.equal(blockedStartup.raw, storageBeforeBlockedStartup);
+    await evaluate(`(() => {
+      const range = document.querySelector("#font-size");
+      range.value = "105";
+      range.dispatchEvent(new Event("input", { bubbles: true }));
+    })()`);
+    assert.equal(
+      await evaluate(
+        `window.__readStorageWithoutBlock("ai-workflow-course-state-v1")`,
+      ),
+      storageBeforeBlockedStartup,
+    );
+    await client.call("Page.removeScriptToEvaluateOnNewDocument", {
+      identifier: blockedStorageScript.identifier,
+    });
+    await client.call("Page.reload", { ignoreCache: false });
+    await waitFor(
+      () =>
+        evaluate(`document.readyState === "complete" &&
+          document.querySelector("#loading-card")?.hidden === true`),
+      "Storage-readable startup",
+    );
+
+    const unsupportedEnvelope = JSON.stringify({
+      storageFormat: "ai-workflow-course-storage-v1",
+      revision: 900,
+      writerId: "future-writer-12345",
+      state: {
+        schemaVersion: 999,
+        futureState: "must remain untouched",
+      },
+    });
+    await evaluate(
+      `localStorage.setItem("ai-workflow-course-state-v1", ${JSON.stringify(unsupportedEnvelope)})`,
+    );
+    await client.call("Page.reload", { ignoreCache: false });
+    await waitFor(
+      () =>
+        evaluate(`document.readyState === "complete" &&
+          document.querySelector("#loading-card")?.hidden === true`),
+      "Unsupported-schema startup",
+    );
+    const quarantineState = await waitFor(async () => {
+      const result = await evaluate(`(() => {
+        const recoveryRaw = localStorage.getItem(
+          "ai-workflow-course-recovery-v1"
+        );
+        const recovery = recoveryRaw ? JSON.parse(recoveryRaw) : null;
+        return {
+          toast: document.querySelector("#toast")?.textContent || "",
+          primary: localStorage.getItem("ai-workflow-course-state-v1"),
+          recoveryPrimary: recovery?.raw || null
+        };
+      })()`);
+      return /quarantined|not overwritten/i.test(result.toast) ? result : null;
+    }, "Unsupported-schema quarantine warning");
+    assert.equal(quarantineState.primary, unsupportedEnvelope);
+    assert.equal(quarantineState.recoveryPrimary, unsupportedEnvelope);
+    await evaluate(`(() => {
+      const range = document.querySelector("#font-size");
+      range.value = "110";
+      range.dispatchEvent(new Event("input", { bubbles: true }));
+    })()`);
     assert.equal(
       await evaluate(`localStorage.getItem("ai-workflow-course-state-v1")`),
-      stateBeforeFailedSave,
+      unsupportedEnvelope,
+    );
+    await evaluate(`(() => {
+      const input = document.querySelector("#import-progress");
+      const transfer = new DataTransfer();
+      transfer.items.add(new File(
+        [${JSON.stringify(backupText)}],
+        "quarantine-recovery-import.json",
+        { type: "application/json" }
+      ));
+      input.files = transfer.files;
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    })()`);
+    await approveActionDialog("Quarantine recovery import");
+    await waitFor(
+      () =>
+        evaluate(`JSON.parse(
+          localStorage.getItem("ai-workflow-course-state-v1")
+        ).state.schemaVersion === 3`),
+      "Verified import replacing quarantined state",
+    );
+    const postQuarantineRevision = await evaluate(
+      `JSON.parse(localStorage.getItem("ai-workflow-course-state-v1")).revision`,
+    );
+    await evaluate(`(() => {
+      const range = document.querySelector("#font-size");
+      range.value = "115";
+      range.dispatchEvent(new Event("input", { bubbles: true }));
+    })()`);
+    await waitFor(
+      () =>
+        evaluate(`JSON.parse(
+          localStorage.getItem("ai-workflow-course-state-v1")
+        ).revision > ${postQuarantineRevision}`),
+      "Saving after verified quarantine import",
     );
 
     await evaluate(`localStorage.setItem(
@@ -1114,22 +2509,27 @@ async function main() {
     );
     const migrationNotice = await evaluate(`(() => {
       const toast = document.querySelector("#toast");
-      const storedState = JSON.parse(
+      const storedEnvelope = JSON.parse(
         localStorage.getItem("ai-workflow-course-state-v1")
       );
+      const storedState = storedEnvelope.state;
       return {
         hidden: toast.hidden,
         text: toast.textContent,
+        storageFormat: storedEnvelope.storageFormat,
+        revision: storedEnvelope.revision,
         storedMigration: storedState.migration,
       };
     })()`);
     assert.equal(migrationNotice.hidden, false);
     assert.match(migrationNotice.text, /migrated/i);
+    assert.equal(migrationNotice.storageFormat, "ai-workflow-course-storage-v1");
+    assert.ok(migrationNotice.revision >= 1);
     assert.equal(migrationNotice.storedMigration, null);
     const migratedState = await evaluate(
-      `JSON.parse(localStorage.getItem("ai-workflow-course-state-v1"))`,
+      `JSON.parse(localStorage.getItem("ai-workflow-course-state-v1")).state`,
     );
-    assert.equal(migratedState.schemaVersion, 2);
+    assert.equal(migratedState.schemaVersion, 3);
     assert.ok(migratedState.completed.includes("course-1-foundation-01"));
     assert.deepEqual(migratedState.practicalPassed, []);
     assert.equal(
@@ -1149,7 +2549,7 @@ async function main() {
       const toast = document.querySelector("#toast");
       const storedState = JSON.parse(
         localStorage.getItem("ai-workflow-course-state-v1")
-      );
+      ).state;
       return {
         hidden: toast.hidden,
         text: toast.textContent,
@@ -1191,6 +2591,7 @@ async function main() {
         ),
       "Offline lesson navigation",
     );
+    await assertReleaseBoundary("Offline lesson");
     await evaluate(`location.hash = "#search"`);
     await waitFor(
       () => evaluate(`document.querySelector("#search-view")?.hidden === false`),
@@ -1211,9 +2612,17 @@ async function main() {
     });
 
     process.stdout.write(
-      "Browser smoke passed: six responsive viewports, visible 44px five-tab navigation where applicable, unobscured primary controls, all 21 pages at 320px/125% text, table containment, skip-link plus app/Back/Forward route focus, two-way sidebar focus wrapping and restoration, reduced motion, light/dark contrast, forced colours, Course 1 isolation, exact wildcard rendering, separate reading/practice state, backup/import/reset, blocked-storage honesty, one-time schema-v1 migration, and offline reload/search.\n",
+      "Browser smoke passed: opener-duplicated tabs use distinct writer identities; two-window progress merges, same-note conflicts, and pending-note reset recovery are explicit; in-app confirmations support focus and Escape; import/reset rollback reports primary, barrier, recovery, runtime, route, render, and overall results separately; deterministic harness-attributed external recovery/primary/barrier writes are preserved by per-key comparison; blocked and unsupported storage is quarantined without overwrite; six responsive viewports, visible navigation, route focus, accessibility modes, Course 1 isolation, backup/migration, and offline reload/search also pass.\n",
     );
   } finally {
+    if (secondTargetId && client) {
+      try {
+        await client.call("Target.closeTarget", { targetId: secondTargetId });
+      } catch {
+        // Chrome teardown below is the final fallback.
+      }
+    }
+    secondClient?.close();
     client?.close();
     chromeProcess?.kill();
     previewProcess?.kill();

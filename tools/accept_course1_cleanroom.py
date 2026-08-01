@@ -50,6 +50,44 @@ def load_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def parse_unittest_inventory(output: str) -> dict[str, str]:
+    observed: dict[str, str] = {}
+    pattern = re.compile(
+        r"^(test_[A-Za-z0-9_]+) \(([^)]+)\) \.\.\. (.+)$",
+        re.MULTILINE,
+    )
+    for match in pattern.finditer(output):
+        short_name, test_id, status = match.groups()
+        if not test_id.endswith(f".{short_name}"):
+            raise RuntimeError(f"Unrecognized unittest identity: {match.group(0)}")
+        if test_id in observed:
+            raise RuntimeError(f"Duplicate unittest execution: {test_id}")
+        observed[test_id] = status.strip()
+    if not observed:
+        raise RuntimeError("Could not read the named unittest inventory.")
+    return observed
+
+
+def require_exact_test_inventory(
+    expected: list[str],
+    observed: dict[str, str],
+) -> None:
+    if expected != sorted(set(expected)):
+        raise RuntimeError("Declared unittest manifest must be sorted and unique.")
+    missing = sorted(set(expected) - set(observed))
+    unexpected = sorted(set(observed) - set(expected))
+    non_passing = {
+        test_id: status
+        for test_id, status in observed.items()
+        if status != "ok"
+    }
+    if missing or unexpected or non_passing:
+        raise RuntimeError(
+            "Named unittest inventory mismatch: "
+            f"missing={missing}, unexpected={unexpected}, non_passing={non_passing}"
+        )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Clean-room acceptance for the synthetic offline Course 1 runner."
@@ -65,6 +103,7 @@ def main() -> int:
     cli = root / "course1_capstone" / "cli.py"
     source = root / "practice_data" / "work_items.csv"
     expected = root / "practice_data" / "expected_issues.csv"
+    test_manifest_path = root / "course1_capstone" / "tests" / "test_manifest.json"
     schemas = sorted((root / "schemas").glob("*.schema.json"))
     runner_files = sorted(
         path
@@ -72,13 +111,36 @@ def main() -> int:
         if path.is_file() and "__pycache__" not in path.parts
     )
 
-    required = [Path(__file__).resolve(), source, expected, *schemas, *runner_files]
+    required = [
+        Path(__file__).resolve(),
+        source,
+        expected,
+        test_manifest_path,
+        *schemas,
+        *runner_files,
+    ]
     missing = [str(path) for path in required if not path.is_file()]
     if missing:
         print(json.dumps({"result": "FAIL", "missing": missing}, indent=2))
         return 2
 
     protected_hashes = {str(path.relative_to(root)): sha256(path) for path in required}
+    test_manifest = load_json(test_manifest_path)
+    if (
+        not isinstance(test_manifest, dict)
+        or set(test_manifest) != {"schema_version", "tests"}
+        or test_manifest["schema_version"] != "course1-unittest-manifest-v1"
+        or not isinstance(test_manifest["tests"], list)
+        or not all(isinstance(value, str) for value in test_manifest["tests"])
+    ):
+        print(
+            json.dumps(
+                {"result": "FAIL", "error": "Invalid named unittest manifest."},
+                indent=2,
+            )
+        )
+        return 2
+    expected_tests = test_manifest["tests"]
     environment = os.environ.copy()
     environment.update(
         {
@@ -106,6 +168,18 @@ def main() -> int:
                 root=root,
                 environment=environment,
             )
+            observed_tests = parse_unittest_inventory(test_output)
+            require_exact_test_inventory(expected_tests, observed_tests)
+            deliberately_reduced = dict(observed_tests)
+            deliberately_reduced.pop(expected_tests[0])
+            try:
+                require_exact_test_inventory(expected_tests, deliberately_reduced)
+            except RuntimeError:
+                manifest_negative_control_passed = True
+            else:
+                raise RuntimeError(
+                    "Named unittest manifest negative control did not fail."
+                )
 
             prepare_arguments = [
                 sys.executable,
@@ -150,8 +224,6 @@ def main() -> int:
                     "--expected-revision",
                     "1",
                     "--evidence-reviewed",
-                    "--decided-at",
-                    "2026-07-28T10:00:00Z",
                     "--expires-at",
                     "2099-01-01T00:00:00Z",
                 ],
@@ -164,8 +236,6 @@ def main() -> int:
                 "export",
                 "--run-dir",
                 str(run_dir),
-                "--checked-at",
-                "2026-07-28T10:01:00Z",
             ]
             first_export_output = run_command(
                 export_arguments,
@@ -243,6 +313,11 @@ def main() -> int:
 
             assertions = {
                 "unittest_suite_passed": "OK" in test_output,
+                "exact_named_unittest_manifest": (
+                    sorted(observed_tests) == expected_tests
+                    and all(status == "ok" for status in observed_tests.values())
+                ),
+                "test_manifest_negative_control": manifest_negative_control_passed,
                 "prepare_passed": "PASS: prepared controlled run" in prepare_output,
                 "decision_passed": "PASS: decision recorded" in decision_output,
                 "first_export_passed": "external actions=0" in first_export_output,
@@ -299,13 +374,11 @@ def main() -> int:
                     + ", ".join(changed_sources)
                 )
 
-            test_count_match = re.search(r"Ran (\d+) tests?", test_output)
-            if test_count_match is None:
-                raise RuntimeError("Could not read the unittest test count.")
             result = {
                 "result": "PASS",
                 "python": sys.version.split()[0],
-                "test_count": int(test_count_match.group(1)),
+                "test_count": len(expected_tests),
+                "test_manifest_sha256": sha256(test_manifest_path),
                 "clean_process_commands": 7,
                 "issue_count": len(issues),
                 "local_export_files": 2,
