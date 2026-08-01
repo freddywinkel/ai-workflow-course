@@ -22,7 +22,9 @@
   study deployment exposed GitHub Pages' `application/javascript` media type.
   The service worker now accepts that one production alias for manifest-declared
   `text/javascript`, the old-client rehearsal simulates it, and live verification
-  rejects every incompatible public media type.
+  rejects every incompatible public media type. The fresh-profile browser gate
+  also closes Chrome gracefully, retries temporary-profile cleanup, and preserves
+  a diagnostic report if cleanup itself fails.
 - Advanced bundled content revision to `2026-08-02` without changing the
   independent `2026-07-28` source-verification claim or Course 1 practice
   revision.
