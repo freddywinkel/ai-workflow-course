@@ -156,6 +156,27 @@ async function writeReport(path, report) {
   await writeFile(destination, `${JSON.stringify(report, null, 2)}\n`, "utf8");
 }
 
+async function waitForProcessExit(childProcess, timeoutMs) {
+  if (!childProcess || childProcess.exitCode !== null) return true;
+  return new Promise((resolveExit) => {
+    let settled = false;
+    const finish = (exited) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      childProcess.off("exit", onExit);
+      resolveExit(exited);
+    };
+    const onExit = () => finish(true);
+    const timeout = setTimeout(
+      () => finish(childProcess.exitCode !== null),
+      timeoutMs,
+    );
+    childProcess.once("exit", onExit);
+    if (childProcess.exitCode !== null) finish(true);
+  });
+}
+
 async function main() {
   const args = parseArguments(process.argv.slice(2));
   const publicUrl = checkedPublicUrl(args["public-url"]);
@@ -371,15 +392,35 @@ async function main() {
         // Cleanup continues even if Chrome has already exited.
       }
     }
-    client?.close();
-    if (chromeProcess && chromeProcess.exitCode === null) {
-      chromeProcess.kill();
-      await Promise.race([
-        new Promise((resolveExit) => chromeProcess.once("exit", resolveExit)),
-        new Promise((resolveWait) => setTimeout(resolveWait, 3000)),
-      ]);
+    if (client && chromeProcess?.exitCode === null) {
+      try {
+        await Promise.race([
+          client.call("Browser.close").catch(() => undefined),
+          new Promise((resolveWait) => setTimeout(resolveWait, 1500)),
+        ]);
+      } catch {
+        // The process fallback below still closes Chrome.
+      }
     }
-    await rm(profileDirectory, { recursive: true, force: true });
+    client?.close();
+    if (chromeProcess && !(await waitForProcessExit(chromeProcess, 3000))) {
+      chromeProcess.kill();
+      await waitForProcessExit(chromeProcess, 3000);
+    }
+    try {
+      await rm(profileDirectory, {
+        recursive: true,
+        force: true,
+        maxRetries: 15,
+        retryDelay: 200,
+      });
+    } catch (error) {
+      report.cleanupFailure = error instanceof Error ? error.message : String(error);
+      if (report.result === "PASS") {
+        report.result = "FAIL";
+        report.failure = `Temporary Chrome profile cleanup failed: ${report.cleanupFailure}`;
+      }
+    }
     report.verifiedAt = new Date().toISOString();
     await writeReport(args.report, report);
     process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);

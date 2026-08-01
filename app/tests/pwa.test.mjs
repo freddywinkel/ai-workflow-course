@@ -1721,6 +1721,18 @@ test("built JavaScript is syntactically valid and required artifacts exist", asy
   }
 });
 
+test("public browser evidence closes Chrome and records cleanup failures", async () => {
+  const source = await readFile(
+    join(appRoot, "scripts", "browser-public-smoke.mjs"),
+    "utf8",
+  );
+  assert.match(source, /client\.call\("Browser\.close"\)/);
+  assert.match(source, /maxRetries: 15/);
+  assert.match(source, /retryDelay: 200/);
+  assert.match(source, /report\.cleanupFailure/);
+  assert.match(source, /await writeReport\(args\.report, report\)/);
+});
+
 test("base-path normalisation rejects accidental missing slashes", () => {
   assert.equal(buildModule.normaliseBasePath("ai-workflow-course"), "/ai-workflow-course/");
   assert.equal(buildModule.normaliseBasePath("/ai-workflow-course"), "/ai-workflow-course/");
